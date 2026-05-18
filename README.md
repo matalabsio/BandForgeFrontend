@@ -1,20 +1,35 @@
-# bandforge-web (frontend)
+# BandForge Web (frontend)
 
-Next.js app for **MATA Labs** (marketing) and **BandForge** (IELTS mock-test UI). This folder maps to the future `bandforge-web` repo in the monorepo [`MATA-lab`](../README.md).
+Next.js application for **MATA Labs** marketing and **BandForge** IELTS mock-test UI. Lives in the [`MATA-lab`](../README.md) monorepo as `frontend/` (planned split → `bandforge-web`).
 
-**Backend (API):** [`../backend`](../backend/README.md) — FastAPI on port `8000`. The frontend is **not wired to it yet**; screens use local demo data.
+| | |
+|---|---|
+| **Local URL** | http://localhost:3000 |
+| **Backend API** | http://127.0.0.1:8000 — see [`../backend/README.md`](../backend/README.md) |
+| **Integration** | UI only — **no API calls yet**; all BandForge screens use in-memory demo data |
 
 ---
 
-## Tech stack
+## Status at a glance
 
-| Layer | Choice |
-|-------|--------|
-| Framework | Next.js 16 (App Router) |
-| UI | React 19, TypeScript |
-| Styling | Tailwind CSS v4 |
-| Components | Radix Navigation Menu, custom UI primitives |
-| Fonts | DM Sans + DM Mono (Google Fonts) |
+| Area | State | Notes |
+|------|--------|--------|
+| MATA Labs landing `/` | **Shipped (static)** | Marketing site; do not remove or replace |
+| Design system | **Built** | Tokens + shared UI primitives |
+| Candidate dashboard | **UI prototype** | `/dashboard`, `/scores` |
+| Test modules (4 skills) | **UI prototype** | `/test/*` — timers, nav, layouts |
+| Admin panel | **UI prototype** | `/admin/*` shells |
+| Supabase / auth | **Not started** | Phase 1 auth lives elsewhere per build manual |
+| API wiring | **Not started** | Waiting on backend Day 2 (A1/A2) |
+| PWA | **Not started** | Required for Android install later |
+
+---
+
+## Prerequisites
+
+- **Node.js 20+** (LTS recommended)
+- **npm** (comes with Node)
+- Optional: backend running on port `8000` for future integration (not required to view UI today)
 
 ---
 
@@ -23,115 +38,140 @@ Next.js app for **MATA Labs** (marketing) and **BandForge** (IELTS mock-test UI)
 ```bash
 cd frontend
 npm install
-npm run dev    # http://localhost:3000
+npm run dev
 ```
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Local development |
-| `npm run build` | Production build |
-| `npm run start` | Serve production build |
-| `npm run lint` | ESLint |
+Open http://localhost:3000 — you should see the **MATA Labs** landing page.
 
-**Requirements:** Node.js 20+ recommended.
+### Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server (hot reload) |
+| `npm run build` | Production build |
+| `npm run start` | Run production build locally |
+| `npm run lint` | ESLint (Next.js config) |
+
+### Run with backend (optional)
+
+Use two terminals when testing full stack later:
+
+```bash
+# Terminal 1 — API
+cd ../backend && source .venv/bin/activate
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# Terminal 2 — frontend
+cd frontend && npm run dev
+```
+
+Today the frontend does not call the API; this is for Postman/Swagger and future wiring.
 
 ---
 
-## What’s done
+## Tech stack
 
-### MATA Labs landing (`/`)
+| Layer | Technology | Version (approx.) |
+|-------|------------|-------------------|
+| Framework | Next.js (App Router) | 16.x |
+| UI library | React | 19.x |
+| Language | TypeScript | 5.x |
+| Styling | Tailwind CSS | 4.x |
+| Primitives | Radix Navigation Menu | 1.x |
+| Utilities | `class-variance-authority`, `lib/utils.ts` (`cn`) | — |
+| Fonts | DM Sans, DM Mono | via `next/font` |
 
-Production-style marketing page — **do not replace** when extending BandForge.
+---
 
-- Sticky navbar (desktop + mobile `<details>` menu)
-- Hero with background image, CTAs, “Launching soon”
-- About, product cards, contact (`hello@matalabs.io`), footer
-- Brand accent `#fd5200`, stone/neutral palette
-- SEO: metadata, Open Graph, `robots.ts`, `sitemap.ts` → `https://matalabs.io`
-- Favicons: `favicon.ico`, `icon.png`, `apple-icon.png`
+## Routes
 
-**Key files:** `app/page.tsx`, `components/landing/*`
+### Public — MATA Labs
 
-### BandForge design system
+| Path | Page |
+|------|------|
+| `/` | Marketing landing |
 
-Shared tokens and UI primitives for dashboard, admin, and test flows.
+### BandForge — candidate (demo data)
 
-- **Tokens:** `lib/design-tokens.ts` — navy/teal palette, typography scale, timer thresholds, writing word targets
-- **UI:** `components/ui/` — `Button`, `Card`, `Badge`, `PageHeader`, `StatCard`, `ProgressBar`, `ScoreBandChart`, `EmptyState`, `Skeleton`, navigation menu
+| Path | Page |
+|------|------|
+| `/dashboard` | Home: stats, upcoming mocks, practice links |
+| `/scores` | Band breakdown, trends, suggestions |
 
-### Candidate dashboard (demo)
+### BandForge — active test (demo data)
 
-| Route | Description |
-|-------|-------------|
-| `/dashboard` | Mock stats, upcoming mocks, links to practice modules |
-| `/scores` | Score report layout with band chart and improvement copy |
+Exam-style UI: no site chrome, focused layout (`app/(test)/` route group).
 
-Uses `DashboardShell` + `CandidateNav` — expressive layout, separate from the clinical test UI.
+| Path | Module |
+|------|--------|
+| `/test/reading` | 40 MCQs, question grid, section timer |
+| `/test/listening` | Audio player + question flow |
+| `/test/writing` | Tasks 1 & 2, word counter |
+| `/test/speaking` | Parts 1–3 layout |
 
-### Active test UI (demo / prototype)
+### BandForge — admin (demo data)
 
-IELTS-style screens with **hardcoded content** (no API, no auth).
-
-| Route | Module |
-|-------|--------|
-| `/test/reading` | 40 questions, countdown timer, question grid nav, MCQ options |
-| `/test/listening` | Audio player shell + question flow |
-| `/test/writing` | Task UI + word counter (targets from design tokens) |
-| `/test/speaking` | Parts 1–3 layout shell |
-
-**Shared test kit** (`components/test/`): `TestShell`, `TestHeader`, `TestTimer`, `QuestionNav`, `TestProgress`, `TestAudioPlayer`, `WordCounter`, module-specific views.
-
-**Hook:** `hooks/use-countdown.ts` for section timers.
-
-Test routes use `app/(test)/layout.tsx` — no marketing chrome (per build manual §4.3).
-
-### Admin UI (demo)
-
-| Route | Description |
-|-------|-------------|
-| `/admin` | System overview stat cards |
-| `/admin/candidates` | Candidate list shell |
+| Path | Page |
+|------|------|
+| `/admin` | System overview |
+| `/admin/candidates` | Candidate management shell |
 | `/admin/tests` | Mock test management shell |
 | `/admin/questions` | Question bank shell |
 
-Uses `AdminShell` — data-dense layout; copy notes connection to `bandforge-api` when live.
-
-### Repo hygiene (earlier pass)
-
-- Removed legacy waitlist, Supabase client, shadcn experiments, and unused deps from the old root app
-- Trimmed dependency tree (~285 packages removed); core stack only
-
 ---
 
-## What’s not done yet
+## What’s implemented
 
-| Area | Status |
-|------|--------|
-| API integration | No `fetch` to `http://127.0.0.1:8000` — connect after Day 2 routes (A1/A2) |
-| Auth | No `/login`, Supabase session, or protected routes |
-| Real test data | Questions, attempts, answers from database |
-| PWA | No manifest or service worker |
-| Payments / SMS | Out of scope (Phase 1 elsewhere) |
-| Writing / speaking evaluation UI | Scoring flows pending backend (B/C phases) |
-| E2E tests | No Playwright/Vitest suite in this package |
+### 1. MATA Labs landing
 
----
+- Components: `components/landing/` (`mata-labs-landing`, `landing-header`, `landing-hero`, `hero-cta-button`)
+- Hero background: `app/herobg.png`
+- Brand: MATA orange `#fd5200`, neutral stone palette
+- SEO: root metadata in `app/layout.tsx`, `app/robots.ts`, `app/sitemap.ts` (canonical `https://matalabs.io`)
+- Icons: `favicon.ico`, `icon.png`, `apple-icon.png`
 
-## Routes map
+**Rule:** Keep `/` as MATA Labs. Add BandForge only under other paths.
 
-```
-/                          MATA Labs landing (keep)
-/dashboard                 Candidate home (demo)
-/scores                    Score report (demo)
-/test/reading              Reading mock (demo)
-/test/listening            Listening mock (demo)
-/test/writing              Writing mock (demo)
-/test/speaking             Speaking mock (demo)
-/admin                     Admin overview (demo)
-/admin/candidates
-/admin/tests
-/admin/questions
-```
+### 2. Design system
+
+**Tokens** — `lib/design-tokens.ts`
+
+- Colors: navy, teal, success/warning/danger, ink, surface
+- Typography scale (h1–meta), radius, 375px mobile baseline, 44px touch targets
+- Timer: warning at 5 min, critical at 60s (`getTimerVariant`)
+- Writing word targets + `getWordCountStatus`
+
+**CSS** — `app/globals.css`
+
+- Tailwind v4 `@theme inline` mirrors tokens for utility classes (`text-h1`, `bg-teal`, etc.)
+
+**UI kit** — `components/ui/`
+
+`Button`, `Card`, `Badge`, `PageHeader`, `StatCard`, `ProgressBar`, `ScoreBandChart`, `EmptyState`, `Skeleton`, `NavigationMenu` (+ barrel export in `index.ts`)
+
+### 3. Test UI kit
+
+`components/test/` — shared across all four modules:
+
+| Component | Role |
+|-----------|------|
+| `TestShell` | Full-screen exam chrome |
+| `TestHeader` | Top bar + timer slot |
+| `TestTimer` | Countdown display (token-driven variants) |
+| `QuestionNav` | Question number grid |
+| `TestProgress` | Section progress |
+| `TestAudioPlayer` | Listening audio controls |
+| `WordCounter` | Writing word count + status |
+| `TestReadingView` / `Listening` / `Writing` / `Speaking` | Module screens |
+
+**Hook:** `hooks/use-countdown.ts` — section countdown state.
+
+### 4. Dashboard & admin shells
+
+- `components/dashboard/` — `DashboardShell`, `CandidateNav`
+- `components/admin/` — `AdminShell`
+- `components/scores/` — `ScoreReportView`
+- `components/layout/` — `site-navigation` (where used)
 
 ---
 
@@ -140,75 +180,96 @@ Uses `AdminShell` — data-dense layout; copy notes connection to `bandforge-api
 ```
 frontend/
 ├── app/
-│   ├── page.tsx              # /
-│   ├── layout.tsx            # Root layout, fonts, metadata
-│   ├── globals.css           # Tailwind v4
-│   ├── (test)/               # Test route group (no marketing chrome)
-│   │   └── test/{reading,listening,writing,speaking}/
-│   ├── dashboard/
-│   ├── scores/
-│   └── admin/
+│   ├── layout.tsx, page.tsx, globals.css
+│   ├── (test)/                    # Route group — no marketing layout
+│   │   ├── layout.tsx
+│   │   └── test/{reading,listening,writing,speaking}/page.tsx
+│   ├── dashboard/page.tsx
+│   ├── scores/page.tsx
+│   └── admin/{page,candidates,tests,questions}/page.tsx
 ├── components/
-│   ├── landing/              # MATA Labs only
+│   ├── landing/                   # MATA Labs only
 │   ├── dashboard/
 │   ├── admin/
-│   ├── test/                 # IELTS test UI kit
+│   ├── test/
 │   ├── scores/
 │   ├── layout/
-│   └── ui/                   # Design system primitives
+│   └── ui/
 ├── hooks/
+│   └── use-countdown.ts
 ├── lib/
 │   ├── design-tokens.ts
 │   └── utils.ts
-├── setup.md                  # BandForge build manual (orientation)
-└── package.json
+├── setup.md                       # BandForge build manual (orientation)
+├── .gitignore                     # Next.js / env ignores (use when you init git)
+├── package.json
+├── next.config.ts
+├── tsconfig.json
+└── eslint.config.mjs
 ```
 
 ---
 
-## Environment
+## Environment variables
 
-Create `.env.local` in this folder when integrating (gitignored). Typical future variables:
+Not required for current demo UI. When integrating, add **`.env.local`** (gitignored):
 
 ```bash
+# API (Day 2+)
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+
+# Supabase (when auth is wired)
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-Until then, no env file is required to run the landing and demo pages.
+Never commit secrets. See `.gitignore` for ignored paths (`node_modules/`, `.next/`, `.env*`, etc.).
 
 ---
 
 ## Conventions
 
-1. **`/` stays MATA Labs** — BandForge features live under `/dashboard`, `/test/*`, `/admin/*`, etc.
-2. **Two visual modes** — Dashboard/admin (expressive) vs active test (minimal, exam-like).
-3. **Mobile-first** — Baseline width 375px, 44px touch targets (`design-tokens.ts`).
-4. **Backend** — All business logic, scoring, and storage live in `../backend`, not in Next.js API routes.
+1. **`/` = MATA Labs** — BandForge under `/dashboard`, `/test/*`, `/admin/*`.
+2. **Two UX modes** — Expressive dashboard/admin vs minimal clinical test UI.
+3. **Mobile-first** — Design for 375px width; respect `touchTargetPx` in tokens.
+4. **No business logic in Next.js** — Scoring, DB, R2, evaluation live in `../backend`.
+5. **Small PRs** — One feature per change; see `setup.md` for full product scope.
 
 ---
 
-## Related docs
+## Out of scope (not built here)
 
-| Document | Contents |
-|----------|----------|
-| [`setup.md`](./setup.md) | Full BandForge build manual excerpt (scope, stack, repo rules) |
-| [`../backend/README.md`](../backend/README.md) | API setup, Postman, `db-check`, `r2-check` |
+- Mock test generator, marketing copy beyond landing
+- Razorpay, MSG91, phone OTP (Phase 1 / founder)
+- Real question bank, attempts, auto-scoring, speaking upload
+- Automated E2E / unit test suite in this package
+- `app/api/*` BFF routes (prefer FastAPI)
+
+---
+
+## Related documentation
+
+| File | Purpose |
+|------|---------|
+| [`setup.md`](./setup.md) | BandForge build manual — scope, stack, repo rules |
+| [`../backend/README.md`](../backend/README.md) | FastAPI, Supabase migrations, Postman, health checks |
 | [`../README.md`](../README.md) | Monorepo overview |
 
 ---
 
 ## Deploy
 
-Point Vercel (or similar) at this **`frontend/`** directory as the project root, not the monorepo root.
+Configure the host (e.g. **Vercel**) with **Root Directory = `frontend`**, not the monorepo root.
+
+Build command: `npm run build`  
+Output: Next.js default (`.next` handled by platform)
 
 ---
 
-## Next steps (frontend)
+## Roadmap (frontend)
 
-1. Add `NEXT_PUBLIC_API_URL` and a small API client module.
-2. Wire `/dashboard` “Start mock test” to real `POST` attempt + `GET` questions (Day 2).
-3. Replace demo state in test views with server-driven props.
-4. Add auth gate when Supabase phone OTP is integrated.
-5. PWA manifest + service worker when required for Android install.
+1. **`lib/api.ts`** — client for `NEXT_PUBLIC_API_URL`
+2. **Day 2** — load questions + start attempt from backend (A1/A2)
+3. **Auth middleware** — protect `/dashboard`, `/test/*` when Supabase OTP is ready
+4. **Replace demo state** — server components or React Query for attempts/answers
+5. **PWA** — `manifest.json` + service worker for installable Android build
