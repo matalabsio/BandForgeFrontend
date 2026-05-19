@@ -1,6 +1,6 @@
-import { MataLabsLanding } from "@/components/landing/mata-labs-landing";
+import { BandForgeLanding } from "@/components/bandforge";
 
-/** MATA Labs marketing landing — keep at `/`. BandForge app routes live elsewhere. */
+/** BandForge marketing site — `/`, `/contact`, `/privacy-policy`, `/terms`. */
 export default function Home() {
-  return <MataLabsLanding />;
+  return <BandForgeLanding />;
 }

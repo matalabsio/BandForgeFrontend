@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
-import { DM_Mono, DM_Sans } from "next/font/google";
+import { DM_Mono, DM_Sans, Inter } from "next/font/google";
+import { BfConversionShell } from "@/components/bandforge/bf-conversion-shell";
 import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -17,20 +24,20 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://matalabs.io"),
   title: {
-    default: "MATA Labs | Launching Soon",
-    template: "%s | MATA Labs",
+    default: "BandForge | AI-first IELTS preparation",
+    template: "%s | BandForge",
   },
   description:
-    "MATA Labs is building AI-first digital products, systems, and experiences.",
+    "Real IELTS-style mocks, AI writing evaluation, speaking insights, and instant Reading & Listening scores — built for Telugu-speaking students targeting Band 7+.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "MATA Labs | Launching Soon",
+    title: "BandForge | AI-first IELTS preparation",
     description:
-      "MATA Labs is building AI-first digital products, systems, and experiences.",
+      "Realistic IELTS simulations, AI-powered feedback, and personalised practice — by MATA Labs.",
     url: "/",
-    siteName: "MATA Labs",
+    siteName: "BandForge",
     type: "website",
   },
   robots: {
@@ -47,9 +54,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-dvh font-sans">{children}</body>
+      <body className="min-h-dvh font-sans" suppressHydrationWarning>
+        <BfConversionShell>{children}</BfConversionShell>
+      </body>
     </html>
   );
 }
