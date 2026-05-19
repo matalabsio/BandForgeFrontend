@@ -1,0 +1,64 @@
+const traditional = [
+  "High fees for classroom bundles",
+  "Feedback delayed by days or batches",
+  "Generic practice sheets for everyone",
+  "Limited full-length mock opportunities",
+] as const;
+
+const bandforge = [
+  "Instant evaluation on objective sections",
+  "Data-driven weak-area maps after every mock",
+  "Exam-faithful environment — timing & UX",
+  "Accessible on mobile whenever you have focus time",
+] as const;
+
+export function BandForgeComparison() {
+  return (
+    <section id="why" className="bf-section bg-white/70">
+      <div className="bf-container">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="bf-eyebrow">
+            Why BandForge
+          </p>
+          <h2 className="bf-section-title mt-3">
+            Built for students who cannot rely on expensive coaching alone.
+          </h2>
+        </div>
+
+        <div className="mt-12 grid gap-5 lg:grid-cols-2">
+          <div className="bf-min-card p-6 sm:p-8">
+            <h3 className="text-h4 text-ink/50">Traditional coaching</h3>
+            <ul className="mt-6 space-y-3">
+              {traditional.map((t) => (
+                <li
+                  key={t}
+                  className="flex gap-3 text-body leading-relaxed text-ink/60"
+                >
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink/25" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bf-glow-teal relative overflow-hidden rounded-3xl border border-teal/25 bg-navy p-6 text-white sm:p-8">
+            <div className="bf-grid-fine absolute inset-0 opacity-20" aria-hidden />
+            <div className="relative">
+              <h3 className="text-h4 text-white">BandForge</h3>
+              <ul className="mt-6 space-y-3">
+                {bandforge.map((t) => (
+                  <li
+                    key={t}
+                    className="flex gap-3 text-body leading-relaxed text-white/85"
+                  >
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-light shadow-[0_0_8px_#00bcd4]" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
