@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { REFRESH_COOKIE } from "@/lib/session";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/workspace", "/settings"];
+const PROTECTED_PREFIXES = ["/dashboard", "/workspace", "/settings", "/mock"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -26,5 +26,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/workspace/:path*", "/settings/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/workspace/:path*",
+    "/settings/:path*",
+    "/mock/:path*",
+  ],
 };

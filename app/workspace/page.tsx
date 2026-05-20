@@ -14,10 +14,6 @@ export default async function WorkspacePage() {
     .join("; ");
   const user = await getServerUser(cookieHeader);
   if (!user) redirect("/login?next=/workspace");
-  if (user.email && !user.email_verified) {
-    redirect(`/check-email?email=${encodeURIComponent(user.email)}`);
-  }
-
   return (
     <div className="min-h-dvh bg-surface text-ink">
       <header className="border-b border-border bg-white px-4 py-4 sm:px-6">

@@ -5,9 +5,32 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth";
 import { formatIndiaDisplay, normalizeIndiaMobile } from "@/lib/india-mobile";
 
+type MockTest = {
+  id: string;
+  title: string;
+  description: string | null;
+};
+
 export const metadata = {
   title: "Dashboard",
 };
+
+async function getDashboardMockTests(cookieHeader: string): Promise<MockTest[]> {
+  const base =
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
+    "http://localhost:8000";
+  try {
+    const res = await fetch(`${base}/api/tests/mock-tests`, {
+      headers: { cookie: cookieHeader },
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as MockTest[];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -19,12 +42,7 @@ export default async function DashboardPage() {
   if (!user) {
     redirect("/login?next=/dashboard");
   }
-  if (user.email && !user.email_verified) {
-    redirect(
-      `/check-email?email=${encodeURIComponent(user.email)}`,
-    );
-  }
-
+  const mockTests = await getDashboardMockTests(cookieHeader);
   let display = user.email ?? user.full_name ?? "your account";
   if (user.phone) {
     const digits = normalizeIndiaMobile(user.phone.replace(/^\+?91/, ""));
@@ -66,20 +84,46 @@ export default async function DashboardPage() {
           product ships.
         </p>
 
-        <div className="mt-8 rounded-2xl border border-border bg-white p-6 shadow-[var(--shadow-soft)]">
-          <h2 className="text-h4 text-navy">Next step</h2>
+        <section className="mt-8 rounded-2xl border border-border bg-white p-6 shadow-[var(--shadow-soft)]">
+          <h2 className="text-h4 text-navy">Mock tests</h2>
           <p className="mt-2 text-body text-ink/65">
-            Start your diagnostic mock — timers, navigation, and scoring will
-            match the live BandForge experience.
+            IELTS mocks seeded from content drafts (including your `ielts.md`) will appear here.
           </p>
-          <button
-            type="button"
-            disabled
-            className="mt-4 inline-flex cursor-not-allowed rounded-lg bg-navy/40 px-5 py-3 text-body font-semibold text-white opacity-80"
-          >
-            Launch mock (coming soon)
-          </button>
-        </div>
+          {mockTests.length === 0 ? (
+            <p className="mt-4 rounded-lg border border-dashed border-border bg-surface px-4 py-3 text-body text-ink/60">
+              No mock tests published yet. Seed one mock test in Supabase to display it here.
+            </p>
+          ) : (
+            <div className="mt-5 space-y-3">
+              {mockTests.map((test) => (
+                <article
+                  key={test.id}
+                  className="rounded-xl border border-border bg-surface px-4 py-4"
+                >
+                  <h3 className="text-body font-semibold text-navy">{test.title}</h3>
+                  <p className="mt-1 text-meta text-ink/65">
+                    {test.description ?? "IELTS mock test"}
+                  </p>
+                  <p className="mt-2 text-[11px] text-ink/45">{test.id}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Link
+                      href={`/mock/${test.id}/reading`}
+                      className="inline-flex rounded-lg bg-teal px-4 py-2 text-meta font-semibold text-white hover:bg-teal-light"
+                    >
+                      Open reading test UI (dev)
+                    </Link>
+                    <Link
+                      href={`/mock/${test.id}/listening`}
+                      className="inline-flex rounded-lg border border-teal bg-white px-4 py-2 text-meta font-semibold text-teal hover:bg-teal/5"
+                    >
+                      Open listening test UI (dev)
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
