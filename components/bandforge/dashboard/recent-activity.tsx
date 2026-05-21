@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { DashboardRecentAttempt } from "@/components/bandforge/dashboard/types";
 import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
+import { listeningModuleResultsPath } from "@/lib/listening-test";
 import {
   BookIcon,
   HeadphonesIcon,
@@ -25,7 +26,7 @@ function moduleIcon(module: string) {
 
 function reportHref(attempt: DashboardRecentAttempt): string | null {
   if (attempt.module === "listening") {
-    return `/mock/${attempt.mock_test.id}/listening/results/${attempt.id}`;
+    return listeningModuleResultsPath(attempt.mock_test.id, attempt.id);
   }
   return null;
 }

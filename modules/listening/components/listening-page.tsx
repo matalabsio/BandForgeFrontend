@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError } from "@/lib/api";
+import {
+  isListeningTest,
+  listeningModuleResultsPath,
+} from "@/lib/listening-test";
 import { listeningApi } from "@/modules/listening/services/listening-api";
 import { useListeningStore } from "@/modules/listening/store/listening-store";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
@@ -20,17 +24,23 @@ import {
 } from "@/modules/listening/components/submission-manager";
 
 type Props = {
-  mockTestId: string;
+  testId: string;
+  variant?: "default" | "exam";
 };
 
-export function ListeningPage({ mockTestId }: Props) {
+export function ListeningPage({ testId, variant = "default" }: Props) {
+  const isExam = variant === "exam";
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const autoStart = searchParams.get("auto") === "1";
+  const autoStartedRef = useRef(false);
   const {
     state,
     dispatch,
     setAnswer,
     setCurrent,
     markPlayed,
+    markPartPlayed,
     allQuestions,
   } = useListeningStore();
   const [busy, setBusy] = useState(false);
@@ -41,13 +51,9 @@ export function ListeningPage({ mockTestId }: Props) {
 
   const goToResults = useCallback(
     (attemptId: string) => {
-      router.push(
-        `/mock/${encodeURIComponent(mockTestId)}/listening/results/${encodeURIComponent(
-          attemptId,
-        )}`,
-      );
+      router.push(listeningModuleResultsPath(testId, attemptId));
     },
-    [router, mockTestId],
+    [router, testId],
   );
 
   const onTimerExpire = useCallback(() => {
@@ -94,6 +100,7 @@ export function ListeningPage({ mockTestId }: Props) {
     startedAtIso: state.startedAtIso,
     answers: state.answers,
     played: state.played,
+    playedParts: state.playedParts,
     remainingSeconds: remaining,
     enabled: submissionActive,
   });
@@ -102,9 +109,9 @@ export function ListeningPage({ mockTestId }: Props) {
     setBusy(true);
     dispatch({ type: "starting" });
     try {
-      const start = await listeningApi.start(mockTestId);
+      const start = await listeningApi.start(testId);
       dispatch({ type: "started", payload: start });
-      const questions = await listeningApi.questions(mockTestId);
+      const questions = await listeningApi.questions(testId);
       dispatch({ type: "questions_loaded", payload: questions });
       const snapshot = readSnapshot(start.attempt_id);
       if (snapshot?.answers) {
@@ -113,18 +120,37 @@ export function ListeningPage({ mockTestId }: Props) {
       if (snapshot?.played) {
         dispatch({ type: "hydrate_played", played: snapshot.played });
       }
+      if (snapshot?.played_parts) {
+        dispatch({ type: "hydrate_played_parts", playedParts: snapshot.played_parts });
+      }
     } catch (e) {
-      dispatch({
-        type: "error",
-        message:
-          e instanceof ApiError
-            ? e.message
-            : "Could not start listening attempt.",
-      });
+      let message = "Could not start listening attempt.";
+      if (e instanceof ApiError) {
+        message = e.message;
+        if (e.status === 404) {
+          const detail = e.message.toLowerCase();
+          message = detail.includes("mock test not found")
+            ? `Listening test not found in Supabase (${testId}). Run: cd backend && python -m scripts.verify_greenfield_mock (apply migration if missing), then refresh.`
+            : isListeningTest(testId)
+              ? "No listening questions for this test. Run: cd backend && python -m scripts.verify_greenfield_mock, then refresh."
+              : "No listening questions for this mock. Run the appropriate seed in Supabase, then refresh.";
+        } else if (e.status === 503) {
+          message =
+            "Backend API is not reachable. In a terminal: cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --host 127.0.0.1 --port 8000";
+        }
+      }
+      dispatch({ type: "error", message });
     } finally {
       setBusy(false);
     }
-  }, [mockTestId, dispatch]);
+  }, [testId, dispatch]);
+
+  useEffect(() => {
+    if (!autoStart || autoStartedRef.current) return;
+    if (state.status !== "idle") return;
+    autoStartedRef.current = true;
+    void beginAttempt();
+  }, [autoStart, state.status, beginAttempt]);
 
   useEffect(() => {
     if (!submissionActive) return;
@@ -165,28 +191,81 @@ export function ListeningPage({ mockTestId }: Props) {
     [setCurrent],
   );
 
+  const handlePartPlayed = useCallback(
+    (partNumber: number) => {
+      const part = state.parts.find((p) => p.part === partNumber);
+      const questionIds = part?.questions.map((q) => q.id) ?? [];
+      markPartPlayed(partNumber, questionIds);
+    },
+    [markPartPlayed, state.parts],
+  );
+
   if (state.status === "idle" || state.status === "starting") {
+    if (isExam) {
+      return (
+        <div className="mx-auto max-w-md pt-8 sm:pt-16">
+          <div className="border border-[#e4e4e7] bg-white px-6 py-8 sm:px-10 sm:py-10">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a1a1aa]">
+              Academic · Listening
+            </p>
+            <h1 className="mt-2 text-[22px] font-semibold tracking-tight text-[#18181b]">
+              Greenfield College
+            </h1>
+            <p className="mt-1 text-[14px] text-[#52525b]">Part 1 · Questions 1–10</p>
+
+            <ul className="mt-8 space-y-2 text-[13px] leading-relaxed text-[#52525b]">
+              <li className="flex gap-2">
+                <span className="text-[#a1a1aa]">—</span>
+                <span>Audio plays once. You cannot pause or replay.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-[#a1a1aa]">—</span>
+                <span>Write no more than two words and/or a number per answer.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-[#a1a1aa]">—</span>
+                <span>30 minutes. Timer starts when you begin.</span>
+              </li>
+            </ul>
+
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void beginAttempt()}
+              className="mt-8 w-full min-h-[48px] cursor-pointer border border-[#18181b] bg-[#18181b] text-[14px] font-semibold text-white transition-colors hover:bg-[#27272a] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy ? "Preparing…" : autoStart ? "Continue test" : "Begin test"}
+            </button>
+            {state.error ? (
+              <p className="mt-4 border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-[12px] text-[#b91c1c]">
+                {state.error}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-2xl border border-border bg-white p-6">
-        <h2 className="text-h3 text-navy">IELTS Listening — Full Mock</h2>
+        <h2 className="text-h3 text-navy">IELTS Listening</h2>
         <p className="mt-2 text-body text-ink/70">
-          Four parts, twenty short audio clips. Each clip plays exactly once.
-          You cannot rewind or repeat. The 30-minute timer starts as soon as
-          you create the attempt.
+          Listen carefully and complete all questions. Audio plays exactly once
+          per clip or part. The 30-minute timer starts when you create the
+          attempt.
         </p>
         <ul className="mt-3 list-disc pl-5 text-meta text-ink/70">
-          <li>Part 1 · Social Dialogue · form &amp; table completion</li>
-          <li>Part 2 · Social Monologue · map labels &amp; MCQ</li>
-          <li>Part 3 · Academic Seminar · MCQ &amp; matching</li>
-          <li>Part 4 · Academic Lecture · note &amp; summary completion</li>
+          <li>Form completion, MCQ, matching, and note completion types</li>
+          <li>Answers autosave as you type</li>
+          <li>Submit before the timer expires for a band score</li>
         </ul>
         <button
           type="button"
           disabled={busy}
           onClick={() => void beginAttempt()}
-          className="mt-5 min-h-[44px] rounded-xl bg-teal px-5 py-2 text-body font-semibold text-white hover:bg-teal-light disabled:opacity-60"
+          className="mt-5 min-h-[44px] cursor-pointer rounded-xl bg-teal px-5 py-2 text-body font-semibold text-white hover:bg-teal-light disabled:opacity-60"
         >
-          {busy ? "Loading…" : "Start listening attempt"}
+          {busy ? "Loading…" : autoStart ? "Resume listening" : "Start listening attempt"}
         </button>
         {state.error ? (
           <p className="mt-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-meta text-danger">
@@ -198,6 +277,22 @@ export function ListeningPage({ mockTestId }: Props) {
   }
 
   if (state.status === "error") {
+    if (isExam) {
+      return (
+        <div className="border border-[#fecaca] bg-[#fef2f2] px-5 py-6">
+          <h2 className="text-[15px] font-semibold text-[#18181b]">Unable to start</h2>
+          <p className="mt-2 text-[13px] text-[#52525b]">{state.error}</p>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "reset" })}
+            className="mt-4 cursor-pointer border border-[#18181b] bg-white px-4 py-2 text-[13px] font-medium text-[#18181b] hover:bg-[#fafafa]"
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-2xl border border-danger/40 bg-danger/5 p-6">
         <h2 className="text-h3 text-navy">Could not start</h2>
@@ -205,10 +300,71 @@ export function ListeningPage({ mockTestId }: Props) {
         <button
           type="button"
           onClick={() => dispatch({ type: "reset" })}
-          className="mt-5 rounded-xl border border-border bg-white px-4 py-2 text-meta font-semibold text-navy hover:bg-surface"
+          className="mt-5 cursor-pointer rounded-xl border border-border bg-white px-4 py-2 text-meta font-semibold text-navy hover:bg-surface"
         >
           Try again
         </button>
+      </div>
+    );
+  }
+
+  if (isExam) {
+    return (
+      <div className="-mx-4 sm:-mx-6">
+        <PartNav
+          parts={state.parts}
+          answers={state.answers}
+          played={state.played}
+          playedParts={state.playedParts}
+          currentQuestionId={state.currentQuestionId}
+          onJump={handleJump}
+          variant="exam"
+          timerSlot={
+            <ListeningTimer remainingSeconds={remaining} active={submissionActive} />
+          }
+        />
+
+        <div className="px-4 sm:px-6">
+          {state.parts.map((p) => (
+            <PartSection
+              key={p.part}
+              part={p}
+              answers={state.answers}
+              played={state.played}
+              playedParts={state.playedParts}
+              currentQuestionId={state.currentQuestionId}
+              onAnswer={handleAnswerChange}
+              onFocus={setCurrent}
+              onPlayed={markPlayed}
+              onPartPlayed={handlePartPlayed}
+              variant="exam"
+            />
+          ))}
+        </div>
+
+        <div className="sticky bottom-0 z-10 mt-8 border-t border-[#e4e4e7] bg-white px-4 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] text-[#a1a1aa]">
+              Answers save automatically
+            </p>
+            <SubmissionButton
+              attemptId={state.attemptId}
+              answers={submitAnswers}
+              variant="exam"
+              disabled={state.status === "submitting"}
+              onBeforeSubmit={async () => {
+                dispatch({ type: "submitting" });
+                await flushNow();
+              }}
+              onSubmitted={(payload) => {
+                dispatch({ type: "completed", payload });
+                if (state.attemptId) clearSnapshot(state.attemptId);
+                goToResults(payload.attempt_id);
+              }}
+              onError={(msg) => dispatch({ type: "error", message: msg })}
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -218,7 +374,7 @@ export function ListeningPage({ mockTestId }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-meta font-semibold uppercase tracking-wider text-teal">
-            {state.test?.title ?? "Listening mock"}
+            {state.test?.title ?? "IELTS Listening"}
           </p>
           <p className="mt-1 text-[12px] text-ink/55">
             Attempt {state.attemptId}
@@ -231,6 +387,7 @@ export function ListeningPage({ mockTestId }: Props) {
         parts={state.parts}
         answers={state.answers}
         played={state.played}
+        playedParts={state.playedParts}
         currentQuestionId={state.currentQuestionId}
         onJump={handleJump}
       />
@@ -242,10 +399,12 @@ export function ListeningPage({ mockTestId }: Props) {
             part={p}
             answers={state.answers}
             played={state.played}
+            playedParts={state.playedParts}
             currentQuestionId={state.currentQuestionId}
             onAnswer={handleAnswerChange}
             onFocus={setCurrent}
             onPlayed={markPlayed}
+            onPartPlayed={handlePartPlayed}
           />
         ))}
       </div>

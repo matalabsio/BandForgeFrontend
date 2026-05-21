@@ -9,6 +9,7 @@ import {
   MicIcon,
 } from "@/components/bandforge/dashboard/icons";
 import { Waveform } from "@/components/bandforge/dashboard/waveform";
+import { listeningModulePath } from "@/lib/listening-test";
 
 function moduleIcon(module: string) {
   switch (module) {
@@ -28,7 +29,7 @@ function moduleIcon(module: string) {
 function resumeHref(attempt: DashboardInProgressAttempt): string | null {
   switch (attempt.module) {
     case "listening":
-      return `/mock/${attempt.mock_test.id}/listening`;
+      return `${listeningModulePath(attempt.mock_test.id)}?auto=1`;
     case "reading":
       return `/mock/${attempt.mock_test.id}/reading`;
     default:

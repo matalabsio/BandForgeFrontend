@@ -35,7 +35,8 @@ export function useListeningAudio(audioUrl: string | null) {
     if (!audioUrl) return;
     const audio = new Audio(audioUrl);
     audio.preload = "auto";
-    audio.crossOrigin = "anonymous";
+    // Do not set crossOrigin: R2 presigned URLs omit CORS headers and the
+    // browser will reject the resource with crossOrigin="anonymous".
     audio.controls = false;
     audio.setAttribute("playsinline", "true");
     audioRef.current = audio;
@@ -61,7 +62,16 @@ export function useListeningAudio(audioUrl: string | null) {
       setState((s) => ({ ...s, isCompleted: true, isStarted: false }));
     };
     const onError = () => {
-      setState((s) => ({ ...s, error: "Audio failed to load." }));
+      const code = audio.error?.code;
+      const detail =
+        code === MediaError.MEDIA_ERR_NETWORK
+          ? "Network error loading audio."
+          : code === MediaError.MEDIA_ERR_DECODE
+            ? "Audio file could not be decoded."
+            : code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+              ? "Audio format not supported."
+              : "Audio failed to load.";
+      setState((s) => ({ ...s, error: detail }));
     };
 
     audio.addEventListener("loadedmetadata", onLoaded);

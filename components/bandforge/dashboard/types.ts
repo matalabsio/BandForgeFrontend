@@ -43,6 +43,8 @@ export type MockTestSummary = {
   id: string;
   title: string;
   description: string | null;
+  listening_question_count?: number | null;
+  listening_duration_minutes?: number;
 };
 
 export const MODULE_LABELS: Record<DashboardModule, string> = {

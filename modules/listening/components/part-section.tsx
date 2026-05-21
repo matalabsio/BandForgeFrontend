@@ -1,21 +1,28 @@
 "use client";
 
 import { memo } from "react";
-import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
+import type { ListeningPart } from "@/modules/listening/types";
 import { ListeningQuestionPanel } from "@/modules/listening/components/listening-question-panel";
+import {
+  FormCompletionPart,
+  isFormCompletionPart,
+} from "@/modules/listening/components/form-completion-part";
 import { QuestionAudio } from "@/modules/listening/components/question-audio";
 
 type Props = {
   part: ListeningPart;
   answers: Record<string, string>;
   played: Record<string, true>;
+  playedParts: Record<number, true>;
   currentQuestionId: string | null;
   onAnswer: (questionId: string, value: string) => void;
   onFocus: (questionId: string) => void;
   onPlayed: (questionId: string) => void;
+  onPartPlayed: (partNumber: number) => void;
+  variant?: "default" | "exam";
 };
 
-function answeredCount(qs: ListeningQuestion[], answers: Record<string, string>): number {
+function answeredCount(qs: ListeningPart["questions"], answers: Record<string, string>): number {
   return qs.filter((q) => (answers[q.id] ?? "").trim().length > 0).length;
 }
 
@@ -23,11 +30,29 @@ function PartSectionBase({
   part,
   answers,
   played,
+  playedParts,
   currentQuestionId,
   onAnswer,
   onFocus,
   onPlayed,
+  onPartPlayed,
+  variant = "default",
 }: Props) {
+  if (isFormCompletionPart(part)) {
+    return (
+      <FormCompletionPart
+        part={part}
+        answers={answers}
+        partPlayed={Boolean(playedParts[part.part])}
+        currentQuestionId={currentQuestionId}
+        onAnswer={onAnswer}
+        onFocus={onFocus}
+        onPartPlayed={onPartPlayed}
+        variant={variant}
+      />
+    );
+  }
+
   const done = answeredCount(part.questions, answers);
   return (
     <section
@@ -64,6 +89,7 @@ function PartSectionBase({
                 <QuestionAudio
                   audioUrl={q.audio_url ?? null}
                   played={Boolean(played[q.id])}
+                  variant={variant}
                   onCompleted={() => onPlayed(q.id)}
                 />
               }

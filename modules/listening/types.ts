@@ -82,6 +82,7 @@ export type RecoverySnapshot = {
   started_at: string;
   answers: Record<string, string>;
   played: Record<string, true>;
+  played_parts?: Record<number, true>;
   remaining_time: number;
   saved_at: string;
 };
