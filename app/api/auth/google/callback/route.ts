@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { applyAuthCookiesToResponse } from "@/lib/auth-cookies";
 import { exchangeGoogleCode } from "@/lib/auth-google";
-import { ACCESS_COOKIE } from "@/lib/session";
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -22,14 +23,16 @@ export async function GET(request: Request) {
 
   try {
     const { data, setCookies } = await exchangeGoogleCode(code, state);
-    const redirectUrl = new URL(data.redirect_to || "/dashboard", request.url);
+    const nextPath = data.redirect_to || "/dashboard";
+    const bootstrapUrl = new URL("/auth/bootstrap", request.url);
+    bootstrapUrl.searchParams.set("next", nextPath);
     if (data.pending_verification) {
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(bootstrapUrl);
     }
-    const res = NextResponse.redirect(redirectUrl);
-    for (const raw of setCookies) {
-      res.headers.append("Set-Cookie", raw);
-    }
+
+    const res = NextResponse.redirect(bootstrapUrl);
+    applyAuthCookiesToResponse(res, setCookies);
+
     const secure = process.env.NODE_ENV === "production";
     if (setCookies.length === 0 && data.access_token) {
       res.cookies.set(ACCESS_COOKIE, data.access_token, {
@@ -39,7 +42,17 @@ export async function GET(request: Request) {
         path: "/",
         maxAge: 15 * 60,
       });
+      if (data.refresh_token) {
+        res.cookies.set(REFRESH_COOKIE, data.refresh_token, {
+          httpOnly: true,
+          secure,
+          sameSite: "lax",
+          path: "/",
+          maxAge: 30 * 24 * 60 * 60,
+        });
+      }
     }
+
     return res;
   } catch (e) {
     const loginUrl = new URL("/login", request.url);

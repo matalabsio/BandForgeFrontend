@@ -4,13 +4,7 @@ import {
   parseJsonResponse,
   type ApiErrorBody,
 } from "@/lib/api";
-
-function rewriteSetCookie(header: string): string {
-  return header
-    .replace(/;\s*Domain=[^;]*/gi, "")
-    .replace(/;\s*Path=[^;]*/gi, "")
-    .concat("; Path=/");
-}
+import { collectSetCookieHeaders } from "@/lib/auth-cookies";
 
 export type GoogleAuthResult = {
   user?: {
@@ -19,6 +13,7 @@ export type GoogleAuthResult = {
     full_name: string | null;
   };
   access_token?: string;
+  refresh_token?: string;
   redirect_to: string;
   pending_verification?: boolean;
   message?: string;
@@ -39,17 +34,9 @@ export async function exchangeGoogleCode(
   if (!res.ok) {
     throw new Error(parseApiError(data, res.status));
   }
-  const setCookies =
-    typeof res.headers.getSetCookie === "function"
-      ? res.headers.getSetCookie()
-      : [];
-  if (setCookies.length === 0) {
-    const single = res.headers.get("set-cookie");
-    if (single) setCookies.push(single);
-  }
   return {
     data,
-    setCookies: setCookies.map(rewriteSetCookie),
+    setCookies: collectSetCookieHeaders(res.headers),
   };
 }
 

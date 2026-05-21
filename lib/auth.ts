@@ -4,17 +4,30 @@ import {
   parseJsonResponse,
   type ApiErrorBody,
 } from "@/lib/api";
+import { fetchWithTimeout } from "@/lib/fetch-server";
+import { isAuthEnabled } from "@/lib/flags";
 import {
-  clearAccessToken,
-  setAccessToken,
+  clearAuthStorage,
+  persistAuthTokens,
   type AuthUser,
 } from "@/lib/session";
+
+/** Used when NEXT_PUBLIC_AUTH_ENABLED is false (local UI / mock dev). */
+export const GUEST_USER: AuthUser = {
+  id: "00000000-0000-0000-0000-000000000000",
+  email: null,
+  full_name: "Guest",
+  phone: null,
+  email_verified: false,
+  phone_verified: false,
+};
 
 export type AuthResponse = {
   user: AuthUser;
   access_token: string;
   token_type: string;
   expires_in: number;
+  refresh_token?: string | null;
 };
 
 export type MessageResponse = {
@@ -41,8 +54,8 @@ async function authFetch<T>(
   return body as T;
 }
 
-function storeAccessFromAuth(data: AuthResponse): void {
-  setAccessToken(data.access_token);
+function storeAuthFromResponse(data: AuthResponse): void {
+  persistAuthTokens(data.access_token, data.refresh_token);
 }
 
 export async function register(input: {
@@ -77,7 +90,7 @@ export async function login(input: {
     method: "POST",
     body: JSON.stringify(input),
   });
-  storeAccessFromAuth(data);
+  storeAuthFromResponse(data);
   return data;
 }
 
@@ -96,7 +109,7 @@ export async function verifyOtp(input: {
     method: "POST",
     body: JSON.stringify(input),
   });
-  storeAccessFromAuth(data);
+  storeAuthFromResponse(data);
   return data;
 }
 
@@ -105,21 +118,53 @@ export async function verifyEmail(token: string): Promise<AuthResponse> {
     method: "POST",
     body: JSON.stringify({ token }),
   });
-  storeAccessFromAuth(data);
+  storeAuthFromResponse(data);
   return data;
 }
 
 export async function refreshSession(): Promise<AuthResponse> {
   const data = await authFetch<AuthResponse>("refresh", { method: "POST" });
-  storeAccessFromAuth(data);
+  storeAuthFromResponse(data);
   return data;
+}
+
+/** Restore session from localStorage refresh token when cookies were cleared. */
+export async function restoreSessionFromStorage(): Promise<AuthResponse | null> {
+  const { getRefreshToken } = await import("@/lib/session");
+  const refresh = getRefreshToken();
+  if (!refresh) return null;
+
+  try {
+    const data = await authFetch<AuthResponse>("restore", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
+    storeAuthFromResponse(data);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * On app load: refresh via cookie, or restore from localStorage if cookies missing.
+ */
+export async function ensureSession(): Promise<AuthResponse | null> {
+  try {
+    return await refreshSession();
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      return restoreSessionFromStorage();
+    }
+    return null;
+  }
 }
 
 export async function logout(): Promise<void> {
   try {
     await authFetch<MessageResponse>("logout", { method: "POST" });
   } finally {
-    clearAccessToken();
+    clearAuthStorage();
   }
 }
 
@@ -144,17 +189,48 @@ export async function getMe(): Promise<AuthUser> {
   return authFetch<AuthUser>("me", { method: "GET" });
 }
 
-export async function getServerUser(cookieHeader: string): Promise<AuthUser | null> {
-  const base =
+function backendBase(): string {
+  return (
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://localhost:8000";
+    "http://localhost:8000"
+  );
+}
+
+/** Redirect target when a protected server page cannot resolve the user. */
+export function authBootstrapPath(nextPath: string): string {
+  const next =
+    nextPath.startsWith("/") && !nextPath.startsWith("//")
+      ? nextPath
+      : "/dashboard";
+  return `/auth/bootstrap?next=${encodeURIComponent(next)}`;
+}
+
+export async function getServerUser(cookieHeader: string): Promise<AuthUser | null> {
+  if (!isAuthEnabled()) return GUEST_USER;
+
+  const base = backendBase();
+  if (!cookieHeader.trim()) return null;
+
   try {
-    const res = await fetch(`${base}/auth/me`, {
+    const meRes = await fetchWithTimeout(`${base}/auth/me`, {
       headers: { cookie: cookieHeader },
       cache: "no-store",
     });
-    if (!res.ok) return null;
-    return (await res.json()) as AuthUser;
+    if (meRes.ok) {
+      return (await meRes.json()) as AuthUser;
+    }
+
+    if (meRes.status !== 401) return null;
+
+    const refreshRes = await fetchWithTimeout(`${base}/auth/refresh`, {
+      method: "POST",
+      headers: { cookie: cookieHeader },
+      cache: "no-store",
+    });
+    if (!refreshRes.ok) return null;
+
+    const data = (await refreshRes.json()) as AuthResponse;
+    return data.user ?? null;
   } catch {
     return null;
   }

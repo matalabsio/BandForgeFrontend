@@ -52,7 +52,7 @@ export function SiteNavigation({
       : "text-ink/70 hover:bg-surface hover:text-navy data-[state=open]:text-navy";
 
   const simpleLinkClass = cn(
-    navigationMenuTriggerStyle(),
+    navigationMenuTriggerStyle,
     triggerClass,
     "cursor-pointer bg-transparent",
   );

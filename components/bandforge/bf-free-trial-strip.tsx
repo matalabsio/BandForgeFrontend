@@ -14,7 +14,7 @@ export function BandForgeFreeTrialStrip() {
   return (
     <section
       aria-label="Free trial benefits"
-      className="border-y border-border/70 bg-white/70 py-4 backdrop-blur"
+      className="border-y border-border/70 bg-white/70 py-4 backdrop-blur sm:py-5"
     >
       <BfAutoMarquee aria-label="Free trial highlights" speed={26}>
         <ul className="bf-marquee-track gap-3 pr-3">

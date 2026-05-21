@@ -11,7 +11,6 @@ import {
   normalizeIndiaMobile,
 } from "@/lib/india-mobile";
 import {
-  AuthDivider,
   GoogleSignInButton,
 } from "@/components/auth/google-sign-in-button";
 
@@ -98,14 +97,17 @@ export function StartEmailModal() {
           </button>
         </div>
 
-        <ul className="mt-4 space-y-1.5 text-meta leading-snug text-ink/55">
-          <li>Enter your mobile — we save it now; SMS OTP when MSG91 is on.</li>
-          <li>Or continue with Google.</li>
-        </ul>
+        <p className="mt-4 text-meta leading-snug text-ink/55">
+          Continue with Google for now. Password and phone OTP auth are temporarily disabled.
+        </p>
+
+        <div className="mt-5">
+          <GoogleSignInButton next="/dashboard" />
+        </div>
 
         <div className="mt-5 space-y-3">
           <label htmlFor="bf-phone" className="text-meta font-semibold text-navy">
-            Mobile number (India)
+            Mobile number (optional — saved for updates only)
           </label>
           <div className="flex overflow-hidden rounded-xl border border-border bg-white focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/20">
             <span className="flex items-center border-r border-border bg-surface px-3 text-meta font-semibold text-ink/60">
@@ -140,14 +142,11 @@ export function StartEmailModal() {
             type="button"
             disabled={phoneLoading}
             onClick={() => void onSavePhone()}
-            className="flex min-h-[var(--spacing-touch)] w-full cursor-pointer items-center justify-center rounded-xl border-2 border-navy bg-navy px-4 text-body font-semibold text-white hover:bg-navy/90 disabled:opacity-60"
+            className="flex min-h-[var(--spacing-touch)] w-full cursor-pointer items-center justify-center rounded-xl border border-border bg-surface px-4 text-body font-semibold text-navy hover:bg-white disabled:opacity-60"
           >
-            {phoneLoading ? "Saving…" : "Continue with phone"}
+            {phoneLoading ? "Saving…" : "Save mobile number"}
           </button>
         </div>
-
-        <AuthDivider />
-        <GoogleSignInButton next="/dashboard" />
       </div>
     </div>
   );
