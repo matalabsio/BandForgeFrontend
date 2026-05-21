@@ -187,14 +187,18 @@ export function BandForgeTrust() {
   return (
     <section
       id="trust"
-      className="scroll-mt-20 border-b border-border/70 bg-white/45 py-6 backdrop-blur sm:py-8"
+      className="scroll-mt-20 overflow-x-hidden border-b border-border/70 bg-white/45 py-6 backdrop-blur sm:py-8"
     >
-      <BfAutoMarquee aria-label="BandForge proof points" speed={24}>
-        <ul className="bf-marquee-track gap-4 pr-4">
+      <BfAutoMarquee
+        aria-label="BandForge proof points"
+        speed={24}
+        mobileLoopDuration="36s"
+      >
+        <ul className="bf-marquee-track gap-3 pr-3 sm:gap-4 sm:pr-4">
           {proofLoop.map((item, index) => (
             <li
               key={`${item.title}-${index}`}
-              className="bf-min-card flex min-w-[200px] shrink-0 flex-col justify-center px-5 py-4 sm:min-w-[260px]"
+              className="bf-min-card flex w-[min(78vw,220px)] shrink-0 flex-col justify-center px-4 py-3.5 sm:min-w-[260px] sm:w-auto sm:px-5 sm:py-4"
             >
               <p className="text-h4 font-bold tracking-tight text-navy">
                 {item.title}
@@ -209,14 +213,15 @@ export function BandForgeTrust() {
 
       <BfAutoMarquee
         aria-label="IELTS destination countries"
-        className="mt-4"
+        className="mt-3 sm:mt-4"
         speed={18}
+        mobileLoopDuration="42s"
       >
-        <ul className="bf-marquee-track gap-4 pr-4">
+        <ul className="bf-marquee-track gap-3 pr-3 sm:gap-4 sm:pr-4">
           {countryLoop.map((item, index) => (
             <li
               key={`${item.country}-${index}`}
-              className="bf-min-card flex min-w-[230px] shrink-0 flex-col justify-center px-5 py-4 sm:min-w-[290px]"
+              className="bf-min-card flex w-[min(82vw,240px)] shrink-0 flex-col justify-center px-4 py-3.5 sm:min-w-[290px] sm:w-auto sm:px-5 sm:py-4"
             >
               <div className="flex items-center gap-3">
                 <FlagMark code={item.flag} />

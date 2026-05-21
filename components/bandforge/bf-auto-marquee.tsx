@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 type AutoMarqueeProps = {
   "aria-label": string;
   children: ReactNode;
   className?: string;
+  /** Pixels per second for desktop auto-scroll */
   speed?: number;
+  /** Full loop duration on phone (CSS). e.g. "28s" */
+  mobileLoopDuration?: string;
 };
 
 export function BfAutoMarquee({
@@ -14,6 +17,7 @@ export function BfAutoMarquee({
   children,
   className = "",
   speed = 28,
+  mobileLoopDuration = "32s",
 }: AutoMarqueeProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pauseUntilRef = useRef(0);
@@ -28,6 +32,9 @@ export function BfAutoMarquee({
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reduceMotion.matches) return;
+
+    const mobileLoop = window.matchMedia("(max-width: 639px)");
+    if (mobileLoop.matches) return;
 
     let frame = 0;
     let last = performance.now();
@@ -51,10 +58,15 @@ export function BfAutoMarquee({
     return () => cancelAnimationFrame(frame);
   }, [speed]);
 
+  const style = {
+    "--bf-marquee-duration": mobileLoopDuration,
+  } as CSSProperties;
+
   return (
     <div
       ref={scrollerRef}
-      className={`bf-marquee ${className}`}
+      className={`bf-marquee bf-marquee--auto-loop ${className}`}
+      style={style}
       aria-label={ariaLabel}
       onPointerDown={() => pauseForManualScroll(2400)}
       onPointerUp={() => pauseForManualScroll(900)}
