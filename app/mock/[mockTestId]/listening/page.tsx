@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getServerUser } from "@/lib/auth";
+import { authBootstrapPath, getServerUser } from "@/lib/auth";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
 import { ListeningPage } from "@/modules/listening/components/listening-page";
 
@@ -18,7 +18,11 @@ export default async function MockListeningPage({ params }: PageProps) {
     .join("; ");
   const user = await getServerUser(cookieHeader);
   if (!user) {
-    redirect(`/login?next=/mock/${encodeURIComponent(mockTestId)}/listening`);
+    redirect(
+      authBootstrapPath(
+        `/mock/${encodeURIComponent(mockTestId)}/listening`,
+      ),
+    );
   }
 
   const r2Origin = process.env.NEXT_PUBLIC_R2_ENDPOINT_URL ?? null;

@@ -1,7 +1,11 @@
 import Link from "next/link";
+import { isAuthEnabled } from "@/lib/flags";
 
 const product = [
-  { href: "/?start=1", label: "Start free mock test" },
+  {
+    href: isAuthEnabled() ? "/?start=1" : "/dashboard",
+    label: "Start free mock test",
+  },
   { href: "/features", label: "Features" },
   { href: "/ai-feedback", label: "AI evaluation" },
   { href: "/how-it-works", label: "How it works" },

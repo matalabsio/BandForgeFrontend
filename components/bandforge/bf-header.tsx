@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { IconArrowRight, IconClose, IconMenu } from "@/components/icons";
+import { useAuthSession } from "@/components/auth/auth-session-provider";
+import { isAuthEnabled } from "@/lib/flags";
 import { cn } from "@/lib/utils";
 import { useStartMockAuth } from "@/components/bandforge/auth/start-mock-auth-context";
 
@@ -39,9 +41,78 @@ function NavLinks({
   );
 }
 
-export function BandForgeHeader() {
+function HeaderAuthCta({
+  className,
+  compact,
+}: {
+  className: string;
+  compact?: boolean;
+}) {
   const { openStartMockModal } = useStartMockAuth();
+  const { user, loading, isAuthenticated } = useAuthSession();
+  const authOn = isAuthEnabled();
 
+  if (!authOn) {
+    return (
+      <Link
+        href="/dashboard"
+        className={cn(
+          "group inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-[0.8125rem] font-semibold text-white shadow-[0_16px_40px_-22px_rgb(13_31_60_/_0.8)] transition-colors duration-200 hover:bg-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 xl:px-5",
+          className,
+        )}
+      >
+        {compact ? "Dashboard" : "Start mock"}
+        <IconArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+      </Link>
+    );
+  }
+
+  if (loading) {
+    return (
+      <span
+        className={cn(
+          "inline-flex min-h-10 items-center rounded-full bg-navy/10 px-4 py-2.5 text-[0.8125rem] font-semibold text-ink/40",
+          className,
+        )}
+        aria-hidden
+      >
+        …
+      </span>
+    );
+  }
+
+  if (isAuthenticated && user) {
+    const label = user.full_name?.split(" ")[0] ?? "Dashboard";
+    return (
+      <Link
+        href="/dashboard"
+        className={cn(
+          "group inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-[0.8125rem] font-semibold text-white shadow-[0_16px_40px_-22px_rgb(13_31_60_/_0.8)] transition-colors duration-200 hover:bg-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 xl:px-5",
+          className,
+        )}
+      >
+        {compact ? "Dashboard" : `Hi, ${label}`}
+        <IconArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={openStartMockModal}
+      className={cn(
+        "group inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-[0.8125rem] font-semibold text-white shadow-[0_16px_40px_-22px_rgb(13_31_60_/_0.8)] transition-colors duration-200 hover:bg-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 xl:px-5",
+        className,
+      )}
+    >
+      Sign in / up
+      <IconArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+    </button>
+  );
+}
+
+export function BandForgeHeader() {
   const desktopLink =
     "cursor-pointer rounded-full px-3 py-2 text-[0.8125rem] font-medium text-ink/62 transition-colors duration-200 hover:bg-navy/5 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 motion-reduce:transition-none xl:px-4";
 
@@ -66,14 +137,7 @@ export function BandForgeHeader() {
         />
 
         <div className="hidden shrink-0 items-center gap-1.5 lg:flex xl:gap-2">
-          <button
-            type="button"
-            onClick={openStartMockModal}
-            className="group inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-[0.8125rem] font-semibold text-white shadow-[0_16px_40px_-22px_rgb(13_31_60_/_0.8)] transition-colors duration-200 hover:bg-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 xl:px-5"
-          >
-            Sign in / up
-            <IconArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
-          </button>
+          <HeaderAuthCta className="" />
         </div>
 
         <details className="group relative lg:hidden">
@@ -108,14 +172,7 @@ export function BandForgeHeader() {
               ))}
             </ul>
             <div className="mt-2 space-y-2 border-t border-border px-3 pt-3">
-              <button
-                type="button"
-                onClick={openStartMockModal}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-navy py-3 text-body font-semibold text-white"
-              >
-                Sign in / up
-                <IconArrowRight className="h-4 w-4" aria-hidden />
-              </button>
+              <HeaderAuthCta className="flex w-full justify-center" compact />
             </div>
           </div>
         </details>

@@ -1,17 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { useAuthSession } from "@/components/auth/auth-session-provider";
 import { isPhoneOtpEnabled } from "@/lib/flags";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
   const oauthError = searchParams.get("error");
   const formError = oauthError;
+  const { isAuthenticated, loading } = useAuthSession();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.replace(next.startsWith("/") ? next : "/dashboard");
+    }
+  }, [loading, isAuthenticated, next, router]);
+
+  if (!loading && isAuthenticated) {
+    return (
+      <AuthShell title="Sign in">
+        <p className="text-body text-ink/70">Redirecting to your dashboard…</p>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell

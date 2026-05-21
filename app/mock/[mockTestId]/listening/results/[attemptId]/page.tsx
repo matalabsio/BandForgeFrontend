@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getServerUser } from "@/lib/auth";
+import { authBootstrapPath, getServerUser } from "@/lib/auth";
 import { getApiUrl } from "@/lib/api";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
 import type { ListeningScoreReport } from "@/modules/listening/types";
@@ -50,7 +50,9 @@ export default async function ListeningResultsPage({ params }: PageProps) {
   const user = await getServerUser(cookieHeader);
   if (!user) {
     redirect(
-      `/login?next=/mock/${encodeURIComponent(mockTestId)}/listening/results/${encodeURIComponent(attemptId)}`,
+      authBootstrapPath(
+        `/mock/${encodeURIComponent(mockTestId)}/listening/results/${encodeURIComponent(attemptId)}`,
+      ),
     );
   }
   const { report, status } = await getReport(attemptId, cookieHeader);

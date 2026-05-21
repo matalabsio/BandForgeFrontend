@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getServerUser } from "@/lib/auth";
+import { authBootstrapPath, getServerUser } from "@/lib/auth";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
 import { MockReadingRunner } from "./mock-reading-runner";
 
@@ -18,7 +18,11 @@ export default async function MockReadingPage({ params }: PageProps) {
     .join("; ");
   const user = await getServerUser(cookieHeader);
   if (!user) {
-    redirect(`/login?next=/mock/${encodeURIComponent(mockTestId)}/reading`);
+    redirect(
+      authBootstrapPath(
+        `/mock/${encodeURIComponent(mockTestId)}/reading`,
+      ),
+    );
   }
 
   return (

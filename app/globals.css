@@ -58,10 +58,54 @@ html {
     font-size: var(--text-body);
     line-height: 1.5;
     font-family: var(--font-sans);
+    overflow-x: hidden;
   }
 
   :focus-visible {
     outline: none;
+  }
+}
+
+.bf-marquee {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+}
+
+.bf-marquee::-webkit-scrollbar {
+  display: none;
+}
+
+.bf-marquee-track {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  padding-block: 0.125rem;
+}
+
+@media (max-width: 639px) {
+  .bf-marquee {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    scroll-padding-inline: 1rem;
+    scroll-snap-type: x proximity;
+    mask-image: none;
+  }
+
+  .bf-marquee-track {
+    min-width: max-content;
+  }
+
+  .bf-marquee-track > * {
+    scroll-snap-align: start;
   }
 }
 
@@ -243,49 +287,6 @@ html {
     pointer-events: none;
   }
 
-  .bf-marquee {
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    mask-image: linear-gradient(
-      90deg,
-      transparent,
-      #000 8%,
-      #000 92%,
-      transparent
-    );
-  }
-
-  .bf-marquee::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bf-marquee-track {
-    display: flex;
-    width: max-content;
-    min-width: 100%;
-    padding-block: 0.125rem;
-  }
-
-  @media (max-width: 639px) {
-    .bf-marquee {
-      margin-inline: -1rem;
-      padding-inline: 1rem;
-      scroll-padding-inline: 1rem;
-      scroll-snap-type: x proximity;
-      mask-image: none;
-    }
-
-    .bf-marquee-track {
-      min-width: max-content;
-    }
-
-    .bf-marquee-track > * {
-      scroll-snap-align: start;
-    }
-  }
-
   @keyframes bf-fade-up {
     from {
       opacity: 0;
@@ -372,5 +373,65 @@ html {
       opacity: 1;
       transform: none;
     }
+  }
+}
+
+/* BandForge dashboard — calm futuristic learning OS */
+@keyframes bf-dash-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bf-dash-wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bf-dash-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 32px rgba(6, 182, 212, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 48px rgba(6, 182, 212, 0.55);
+  }
+}
+
+.bf-dash-enter {
+  opacity: 1;
+  animation: bf-dash-enter 0.45s ease-out forwards;
+}
+
+.bf-dash-wave {
+  animation: bf-dash-wave 1.2s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+.bf-dash-glow {
+  animation: bf-dash-glow-pulse 2.5s ease-in-out infinite;
+}
+
+.bf-dash-ring {
+  transition: stroke-dashoffset 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-dash-enter,
+  .bf-dash-wave,
+  .bf-dash-glow {
+    animation: none;
   }
 }

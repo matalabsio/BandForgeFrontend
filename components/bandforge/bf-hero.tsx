@@ -124,14 +124,14 @@ export function BandForgeHero() {
       <div className="pointer-events-none absolute right-0 top-32 h-80 w-80 rounded-full bg-navy/5 blur-[100px]" />
 
       <div className="bf-container relative">
-        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-16">
-          <div className="max-w-2xl lg:max-w-none">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-x-20 lg:gap-y-16">
+          <div className="min-w-0 max-w-2xl lg:max-w-none">
             <p className="bf-reveal bf-eyebrow">
               AI-first products for learning
             </p>
             <h1
               id="bf-hero-heading"
-              className="bf-reveal bf-delay-1 mt-5 max-w-4xl font-display text-[2.65rem] font-bold leading-[0.98] tracking-[-0.065em] text-navy sm:text-6xl lg:text-[5.8rem]"
+              className="bf-reveal bf-delay-1 mt-5 max-w-4xl font-display text-[2.5rem] font-bold leading-[1] tracking-[-0.055em] text-navy sm:text-6xl lg:text-7xl xl:text-[5rem]"
             >
               IELTS prep that feels like the real exam.
             </h1>
@@ -143,7 +143,7 @@ export function BandForgeHero() {
             <BfHeroCtas />
           </div>
 
-          <div className="bf-reveal bf-delay-2 relative lg:translate-y-4">
+          <div className="bf-reveal bf-delay-2 relative min-w-0 lg:translate-y-4">
             <HeroExamPreview />
           </div>
         </div>

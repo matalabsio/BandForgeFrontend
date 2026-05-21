@@ -30,7 +30,7 @@ Next.js **App Router** site for **BandForge** — AI-first IELTS preparation by 
 - **All auth logic lives in the FastAPI backend** (`/auth/*`).
 - The frontend calls **`/api/auth/*`** — Next.js **BFF proxy** forwards to the API and re-sets `bf_access` / `bf_refresh` httpOnly cookies on the site origin.
 - **Access token** is also kept in memory (`lib/session.ts`) for client refresh; **refresh token** is never exposed to JS.
-- **Middleware** guards `/dashboard`, `/workspace`, `/settings` (requires `bf_refresh` cookie).
+- **Middleware** guards `/dashboard`, `/workspace`, `/settings` when `NEXT_PUBLIC_AUTH_ENABLED=true` (requires `bf_refresh` cookie). Off by default for local mock UI work.
 
 ### Key files
 
@@ -54,6 +54,8 @@ Copy `.env.local.example` → `.env.local`:
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_PHONE_OTP_ENABLED=false
+# Auth off by default — Start mock goes straight to /dashboard
+NEXT_PUBLIC_AUTH_ENABLED=false
 ```
 
 Run the **backend** on port 8000 before testing auth.
@@ -89,4 +91,8 @@ npm run lint
 
 ## Deploy
 
-Vercel: **Root Directory = `frontend`**. Set `NEXT_PUBLIC_API_URL` to your production API URL. Ensure API CORS allows your web origin with `credentials`.
+**Root Directory must be `frontend`** (Vercel, Render, etc.). Build command: `npm install && npm run build`. Start command: `npm run start`.
+
+Set `NEXT_PUBLIC_API_URL` to your production API URL. Ensure API CORS allows your web origin with `credentials`.
+
+Commit `frontend/package.json` and `frontend/package-lock.json` together after adding UI deps (e.g. `@radix-ui/react-navigation-menu`).

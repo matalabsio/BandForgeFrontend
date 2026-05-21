@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans, Inter } from "next/font/google";
-import { BfConversionShell } from "@/components/bandforge/bf-conversion-shell";
+import { AppRoot } from "@/components/bandforge/app-root";
 import "./globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const dmMono = DM_Mono({
   variable: "--font-dm-mono",
   subsets: ["latin"],
   weight: ["400", "500"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -58,7 +61,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-dvh font-sans" suppressHydrationWarning>
-        <BfConversionShell>{children}</BfConversionShell>
+        <AppRoot>{children}</AppRoot>
       </body>
     </html>
   );

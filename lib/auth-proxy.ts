@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { applyAuthCookiesToResponse, collectSetCookieHeaders } from "@/lib/auth-cookies";
 import { getApiUrl, type ApiErrorBody } from "@/lib/api";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
@@ -10,17 +11,17 @@ const AUTH_PATHS = new Set([
   "verify-otp",
   "verify-email",
   "refresh",
+  "restore",
   "logout",
   "forgot-password",
   "reset-password",
   "me",
+  "profile",
+  "profile/avatar",
 ]);
 
-function rewriteSetCookie(header: string): string {
-  return header
-    .replace(/;\s*Domain=[^;]*/gi, "")
-    .replace(/;\s*Path=[^;]*/gi, "")
-    .concat("; Path=/");
+function isAuthPath(path: string): boolean {
+  return AUTH_PATHS.has(path);
 }
 
 export async function proxyAuthRequest(
@@ -28,24 +29,33 @@ export async function proxyAuthRequest(
   pathSegments: string[],
 ): Promise<NextResponse> {
   const path = pathSegments.join("/");
-  if (!AUTH_PATHS.has(path)) {
+  if (!isAuthPath(path)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const backendUrl = `${getApiUrl()}/auth/${path}`;
   const cookieHeader = req.headers.get("cookie") ?? "";
 
+  const contentType = req.headers.get("content-type") ?? "";
+  const headers: Record<string, string> = { cookie: cookieHeader };
+  if (contentType) {
+    headers["Content-Type"] = contentType;
+  } else if (req.method !== "GET" && req.method !== "HEAD") {
+    headers["Content-Type"] = "application/json";
+  }
+
   const init: RequestInit = {
     method: req.method,
-    headers: {
-      cookie: cookieHeader,
-      "Content-Type": req.headers.get("content-type") ?? "application/json",
-    },
+    headers,
     cache: "no-store",
   };
 
   if (req.method !== "GET" && req.method !== "HEAD") {
-    init.body = await req.text();
+    if (contentType.includes("multipart/form-data")) {
+      init.body = await req.arrayBuffer();
+    } else {
+      init.body = await req.text();
+    }
   }
 
   const backendRes = await fetch(backendUrl, init);
@@ -58,19 +68,7 @@ export async function proxyAuthRequest(
     },
   });
 
-  const setCookies =
-    typeof backendRes.headers.getSetCookie === "function"
-      ? backendRes.headers.getSetCookie()
-      : [];
-
-  if (setCookies.length === 0) {
-    const single = backendRes.headers.get("set-cookie");
-    if (single) setCookies.push(single);
-  }
-
-  for (const raw of setCookies) {
-    res.headers.append("Set-Cookie", rewriteSetCookie(raw));
-  }
+  applyAuthCookiesToResponse(res, collectSetCookieHeaders(backendRes.headers));
 
   if (path === "logout") {
     const secure = process.env.NODE_ENV === "production";

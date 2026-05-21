@@ -1,7 +1,9 @@
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu";
-import { cva } from "class-variance-authority";
 import * as React from "react";
 import { cn } from "@/lib/utils";
+
+const navigationMenuTriggerStyle =
+  "group inline-flex h-9 w-max cursor-pointer items-center justify-center rounded-lg px-3 py-2 text-body font-medium transition-colors duration-200 outline-none disabled:pointer-events-none disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-teal-light focus-visible:ring-offset-2 focus-visible:ring-offset-navy data-[state=open]:bg-white/10";
 
 function IconChevronDown({ className }: { className?: string }) {
   return (
@@ -61,17 +63,13 @@ NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName;
 
 const NavigationMenuItem = NavigationMenuPrimitive.Item;
 
-const navigationMenuTriggerStyle = cva(
-  "group inline-flex h-9 w-max cursor-pointer items-center justify-center rounded-lg px-3 py-2 text-body font-medium transition-colors duration-200 outline-none disabled:pointer-events-none disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-teal-light focus-visible:ring-offset-2 focus-visible:ring-offset-navy data-[state=open]:bg-white/10",
-);
-
 const NavigationMenuTrigger = React.forwardRef<
   React.ComponentRef<typeof NavigationMenuPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
   <NavigationMenuPrimitive.Trigger
     ref={ref}
-    className={cn(navigationMenuTriggerStyle(), "group", className)}
+    className={cn(navigationMenuTriggerStyle, "group", className)}
     {...props}
   >
     {children}{" "}

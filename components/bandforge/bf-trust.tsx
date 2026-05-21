@@ -194,7 +194,7 @@ export function BandForgeTrust() {
           {proofLoop.map((item, index) => (
             <li
               key={`${item.title}-${index}`}
-              className="bf-min-card flex min-w-[220px] shrink-0 flex-col justify-center px-5 py-4 sm:min-w-[260px]"
+              className="bf-min-card flex min-w-[200px] shrink-0 flex-col justify-center px-5 py-4 sm:min-w-[260px]"
             >
               <p className="text-h4 font-bold tracking-tight text-navy">
                 {item.title}
@@ -216,7 +216,7 @@ export function BandForgeTrust() {
           {countryLoop.map((item, index) => (
             <li
               key={`${item.country}-${index}`}
-              className="bf-min-card flex min-w-[250px] shrink-0 flex-col justify-center px-5 py-4 sm:min-w-[290px]"
+              className="bf-min-card flex min-w-[230px] shrink-0 flex-col justify-center px-5 py-4 sm:min-w-[290px]"
             >
               <div className="flex items-center gap-3">
                 <FlagMark code={item.flag} />
