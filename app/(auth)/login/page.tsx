@@ -8,10 +8,15 @@ import { useAuthSession } from "@/components/auth/auth-session-provider";
 import { authBootstrapPath, logout } from "@/lib/auth";
 import {
   isNetlifyDeployPreviewHost,
+  productionLoginUrl,
   PRODUCTION_OAUTH_ORIGIN,
 } from "@/lib/auth-site";
 import { isPhoneOtpEnabled } from "@/lib/flags";
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+import {
+  ACCESS_COOKIE,
+  clearAuthStorage,
+  REFRESH_COOKIE,
+} from "@/lib/session";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 function hasAuthCookies(): boolean {
@@ -25,6 +30,7 @@ function hasAuthCookies(): boolean {
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
+  const stayOnPreview = searchParams.get("stay") === "1";
   const sessionExpired = searchParams.get("session") === "expired";
   const oauthError = searchParams.get("error");
   const formError =
@@ -33,27 +39,65 @@ function LoginForm() {
       ? "Your session expired. Please sign in again."
       : null);
   const cleared = useRef(false);
+  const redirectedToProd = useRef(false);
+
+  const onDeployPreview =
+    typeof window !== "undefined" &&
+    isNetlifyDeployPreviewHost(window.location.hostname);
+
+  useEffect(() => {
+    if (!onDeployPreview || hasAuthCookies()) return;
+    clearAuthStorage();
+  }, [onDeployPreview]);
+
+  useEffect(() => {
+    if (!onDeployPreview || stayOnPreview || redirectedToProd.current) return;
+    redirectedToProd.current = true;
+    window.location.replace(productionLoginUrl(next));
+  }, [onDeployPreview, stayOnPreview, next]);
 
   useEffect(() => {
     if (!sessionExpired || cleared.current) return;
     cleared.current = true;
     void logout();
   }, [sessionExpired]);
+
   const { isAuthenticated, loading } = useAuthSession();
-  const onDeployPreview =
-    typeof window !== "undefined" &&
-    isNetlifyDeployPreviewHost(window.location.hostname);
 
   useEffect(() => {
-    // Avoid loop: getMe can succeed via localStorage Bearer while httpOnly cookies
-    // are missing, so bootstrap refresh fails and sends user back here.
     if (!loading && isAuthenticated && hasAuthCookies()) {
       const dest = next.startsWith("/") ? next : "/dashboard";
       window.location.replace(authBootstrapPath(dest));
     }
   }, [loading, isAuthenticated, next]);
 
-  if (!loading && isAuthenticated) {
+  if (onDeployPreview && !stayOnPreview) {
+    return (
+      <AuthShell title="Sign in">
+        <p className="text-body text-ink/70">
+          Redirecting to{" "}
+          <span className="font-semibold text-teal">
+            {PRODUCTION_OAUTH_ORIGIN.replace(/^https:\/\//, "")}
+          </span>
+          …
+        </p>
+        <p className="mt-3 text-meta text-ink/55">
+          <a href={productionLoginUrl(next)} className="font-semibold text-teal underline">
+            Continue now
+          </a>
+          {" · "}
+          <a
+            href={`/login?stay=1&next=${encodeURIComponent(next)}`}
+            className="text-ink/60 underline"
+          >
+            Stay on preview (UI only)
+          </a>
+        </p>
+      </AuthShell>
+    );
+  }
+
+  if (!loading && isAuthenticated && hasAuthCookies()) {
     return (
       <AuthShell title="Sign in">
         <p className="text-body text-ink/70">Redirecting to your dashboard…</p>
@@ -66,19 +110,16 @@ function LoginForm() {
       title="Sign in"
       subtitle="Google sign-in is active right now. Password and OTP login are temporarily disabled."
     >
-      {onDeployPreview ? (
+      {onDeployPreview && stayOnPreview ? (
         <p
           className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-meta text-ink/80"
           role="status"
         >
-          This is a Netlify preview URL. Google sign-in completes on{" "}
-          <a
-            href={`${PRODUCTION_OAUTH_ORIGIN}/login?next=${encodeURIComponent(next)}`}
-            className="font-semibold text-teal underline"
-          >
-            {PRODUCTION_OAUTH_ORIGIN.replace(/^https:\/\//, "")}
+          Preview URLs cannot keep a Google session (cookies are on{" "}
+          <a href={productionLoginUrl(next)} className="font-semibold text-teal underline">
+            bandforge.netlify.app
           </a>
-          . After signing in, use the production site for your dashboard.
+          ). Sign in there, then open the dashboard on production.
         </p>
       ) : null}
       <GoogleSignInButton next={next} />

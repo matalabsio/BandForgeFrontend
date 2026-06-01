@@ -13,7 +13,7 @@ import {
 import { ensureSession, getMe } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { isAuthEnabled } from "@/lib/flags";
-import type { AuthUser } from "@/lib/session";
+import { hasLikelyClientSession, type AuthUser } from "@/lib/session";
 
 type AuthSessionContextValue = {
   user: AuthUser | null;
@@ -73,6 +73,11 @@ export function AuthSessionProvider({
     }
     if (initStartedRef.current) return;
     initStartedRef.current = true;
+
+    if (!hasLikelyClientSession()) {
+      setLoading(false);
+      return;
+    }
 
     if (serverAuthenticated && hasAccessCookie()) {
       let cancelled = false;

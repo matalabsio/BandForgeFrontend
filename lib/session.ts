@@ -60,6 +60,16 @@ export function clearAuthStorage(): void {
   setRefreshToken(null);
 }
 
+/** True when the browser may have a restorable session (avoids noisy /api/auth calls on login). */
+export function hasLikelyClientSession(): boolean {
+  if (typeof document === "undefined") return false;
+  const hasCookie = document.cookie.split(";").some((c) => {
+    const name = c.trim().split("=")[0];
+    return name === ACCESS_COOKIE || name === REFRESH_COOKIE;
+  });
+  return hasCookie || Boolean(getRefreshToken()) || Boolean(getAccessToken());
+}
+
 export type AuthUser = {
   id: string;
   email: string | null;

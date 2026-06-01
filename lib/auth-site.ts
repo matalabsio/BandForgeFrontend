@@ -31,3 +31,9 @@ export function googleOAuthStartUrl(next: string, requestOrigin: string): string
   const origin = oauthOriginForRequest(requestOrigin);
   return `${origin}/api/auth/google?next=${encodeURIComponent(next)}`;
 }
+
+export function productionLoginUrl(next = "/dashboard"): string {
+  const safe =
+    next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+  return `${PRODUCTION_OAUTH_ORIGIN}/login?next=${encodeURIComponent(safe)}`;
+}
