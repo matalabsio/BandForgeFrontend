@@ -10,7 +10,7 @@ export function BandForgeAiShowcase() {
             AI evaluation
           </p>
           <h2 className="bf-section-title mt-3">
-            Detailed feedback in seconds — not days.
+            Detailed feedback in seconds, not days.
           </h2>
           <p className="bf-copy mx-auto mt-5 max-w-2xl">
             See how BandForge mirrors examiner thinking: bands, sub-criteria, and
@@ -46,7 +46,7 @@ export function BandForgeAiShowcase() {
               <ul className="mt-6 space-y-4 text-body leading-relaxed text-white/80">
                 <li>
                   <span className="font-semibold text-teal-light">Grammar: </span>
-                  Article omission before countable nouns in paragraph 2 — impacts
+                  Article omission before countable nouns in paragraph 2: impacts
                   GRA ceiling.
                 </li>
                 <li>
@@ -56,7 +56,7 @@ export function BandForgeAiShowcase() {
                 </li>
                 <li>
                   <span className="font-semibold text-teal-light">Cohesion: </span>
-                  Add clearer topic sentences; “On one hand” works — link back to
+                  Add clearer topic sentences; “On one hand” works: link back to
                   thesis explicitly in the conclusion.
                 </li>
               </ul>

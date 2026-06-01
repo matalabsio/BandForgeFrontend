@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { authBootstrapPath, getServerUser } from "@/lib/auth";
 import { getApiUrl } from "@/lib/api";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
-import { ListeningResultsView } from "@/components/listening/listening-results-view";
+import { ListeningResultsView } from "@/modules/listening/components/listening-results-view";
 import { listeningResultsPath } from "@/lib/listening-test";
 import type { ListeningScoreReport } from "@/modules/listening/types";
 
@@ -52,15 +53,13 @@ export default async function ListeningTestResultsPage({ params }: PageProps) {
     <div className="min-h-dvh bg-surface text-ink">
       <header className="border-b border-border bg-white px-4 py-4 sm:px-6">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-          <Link href="/" className="font-display text-lg font-bold text-navy">
-            Band<span className="text-teal">Forge</span>
-          </Link>
+          <BandForgeLogoLink size="md" />
           <div className="flex items-center gap-3">
             <Link
-              href="/dashboard"
+              href="/scores"
               className="text-meta font-semibold text-teal hover:text-teal-light"
             >
-              Dashboard
+              Performance
             </Link>
             <SignOutButton />
           </div>

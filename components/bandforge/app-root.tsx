@@ -1,29 +1,56 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { BfConversionShell } from "@/components/bandforge/bf-conversion-shell";
+import { BfAuthSessionRoot } from "@/components/bandforge/bf-auth-session-root";
+import { BfMarketingRoot } from "@/components/bandforge/bf-marketing-root";
+import { ScrollToTopOnNavigate } from "@/components/bandforge/scroll-to-top-on-navigate";
 
 /** App routes skip marketing auth shell (session modals, duplicate /api/auth calls). */
 const APP_ROUTE_PREFIXES = [
   "/dashboard",
+  "/scores",
   "/profile",
-  "/workspace",
-  "/settings",
   "/mock",
+  "/test",
   "/admin",
-  "/auth/bootstrap",
+  "/auth",
 ] as const;
 
-function isAppRoute(pathname: string): boolean {
-  return APP_ROUTE_PREFIXES.some(
+/** Auth UI routes need session provider but not conversion modals. */
+const AUTH_SESSION_ROUTE_PREFIXES = [
+  "/login",
+  "/signup",
+  "/verify-phone",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+  "/check-email",
+] as const;
+
+function matchesPrefix(
+  pathname: string,
+  prefixes: readonly string[],
+): boolean {
+  return prefixes.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 }
 
 export function AppRoot({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (isAppRoute(pathname)) {
-    return <>{children}</>;
-  }
-  return <BfConversionShell>{children}</BfConversionShell>;
+
+  const shell = matchesPrefix(pathname, APP_ROUTE_PREFIXES) ? (
+    <>{children}</>
+  ) : matchesPrefix(pathname, AUTH_SESSION_ROUTE_PREFIXES) ? (
+    <BfAuthSessionRoot>{children}</BfAuthSessionRoot>
+  ) : (
+    <BfMarketingRoot>{children}</BfMarketingRoot>
+  );
+
+  return (
+    <>
+      <ScrollToTopOnNavigate />
+      {shell}
+    </>
+  );
 }

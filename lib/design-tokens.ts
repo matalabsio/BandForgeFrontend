@@ -12,7 +12,7 @@ export const colors = {
   border: "#E5E7EB",
 } as const;
 
-export const typography = {
+const typography = {
   h1: 32,
   h2: 24,
   h3: 20,
@@ -28,11 +28,8 @@ export const radius = {
   lg: 16,
 } as const;
 
-export const mobileBaselineWidthPx = 375;
-export const touchTargetPx = 44;
-
-export const timerWarningSeconds = 5 * 60;
-export const timerCriticalSeconds = 60;
+const timerWarningSeconds = 5 * 60;
+const timerCriticalSeconds = 60;
 
 export const writingTargets = {
   task1Min: 150,

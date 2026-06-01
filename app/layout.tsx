@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans, Inter } from "next/font/google";
 import { AppRoot } from "@/components/bandforge/app-root";
+import { GOOGLE_FONTS_STYLESHEET_HREF } from "@/lib/google-fonts";
 import "./globals.css";
 
 const inter = Inter({
@@ -47,6 +48,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png", sizes: "32x32" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({
@@ -61,6 +66,15 @@ export default function RootLayout({
       className={`${inter.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link href={GOOGLE_FONTS_STYLESHEET_HREF} rel="stylesheet" />
+      </head>
       <body className="min-h-dvh font-sans" suppressHydrationWarning>
         <AppRoot>{children}</AppRoot>
       </body>

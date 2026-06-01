@@ -3,6 +3,7 @@
 import { memo, type ReactNode } from "react";
 import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
 import { QuestionAudio } from "@/modules/listening/components/question-audio";
+import { sanitizeInstructionText } from "@/modules/listening/lib/part-instructions";
 
 type Props = {
   part: ListeningPart;
@@ -13,10 +14,13 @@ type Props = {
   onFocus: (questionId: string) => void;
   onPartPlayed: (partNumber: number) => void;
   variant?: "default" | "exam";
+  autoplayAudio?: boolean;
+  /** When true, audio renders in the left panel (split exam layout). */
+  deferAudio?: boolean;
 };
 
 function sortedQuestions(questions: ListeningQuestion[]): ListeningQuestion[] {
-  return [...questions].sort((a, b) => a.question_number - b.question_number);
+  return questions.toSorted((a, b) => a.question_number - b.question_number);
 }
 
 function FormCompletionPartBase({
@@ -28,12 +32,14 @@ function FormCompletionPartBase({
   onFocus,
   onPartPlayed,
   variant = "default",
+  autoplayAudio = false,
+  deferAudio = false,
 }: Props) {
   const questions = sortedQuestions(part.questions);
   const first = questions[0];
   const audioUrl = first?.audio_url ?? null;
   const instructions =
-    first?.instructions?.split("\n").find((line) => line.includes("NO MORE THAN")) ??
+    sanitizeInstructionText(first?.instructions) ??
     "Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer.";
   const isExam = variant === "exam";
   const qStart = questions[0]?.question_number ?? 1;
@@ -41,37 +47,56 @@ function FormCompletionPartBase({
 
   if (isExam) {
     return (
-      <section id={`part-${part.part}`} className="mt-6">
-        <header className="border-b border-[#18181b] pb-3">
-          <h2 className="text-[15px] font-semibold tracking-tight text-[#18181b]">
-            Part {part.part}
-          </h2>
-          <p className="mt-1 text-[13px] leading-relaxed text-[#52525b]">
-            {part.context}
-          </p>
-          <p className="mt-3 text-[13px] font-medium text-[#18181b]">
-            Questions {qStart}–{qEnd}
-          </p>
-          <p className="mt-1 text-[12px] text-[#71717a]">Complete the notes below.</p>
-        </header>
+      <section
+        id={`part-${part.part}`}
+        className={deferAudio ? "h-full overflow-y-auto px-4 py-5 sm:px-5" : "mt-6"}
+      >
+        {!deferAudio ? (
+          <>
+            <header className="border-b border-[var(--exam-border)] pb-3">
+              <h2 className="text-[15px] font-semibold tracking-tight text-[var(--exam-ink)]">
+                Part {part.part}
+              </h2>
+              <p className="mt-1 text-[13px] leading-relaxed text-[var(--exam-ink-muted)]">
+                {part.context}
+              </p>
+              <p className="mt-3 text-[13px] font-medium text-[var(--exam-ink)]">
+                Questions {qStart}–{qEnd}
+              </p>
+              <p className="mt-1 text-[12px] text-[var(--exam-ink-muted)]">
+                Complete the notes below.
+              </p>
+            </header>
+            <p className="mt-4 text-[12px] italic text-[var(--exam-ink-muted)]">
+              {instructions}
+            </p>
+            <div className="mt-4">
+              <QuestionAudio
+                audioUrl={audioUrl}
+                played={partPlayed}
+                variant="exam"
+                autoplay={autoplayAudio && !partPlayed}
+                onCompleted={() => onPartPlayed(part.part)}
+              />
+            </div>
+          </>
+        ) : (
+          <header className="border-b border-[var(--exam-border)] pb-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--exam-accent)]">
+              Questions {qStart}–{qEnd}
+            </p>
+            <p className="mt-2 text-[13px] font-medium text-[var(--exam-ink)]">
+              Complete the form below.
+            </p>
+          </header>
+        )}
 
-        <p className="mt-4 text-[12px] italic text-[#52525b]">{instructions}</p>
-
-        <div className="mt-4">
-          <QuestionAudio
-            audioUrl={audioUrl}
-            played={partPlayed}
-            variant="exam"
-            onCompleted={() => onPartPlayed(part.part)}
-          />
-        </div>
-
-        <article className="mt-6 border border-[#d4d4d8] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          <div className="border-b border-[#e4e4e7] px-5 py-4 text-center sm:px-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#52525b]">
+        <article className="mt-4 border border-[var(--exam-border)] bg-white shadow-sm">
+          <div className="border-b border-[var(--exam-border)] px-5 py-4 text-center sm:px-8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--exam-ink-muted)]">
               Greenfield College
             </p>
-            <p className="mt-1 text-[14px] font-semibold text-[#18181b]">
+            <p className="mt-1 text-[14px] font-semibold text-[var(--exam-ink)]">
               Course Registration Form
             </p>
           </div>
@@ -306,10 +331,3 @@ function LegacyFormField({
 }
 
 export const FormCompletionPart = memo(FormCompletionPartBase);
-
-export function isFormCompletionPart(part: ListeningPart): boolean {
-  return (
-    part.questions.length > 0 &&
-    part.questions.every((q) => q.question_type.toLowerCase() === "form_completion")
-  );
-}

@@ -2,7 +2,7 @@ import type { NextResponse } from "next/server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
 /** Default max-age when backend Set-Cookie omits Max-Age (seconds). */
-const DEFAULT_MAX_AGE: Record<string, number> = {
+export const DEFAULT_MAX_AGE: Record<string, number> = {
   [ACCESS_COOKIE]: 15 * 60,
   [REFRESH_COOKIE]: 30 * 24 * 60 * 60,
 };

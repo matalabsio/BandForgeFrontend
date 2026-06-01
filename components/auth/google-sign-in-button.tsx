@@ -18,7 +18,7 @@ export function GoogleSignInButton({
       href={href}
       className={`flex min-h-[var(--spacing-touch)] w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-border bg-white px-4 text-body font-semibold text-navy shadow-[var(--shadow-soft)] transition-colors duration-200 hover:bg-surface ${className}`}
     >
-      <GoogleIcon className="h-5 w-5 shrink-0" />
+      <GoogleIcon className="size-5 shrink-0" />
       {label}
     </a>
   );
@@ -44,18 +44,5 @@ function GoogleIcon({ className }: { className?: string }) {
         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
       />
     </svg>
-  );
-}
-
-export function AuthDivider() {
-  return (
-    <div className="relative my-4">
-      <div className="absolute inset-0 flex items-center">
-        <span className="w-full border-t border-border" />
-      </div>
-      <span className="relative mx-auto block w-fit bg-white px-3 text-meta text-ink/45">
-        or
-      </span>
-    </div>
   );
 }

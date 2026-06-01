@@ -1,5 +1,10 @@
 export type DashboardModule = "listening" | "reading" | "writing" | "speaking";
 
+export type ActivityDay = {
+  date: string;
+  count: number;
+};
+
 export type DashboardStats = {
   total_attempts: number;
   completed_attempts: number;
@@ -7,14 +12,16 @@ export type DashboardStats = {
   average_band: number | null;
   best_band: number | null;
   last_activity_at: string | null;
+  current_streak: number;
+  longest_streak: number;
 };
 
-export type DashboardMockRef = {
+type DashboardMockRef = {
   id: string;
   title: string;
 };
 
-export type DashboardInProgressAttempt = {
+type DashboardInProgressAttempt = {
   id: string;
   module: DashboardModule | string;
   started_at: string;
@@ -37,6 +44,7 @@ export type DashboardSummary = {
   stats: DashboardStats;
   in_progress: DashboardInProgressAttempt[];
   recent: DashboardRecentAttempt[];
+  activity_days: ActivityDay[];
 };
 
 export type MockTestSummary = {
@@ -45,6 +53,8 @@ export type MockTestSummary = {
   description: string | null;
   listening_question_count?: number | null;
   listening_duration_minutes?: number;
+  reading_question_count?: number | null;
+  reading_duration_minutes?: number;
 };
 
 export const MODULE_LABELS: Record<DashboardModule, string> = {
@@ -52,11 +62,4 @@ export const MODULE_LABELS: Record<DashboardModule, string> = {
   reading: "Reading",
   writing: "Writing",
   speaking: "Speaking",
-};
-
-export const MODULE_AVAILABILITY: Record<DashboardModule, "live" | "soon"> = {
-  listening: "live",
-  reading: "live",
-  writing: "soon",
-  speaking: "soon",
 };

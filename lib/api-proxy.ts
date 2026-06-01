@@ -18,14 +18,18 @@ export async function proxyToBackend(
   req: Request,
   backendPath: string,
 ): Promise<NextResponse> {
+  const startedAt = Date.now();
   const url = new URL(req.url);
   const backend = `${getApiUrl()}${backendPath.startsWith("/") ? backendPath : `/${backendPath}`}${url.search}`;
   const cookieHeader = req.headers.get("cookie") ?? "";
   const access = readCookieHeader(cookieHeader, ACCESS_COOKIE);
+  const authorization = req.headers.get("authorization");
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
   const headers: Record<string, string> = { cookie: cookieHeader };
-  if (access) {
+  if (authorization) {
+    headers.Authorization = authorization;
+  } else if (access) {
     headers.Authorization = `Bearer ${access}`;
   }
   if (hasBody) {
@@ -42,6 +46,15 @@ export async function proxyToBackend(
       body: hasBody ? await req.text() : undefined,
     });
   } catch {
+    console.info(
+      JSON.stringify({
+        route: backendPath,
+        duration_ms: Date.now() - startedAt,
+        cache_hit: false,
+        cache_layer: "none",
+        status: 503,
+      }),
+    );
     return NextResponse.json(
       {
         detail:
@@ -52,6 +65,15 @@ export async function proxyToBackend(
   }
 
   const body = await res.text();
+  console.info(
+    JSON.stringify({
+      route: backendPath,
+      duration_ms: Date.now() - startedAt,
+      cache_hit: false,
+      cache_layer: "none",
+      status: res.status,
+    }),
+  );
   return new NextResponse(body, {
     status: res.status,
     headers: {

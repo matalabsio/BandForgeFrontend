@@ -34,7 +34,7 @@ export function BandForgeComparison() {
                   key={t}
                   className="flex gap-3 text-body leading-relaxed text-ink/60"
                 >
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink/25" />
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-ink/25" />
                   {t}
                 </li>
               ))}
@@ -50,7 +50,7 @@ export function BandForgeComparison() {
                     key={t}
                     className="flex gap-3 text-body leading-relaxed text-white/85"
                   >
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-light shadow-[0_0_8px_#00bcd4]" />
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-teal-light shadow-[0_0_8px_#00bcd4]" />
                     {t}
                   </li>
                 ))}

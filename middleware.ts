@@ -1,23 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isAuthEnabled } from "@/lib/flags";
-import { REFRESH_COOKIE } from "@/lib/session";
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
-  "/workspace",
-  "/settings",
+  "/scores",
   "/profile",
   "/mock",
   "/test",
 ];
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
   if (!isAuthEnabled()) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set("x-pathname", pathname);
+    return response;
   }
 
-  const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
@@ -26,25 +28,29 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
-  if (!refresh) {
+  const hasCookie = Boolean(
+    request.cookies.get(REFRESH_COOKIE)?.value ||
+      request.cookies.get(ACCESS_COOKIE)?.value,
+  );
+
+  if (!hasCookie) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/bootstrap";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  response.headers.set("x-pathname", pathname);
+  return response;
 }
 
 export const config = {
   matcher: [
     "/dashboard",
     "/dashboard/:path*",
-    "/workspace",
-    "/workspace/:path*",
-    "/settings",
-    "/settings/:path*",
+    "/scores",
+    "/scores/:path*",
     "/profile",
     "/profile/:path*",
     "/mock",

@@ -15,7 +15,7 @@ import { z } from "zod";
 type ResetInput = z.infer<typeof resetPasswordSchema>;
 
 function ResetPasswordForm() {
-  const router = useRouter();
+  const { push } = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [formError, setFormError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ function ResetPasswordForm() {
     setFormError(null);
     try {
       await resetPassword({ token: data.token, password: data.password });
-      router.push("/login");
+      push("/login");
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : "Could not reset password.");
     }

@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { verifyEmail } from "@/lib/auth";
+import { authBootstrapPath, verifyEmail } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 
 function VerifyEmailContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">(
@@ -29,8 +28,7 @@ function VerifyEmailContent() {
         if (cancelled) return;
         setStatus("ok");
         setMessage("Email verified. Redirecting to your dashboard…");
-        router.replace("/dashboard");
-        router.refresh();
+        window.location.replace(authBootstrapPath("/dashboard"));
       })
       .catch((e) => {
         if (cancelled) return;
@@ -40,7 +38,7 @@ function VerifyEmailContent() {
     return () => {
       cancelled = true;
     };
-  }, [token, status, router]);
+  }, [token, status]);
 
   return (
     <AuthShell title="Email verification">

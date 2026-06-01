@@ -25,7 +25,27 @@ export function parseApiError(body: ApiErrorBody, status: number): string {
   if (Array.isArray(body.detail) && body.detail[0]?.msg) {
     return body.detail[0].msg;
   }
-  return body.error ?? body.message ?? `Request failed (${status})`;
+  const fallback = body.error ?? body.message ?? `Request failed (${status})`;
+  if (status === 500 && fallback === "Internal Server Error") {
+    return (
+      "Could not complete the request. Check that the backend is running and " +
+      "Supabase migrations are applied (mock_attempts, mock_test_modules)."
+    );
+  }
+  return fallback;
+}
+
+export function formatMockStartError(message: string): string {
+  if (message === "Internal Server Error") {
+    return (
+      "Could not start Test 1. Check backend logs and apply Supabase migrations " +
+      "(20260526100000_mock_attempts_orchestration.sql, 20260526100100_m01_consolidation.sql)."
+    );
+  }
+  if (message.includes("complete") && message.toLowerCase().includes("retake")) {
+    return "This test run is finished. Use “New attempt” on the dashboard to take it again.";
+  }
+  return message;
 }
 
 export async function parseJsonResponse<T>(res: Response): Promise<T> {

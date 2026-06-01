@@ -32,6 +32,7 @@ export type ListeningState = {
   playedParts: Record<number, true>;
   error: string | null;
   submitResult: SubmitListeningPayload | null;
+  resumedAttempt: boolean;
 };
 
 type Action =
@@ -64,6 +65,7 @@ const initial: ListeningState = {
   playedParts: {},
   error: null,
   submitResult: null,
+  resumedAttempt: false,
 };
 
 function flattenQuestions(parts: ListeningPart[]): ListeningQuestion[] {
@@ -81,6 +83,7 @@ function reducer(state: ListeningState, action: Action): ListeningState {
         startedAtIso: action.payload.started_at,
         serverTimeIso: action.payload.server_time,
         durationSeconds: action.payload.duration_seconds,
+        resumedAttempt: action.payload.resumed === true,
         status: "ready",
       };
     case "questions_loaded": {

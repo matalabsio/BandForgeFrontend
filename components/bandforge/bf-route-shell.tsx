@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { BandForgeHeader } from "@/components/bandforge/bf-header";
+import { BandForgeHeaderMarketing } from "@/components/bandforge/bf-header-marketing";
 import { BandForgeSiteFooter } from "@/components/bandforge/bf-site-footer";
 
 type BandForgeRouteShellProps = {
@@ -17,14 +17,16 @@ export function BandForgeRouteShell({
   children,
 }: BandForgeRouteShellProps) {
   return (
-    <div className="bf-page-shell min-h-dvh text-ink">
-      <BandForgeHeader />
+    <div className="min-h-dvh text-ink">
+      <BandForgeHeaderMarketing />
+      <div className="bf-page-shell">
       <main>
         <section className="relative overflow-hidden border-b border-border/70 py-16 sm:py-20 lg:py-24">
-          <div className="pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-teal/10 blur-[90px]" />
+          <div className="pointer-events-none absolute -left-24 top-16 size-72 rounded-full bg-teal/10 blur-[90px]" />
           <div className="bf-container relative">
             <Link
               href="/"
+              prefetch
               className="inline-flex cursor-pointer rounded-full border border-border bg-white/80 px-3 py-1 text-meta font-semibold text-ink/60 transition-colors duration-200 hover:text-navy"
             >
               Back to home
@@ -41,6 +43,7 @@ export function BandForgeRouteShell({
         {children}
       </main>
       <BandForgeSiteFooter />
+      </div>
     </div>
   );
 }

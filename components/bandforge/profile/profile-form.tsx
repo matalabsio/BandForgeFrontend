@@ -6,6 +6,7 @@ import { updateProfile, uploadProfileAvatar } from "@/lib/profile";
 import type { AuthUser } from "@/lib/session";
 import { ApiError } from "@/lib/api";
 import { normalizeIndiaMobile, formatIndiaDisplay } from "@/lib/india-mobile";
+import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
 
 const BAND_OPTIONS = [5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9] as const;
 
@@ -20,7 +21,7 @@ function phoneForInput(phone: string | null): string {
 }
 
 export function ProfileForm({ user }: Props) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState(user.full_name ?? "");
   const [phone, setPhone] = useState(phoneForInput(user.phone));
@@ -53,7 +54,7 @@ export function ProfileForm({ user }: Props) {
         const updated = await uploadProfileAvatar(file);
         setAvatarPreview(updated.avatar_display_url ?? preview);
         setMessage("Profile photo updated.");
-        router.refresh();
+        refresh();
       } catch (err) {
         setError(
           err instanceof ApiError ? err.message : "Could not upload photo.",
@@ -64,7 +65,7 @@ export function ProfileForm({ user }: Props) {
         if (fileRef.current) fileRef.current.value = "";
       }
     },
-    [router, user.avatar_display_url],
+    [refresh, user.avatar_display_url],
   );
 
   const onSubmit = useCallback(
@@ -79,13 +80,20 @@ export function ProfileForm({ user }: Props) {
       }
       setSaving(true);
       try {
-        await updateProfile({
+        const updated = await updateProfile({
           full_name: name,
           phone: phone.trim() || null,
           target_band: targetBand === "" ? null : Number(targetBand),
         });
-        setMessage("Profile saved.");
-        router.refresh();
+        setFullName(updated.full_name ?? name);
+        if (updated.target_band != null) {
+          setTargetBand(updated.target_band);
+        }
+        setMessage("Profile saved. Your dashboard target band is updated.");
+        refresh();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("bf-profile-updated"));
+        }
       } catch (err) {
         setError(
           err instanceof ApiError ? err.message : "Could not save profile.",
@@ -94,7 +102,7 @@ export function ProfileForm({ user }: Props) {
         setSaving(false);
       }
     },
-    [fullName, phone, targetBand, router],
+    [fullName, phone, targetBand, refresh],
   );
 
   return (
@@ -104,7 +112,7 @@ export function ProfileForm({ user }: Props) {
           type="button"
           onClick={onPickAvatar}
           disabled={uploading}
-          className="group relative flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-[#06B6D4]/30 bg-[#0F172A]/5 shadow-[0_8px_24px_rgba(6,182,212,0.2)] transition-transform hover:scale-[1.02] disabled:opacity-60"
+          className="group relative flex size-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-[#06B6D4]/30 bg-[#0F172A]/5 shadow-[0_8px_24px_rgba(6,182,212,0.2)] transition-transform hover:scale-[1.02] disabled:opacity-60"
           aria-label="Change profile photo"
         >
           {avatarPreview ? (
@@ -225,12 +233,12 @@ export function ProfileForm({ user }: Props) {
         </p>
       ) : null}
       {message ? (
-        <p className="text-[13px] font-medium text-emerald-600" role="status">
+        <output className="block text-[13px] font-medium text-emerald-600">
           {message}
-        </p>
+        </output>
       ) : null}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col gap-4 border-t border-[#0F172A]/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="submit"
           disabled={saving || uploading}
@@ -238,6 +246,7 @@ export function ProfileForm({ user }: Props) {
         >
           {saving ? "Saving…" : "Save profile"}
         </button>
+        <SignOutButton className="inline-flex min-h-[48px] cursor-pointer items-center justify-center rounded-2xl border border-[#0F172A]/12 bg-white px-6 py-3 text-[14px] font-semibold text-[#0F172A]/70 transition-colors hover:border-[#0F172A]/20 hover:text-[#0F172A]" />
       </div>
     </form>
   );

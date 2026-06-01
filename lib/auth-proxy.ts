@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { applyAuthCookiesToResponse, collectSetCookieHeaders } from "@/lib/auth-cookies";
+import {
+  applyAuthCookiesToResponse,
+  collectSetCookieHeaders,
+  DEFAULT_MAX_AGE,
+} from "@/lib/auth-cookies";
 import { getApiUrl, type ApiErrorBody } from "@/lib/api";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
@@ -37,7 +41,11 @@ export async function proxyAuthRequest(
   const cookieHeader = req.headers.get("cookie") ?? "";
 
   const contentType = req.headers.get("content-type") ?? "";
+  const authorization = req.headers.get("authorization");
   const headers: Record<string, string> = { cookie: cookieHeader };
+  if (authorization) {
+    headers.Authorization = authorization;
+  }
   if (contentType) {
     headers["Content-Type"] = contentType;
   } else if (req.method !== "GET" && req.method !== "HEAD") {
@@ -69,6 +77,43 @@ export async function proxyAuthRequest(
   });
 
   applyAuthCookiesToResponse(res, collectSetCookieHeaders(backendRes.headers));
+
+  if (
+    backendRes.ok &&
+    (path === "refresh" ||
+      path === "restore" ||
+      path === "login" ||
+      path === "verify-otp" ||
+      path === "verify-email")
+  ) {
+    try {
+      const parsed = JSON.parse(body) as {
+        access_token?: string;
+        refresh_token?: string | null;
+      };
+      const secure = process.env.NODE_ENV === "production";
+      if (parsed.access_token) {
+        res.cookies.set(ACCESS_COOKIE, parsed.access_token, {
+          httpOnly: true,
+          secure,
+          sameSite: "lax",
+          path: "/",
+          maxAge: DEFAULT_MAX_AGE[ACCESS_COOKIE],
+        });
+      }
+      if (parsed.refresh_token) {
+        res.cookies.set(REFRESH_COOKIE, parsed.refresh_token, {
+          httpOnly: true,
+          secure,
+          sameSite: "lax",
+          path: "/",
+          maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
+        });
+      }
+    } catch {
+      /* body may not be JSON */
+    }
+  }
 
   if (path === "logout") {
     const secure = process.env.NODE_ENV === "production";

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { BfFinalConversionCtas } from "@/components/bandforge/bf-final-conversion-ctas";
 
 export function BandForgeFinalCta() {
@@ -14,7 +15,16 @@ export function BandForgeFinalCta() {
           Save your mobile number now, continue with Google, and start building
           your mock-test dashboard without a cluttered signup flow.
         </p>
-        <BfFinalConversionCtas />
+        <Suspense
+          fallback={
+            <div
+              className="mx-auto mt-8 h-12 w-56 animate-pulse rounded-full bg-navy/10"
+              aria-hidden
+            />
+          }
+        >
+          <BfFinalConversionCtas />
+        </Suspense>
       </div>
     </section>
   );

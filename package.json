@@ -6,11 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "doctor": "react-doctor",
+    "sync:favicons": "node scripts/sync-favicons.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
-    "@radix-ui/react-navigation-menu": "^1.2.14",
+    "@supabase/supabase-js": "^2.106.2",
+    "lucide-react": "^1.16.0",
+    "motion": "^12.40.0",
     "next": "16.2.4",
     "react": "^19.2.4",
     "react-dom": "19.2.4",
@@ -24,6 +28,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "react-doctor": "^0.2.11",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

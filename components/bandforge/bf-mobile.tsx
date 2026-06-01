@@ -21,7 +21,7 @@ export function BandForgeMobile() {
             <ul className="mt-8 space-y-3 text-body text-ink/75">
               <li className="flex gap-2">
                 <span className="font-semibold text-teal">Install</span>
-                Add to home screen — quick launch like a native app.
+                Add to home screen for quick launch like a native app.
               </li>
               <li className="flex gap-2">
                 <span className="font-semibold text-teal">Test UI</span>
@@ -29,7 +29,7 @@ export function BandForgeMobile() {
               </li>
               <li className="flex gap-2">
                 <span className="font-semibold text-teal">Analytics</span>
-                Bands and trends readable on small screens — no squinting.
+                Bands and trends readable on small screens, no squinting.
               </li>
             </ul>
           </div>

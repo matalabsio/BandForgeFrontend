@@ -1,22 +1,35 @@
 import Link from "next/link";
+import {
+  marketingAppHref,
+  marketingSignInHref,
+} from "@/components/bandforge/bf-marketing-auth-links";
+import { getMarketingSessionUser } from "@/lib/marketing-auth-server";
 import { isAuthEnabled } from "@/lib/flags";
 
-const product = [
-  {
-    href: isAuthEnabled() ? "/?start=1" : "/dashboard",
-    label: "Start free mock test",
-  },
-  { href: "/features", label: "Features" },
-  { href: "/ai-feedback", label: "AI evaluation" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/mobile", label: "Mobile & PWA" },
-] as const;
+async function footerNavLinks() {
+  const user = await getMarketingSessionUser();
+  const product = [
+    {
+      href: user || !isAuthEnabled() ? "/dashboard" : marketingAppHref(),
+      label: user ? "Your dashboard" : "Start free mock test",
+    },
+    { href: "/features", label: "Features" },
+    { href: "/ai-feedback", label: "AI evaluation" },
+    { href: "/how-it-works", label: "How it works" },
+    { href: "/mobile", label: "Mobile & PWA" },
+  ] as const;
 
-const company = [
-  { href: "/why", label: "Why BandForge" },
-  { href: "/stories", label: "Testimonials" },
-  { href: "/contact", label: "Contact" },
-] as const;
+  const company = [
+    { href: "/why", label: "Why BandForge" },
+    { href: "/stories", label: "Testimonials" },
+    { href: "/contact", label: "Contact" },
+    ...(user
+      ? [{ href: "/dashboard" as const, label: "Dashboard" as const }]
+      : [{ href: "/login" as const, label: "Sign in" as const }]),
+  ] as const;
+
+  return { product, company };
+}
 
 const legal = [
   { href: "/privacy-policy", label: "Privacy" },
@@ -40,6 +53,7 @@ function FooterColumn({
           <li key={l.href}>
             <Link
               href={l.href}
+              prefetch
               className="cursor-pointer text-body text-white/70 transition-colors duration-200 hover:text-teal-light"
             >
               {l.label}
@@ -66,14 +80,16 @@ function SocialIcon({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/15 text-white/55 transition-colors duration-200 hover:border-teal-light/40 hover:bg-white/5 hover:text-teal-light"
+      className="flex size-10 cursor-pointer items-center justify-center rounded-lg border border-white/15 text-white/55 transition-colors duration-200 hover:border-teal-light/40 hover:bg-white/5 hover:text-teal-light"
     >
       {children}
     </a>
   );
 }
 
-export function BandForgeSiteFooter() {
+export async function BandForgeSiteFooter() {
+  const { product, company } = await footerNavLinks();
+
   return (
     <footer className="border-t border-border bg-navy text-white">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
@@ -84,18 +100,18 @@ export function BandForgeSiteFooter() {
             </p>
             <p className="mt-1 text-meta text-white/50">by MATA Labs</p>
             <p className="mt-4 max-w-xs text-body leading-relaxed text-white/65">
-              AI-first IELTS preparation — realistic mocks, instant scoring, and
+              AI-first IELTS preparation: realistic mocks, instant scoring, and
               feedback loops built for Telugu-speaking students aiming global.
             </p>
             <div className="mt-6 flex gap-2">
               <SocialIcon href="https://x.com" label="X (Twitter)">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
               </SocialIcon>
               <SocialIcon href="https://www.linkedin.com" label="LinkedIn">
                 <svg
-                  className="h-4 w-4"
+                  className="size-4"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                   aria-hidden
@@ -105,7 +121,7 @@ export function BandForgeSiteFooter() {
               </SocialIcon>
               <SocialIcon href="https://www.youtube.com" label="YouTube">
                 <svg
-                  className="h-4 w-4"
+                  className="size-4"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                   aria-hidden
@@ -126,6 +142,7 @@ export function BandForgeSiteFooter() {
                 <li key={l.href}>
                   <Link
                     href={l.href}
+                    prefetch
                     className="cursor-pointer text-body text-white/70 transition-colors duration-200 hover:text-teal-light"
                   >
                     {l.label}

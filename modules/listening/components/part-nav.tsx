@@ -52,7 +52,7 @@ export function PartNav({
                   onClick={() => onJump(q.id, q.part)}
                   aria-current={isCurrent ? "true" : undefined}
                   aria-label={`Question ${q.question_number}${answered ? ", answered" : ""}`}
-                  className={`flex h-7 w-7 cursor-pointer items-center justify-center border text-[11px] font-semibold transition-colors ${
+                  className={`flex size-7 cursor-pointer items-center justify-center border text-[11px] font-semibold transition-colors ${
                     isCurrent
                       ? "border-[#18181b] bg-[#18181b] text-white"
                       : answered
@@ -104,7 +104,7 @@ export function PartNav({
                     type="button"
                     onClick={() => onJump(q.id, p.part)}
                     aria-current={isCurrent ? "true" : undefined}
-                    className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border text-[12px] font-semibold transition-colors ${
+                    className={`flex size-8 cursor-pointer items-center justify-center rounded-md border text-[12px] font-semibold transition-colors ${
                       isCurrent
                         ? "border-teal bg-teal text-white"
                         : answered

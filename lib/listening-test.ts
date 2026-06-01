@@ -1,28 +1,25 @@
-/** Published IELTS listening test (Greenfield College Part 1, Q1–10). */
-export const LISTENING_TEST_ID = "d0000000-0000-4000-8000-000000000001";
+/** Published IELTS listening — Test 1 uses M01 part 1 only for orchestrated flow. */
+import {
+  DEFAULT_MOCK_SLUG,
+  isFullMock,
+  mockHubPath,
+  mockModulePath,
+} from "@/lib/mock-catalog";
 
 export function isListeningTest(testId: string): boolean {
-  return testId === LISTENING_TEST_ID;
+  return isFullMock(testId);
 }
 
 export function listeningTestPath(): string {
-  return "/test/listening";
+  return mockModulePath(DEFAULT_MOCK_SLUG, "listening", { part: 1 });
 }
 
-export function listeningTestResumePath(): string {
-  return "/test/listening?auto=1";
+export function listeningTestHubPath(): string {
+  return mockHubPath(DEFAULT_MOCK_SLUG);
 }
 
 export function listeningResultsPath(attemptId: string): string {
   return `/test/listening/results/${encodeURIComponent(attemptId)}`;
-}
-
-/** Route for a published test’s listening module (production vs dev mock). */
-export function listeningModulePath(testId: string): string {
-  if (isListeningTest(testId)) {
-    return listeningTestPath();
-  }
-  return `/mock/${encodeURIComponent(testId)}/listening`;
 }
 
 export function listeningModuleResultsPath(
@@ -34,3 +31,4 @@ export function listeningModuleResultsPath(
   }
   return `/mock/${encodeURIComponent(testId)}/listening/results/${encodeURIComponent(attemptId)}`;
 }
+

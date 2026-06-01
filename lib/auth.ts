@@ -5,10 +5,15 @@ import {
   type ApiErrorBody,
 } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
+import { serverAuthHeaders } from "@/lib/server-auth-headers";
 import { isAuthEnabled } from "@/lib/flags";
 import {
+  ACCESS_COOKIE,
   clearAuthStorage,
+  getAccessToken,
+  getRefreshToken,
   persistAuthTokens,
+  REFRESH_COOKIE,
   type AuthUser,
 } from "@/lib/session";
 
@@ -35,6 +40,18 @@ export type MessageResponse = {
   message: string;
 };
 
+function clientAuthHeaders(extra?: HeadersInit): Headers {
+  const headers = new Headers(extra);
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (typeof window !== "undefined") {
+    const token = getAccessToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+  }
+  return headers;
+}
+
 async function authFetch<T>(
   path: string,
   init?: RequestInit,
@@ -42,10 +59,7 @@ async function authFetch<T>(
   const res = await fetch(`/api/auth/${path}`, {
     ...init,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers: clientAuthHeaders(init?.headers),
   });
   const body = await parseJsonResponse<T | ApiErrorBody>(res);
   if (!res.ok) {
@@ -130,7 +144,6 @@ export async function refreshSession(): Promise<AuthResponse> {
 
 /** Restore session from localStorage refresh token when cookies were cleared. */
 export async function restoreSessionFromStorage(): Promise<AuthResponse | null> {
-  const { getRefreshToken } = await import("@/lib/session");
   const refresh = getRefreshToken();
   if (!refresh) return null;
 
@@ -146,18 +159,63 @@ export async function restoreSessionFromStorage(): Promise<AuthResponse | null> 
   }
 }
 
+function hasBrowserAuthCookies(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie
+    .split(";")
+    .some((c) => {
+      const name = c.trim().split("=")[0];
+      return name === ACCESS_COOKIE || name === REFRESH_COOKIE;
+    });
+}
+
 /**
- * On app load: refresh via cookie, or restore from localStorage if cookies missing.
+ * On app load: restore JWT from localStorage into cookies when needed, then refresh.
+ * Avoids server-side refresh (rotates tokens without updating browser cookies).
  */
 export async function ensureSession(): Promise<AuthResponse | null> {
+  const storedRefresh = getRefreshToken();
+
+  if (!hasBrowserAuthCookies() && storedRefresh) {
+    const restored = await restoreSessionFromStorage();
+    if (restored) return restored;
+  }
+
   try {
     return await refreshSession();
   } catch (err) {
+    if (err instanceof ApiError && err.status === 401 && storedRefresh) {
+      const restored = await restoreSessionFromStorage();
+      if (restored) return restored;
+      await logout();
+      return null;
+    }
     if (err instanceof ApiError && err.status === 401) {
-      return restoreSessionFromStorage();
+      await logout();
+      return null;
     }
     return null;
   }
+}
+
+/** Server pages: send users to bootstrap (never straight to login) to try localStorage restore. */
+export function authGuardRedirectPath(nextPath: string): string {
+  return authBootstrapPath(nextPath);
+}
+
+/** True if cookie header may contain stale BandForge session cookies. */
+export function hasAuthCookies(cookieHeader: string): boolean {
+  return /(?:^|;\s*)bf_(?:refresh|access)=/.test(cookieHeader);
+}
+
+export function loginPathWithNext(nextPath: string, sessionExpired = false): string {
+  const next =
+    nextPath.startsWith("/") && !nextPath.startsWith("//")
+      ? nextPath
+      : "/dashboard";
+  const q = new URLSearchParams({ next });
+  if (sessionExpired) q.set("session", "expired");
+  return `/login?${q.toString()}`;
 }
 
 export async function logout(): Promise<void> {
@@ -213,24 +271,14 @@ export async function getServerUser(cookieHeader: string): Promise<AuthUser | nu
 
   try {
     const meRes = await fetchWithTimeout(`${base}/auth/me`, {
-      headers: { cookie: cookieHeader },
+      headers: serverAuthHeaders(cookieHeader),
       cache: "no-store",
+      timeoutMs: 3_000,
     });
     if (meRes.ok) {
       return (await meRes.json()) as AuthUser;
     }
-
-    if (meRes.status !== 401) return null;
-
-    const refreshRes = await fetchWithTimeout(`${base}/auth/refresh`, {
-      method: "POST",
-      headers: { cookie: cookieHeader },
-      cache: "no-store",
-    });
-    if (!refreshRes.ok) return null;
-
-    const data = (await refreshRes.json()) as AuthResponse;
-    return data.user ?? null;
+    return null;
   } catch {
     return null;
   }

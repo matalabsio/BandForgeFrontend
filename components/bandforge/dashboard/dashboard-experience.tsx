@@ -1,51 +1,88 @@
-"use client";
-
-import { ContinueCard } from "@/components/bandforge/dashboard/continue-card";
-import { DashboardHero } from "@/components/bandforge/dashboard/dashboard-hero";
-import { AiCoachPanel } from "@/components/bandforge/dashboard/ai-coach-panel";
-import { InsightsPanel } from "@/components/bandforge/dashboard/insights-panel";
-import { MockGrid } from "@/components/bandforge/dashboard/mock-grid";
+import { AiCoachCard } from "@/components/bandforge/dashboard/ai-coach-card";
+import { FullMockCard } from "@/components/bandforge/dashboard/full-mock-card";
+import { M01_MOCK_TEST_ID } from "@/lib/mock-catalog";
+import { DashboardStatRow } from "@/components/bandforge/dashboard/dashboard-stat-row";
+import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
+import { PerformanceChartLazy } from "@/components/bandforge/dashboard/performance-chart-lazy";
+import { ProTipBar } from "@/components/bandforge/dashboard/pro-tip-bar";
 import { RecentActivity } from "@/components/bandforge/dashboard/recent-activity";
-import { StatCards } from "@/components/bandforge/dashboard/stat-cards";
+import { StudyActivityCard } from "@/components/bandforge/dashboard/study-activity-card";
+import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 import type {
   DashboardSummary,
   MockTestSummary,
 } from "@/components/bandforge/dashboard/types";
-import { studyStreakDays } from "@/components/bandforge/dashboard/utils";
 
 type Props = {
   firstName: string;
+  displayName: string;
+  email?: string | null;
+  avatarUrl?: string | null;
   mockTests: MockTestSummary[];
   summary: DashboardSummary;
+  profileTargetBand?: number | null;
+  initialMockProgress?: MockAttemptProgress | null;
 };
 
 export function DashboardExperience({
   firstName,
+  displayName,
+  email = null,
+  avatarUrl = null,
   mockTests,
   summary,
+  profileTargetBand = null,
+  initialMockProgress = null,
 }: Props) {
-  const streak = studyStreakDays(summary);
+  const streak = summary.stats.current_streak ?? 0;
+
+  const fullMock = mockTests.find((t) => t.id === M01_MOCK_TEST_ID) ?? mockTests[0];
+  const hasFullMock = Boolean(fullMock);
 
   return (
-    <div className="space-y-8">
-      <DashboardHero
+    <div className="space-y-6">
+      <DashboardTopHeader
         firstName={firstName}
-        stats={summary.stats}
+        displayName={displayName}
+        email={email}
+        avatarUrl={avatarUrl}
         streakDays={streak}
       />
 
-      <StatCards stats={summary.stats} />
+      <DashboardStatRow
+        stats={summary.stats}
+        profileTargetBand={profileTargetBand}
+      />
 
-      <ContinueCard attempts={summary.in_progress} />
+      {hasFullMock ? (
+        <FullMockCard
+          title={fullMock?.title}
+          initialProgress={initialMockProgress}
+        />
+      ) : null}
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <InsightsPanel summary={summary} />
-        <RecentActivity attempts={summary.recent} />
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-stretch">
+        <div className="min-w-0">
+          <PerformanceChartLazy
+            attempts={summary.recent}
+            averageBand={summary.stats.average_band}
+          />
+        </div>
+        <div className="min-w-0">
+          <StudyActivityCard days={summary.activity_days ?? []} />
+        </div>
+        <div className="min-w-0">
+          <AiCoachCard />
+        </div>
       </div>
 
-      <MockGrid mocks={mockTests} />
+      {summary.recent.length > 0 ? (
+        <div className="bf-below-fold">
+          <RecentActivity attempts={summary.recent} />
+        </div>
+      ) : null}
 
-      <AiCoachPanel summary={summary} />
+      <ProTipBar />
     </div>
   );
 }
