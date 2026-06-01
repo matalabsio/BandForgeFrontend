@@ -11,21 +11,35 @@ import type {
   SubmitReadingPayload,
 } from "@/modules/reading/types";
 
+const CLIENT_FETCH_TIMEOUT_MS = 15_000;
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
-  const body = await parseJsonResponse<T | ApiErrorBody>(res);
-  if (!res.ok) {
-    throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CLIENT_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(path, {
+      ...init,
+      credentials: "include",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+      cache: "no-store",
+    });
+    const body = await parseJsonResponse<T | ApiErrorBody>(res);
+    if (!res.ok) {
+      throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
+    }
+    return body as T;
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new ApiError("Request timed out. Please try again.", 408);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
   }
-  return body as T;
 }
 
 export const readingApi = {

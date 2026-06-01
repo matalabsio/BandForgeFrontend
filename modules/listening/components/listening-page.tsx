@@ -71,6 +71,7 @@ export function ListeningPage({
   const sectionStart = searchParams.get("section_start") === "1";
   const mockAttemptId = searchParams.get("mock_attempt");
   const bootedRef = useRef(false);
+  const hydratedFromServerRef = useRef(false);
   const beginAttemptInFlightRef = useRef<Promise<void> | null>(null);
   const {
     state,
@@ -287,9 +288,39 @@ export function ListeningPage({
 
   useEffect(() => {
     if (!isExam) return;
+
+    if (initialBoot?.parts?.length && initialBoot.test) {
+      if (hydratedFromServerRef.current && bootedRef.current) return;
+      hydratedFromServerRef.current = true;
+      bootedRef.current = true;
+      dispatch({
+        type: "started",
+        payload: {
+          attempt_id: initialBoot.attempt_id,
+          started_at: initialBoot.started_at,
+          server_time: initialBoot.server_time,
+          status: initialBoot.status,
+          module: "listening",
+          duration_seconds: initialBoot.duration_seconds,
+          resumed: initialBoot.resumed,
+        },
+      });
+      dispatch({
+        type: "questions_loaded",
+        payload: {
+          test: initialBoot.test,
+          module: "listening",
+          parts: initialBoot.parts as import("@/modules/listening/types").ListeningPart[],
+          duration_seconds: initialBoot.duration_seconds,
+        },
+      });
+      return;
+    }
+
+    hydratedFromServerRef.current = false;
     dispatch({ type: "reset" });
     bootedRef.current = false;
-  }, [isExam, part, mockAttemptId, testId, dispatch]);
+  }, [isExam, part, mockAttemptId, testId, initialBoot, dispatch]);
 
   useListeningMockGuard({
     enabled: isExam,
@@ -301,40 +332,13 @@ export function ListeningPage({
   });
 
   useEffect(() => {
-    if (!initialBoot?.parts?.length || !initialBoot.test) return;
-    if (bootedRef.current) return;
-    bootedRef.current = true;
-    dispatch({
-      type: "started",
-      payload: {
-        attempt_id: initialBoot.attempt_id,
-        started_at: initialBoot.started_at,
-        server_time: initialBoot.server_time,
-        status: initialBoot.status,
-        module: "listening",
-        duration_seconds: initialBoot.duration_seconds,
-        resumed: initialBoot.resumed,
-      },
-    });
-    dispatch({
-      type: "questions_loaded",
-      payload: {
-        test: initialBoot.test,
-        module: "listening",
-        parts: initialBoot.parts as import("@/modules/listening/types").ListeningPart[],
-        duration_seconds: initialBoot.duration_seconds,
-      },
-    });
-  }, [initialBoot, dispatch]);
-
-  useEffect(() => {
     if (!isExam) return;
-    if (initialBoot?.parts?.length) return;
+    if (hydratedFromServerRef.current || initialBoot?.parts?.length) return;
     if (bootedRef.current) return;
     if (state.status !== "idle") return;
     bootedRef.current = true;
     void beginAttempt(false);
-  }, [isExam, state.status, beginAttempt, part, mockAttemptId]);
+  }, [isExam, state.status, beginAttempt, part, mockAttemptId, initialBoot]);
 
   useEffect(() => {
     if (!isExam && autoStart && !bootedRef.current && state.status === "idle") {

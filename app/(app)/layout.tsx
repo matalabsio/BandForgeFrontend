@@ -34,7 +34,7 @@ export default async function BandforgeAppLayout({
   const shellAvatarUrl = hideHeader ? null : (user.avatar_display_url ?? null);
 
   return (
-    <AppAuthShell>
+    <AppAuthShell serverAuthenticated>
       <DashboardShell
         displayName={shellDisplayName}
         avatarUrl={shellAvatarUrl}

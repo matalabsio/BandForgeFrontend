@@ -250,12 +250,14 @@ export function examPathForMockStart(
     raw === "reading" || raw === "writing" || raw === "listening"
       ? raw
       : "listening";
-  return mockModulePath(slugOrId, mod, {
+  const path = mockModulePath(slugOrId, mod, {
     part: mod === "listening" || mod === "writing" ? (res.part ?? 1) : undefined,
     passage: mod === "reading" ? (res.part ?? 1) : undefined,
     mockAttemptId: res.mock_attempt_id,
     auto: true,
   });
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}section_start=1`;
 }
 
 /** If the user is on the wrong section URL, return the correct exam path. */

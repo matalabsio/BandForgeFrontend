@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import {
@@ -16,7 +16,7 @@ import {
   mockHubPath,
   mockPathFromProgress,
 } from "@/lib/mock-catalog";
-import { mockApi } from "@/modules/mock/services/mock-api";
+import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { syncExamRoute } from "@/lib/mock-exam-nav";
 import { readingModuleResultsPath } from "@/lib/reading-test";
 import { readingApi } from "@/modules/reading/services/reading-api";
@@ -227,7 +227,7 @@ export function ReadingPage({
     let cancelled = false;
     void (async () => {
       try {
-        const p = await mockApi.progress(mockAttemptId);
+        const p = await fetchMockProgressDeduped(mockAttemptId);
         if (cancelled) return;
         if (p.status !== "in_progress") {
           replace(mockHubPath(mockSlug));
@@ -246,26 +246,32 @@ export function ReadingPage({
     };
   }, [mockAttemptId, mockSlug, passage, sectionStart, replace]);
 
-  useEffect(() => {
-    if (!initialBoot?.passage_text || !initialBoot.questions?.length) return;
-    if (bootedRef.current) return;
-    bootedRef.current = true;
-    hydrateFromStart(
-      {
-        attempt_id: initialBoot.attempt_id,
-        started_at: initialBoot.started_at,
-        server_time: initialBoot.server_time,
-        status: initialBoot.status,
-        module: "reading",
-        duration_seconds: initialBoot.duration_seconds,
-        resumed: initialBoot.resumed,
-        test: initialBoot.test ?? { id: testId, title: "Reading" },
-        passage_text: initialBoot.passage_text,
-        questions: initialBoot.questions as ReadingQuestion[],
-      },
-      sectionStart,
-    );
-  }, [initialBoot, hydrateFromStart, sectionStart, testId]);
+  useLayoutEffect(() => {
+    if (initialBoot?.passage_text && initialBoot.questions?.length) {
+      if (bootedRef.current) return;
+      bootedRef.current = true;
+      hydrateFromStart(
+        {
+          attempt_id: initialBoot.attempt_id,
+          started_at: initialBoot.started_at,
+          server_time: initialBoot.server_time,
+          status: initialBoot.status,
+          module: "reading",
+          duration_seconds: initialBoot.duration_seconds,
+          resumed: initialBoot.resumed,
+          test: initialBoot.test ?? { id: testId, title: "Reading" },
+          passage_text: initialBoot.passage_text,
+          questions: initialBoot.questions as ReadingQuestion[],
+        },
+        sectionStart,
+      );
+      return;
+    }
+    if (beginSessionInFlightRef.current) return;
+    bootedRef.current = false;
+    setAttemptId(null);
+    setPhase("loading");
+  }, [passage, mockAttemptId, initialBoot, hydrateFromStart, sectionStart, testId]);
 
   const beginSession = useCallback(async () => {
     if (beginSessionInFlightRef.current) {
@@ -300,7 +306,7 @@ export function ReadingPage({
         e instanceof ApiError ? e.message : "Could not load this passage. Sign in and try again.";
       if (e instanceof ApiError && e.status === 403 && mockAttemptId) {
         try {
-          const p = await mockApi.progress(mockAttemptId);
+          const p = await fetchMockProgressDeduped(mockAttemptId);
           replace(
             mockPathFromProgress(mockSlug, mockAttemptId, {
               next_module: p.next_module,
@@ -328,20 +334,17 @@ export function ReadingPage({
   }, [testId, passage, mockAttemptId, mockSlug, sectionStart, hydrateFromStart, replace]);
 
   useEffect(() => {
-    bootedRef.current = false;
-    setAttemptId(null);
-    setPhase("loading");
-  }, [passage, mockAttemptId]);
-
-  useEffect(() => {
     if (initialBoot?.passage_text && initialBoot.questions?.length) return;
+    if (beginSessionInFlightRef.current) return;
     if (bootedRef.current) return;
     bootedRef.current = true;
     void beginSession();
   }, [beginSession, autoStart, passage, initialBoot]);
 
   if (phase === "loading") {
-    return <ReadingExamSkeleton />;
+    return (
+      <ReadingExamSkeleton message="Loading reading passage (may take up to 10 seconds)…" />
+    );
   }
 
   if (phase === "error") {

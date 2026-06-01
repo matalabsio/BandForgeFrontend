@@ -138,6 +138,11 @@ export function useListeningAudio(audioUrl: string | null) {
       await audio.play();
       setState((s) => ({ ...s, isStarted: true, error: null }));
     } catch (e) {
+      const autoplayBlocked =
+        e instanceof DOMException && e.name === "NotAllowedError";
+      if (autoplayBlocked) {
+        throw e;
+      }
       setState((s) => ({
         ...s,
         error:

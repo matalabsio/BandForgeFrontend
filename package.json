@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "doctor": "react-doctor",
-    "sync:favicons": "node scripts/sync-favicons.mjs"
+    "sync:favicons": "node scripts/sync-favicons.mjs",
+    "test:bootstrap-next": "node scripts/test-bootstrap-next-path.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

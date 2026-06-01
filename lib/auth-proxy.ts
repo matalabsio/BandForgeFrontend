@@ -5,6 +5,7 @@ import {
   DEFAULT_MAX_AGE,
 } from "@/lib/auth-cookies";
 import { getApiUrl, type ApiErrorBody } from "@/lib/api";
+import { fetchWithTimeout } from "@/lib/fetch-server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
 const AUTH_PATHS = new Set([
@@ -66,7 +67,10 @@ export async function proxyAuthRequest(
     }
   }
 
-  const backendRes = await fetch(backendUrl, init);
+  const backendRes = await fetchWithTimeout(backendUrl, {
+    ...init,
+    timeoutMs: 10_000,
+  });
   const body = await backendRes.text();
   const res = new NextResponse(body, {
     status: backendRes.status,

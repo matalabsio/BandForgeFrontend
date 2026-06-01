@@ -5,24 +5,24 @@ export const metadata: Metadata = {
   title: "Reading · BandForge",
   robots: { index: false, follow: false },
 };
-import { authBootstrapPath } from "@/lib/auth";
 import { mockApiId, mockModulePath } from "@/lib/mock-catalog";
 import { ensureCanonicalMockSlug } from "@/lib/mock-route-guard";
+import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { fetchReadingBootServer } from "@/lib/mock-server";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { getCachedCookieHeader } from "@/lib/server-cache";
 import { ReadingPage } from "@/modules/reading/components/reading-page";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 
 type Props = {
   params: Promise<{ mockSlug: string }>;
-  searchParams: Promise<{ passage?: string; mock_attempt?: string }>;
+  searchParams: Promise<{ passage?: string; mock_attempt?: string; auto?: string }>;
 };
 
 export default async function MockReadingPage({ params, searchParams }: Props) {
   const { mockSlug } = await params;
   const sp = await searchParams;
   const passage = sp.passage ? Number.parseInt(sp.passage, 10) : 1;
-  const mockAttemptId = sp.mock_attempt ?? null;
+  const autoStart = sp.auto === "1" || sp.auto === "true";
 
   ensureCanonicalMockSlug(mockSlug, (slug) =>
     mockModulePath(slug, "reading", { passage }),
@@ -30,18 +30,23 @@ export default async function MockReadingPage({ params, searchParams }: Props) {
 
   const mockTestId = mockApiId(mockSlug);
   const cookieHeader = await getCachedCookieHeader();
-  const user = await getCachedServerUser(cookieHeader);
-  if (!user) {
-    redirect(authBootstrapPath(mockModulePath(mockSlug, "reading", { passage })));
-  }
+  const returnPath = mockModulePath(mockSlug, "reading", {
+    passage,
+    mockAttemptId: sp.mock_attempt,
+    auto: autoStart || Boolean(sp.mock_attempt) || undefined,
+  });
+  const { user, cookieHeader: authCookies } = await guardMockModulePage(
+    cookieHeader,
+    returnPath,
+  );
 
   const initialBoot =
-    mockAttemptId != null
+    user && sp.mock_attempt
       ? await fetchReadingBootServer(
-          cookieHeader,
+          authCookies,
           mockTestId,
           passage,
-          mockAttemptId,
+          sp.mock_attempt,
         )
       : null;
 
@@ -51,7 +56,7 @@ export default async function MockReadingPage({ params, searchParams }: Props) {
         testId={mockTestId}
         mockSlug={mockSlug}
         passage={passage}
-        autoStart
+        autoStart={autoStart}
         initialBoot={initialBoot}
       />
     </MockLayout>
