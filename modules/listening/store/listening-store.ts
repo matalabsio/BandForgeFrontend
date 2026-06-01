@@ -29,8 +29,10 @@ export type ListeningState = {
   currentQuestionId: string | null;
   answers: Record<string, string>;
   played: Record<string, true>;
+  playedParts: Record<number, true>;
   error: string | null;
   submitResult: SubmitListeningPayload | null;
+  resumedAttempt: boolean;
 };
 
 type Action =
@@ -40,8 +42,10 @@ type Action =
   | { type: "set_current"; questionId: string }
   | { type: "set_answer"; questionId: string; value: string }
   | { type: "mark_played"; questionId: string }
+  | { type: "mark_part_played"; partNumber: number; questionIds: string[] }
   | { type: "hydrate_answers"; answers: Record<string, string> }
   | { type: "hydrate_played"; played: Record<string, true> }
+  | { type: "hydrate_played_parts"; playedParts: Record<number, true> }
   | { type: "submitting" }
   | { type: "completed"; payload: SubmitListeningPayload }
   | { type: "error"; message: string }
@@ -58,8 +62,10 @@ const initial: ListeningState = {
   currentQuestionId: null,
   answers: {},
   played: {},
+  playedParts: {},
   error: null,
   submitResult: null,
+  resumedAttempt: false,
 };
 
 function flattenQuestions(parts: ListeningPart[]): ListeningQuestion[] {
@@ -77,6 +83,7 @@ function reducer(state: ListeningState, action: Action): ListeningState {
         startedAtIso: action.payload.started_at,
         serverTimeIso: action.payload.server_time,
         durationSeconds: action.payload.duration_seconds,
+        resumedAttempt: action.payload.resumed === true,
         status: "ready",
       };
     case "questions_loaded": {
@@ -108,6 +115,17 @@ function reducer(state: ListeningState, action: Action): ListeningState {
         ...state,
         played: { ...state.played, [action.questionId]: true },
       };
+    case "mark_part_played": {
+      const played = { ...state.played };
+      for (const qid of action.questionIds) {
+        played[qid] = true;
+      }
+      return {
+        ...state,
+        played,
+        playedParts: { ...state.playedParts, [action.partNumber]: true },
+      };
+    }
     case "hydrate_answers":
       return {
         ...state,
@@ -117,6 +135,11 @@ function reducer(state: ListeningState, action: Action): ListeningState {
       return {
         ...state,
         played: { ...state.played, ...action.played },
+      };
+    case "hydrate_played_parts":
+      return {
+        ...state,
+        playedParts: { ...state.playedParts, ...action.playedParts },
       };
     case "submitting":
       return { ...state, status: "submitting", error: null };
@@ -147,10 +170,23 @@ export function useListeningStore() {
     (questionId: string) => dispatch({ type: "mark_played", questionId }),
     [],
   );
+  const markPartPlayed = useCallback(
+    (partNumber: number, questionIds: string[]) =>
+      dispatch({ type: "mark_part_played", partNumber, questionIds }),
+    [],
+  );
 
   const flat = useMemo(() => flattenQuestions(state.parts), [state.parts]);
 
-  return { state, dispatch, setAnswer, setCurrent, markPlayed, allQuestions: flat };
+  return {
+    state,
+    dispatch,
+    setAnswer,
+    setCurrent,
+    markPlayed,
+    markPartPlayed,
+    allQuestions: flat,
+  };
 }
 
 export type ListeningStore = ReturnType<typeof useListeningStore>;

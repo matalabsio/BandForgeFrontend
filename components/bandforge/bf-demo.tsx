@@ -18,7 +18,7 @@ export function BandForgeDemo() {
             </h2>
             <p className="mt-4 text-body leading-relaxed text-white/65">
               A short walkthrough of navigation, timers, submission, and the
-              feedback dashboard — no stock footage, just the actual product
+              feedback dashboard: no stock footage, just the actual product
               philosophy rendered in UI.
             </p>
           </div>
@@ -26,9 +26,9 @@ export function BandForgeDemo() {
             <div className="bf-soft-shine relative aspect-video overflow-hidden rounded-[1.5rem] border border-white/10 bg-gradient-to-br from-[#0a1628] to-navy shadow-[0_24px_60px_-20px_rgba(0,188,212,0.25)]">
               <div className="bf-grid-fine absolute inset-0 opacity-30" />
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-sm">
+                <div className="flex size-16 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-sm">
                   <svg
-                    className="ml-1 h-7 w-7 text-teal-light"
+                    className="ml-1 size-7 text-teal-light"
                     viewBox="0 0 24 24"
                     fill="currentColor"
                     aria-hidden
@@ -37,7 +37,7 @@ export function BandForgeDemo() {
                   </svg>
                 </div>
                 <p className="max-w-sm text-center text-meta leading-relaxed text-white/50">
-                  Video embed ships next — explore the{" "}
+                  Video embed ships next; explore the{" "}
                   <Link
                     href="/ai-feedback"
                     className="font-semibold text-teal-light underline-offset-2 hover:underline"

@@ -30,15 +30,39 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const listeningApi = {
-  start(mockTestId: string): Promise<StartListeningPayload> {
+  start(
+    mockTestId: string,
+    options?: {
+      forceNew?: boolean;
+      part?: number;
+      mockAttemptId?: string;
+      includeQuestions?: boolean;
+    },
+  ): Promise<StartListeningPayload> {
+    const params = new URLSearchParams();
+    if (options?.forceNew === true) params.set("force_new", "true");
+    if (options?.part) params.set("part", String(options.part));
+    if (options?.mockAttemptId) {
+      params.set("mock_attempt_id", options.mockAttemptId);
+    }
+    if (options?.includeQuestions !== false) {
+      params.set("include_questions", "true");
+    }
+    const qs = params.toString() ? `?${params.toString()}` : "";
     return call<StartListeningPayload>(
-      `/api/listening/${encodeURIComponent(mockTestId)}/start`,
+      `/api/listening/${encodeURIComponent(mockTestId)}/start${qs}`,
       { method: "POST" },
     );
   },
-  questions(mockTestId: string): Promise<ListeningQuestionsPayload> {
+  questions(
+    mockTestId: string,
+    options?: { part?: number },
+  ): Promise<ListeningQuestionsPayload> {
+    const params = new URLSearchParams();
+    if (options?.part) params.set("part", String(options.part));
+    const qs = params.toString() ? `?${params.toString()}` : "";
     return call<ListeningQuestionsPayload>(
-      `/api/listening/${encodeURIComponent(mockTestId)}/questions`,
+      `/api/listening/${encodeURIComponent(mockTestId)}/questions${qs}`,
       { method: "GET" },
     );
   },

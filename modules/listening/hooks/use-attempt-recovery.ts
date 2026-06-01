@@ -36,6 +36,7 @@ type Args = {
   startedAtIso: string | null;
   answers: Record<string, string>;
   played: Record<string, true>;
+  playedParts: Record<number, true>;
   remainingSeconds: number;
   enabled: boolean;
 };
@@ -49,6 +50,7 @@ export function useAttemptRecovery({
   startedAtIso,
   answers,
   played,
+  playedParts,
   remainingSeconds,
   enabled,
 }: Args): void {
@@ -61,6 +63,7 @@ export function useAttemptRecovery({
       started_at: startedAtIso,
       answers,
       played,
+      played_parts: playedParts,
       remaining_time: remainingSeconds,
       saved_at: new Date().toISOString(),
     };
@@ -69,7 +72,7 @@ export function useAttemptRecovery({
     } catch {
       // localStorage full or unavailable; ignore
     }
-  }, [attemptId, startedAtIso, answers, played, remainingSeconds]);
+  }, [attemptId, startedAtIso, answers, played, playedParts, remainingSeconds]);
 
   useEffect(() => {
     if (!enabled) return;

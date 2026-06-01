@@ -4,6 +4,7 @@ export type ListeningQuestion = {
   id: string;
   part: 1 | 2 | 3 | 4;
   question_number: number;
+  display_number?: number | null;
   question_type: string;
   prompt: string;
   instructions?: string | null;
@@ -41,6 +42,9 @@ export type StartListeningPayload = {
   status: string;
   module: "listening";
   duration_seconds: number;
+  resumed?: boolean;
+  test?: ListeningTestSummary | null;
+  parts?: ListeningPart[] | null;
 };
 
 export type AutosavePayload = {
@@ -64,17 +68,34 @@ export type SubmitListeningPayload = {
   band: number;
   late_submission: boolean;
   skill_breakdown: Record<string, SkillBreakdownEntry>;
+  mock_next_part?: number | null;
+  mock_listening_complete?: boolean;
+};
+
+export type QuestionReviewItem = {
+  question_id: string;
+  question_number: number;
+  question_type: string;
+  prompt: string;
+  user_answer: string;
+  correct_answer: string;
+  is_correct: boolean;
+  explanation: string;
 };
 
 export type ListeningScoreReport = {
   attempt_id: string;
   status: string;
+  module?: string;
+  test_title?: string | null;
   submitted_at: string | null;
   raw_score: number;
   total_questions: number;
   band: number;
   late_submission: boolean;
   skill_breakdown: Record<string, SkillBreakdownEntry>;
+  questions?: QuestionReviewItem[];
+  practice_tip?: string | null;
 };
 
 export type RecoverySnapshot = {
@@ -82,6 +103,7 @@ export type RecoverySnapshot = {
   started_at: string;
   answers: Record<string, string>;
   played: Record<string, true>;
+  played_parts?: Record<number, true>;
   remaining_time: number;
   saved_at: string;
 };

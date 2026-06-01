@@ -1,4 +1,6 @@
+import Image from "next/image";
 import { BfAutoMarquee } from "@/components/bandforge/bf-auto-marquee";
+import { LISTENING_FLAG_IMAGES } from "@/modules/listening/listening-flags";
 
 const proofItems = [
   { title: "5.5 → 7", sub: "Typical learner trajectory with structured mocks" },
@@ -38,7 +40,7 @@ function FlagMark({ code }: { code: FlagCode }) {
       <span className={base} aria-hidden>
         <span className="absolute inset-y-0 left-0 w-1/4 bg-red-600" />
         <span className="absolute inset-y-0 right-0 w-1/4 bg-red-600" />
-        <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-red-600" />
+        <span className="absolute left-1/2 top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-red-600" />
       </span>
     );
   }
@@ -55,12 +57,22 @@ function FlagMark({ code }: { code: FlagCode }) {
   }
 
   if (code === "australia" || code === "newzealand") {
+    const src =
+      code === "australia"
+        ? LISTENING_FLAG_IMAGES.australia
+        : LISTENING_FLAG_IMAGES.newzealand;
     return (
-      <span className={`${base} bg-[#123274]`} aria-hidden>
-        <span className="absolute left-1 top-1 h-2 w-3 rounded-sm bg-white/90" />
-        <span className="absolute right-1.5 top-2 h-1.5 w-1.5 rounded-full bg-red-500 ring-1 ring-white" />
-        <span className="absolute bottom-1.5 right-3 h-1 w-1 rounded-full bg-white" />
-        <span className="absolute bottom-1 left-4 h-1.5 w-1.5 rounded-full bg-white" />
+      <span
+        className="relative h-7 w-11 shrink-0 overflow-hidden rounded-md border border-border bg-white shadow-[var(--shadow-soft)]"
+        aria-hidden
+      >
+        <Image
+          src={src}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="44px"
+        />
       </span>
     );
   }
@@ -115,8 +127,8 @@ function FlagMark({ code }: { code: FlagCode }) {
       <span className={base} aria-hidden>
         <span className="absolute inset-x-0 top-0 h-1/2 bg-red-600" />
         <span className="absolute inset-x-0 bottom-0 h-1/2 bg-white" />
-        <span className="absolute left-1.5 top-1.5 h-2 w-2 rounded-full bg-white" />
-        <span className="absolute left-2.5 top-1.5 h-2 w-2 rounded-full bg-red-600" />
+        <span className="absolute left-1.5 top-1.5 size-2 rounded-full bg-white" />
+        <span className="absolute left-2.5 top-1.5 size-2 rounded-full bg-red-600" />
       </span>
     );
   }
@@ -135,7 +147,7 @@ function FlagMark({ code }: { code: FlagCode }) {
   if (code === "japan") {
     return (
       <span className={base} aria-hidden>
-        <span className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600" />
+        <span className="absolute left-1/2 top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600" />
       </span>
     );
   }
@@ -143,8 +155,8 @@ function FlagMark({ code }: { code: FlagCode }) {
   if (code === "southkorea") {
     return (
       <span className={base} aria-hidden>
-        <span className="absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500" />
-        <span className="absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-b-full bg-blue-600" />
+        <span className="absolute left-1/2 top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500" />
+        <span className="absolute left-1/2 top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-b-full bg-blue-600" />
         <span className="absolute left-1 top-1 h-0.5 w-2 rotate-45 bg-black" />
         <span className="absolute bottom-1 right-1 h-0.5 w-2 rotate-45 bg-black" />
       </span>
@@ -156,7 +168,7 @@ function FlagMark({ code }: { code: FlagCode }) {
       <span className={base} aria-hidden>
         <span className="absolute inset-y-0 left-0 w-1/2 bg-white" />
         <span className="absolute inset-y-0 right-0 w-1/2 bg-red-600" />
-        <span className="absolute left-1 top-1 h-1.5 w-1.5 border border-ink/40" />
+        <span className="absolute left-1 top-1 size-1.5 border border-ink/40" />
       </span>
     );
   }

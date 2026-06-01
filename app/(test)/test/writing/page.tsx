@@ -1,11 +1,26 @@
-import type { Metadata } from "next";
-import { TestWritingView } from "@/components/test/test-writing-view";
+import { redirect } from "next/navigation";
+import { authBootstrapPath } from "@/lib/auth";
+import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { WritingTestHub } from "@/modules/writing/components/writing-test-hub";
 
-export const metadata: Metadata = {
-  title: "Writing — Mock Test",
+export const metadata = {
+  title: "Writing · BandForge",
   robots: { index: false, follow: false },
 };
 
-export default function WritingTestPage() {
-  return <TestWritingView />;
+type Props = {
+  searchParams: Promise<{ mock_attempt?: string }>;
+};
+
+export default async function WritingTestPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const cookieHeader = await getCachedCookieHeader();
+  const user = await getCachedServerUser(cookieHeader);
+  if (!user) {
+    redirect(authBootstrapPath("/test/writing"));
+  }
+
+  return (
+    <WritingTestHub mockAttemptId={sp.mock_attempt ?? null} />
+  );
 }

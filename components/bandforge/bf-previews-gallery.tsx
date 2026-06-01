@@ -125,11 +125,11 @@ export function BandForgePreviewsGallery() {
             AI evaluation demo
           </p>
           <h2 className="bf-section-title mt-3">
-            See what you get — before you sign in.
+            See what you get before you sign in.
           </h2>
           <p className="bf-copy mx-auto mt-5 max-w-2xl">
             Realistic IELTS simulation, instant objective scores, and faster
-            improvement loops — all designed mobile-first for students who cannot
+            improvement loops, all designed mobile-first for students who cannot
             rely on expensive coaching alone.
           </p>
         </div>

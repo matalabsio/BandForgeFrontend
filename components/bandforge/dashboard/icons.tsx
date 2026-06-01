@@ -91,14 +91,6 @@ export function ClockIcon(props: IconProps) {
   );
 }
 
-export function PlayIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props} strokeWidth={0} fill="currentColor">
-      <path d="M8 5.5v13l11-6.5Z" />
-    </svg>
-  );
-}
-
 export function ArrowRightIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -123,16 +115,6 @@ export function SparkleIcon(props: IconProps) {
   );
 }
 
-export function MenuIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M4 6h16" />
-      <path d="M4 12h16" />
-      <path d="M4 18h16" />
-    </svg>
-  );
-}
-
 export function CloseIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -152,20 +134,108 @@ export function HomeIcon(props: IconProps) {
   );
 }
 
-export function SettingsIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1A2 2 0 1 1 4.3 17l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.7 1.7 0 0 0 4.7 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 1 1 7 4.3l.1.1a1.7 1.7 0 0 0 1.8.3H9A1.7 1.7 0 0 0 10 3.1V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
-    </svg>
-  );
-}
-
 export function UserIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
       <circle cx="12" cy="8" r="4" />
       <path d="M4 20c0-4 3.6-6 8-6s8 2 8 6" />
+    </svg>
+  );
+}
+
+export function PanelIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16" />
+    </svg>
+  );
+}
+
+export function TargetIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function BellIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M18 16H6l-1.5-2.5A5.5 5.5 0 0 1 11 7.2V5a1 1 0 0 1 2 0v2.2A5.5 5.5 0 0 1 19.5 13.5L18 16Z" />
+      <path d="M10 18a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
+
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+export function TrendIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 16 8 10l4 4 8-10" />
+    </svg>
+  );
+}
+
+export function LayoutGridIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+export function BarChartIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 19V5" />
+      <path d="M12 19v-8" />
+      <path d="M20 19V9" />
+    </svg>
+  );
+}
+
+export function FileTextIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h8" />
+      <path d="M8 17h8" />
+      <path d="M8 9h4" />
+    </svg>
+  );
+}
+
+export function CrownIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 18h16" />
+      <path d="m4 14 3-8 5 5 5-5 3 8" />
+      <path d="M6 10h12" />
+    </svg>
+  );
+}
+
+export function LightbulbIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+      <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z" />
     </svg>
   );
 }

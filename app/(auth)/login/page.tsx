@@ -1,26 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { useAuthSession } from "@/components/auth/auth-session-provider";
+import { authBootstrapPath, logout } from "@/lib/auth";
 import { isPhoneOtpEnabled } from "@/lib/flags";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
+  const sessionExpired = searchParams.get("session") === "expired";
   const oauthError = searchParams.get("error");
-  const formError = oauthError;
+  const formError =
+    oauthError ??
+    (sessionExpired
+      ? "Your session expired. Please sign in again."
+      : null);
+  const cleared = useRef(false);
+
+  useEffect(() => {
+    if (!sessionExpired || cleared.current) return;
+    cleared.current = true;
+    void logout();
+  }, [sessionExpired]);
   const { isAuthenticated, loading } = useAuthSession();
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      router.replace(next.startsWith("/") ? next : "/dashboard");
+      const dest = next.startsWith("/") ? next : "/dashboard";
+      window.location.replace(authBootstrapPath(dest));
     }
-  }, [loading, isAuthenticated, next, router]);
+  }, [loading, isAuthenticated, next]);
 
   if (!loading && isAuthenticated) {
     return (

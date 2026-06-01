@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 
 const adminNav = [
   { href: "/admin", label: "Overview" },
@@ -18,9 +19,12 @@ export function AdminShell({ children, title = "Admin" }: AdminShellProps) {
     <div className="app-surface min-h-dvh">
       <header className="border-b border-border bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/admin" className="text-body font-semibold text-navy">
-            BandForge Admin
-          </Link>
+          <div className="flex items-center gap-3">
+            <BandForgeLogoLink size="sm" />
+            <Link href="/admin" className="text-body font-semibold text-navy">
+              Admin
+            </Link>
+          </div>
           <Link
             href="/dashboard"
             className="cursor-pointer text-meta font-medium text-teal transition-colors duration-200 hover:text-teal-light"

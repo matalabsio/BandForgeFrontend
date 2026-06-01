@@ -74,5 +74,5 @@ that touches the database schema or payment flow.
 
 Within **frontend**:
 
-- **`/`** — MATA Labs marketing landing (`components/landing/mata-labs-landing.tsx`). Do not remove or replace when adding BandForge.
+- **`/`** — BandForge marketing landing (`components/bandforge/bandforge-landing.tsx`).
 - **BandForge routes** — add under separate paths (e.g. `/login`, `/dashboard`, `/test/...`), not at `/`.

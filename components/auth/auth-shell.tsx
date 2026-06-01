@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 
 type AuthShellProps = {
   title: string;
@@ -10,9 +10,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-surface text-ink">
       <header className="border-b border-border bg-white px-4 py-4 sm:px-6">
-        <Link href="/" className="font-display text-lg font-bold text-navy">
-          Band<span className="text-teal">Forge</span>
-        </Link>
+        <BandForgeLogoLink size="md" />
       </header>
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10 sm:px-6">
         <p className="text-meta font-semibold uppercase tracking-wider text-teal">

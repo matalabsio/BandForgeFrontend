@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TestSpeakingView } from "@/components/test/test-speaking-view";
+import { TestSpeakingView } from "@/modules/speaking";
 
 export const metadata: Metadata = {
   title: "Speaking — Mock Test",

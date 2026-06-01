@@ -1,0 +1,106 @@
+import Link from "next/link";
+import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
+import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
+import { DASHBOARD_NAV } from "@/components/bandforge/dashboard/dashboard-nav";
+import { PremiumCta } from "@/components/bandforge/dashboard/premium-cta";
+import { cn } from "@/lib/utils";
+
+type Props = {
+  pathname: string;
+  displayName: string;
+  avatarUrl?: string | null;
+};
+
+export function DashboardSidebarNav({
+  pathname,
+  displayName,
+  avatarUrl = null,
+}: Props) {
+  const initial = displayName.trim().charAt(0).toUpperCase() || "B";
+
+  return (
+    <>
+      <div className="mb-8 px-1">
+        <BandForgeLogoLink size="sm" />
+      </div>
+
+      <nav className="flex flex-1 flex-col gap-6 overflow-y-auto" aria-label="Main">
+        {DASHBOARD_NAV.map((group) => (
+          <div key={group.title || "main"}>
+            {group.title ? (
+              <p className="mb-2 px-3 font-roboto-condensed text-[10px] font-bold uppercase tracking-[0.14em] text-[#0F172A]/35">
+                {group.title}
+              </p>
+            ) : null}
+            <ul className="flex flex-col gap-0.5">
+              {group.items.map((item) => {
+                const active =
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" &&
+                    pathname.startsWith(item.href));
+                const inner = (
+                  <>
+                    <item.Icon
+                      className={cn(
+                        "h-[18px] w-[18px] shrink-0",
+                        active ? "text-[#06B6D4]" : "text-[#0F172A]/40",
+                      )}
+                    />
+                    <span>{item.label}</span>
+                  </>
+                );
+                const className = cn(
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-colors",
+                  active
+                    ? "bg-[#06B6D4]/10 text-[#0F172A]"
+                    : "text-[#0F172A]/60 hover:bg-[#0F172A]/5 hover:text-[#0F172A]",
+                  item.disabled && "pointer-events-none opacity-45",
+                );
+
+                return (
+                  <li key={item.label}>
+                    {item.disabled ? (
+                      <span className={className}>{inner}</span>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        prefetch={!item.disabled}
+                        className={className}
+                      >
+                        {inner}
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <div className="mt-6 space-y-4 border-t border-[#0F172A]/8 pt-5">
+        <PremiumCta />
+        <Link
+          href="/profile"
+          className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-[#0F172A]/5"
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0F172A] text-xs font-bold text-white">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              initial
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold">{displayName}</p>
+            <p className="text-[11px] text-[#0F172A]/45">Edit profile</p>
+          </div>
+        </Link>
+        <div className="lg:hidden">
+          <SignOutButton />
+        </div>
+      </div>
+    </>
+  );
+}

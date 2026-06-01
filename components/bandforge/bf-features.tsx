@@ -81,7 +81,7 @@ function FeaturePreview({ type }: { type: (typeof features)[number]["preview"] }
   if (type === "radar") {
     return (
       <div className="mt-4 flex h-20 items-center justify-center rounded-lg border border-border bg-surface">
-        <svg viewBox="0 0 100 100" className="h-16 w-16 text-teal/30" aria-hidden>
+        <svg viewBox="0 0 100 100" className="size-16 text-teal/30" aria-hidden>
           <polygon
             fill="currentColor"
             points="50,8 88,38 72,88 28,88 12,38"
@@ -117,7 +117,7 @@ function FeaturePreview({ type }: { type: (typeof features)[number]["preview"] }
           key={t}
           className="flex items-center gap-2 rounded border border-transparent bg-white px-2 py-1.5 text-[0.625rem] font-medium text-ink/70"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-teal" />
+          <span className="size-1.5 rounded-full bg-teal" />
           {t}
           {i === 0 ? (
             <span className="ml-auto text-meta text-teal">Next</span>
@@ -144,7 +144,7 @@ export function BandForgeFeatures() {
           </h2>
           <p className="bf-copy mx-auto mt-5 max-w-2xl">
             One platform for full mocks, granular AI feedback, and practice that
-            respects how you actually study — especially on your phone.
+            respects how you actually study, especially on your phone.
           </p>
         </div>
 

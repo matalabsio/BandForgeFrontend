@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
+  --color-brand: #3d81e3;
   --color-navy: #0d1f3c;
   --color-teal: #0097a7;
   --color-teal-light: #00bcd4;
@@ -14,6 +15,20 @@
   --font-sans: var(--font-inter), var(--font-dm-sans), ui-sans-serif, system-ui,
     sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+
+  --font-arvo: "Arvo", Georgia, serif;
+  --font-bitter: "Bitter", ui-serif, Georgia, serif;
+  --font-exo-2: "Exo 2", ui-sans-serif, system-ui, sans-serif;
+  --font-libre-baskerville: "Libre Baskerville", ui-serif, Georgia, serif;
+  --font-lora: "Lora", ui-serif, Georgia, serif;
+  --font-love-ya: "Love Ya Like A Sister", "Comic Sans MS", cursive;
+  --font-pt-serif: "PT Serif", ui-serif, Georgia, serif;
+  --font-quicksand: "Quicksand", ui-sans-serif, system-ui, sans-serif;
+  --font-roboto-condensed: "Roboto Condensed", ui-sans-serif, system-ui,
+    sans-serif;
+  --font-roboto-slab: "Roboto Slab", ui-serif, Georgia, serif;
+  --font-special-elite: "Special Elite", ui-monospace, monospace;
+  --font-noto-sans: "Noto Sans", ui-sans-serif, system-ui, sans-serif;
 
   --text-h1: 2rem;
   --text-h2: 1.5rem;
@@ -210,6 +225,21 @@ html {
       sans-serif;
   }
 
+  /* BandForge dashboard — Google Fonts bundle (Noto Sans UI, Bitter headings) */
+  .bf-dashboard {
+    font-family: var(--font-noto-sans);
+  }
+
+  .bf-dashboard .font-display,
+  .bf-dashboard h1,
+  .bf-dashboard h2 {
+    font-family: var(--font-bitter), ui-serif, Georgia, serif;
+  }
+
+  .bf-dashboard .font-dash-mono {
+    font-family: var(--font-roboto-slab), ui-serif, Georgia, serif;
+  }
+
   .bf-grid-bg {
     background-image:
       linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
@@ -242,7 +272,6 @@ html {
   }
 
   .bf-page-shell {
-    overflow-x: hidden;
     background:
       radial-gradient(circle at 12% 8%, rgb(0 188 212 / 0.12), transparent 28rem),
       radial-gradient(circle at 86% 18%, rgb(13 31 60 / 0.08), transparent 26rem),
@@ -450,7 +479,12 @@ html {
 
 .bf-dash-enter {
   opacity: 1;
-  animation: bf-dash-enter 0.45s ease-out forwards;
+  animation: bf-dash-enter 0.2s ease-out forwards;
+}
+
+.bf-below-fold {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
 }
 
 .bf-dash-wave {

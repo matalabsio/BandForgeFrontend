@@ -2,7 +2,7 @@
 
 import type { FieldError } from "react-hook-form";
 
-export function FieldErrorMessage({ error }: { error?: FieldError }) {
+function FieldErrorMessage({ error }: { error?: FieldError }) {
   if (!error?.message) return null;
   return (
     <p className="mt-1 text-meta font-medium text-danger" role="alert">

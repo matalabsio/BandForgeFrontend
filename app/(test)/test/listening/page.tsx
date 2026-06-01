@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
-import { TestListeningView } from "@/components/test/test-listening-view";
+import { redirect } from "next/navigation";
+import { M01_MOCK_TEST_ID, mockHubPath } from "@/lib/mock-catalog";
 
-export const metadata: Metadata = {
-  title: "Listening — Mock Test",
-  robots: { index: false, follow: false },
-};
-
-export default function ListeningTestPage() {
-  return <TestListeningView />;
+/** Legacy route → canonical M01 mock hub. */
+export default function ListeningTestRedirectPage() {
+  redirect(mockHubPath(M01_MOCK_TEST_ID));
 }

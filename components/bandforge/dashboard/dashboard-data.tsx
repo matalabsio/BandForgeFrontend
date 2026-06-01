@@ -1,19 +1,41 @@
 import { DashboardExperience } from "@/components/bandforge/dashboard/dashboard-experience";
-import { fetchDashboardPayload } from "@/lib/dashboard-server";
+import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
+import type {
+  DashboardSummary,
+  MockTestSummary,
+} from "@/components/bandforge/dashboard/types";
 
 type Props = {
-  cookieHeader: string;
   firstName: string;
+  displayName: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+  mockTests: MockTestSummary[];
+  summary: DashboardSummary;
+  profileTargetBand?: number | null;
+  initialMockProgress?: MockAttemptProgress | null;
 };
 
-export async function DashboardData({ cookieHeader, firstName }: Props) {
-  const { mockTests, summary } = await fetchDashboardPayload(cookieHeader);
-
+export function DashboardData({
+  firstName,
+  displayName,
+  email = null,
+  avatarUrl = null,
+  mockTests,
+  summary,
+  profileTargetBand = null,
+  initialMockProgress = null,
+}: Props) {
   return (
     <DashboardExperience
       firstName={firstName}
+      displayName={displayName}
+      email={email}
+      avatarUrl={avatarUrl}
       mockTests={mockTests}
       summary={summary}
+      profileTargetBand={profileTargetBand}
+      initialMockProgress={initialMockProgress}
     />
   );
 }

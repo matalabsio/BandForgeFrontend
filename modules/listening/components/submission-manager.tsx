@@ -122,6 +122,7 @@ type SubmitButtonProps = {
   attemptId: string | null;
   answers: { question_id: string; user_answer: string }[];
   disabled?: boolean;
+  variant?: "default" | "exam";
   onBeforeSubmit?: () => Promise<void> | void;
   onSubmitted: (payload: SubmitListeningPayload) => void;
   onError: (message: string) => void;
@@ -131,6 +132,7 @@ export function SubmissionButton({
   attemptId,
   answers,
   disabled,
+  variant = "default",
   onBeforeSubmit,
   onSubmitted,
   onError,
@@ -151,14 +153,20 @@ export function SubmissionButton({
     }
   }, [attemptId, answers, busy, onBeforeSubmit, onSubmitted, onError]);
 
+  const isExam = variant === "exam";
+
   return (
     <button
       type="button"
       disabled={disabled || busy || !attemptId}
       onClick={() => void submit()}
-      className="min-h-[44px] rounded-xl bg-navy px-5 py-2 text-body font-semibold text-white hover:bg-navy/90 disabled:opacity-60"
+      className={
+        isExam
+          ? "min-h-[44px] cursor-pointer border border-[#18181b] bg-[#18181b] px-6 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#27272a] disabled:cursor-not-allowed disabled:opacity-50"
+          : "min-h-[44px] cursor-pointer rounded-xl bg-navy px-5 py-2 text-body font-semibold text-white hover:bg-navy/90 disabled:opacity-60"
+      }
     >
-      {busy ? "Submitting…" : "Submit attempt"}
+      {busy ? "Submitting…" : isExam ? "Submit test" : "Submit attempt"}
     </button>
   );
 }
