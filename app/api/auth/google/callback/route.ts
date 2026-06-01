@@ -24,13 +24,21 @@ export async function GET(request: Request) {
   try {
     const { data, setCookies } = await exchangeGoogleCode(code, state);
     const nextPath = data.redirect_to || "/dashboard";
-    const bootstrapUrl = new URL("/auth/bootstrap", request.url);
-    bootstrapUrl.searchParams.set("next", nextPath);
+    const safeNext =
+      nextPath.startsWith("/") && !nextPath.startsWith("//")
+        ? nextPath
+        : "/dashboard";
+
     if (data.pending_verification) {
+      const bootstrapUrl = new URL("/auth/bootstrap", request.url);
+      bootstrapUrl.searchParams.set("next", safeNext);
       return NextResponse.redirect(bootstrapUrl);
     }
 
-    const res = NextResponse.redirect(bootstrapUrl);
+    // Fresh OAuth cookies are on this response — go straight to destination
+    // (bootstrap refresh often failed and bounced users back to /login).
+    const destUrl = new URL(safeNext, request.url);
+    const res = NextResponse.redirect(destUrl);
     applyAuthCookiesToResponse(res, setCookies);
 
     const secure = process.env.NODE_ENV === "production";
