@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ensureSession, loginPathWithNext, logout } from "@/lib/auth";
 import { isAuthEnabled } from "@/lib/flags";
+import { ACCESS_COOKIE, getRefreshToken, REFRESH_COOKIE } from "@/lib/session";
 
 function safeNextPath(raw: string | null): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
@@ -11,6 +12,17 @@ function safeNextPath(raw: string | null): string {
 }
 
 const SESSION_RESTORE_TIMEOUT_MS = 12_000;
+
+function hadPriorSession(): boolean {
+  if (typeof document === "undefined") return false;
+  const hasCookie = document.cookie
+    .split(";")
+    .some((c) => {
+      const name = c.trim().split("=")[0];
+      return name === ACCESS_COOKIE || name === REFRESH_COOKIE;
+    });
+  return hasCookie || Boolean(getRefreshToken());
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   return Promise.race([
@@ -36,6 +48,7 @@ function AuthBootstrapInner() {
     let cancelled = false;
 
     async function run() {
+      const staleSession = hadPriorSession();
       const session = await withTimeout(ensureSession(), SESSION_RESTORE_TIMEOUT_MS);
       if (cancelled) return;
 
@@ -46,10 +59,15 @@ function AuthBootstrapInner() {
         return;
       }
 
-      setMessage("Session expired. Redirecting to sign in…");
+      setMessage(
+        staleSession
+          ? "Session expired. Redirecting to sign in…"
+          : "Redirecting to sign in…",
+      );
       await logout();
       if (cancelled) return;
-      replace(loginPathWithNext(next, true));
+      // Only show "session expired" when old cookies/tokens existed but could not refresh.
+      replace(loginPathWithNext(next, staleSession));
     }
 
     void run();
