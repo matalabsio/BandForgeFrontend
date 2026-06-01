@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { cacheMockNavHint } from "@/lib/mock-nav-cache";
 import { mockAttemptStorageKey } from "@/modules/mock/lib/mock-session-storage";
 import { fetchMockSessionDeduped } from "@/modules/mock/lib/mock-session-fetch";
 import { formatMockStartError } from "@/lib/api";
@@ -25,6 +26,14 @@ export type UseMockSessionResult = {
 type Options = {
   initialProgress?: MockAttemptProgress | null;
 };
+
+function applyStartNavHint(res: StartMockResponse): void {
+  cacheMockNavHint({
+    mock_attempt_id: res.mock_attempt_id,
+    next_module: res.current_module,
+    next_part: res.part,
+  });
+}
 
 export function useMockSession(
   mockTestId: string,
@@ -110,8 +119,13 @@ export function useMockSession(
       try {
         const res = await mockApi.start(mockTestId, forceNew);
         sessionStorage.setItem(storageKey, res.mock_attempt_id);
-        const session = await fetchMockSessionDeduped(mockTestId);
-        applySession(session);
+        applyStartNavHint(res);
+        if (res.progress) {
+          applySession(res.progress);
+        } else {
+          const session = await fetchMockSessionDeduped(mockTestId);
+          applySession(session);
+        }
         return res;
       } catch (e) {
         const raw =
@@ -136,8 +150,13 @@ export function useMockSession(
     setError(null);
     try {
       const res = await mockApi.resume(id);
-      const session = await fetchMockSessionDeduped(mockTestId);
-      applySession(session);
+      applyStartNavHint(res);
+      if (res.progress) {
+        applySession(res.progress);
+      } else {
+        const session = await fetchMockSessionDeduped(mockTestId);
+        applySession(session);
+      }
       return res;
     } catch (e) {
       const msg =

@@ -8,9 +8,18 @@ import {
 export function navigateAfterMockStart(
   router: { push: (url: string) => void; replace: (url: string) => void },
   slug: string,
-  res: StartMockResponse,
+  res: StartMockResponse & { progress?: MockAttemptProgress | null },
   opts?: { replace?: boolean },
 ) {
+  if (res.progress?.mock_attempt_id && res.progress.next_module) {
+    navigateFromProgress(
+      router,
+      slug,
+      res.progress.mock_attempt_id,
+      res.progress,
+    );
+    return;
+  }
   const path = examPathForMockStart(slug, res);
   if (opts?.replace) router.replace(path);
   else router.push(path);

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { middlewareRefreshAuth } from "@/lib/auth-middleware-refresh";
+import { bootstrapNextPath } from "@/lib/bootstrap-next-path";
 import { isAuthEnabled } from "@/lib/flags";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
@@ -11,7 +13,7 @@ const PROTECTED_PREFIXES = [
   "/test",
 ];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!isAuthEnabled()) {
@@ -36,8 +38,14 @@ export function middleware(request: NextRequest) {
   if (!hasCookie) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/bootstrap";
-    url.searchParams.set("next", pathname);
+    url.searchParams.set("next", bootstrapNextPath(pathname, request.nextUrl.search));
     return NextResponse.redirect(url);
+  }
+
+  const refreshed = await middlewareRefreshAuth(request);
+  if (refreshed) {
+    refreshed.headers.set("x-pathname", pathname);
+    return refreshed;
   }
 
   const response = NextResponse.next();

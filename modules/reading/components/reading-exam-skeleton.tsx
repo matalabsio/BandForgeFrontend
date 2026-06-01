@@ -1,6 +1,15 @@
-export function ReadingExamSkeleton() {
+type ReadingExamSkeletonProps = {
+  message?: string;
+};
+
+export function ReadingExamSkeleton({ message }: ReadingExamSkeletonProps = {}) {
   return (
     <div className="flex min-h-[calc(100dvh-3rem)] flex-col animate-pulse">
+      {message ? (
+        <p className="border-b border-[var(--reading-border)] bg-[var(--reading-paper)] px-6 py-3 text-center text-[13px] text-[var(--reading-ink-muted)]">
+          {message}
+        </p>
+      ) : null}
       <div className="h-12 border-b border-[var(--reading-border)] bg-[var(--reading-bar)]" />
       <div className="flex flex-1 flex-col lg:flex-row">
         <div className="flex-1 border-b border-[var(--reading-border)] bg-[var(--reading-paper)] p-6 lg:border-b-0 lg:border-r">

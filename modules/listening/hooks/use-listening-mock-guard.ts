@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { mockHubPath } from "@/lib/mock-catalog";
 import { shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { syncExamRoute } from "@/lib/mock-exam-nav";
-import { mockApi } from "@/modules/mock/services/mock-api";
+import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 
 type Args = {
   enabled: boolean;
@@ -31,7 +31,7 @@ export function useListeningMockGuard({
     let cancelled = false;
     void (async () => {
       try {
-        const p = await mockApi.progress(mockAttemptId);
+        const p = await fetchMockProgressDeduped(mockAttemptId);
         if (cancelled) return;
         if (p.status !== "in_progress") {
           replace(mockHubPath(mockSlug));

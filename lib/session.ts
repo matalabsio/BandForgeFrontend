@@ -71,3 +71,13 @@ export type AuthUser = {
   avatar_display_url?: string | null;
   target_band?: number | null;
 };
+
+/** Used when NEXT_PUBLIC_AUTH_ENABLED is false (local UI / mock dev). */
+export const GUEST_USER: AuthUser = {
+  id: "00000000-0000-0000-0000-000000000000",
+  email: null,
+  full_name: "Guest",
+  phone: null,
+  email_verified: false,
+  phone_verified: false,
+};

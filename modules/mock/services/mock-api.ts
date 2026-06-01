@@ -71,6 +71,7 @@ export type StartMockResponse = {
   module_attempt_id: string;
   part: number | null;
   resumed: boolean;
+  progress?: MockAttemptProgress | null;
 };
 
 export type InProgressMockAttempt = {

@@ -4,28 +4,20 @@ import {
   parseJsonResponse,
   type ApiErrorBody,
 } from "@/lib/api";
-import { fetchWithTimeout } from "@/lib/fetch-server";
-import { serverAuthHeaders } from "@/lib/server-auth-headers";
+import { getServerAuth } from "@/lib/auth-server";
 import { isAuthEnabled } from "@/lib/flags";
 import {
   ACCESS_COOKIE,
   clearAuthStorage,
   getAccessToken,
   getRefreshToken,
+  GUEST_USER,
   persistAuthTokens,
   REFRESH_COOKIE,
   type AuthUser,
 } from "@/lib/session";
 
-/** Used when NEXT_PUBLIC_AUTH_ENABLED is false (local UI / mock dev). */
-export const GUEST_USER: AuthUser = {
-  id: "00000000-0000-0000-0000-000000000000",
-  email: null,
-  full_name: "Guest",
-  phone: null,
-  email_verified: false,
-  phone_verified: false,
-};
+export { GUEST_USER };
 
 export type AuthResponse = {
   user: AuthUser;
@@ -52,20 +44,34 @@ function clientAuthHeaders(extra?: HeadersInit): Headers {
   return headers;
 }
 
+const CLIENT_AUTH_TIMEOUT_MS = 12_000;
+
 async function authFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const res = await fetch(`/api/auth/${path}`, {
-    ...init,
-    credentials: "include",
-    headers: clientAuthHeaders(init?.headers),
-  });
-  const body = await parseJsonResponse<T | ApiErrorBody>(res);
-  if (!res.ok) {
-    throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CLIENT_AUTH_TIMEOUT_MS);
+  try {
+    const res = await fetch(`/api/auth/${path}`, {
+      ...init,
+      credentials: "include",
+      signal: controller.signal,
+      headers: clientAuthHeaders(init?.headers),
+    });
+    const body = await parseJsonResponse<T | ApiErrorBody>(res);
+    if (!res.ok) {
+      throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
+    }
+    return body as T;
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new ApiError("Authentication request timed out. Try again.", 408);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
   }
-  return body as T;
 }
 
 function storeAuthFromResponse(data: AuthResponse): void {
@@ -247,13 +253,6 @@ export async function getMe(): Promise<AuthUser> {
   return authFetch<AuthUser>("me", { method: "GET" });
 }
 
-function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://localhost:8000"
-  );
-}
-
 /** Redirect target when a protected server page cannot resolve the user. */
 export function authBootstrapPath(nextPath: string): string {
   const next =
@@ -264,22 +263,6 @@ export function authBootstrapPath(nextPath: string): string {
 }
 
 export async function getServerUser(cookieHeader: string): Promise<AuthUser | null> {
-  if (!isAuthEnabled()) return GUEST_USER;
-
-  const base = backendBase();
-  if (!cookieHeader.trim()) return null;
-
-  try {
-    const meRes = await fetchWithTimeout(`${base}/auth/me`, {
-      headers: serverAuthHeaders(cookieHeader),
-      cache: "no-store",
-      timeoutMs: 3_000,
-    });
-    if (meRes.ok) {
-      return (await meRes.json()) as AuthUser;
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  const { user } = await getServerAuth(cookieHeader);
+  return user;
 }

@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -23,9 +24,25 @@ type AuthSessionContextValue = {
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 
-export function AuthSessionProvider({ children }: { children: ReactNode }) {
+const ACCESS_COOKIE = "bf_access";
+
+function hasAccessCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split(";").some((c) => c.trim().startsWith(`${ACCESS_COOKIE}=`));
+}
+
+type ProviderProps = {
+  children: ReactNode;
+  serverAuthenticated?: boolean;
+};
+
+export function AuthSessionProvider({
+  children,
+  serverAuthenticated = false,
+}: ProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!serverAuthenticated);
+  const initStartedRef = useRef(false);
 
   const refreshUser = useCallback(async () => {
     if (!isAuthEnabled()) {
@@ -53,6 +70,25 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     if (!isAuthEnabled()) {
       setLoading(false);
       return;
+    }
+    if (initStartedRef.current) return;
+    initStartedRef.current = true;
+
+    if (serverAuthenticated && hasAccessCookie()) {
+      let cancelled = false;
+      void getMe()
+        .then((me) => {
+          if (!cancelled) setUser(me);
+        })
+        .catch(() => {
+          if (!cancelled) setUser(null);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
     }
 
     let cancelled = false;
@@ -86,7 +122,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serverAuthenticated]);
 
   const value = useMemo(
     () => ({

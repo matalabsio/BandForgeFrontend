@@ -211,8 +211,12 @@ export function QuestionAudio({
               disabled={!audio.isReady}
               onClick={async () => {
                 setAutoplayBlocked(false);
-                await audio.start();
-                onStarted?.();
+                try {
+                  await audio.start();
+                  onStarted?.();
+                } catch {
+                  setAutoplayBlocked(true);
+                }
               }}
               className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-[var(--exam-bar)] px-4 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-50"
             >

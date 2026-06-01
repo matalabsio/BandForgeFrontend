@@ -7,6 +7,9 @@ export const metadata: Metadata = {
     "Realistic IELTS mocks, instant Reading and Listening scores, and AI feedback for Writing and Speaking.",
 };
 
+/** Fresh session check for hero/header CTAs (avoid stale ISR auth). */
+export const dynamic = "force-dynamic";
+
 /** BandForge marketing landing at `/`. */
 export default function Home() {
   return <BandForgeLanding />;

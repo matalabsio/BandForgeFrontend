@@ -26,16 +26,15 @@ export const metadata = {
 
 async function DashboardPageContent() {
   const cookieHeader = await getCachedCookieHeader();
-  const payloadPromise = getCachedDashboardPayload(cookieHeader);
-  const user = await getCachedServerUser(cookieHeader);
+  const [user, payloadResult, initialProgress] = await Promise.all([
+    getCachedServerUser(cookieHeader),
+    getCachedDashboardPayload(cookieHeader),
+    fetchMockSessionServer(cookieHeader, M01_MOCK_TEST_ID),
+  ]);
   if (!user) {
     redirect(authGuardRedirectPath("/dashboard"));
   }
 
-  const [payloadResult, initialProgress] = await Promise.all([
-    payloadPromise,
-    fetchMockSessionServer(cookieHeader, M01_MOCK_TEST_ID),
-  ]);
   const { mockTests, mockTestsFromApi, summary } = payloadResult;
   const needsRetry =
     isAuthEnabled() &&

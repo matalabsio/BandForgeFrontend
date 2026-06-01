@@ -14,8 +14,8 @@ import {
 } from "@/lib/mock-catalog";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import type { WritingBootServer } from "@/lib/mock-server";
+import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { syncExamRoute } from "@/lib/mock-exam-nav";
-import { mockApi } from "@/modules/mock/services/mock-api";
 import { writingApi } from "@/modules/writing/services/writing-api";
 import type { WritingTask } from "@/modules/writing/types";
 import {
@@ -124,9 +124,31 @@ export function WritingPage({
   }, [mockTestId, part, mockAttemptId, mockSlug, router]);
 
   useEffect(() => {
-    bootedRef.current = false;
-    setPhase("loading");
-  }, [mockAttemptId, part]);
+    if (initialBoot?.task) {
+      if (bootedRef.current) return;
+      bootedRef.current = true;
+      setAttemptId(initialBoot.attempt_id);
+      setTask(initialBoot.task as WritingTask);
+      setDurationSeconds(initialBoot.duration_seconds);
+      setRemaining(initialBoot.duration_seconds);
+      const initial =
+        initialBoot.saved_answer?.trim() ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem(storageKey(initialBoot.attempt_id)) ?? ""
+          : "");
+      setEssay(initial);
+      setSaved(true);
+      setPhase("ready");
+      return;
+    }
+    if (!autoStart) {
+      setPhase("loading");
+      return;
+    }
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    void beginSession();
+  }, [autoStart, beginSession, initialBoot, mockAttemptId, part]);
 
   useEffect(() => {
     if (!mockAttemptId) return;
@@ -134,7 +156,7 @@ export function WritingPage({
     let cancelled = false;
     void (async () => {
       try {
-        const p = await mockApi.progress(mockAttemptId);
+        const p = await fetchMockProgressDeduped(mockAttemptId);
         if (cancelled) return;
         if (p.status === "completed") {
           router.replace(mockResultsPath(mockSlug, mockAttemptId));
@@ -168,29 +190,13 @@ export function WritingPage({
   }, [mockAttemptId, mockSlug, part, sectionStart, router]);
 
   useEffect(() => {
-    if (!initialBoot?.task) return;
-    if (bootedRef.current) return;
-    bootedRef.current = true;
-    setAttemptId(initialBoot.attempt_id);
-    setTask(initialBoot.task as WritingTask);
-    setDurationSeconds(initialBoot.duration_seconds);
-    setRemaining(initialBoot.duration_seconds);
-    const initial =
-      initialBoot.saved_answer?.trim() ||
-      (typeof window !== "undefined"
-        ? localStorage.getItem(storageKey(initialBoot.attempt_id)) ?? ""
-        : "");
-    setEssay(initial);
-    setSaved(true);
-    setPhase("ready");
-  }, [initialBoot]);
-
-  useEffect(() => {
-    if (initialBoot?.task) return;
-    if (!autoStart || bootedRef.current) return;
-    bootedRef.current = true;
-    void beginSession();
-  }, [autoStart, beginSession]);
+    return () => {
+      if (autosaveRef.current) {
+        clearTimeout(autosaveRef.current);
+        autosaveRef.current = null;
+      }
+    };
+  }, []);
 
   const scheduleAutosave = useCallback(
     (value: string) => {
@@ -227,7 +233,10 @@ export function WritingPage({
     setBusy(true);
     setError(null);
     try {
-      if (autosaveRef.current) clearTimeout(autosaveRef.current);
+      if (autosaveRef.current) {
+        clearTimeout(autosaveRef.current);
+        autosaveRef.current = null;
+      }
       await writingApi.autosave(attemptId, task.id, trimmed);
       const result = await writingApi.submit(attemptId, [
         { question_id: task.id, user_answer: trimmed },

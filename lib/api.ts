@@ -1,7 +1,9 @@
+/** Backend base URL. Server routes prefer API_URL (not exposed to the browser). */
 export function getApiUrl(): string {
   return (
+    process.env.API_URL?.replace(/\/$/, "") ||
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://localhost:8000"
+    "http://127.0.0.1:8000"
   );
 }
 
