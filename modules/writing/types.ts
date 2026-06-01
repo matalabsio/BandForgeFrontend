@@ -1,10 +1,26 @@
+export type WritingChartSpec = {
+  type?: string;
+  title?: string;
+  source?: string;
+  cities: string[];
+  series: Array<{ mode: string; values: number[] }>;
+};
+
+export type WritingTaskOptions = {
+  min_words?: number;
+  image_url?: string | null;
+  title?: string;
+  difficulty?: string;
+  chart?: WritingChartSpec;
+};
+
 export type WritingTask = {
   id: string;
   question_number: number;
   question_type: string;
   prompt: string;
   part: number;
-  options?: { min_words?: number; image_url?: string | null } | null;
+  options?: WritingTaskOptions | null;
 };
 
 export type StartWritingPayload = {
@@ -44,7 +60,7 @@ export type WritingReview = {
   test_title: string | null;
   question_type: string;
   prompt: string;
-  options?: { min_words?: number; image_url?: string | null } | null;
+  options?: WritingTaskOptions | null;
   user_answer: string;
   word_count: number;
   band: number | null;

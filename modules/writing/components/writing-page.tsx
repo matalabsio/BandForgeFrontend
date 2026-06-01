@@ -23,6 +23,7 @@ import {
   writingMinWords,
   writingResultsPath,
 } from "@/lib/writing-test";
+import { WritingTask1Chart } from "@/modules/writing/components/writing-task1-chart";
 import { TestHeader, TestShell, TestTimer, WordCounter } from "@/modules/shared";
 import { cn } from "@/lib/utils";
 
@@ -380,6 +381,8 @@ export function WritingPage({
                 alt="Task 1 visual"
                 className="mt-4 max-w-full rounded-lg border border-border"
               />
+            ) : task?.options?.chart?.cities?.length ? (
+              <WritingTask1Chart chart={task.options.chart} />
             ) : part === 1 ? (
               <p className="mt-4 text-meta text-ink/50">
                 Chart image will appear here when available.
