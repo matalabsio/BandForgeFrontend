@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { mockHubPath } from "@/lib/mock-catalog";
+import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
 import { shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { syncExamRoute } from "@/lib/mock-exam-nav";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
@@ -33,6 +34,9 @@ export function useListeningMockGuard({
       try {
         const p = await fetchMockProgressDeduped(mockAttemptId);
         if (cancelled) return;
+        if (redirectIfMockCompleted(p.status, replace)) {
+          return;
+        }
         if (p.status !== "in_progress") {
           replace(mockHubPath(mockSlug));
           return;

@@ -496,7 +496,10 @@ export function ListeningPage({
       );
     }
 
-    if (state.status === "in_progress" && state.parts.length > 0) {
+    if (
+      (state.status === "in_progress" || state.status === "submitting") &&
+      state.parts.length > 0
+    ) {
       const examPart =
         state.parts.find((p) => p.part === part) ?? state.parts[0];
       const ordered = sortedPartQuestions(examPart);

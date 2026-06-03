@@ -11,8 +11,11 @@ import {
 import {
   MOCK_DISPLAY_LABEL,
   mockApiId,
-  mockHubPath,
 } from "@/lib/mock-catalog";
+import {
+  MOCK_COMPLETED_EXIT,
+  useRedirectBrowserBack,
+} from "@/lib/mock-completed-nav";
 import { navigateAfterMockStart } from "@/lib/mock-exam-nav";
 import { formatMockStartError } from "@/lib/api";
 import { mockAttemptStorageKey } from "@/modules/mock/lib/mock-session-storage";
@@ -122,6 +125,8 @@ function MockResultsBody({
   const [error, setError] = useState<string | null>(null);
   const [retestBusy, setRetestBusy] = useState(false);
   const [retestError, setRetestError] = useState<string | null>(null);
+
+  useRedirectBrowserBack(MOCK_COMPLETED_EXIT);
 
   const startRetest = async () => {
     setRetestBusy(true);
@@ -264,10 +269,10 @@ function MockResultsBody({
                   {retestBusy ? "Starting…" : `Retake ${MOCK_DISPLAY_LABEL}`}
                 </button>
                 <Link
-                  href={mockHubPath(mockSlug)}
+                  href={MOCK_COMPLETED_EXIT}
                   className="inline-flex items-center justify-center rounded-xl border border-transparent px-5 py-3 text-[14px] font-semibold text-[var(--exam-ink-muted)] transition-colors hover:text-[var(--exam-ink)] sm:flex-1"
                 >
-                  Back to test hub
+                  Go to dashboard
                 </Link>
               </div>
             </div>

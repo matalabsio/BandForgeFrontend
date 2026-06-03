@@ -16,7 +16,7 @@ export function GoogleSignInButton({
   return (
     <a
       href={href}
-      className={`flex min-h-[var(--spacing-touch)] w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-border bg-white px-4 text-body font-semibold text-navy shadow-[var(--shadow-soft)] transition-colors duration-200 hover:bg-surface ${className}`}
+      className={`flex min-h-[var(--spacing-touch)] w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border border-border bg-white px-4 text-body font-semibold text-navy shadow-[var(--shadow-soft)] transition-[box-shadow,background-color,border-color] duration-200 hover:border-teal/25 hover:bg-surface hover:shadow-[var(--shadow-elevated)] ${className}`}
     >
       <GoogleIcon className="size-5 shrink-0" />
       {label}

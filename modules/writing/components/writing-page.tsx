@@ -10,10 +10,10 @@ import {
   mockModulePath,
   mockPathFromProgress,
   mockHubPath,
-  mockResultsPath,
   TEST1_WRITING_TASK_COUNT,
 } from "@/lib/mock-catalog";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
+import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
 import type { WritingBootServer } from "@/lib/mock-server";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { syncExamRoute } from "@/lib/mock-exam-nav";
@@ -243,8 +243,7 @@ export function WritingPage({
       try {
         const p = await fetchMockProgressDeduped(mockAttemptId);
         if (cancelled) return;
-        if (p.status === "completed") {
-          router.replace(mockResultsPath(mockSlug, mockAttemptId));
+        if (redirectIfMockCompleted(p.status, router.replace.bind(router))) {
           return;
         }
         const writingMod = p.modules.find((m) => m.module === "writing");
@@ -337,7 +336,7 @@ export function WritingPage({
           result.mock_writing_complete ||
           result.mock_next_module === "speaking"
         ) {
-          router.push(
+          router.replace(
             `/mock/${mockSlug}/results?mock_attempt=${encodeURIComponent(mockAttemptId)}`,
           );
           return;

@@ -8,6 +8,7 @@ import {
   cacheSectionAdvance,
 } from "@/lib/mock-checkpoint-cache";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
+import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
 import type { ReadingBootServer } from "@/lib/mock-server";
 import {
   MOCK_DISPLAY_LABEL,
@@ -34,6 +35,7 @@ import {
   nextSection,
   prevSection,
   readFlowSnapshot,
+  QUESTION_SECTION_ORDER,
   type QuestionSectionId,
   type ReadingExamPhase,
   writeFlowSnapshot,
@@ -78,6 +80,20 @@ type Props = {
   initialBoot?: ReadingBootServer | null;
 };
 
+type SessionStart = Awaited<ReturnType<typeof readingApi.start>>;
+
+function isActiveReadingStatus(status: string | undefined): boolean {
+  return status === "in_progress" || status === "started";
+}
+
+function defaultQuestionSection(
+  groups: ReturnType<typeof groupReadingQuestions>,
+): QuestionSectionId {
+  const first = groups[0]?.id as QuestionSectionId | undefined;
+  if (first && QUESTION_SECTION_ORDER.includes(first)) return first;
+  return "tfng";
+}
+
 export function ReadingPage({
   testId,
   mockSlug = "m01",
@@ -89,7 +105,11 @@ export function ReadingPage({
   const mockAttemptId = searchParams.get("mock_attempt");
   const sectionStart = searchParams.get("section_start") === "1";
 
-  const beginSessionInFlightRef = useRef<Promise<void> | null>(null);
+  const beginSessionInFlightRef = useRef<Promise<SessionStart | null> | null>(
+    null,
+  );
+  const bootGenerationRef = useRef(0);
+  const initialBootConsumedRef = useRef(false);
 
   const [loadStatus, setLoadStatus] = useState<"booting" | "ready" | "error">(
     "booting",
@@ -122,9 +142,16 @@ export function ReadingPage({
     [questions],
   );
 
+  const activeQuestionSection = useMemo(() => {
+    if (questionGroups.some((g) => g.id === questionSection)) {
+      return questionSection;
+    }
+    return defaultQuestionSection(questionGroups);
+  }, [questionGroups, questionSection]);
+
   const currentGroup = useMemo(
-    () => questionGroups.find((g) => g.id === questionSection) ?? null,
-    [questionGroups, questionSection],
+    () => questionGroups.find((g) => g.id === activeQuestionSection) ?? null,
+    [questionGroups, activeQuestionSection],
   );
   const sectionQuestionRanges = useMemo(() => {
     const map: Record<QuestionSectionId, string> = {
@@ -139,14 +166,14 @@ export function ReadingPage({
     return map;
   }, [questionGroups]);
   const continueLabel = useMemo(() => {
-    if (questionSection === "tfng") {
+    if (activeQuestionSection === "tfng") {
       return `Continue to ${sectionQuestionRanges.matching_headings}`;
     }
-    if (questionSection === "matching_headings") {
+    if (activeQuestionSection === "matching_headings") {
       return `Continue to ${sectionQuestionRanges.sentence_completion}`;
     }
     return "Submit passage";
-  }, [questionSection, sectionQuestionRanges]);
+  }, [activeQuestionSection, sectionQuestionRanges]);
 
   const answeredCount = useMemo(
     () => questions.filter((q) => (answers[q.id] ?? "").trim()).length,
@@ -269,6 +296,7 @@ export function ReadingPage({
         /* ignore */
       }
       goToResults(result.attempt_id, result);
+      return;
     } catch (e) {
       if (e instanceof ApiError && e.status === 409 && mockAttemptId) {
         try {
@@ -363,22 +391,27 @@ export function ReadingPage({
   );
 
   const beginSession = useCallback(
-    async (freshPassage = false, snap?: ReturnType<typeof readFlowSnapshot>) => {
+    async (
+      freshPassage = false,
+      snap?: ReturnType<typeof readFlowSnapshot>,
+    ): Promise<SessionStart | null> => {
       if (beginSessionInFlightRef.current) {
-        await beginSessionInFlightRef.current;
-        return;
+        return beginSessionInFlightRef.current;
       }
-      const task = (async () => {
+
+      const task = (async (): Promise<SessionStart | null> => {
         setError(null);
         try {
-          let start: Awaited<ReturnType<typeof readingApi.start>>;
+          let start: SessionStart;
 
-          // Reuse server-fetched boot (MockReadingPage) to avoid a second /start on section_start.
+          // Reuse server-fetched boot once per mount to avoid a duplicate /start.
           if (
+            !initialBootConsumedRef.current &&
             initialBoot?.passage_text &&
             initialBoot.questions?.length &&
-            initialBoot.status === "in_progress"
+            isActiveReadingStatus(initialBoot.status)
           ) {
+            initialBootConsumedRef.current = true;
             start = {
               attempt_id: initialBoot.attempt_id,
               started_at: initialBoot.started_at,
@@ -408,11 +441,19 @@ export function ReadingPage({
             }
           }
 
+          if (!start.questions?.length || !start.passage_text) {
+            throw new ApiError(
+              "This passage has no questions yet. Refresh or try again.",
+              503,
+            );
+          }
+
           hydrateFromStart(start, freshPassage, snap);
           if (snap && (snap.examPhase === "passage" || snap.examPhase === "questions")) {
             setExamPhase(snap.examPhase);
             setQuestionSection(snap.questionSection);
           }
+          return start;
         } catch (e) {
           const apiMessage =
             e instanceof ApiError
@@ -428,11 +469,11 @@ export function ReadingPage({
                   status: p.status,
                 }),
               );
-              return;
+              return null;
             } catch {
               setLoadStatus("error");
               setError(apiMessage);
-              return;
+              return null;
             }
           }
           setLoadStatus("error");
@@ -440,11 +481,14 @@ export function ReadingPage({
           throw e;
         }
       })();
+
       beginSessionInFlightRef.current = task;
       try {
-        await task;
+        return await task;
       } finally {
-        beginSessionInFlightRef.current = null;
+        if (beginSessionInFlightRef.current === task) {
+          beginSessionInFlightRef.current = null;
+        }
       }
     },
     [
@@ -456,6 +500,35 @@ export function ReadingPage({
       replace,
       initialBoot,
     ],
+  );
+
+  const finishBoot = useCallback(
+    (
+      start: SessionStart | null,
+      cancelled: boolean,
+      bootGen: number,
+      opts?: { examPhase?: ReadingExamPhase; questionSection?: QuestionSectionId },
+    ) => {
+      if (cancelled || bootGenerationRef.current !== bootGen) return false;
+      if (!start?.questions?.length || !start.passage_text) {
+        setLoadStatus("error");
+        setError("Could not load this passage. Please try again.");
+        return false;
+      }
+      if (opts?.examPhase) setExamPhase(opts.examPhase);
+      if (opts?.questionSection) {
+        setQuestionSection(
+          groupReadingQuestions(start.questions).some(
+            (g) => g.id === opts.questionSection,
+          )
+            ? opts.questionSection
+            : defaultQuestionSection(groupReadingQuestions(start.questions)),
+        );
+      }
+      setLoadStatus("ready");
+      return true;
+    },
+    [],
   );
 
   useEffect(() => {
@@ -476,6 +549,9 @@ export function ReadingPage({
       try {
         const p = await fetchMockProgressDeduped(mockAttemptId);
         if (cancelled) return;
+        if (redirectIfMockCompleted(p.status, replace)) {
+          return;
+        }
         if (p.status !== "in_progress") {
           replace(mockHubPath(mockSlug));
           return;
@@ -495,13 +571,11 @@ export function ReadingPage({
 
   useEffect(() => {
     let cancelled = false;
+    const bootGen = ++bootGenerationRef.current;
+    initialBootConsumedRef.current = false;
 
     setLoadStatus("booting");
     setError(null);
-    setAttemptId(null);
-    setAnswers({});
-    setQuestions([]);
-    setPassageText("");
 
     if (sectionStart) {
       clearFlowSnapshot(testId, passage, mockAttemptId);
@@ -511,10 +585,6 @@ export function ReadingPage({
       ? null
       : readFlowSnapshot(testId, passage, mockAttemptId);
 
-    const finishReady = () => {
-      if (!cancelled) setLoadStatus("ready");
-    };
-
     if (
       snap &&
       snap.attemptId &&
@@ -522,12 +592,12 @@ export function ReadingPage({
     ) {
       void (async () => {
         try {
-          await beginSession(false, snap);
-          finishReady();
+          const start = await beginSession(false, snap);
+          finishBoot(start, cancelled, bootGen);
         } catch {
-          if (!cancelled) {
+          if (!cancelled && bootGenerationRef.current === bootGen) {
             setExamPhase("intro");
-            finishReady();
+            setLoadStatus("ready");
           }
         }
       })();
@@ -539,13 +609,15 @@ export function ReadingPage({
     if (!shouldShowIntroRef.current) {
       void (async () => {
         try {
-          await beginSession(sectionStart, null);
-          if (cancelled) return;
-          setExamPhase("questions");
-          setQuestionSection("tfng");
-          finishReady();
+          const start = await beginSession(sectionStart, null);
+          finishBoot(start, cancelled, bootGen, {
+            examPhase: "questions",
+            questionSection: "tfng",
+          });
         } catch {
-          if (!cancelled) setLoadStatus("error");
+          if (!cancelled && bootGenerationRef.current === bootGen) {
+            setLoadStatus("error");
+          }
         }
       })();
       return () => {
@@ -554,28 +626,37 @@ export function ReadingPage({
     }
 
     setExamPhase("intro");
-    finishReady();
+    if (!cancelled && bootGenerationRef.current === bootGen) {
+      setLoadStatus("ready");
+    }
 
     return () => {
       cancelled = true;
     };
-  }, [testId, passage, mockAttemptId, sectionStart, beginSession, initialBoot]);
+  }, [testId, passage, mockAttemptId, sectionStart, beginSession, finishBoot]);
 
   const handleIntroStart = useCallback(async () => {
     if (!introAgreed) return;
     setBusy(true);
     setError(null);
+    const bootGen = bootGenerationRef.current;
     try {
-      await beginSession(sectionStart, null);
+      const start = await beginSession(sectionStart, null);
+      if (
+        !finishBoot(start, false, bootGen, {
+          examPhase: "questions",
+          questionSection: "tfng",
+        })
+      ) {
+        return;
+      }
       writeConsent("reading", instructionScope);
-      setExamPhase("questions");
-      setQuestionSection("tfng");
     } catch {
       /* error state set in beginSession */
     } finally {
       setBusy(false);
     }
-  }, [beginSession, sectionStart, introAgreed, instructionScope]);
+  }, [beginSession, sectionStart, introAgreed, instructionScope, finishBoot]);
 
   const handleContinueToQuestions = useCallback(() => {
     setExamPhase("questions");
@@ -619,7 +700,12 @@ export function ReadingPage({
     }
   }, [attemptId, examPhase, questionSection, answers, persistFlow]);
 
-  if (loadStatus === "booting") {
+  const contentReady =
+    loadStatus === "ready" &&
+    questions.length > 0 &&
+    passageText.trim().length > 0;
+
+  if (loadStatus === "booting" || (loadStatus === "ready" && !contentReady && examPhase !== "intro")) {
     return (
       <ReadingExamSkeleton
         title={`Loading Reading · Passage ${passage}`}
@@ -711,7 +797,8 @@ export function ReadingPage({
             busy={busy}
             showSubmit={
               examPhase === "questions" &&
-              questionSection === "sentence_completion"
+              activeQuestionSection === "sentence_completion" &&
+              contentReady
             }
             onSubmit={() => void submitAll()}
           />
@@ -733,7 +820,7 @@ export function ReadingPage({
               <div className="min-h-[52vh] min-w-0 flex-1 lg:w-[min(44%,560px)] lg:shrink-0">
                 <div className="flex h-full min-h-0 flex-col">
                   <ReadingSectionStepper
-                    current={questionSection}
+                    current={activeQuestionSection}
                     onSelect={handleStepperSelect}
                     labels={{
                       tfng: `${sectionQuestionRanges.tfng} · TFNG`,
@@ -744,17 +831,40 @@ export function ReadingPage({
                     onContinue={handleSectionContinue}
                     onSubmit={() => void submitAll()}
                     busy={busy}
-                    isLastSection={questionSection === "sentence_completion"}
+                    isLastSection={activeQuestionSection === "sentence_completion"}
                     continueLabel={continueLabel}
                   />
                   <ReadingQuestionSection
                     group={currentGroup}
-                    sectionId={questionSection}
+                    sectionId={activeQuestionSection}
                     answers={answers}
                     onAnswer={setAnswer}
                   />
                 </div>
               </div>
+            </div>
+          ) : examPhase === "questions" ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+              <p className="max-w-md text-[14px] text-[var(--reading-ink)]/75">
+                Passage content did not load. This can happen after submitting the
+                previous section — retry to continue.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoadStatus("booting");
+                  const bootGen = ++bootGenerationRef.current;
+                  void beginSession(sectionStart, null).then((start) => {
+                    finishBoot(start, false, bootGen, {
+                      examPhase: "questions",
+                      questionSection: activeQuestionSection,
+                    });
+                  });
+                }}
+                className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-5 py-2.5 text-[13px] font-bold text-white"
+              >
+                Reload passage
+              </button>
             </div>
           ) : null}
         </>
