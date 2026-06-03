@@ -8,6 +8,7 @@ import {
   DEFAULT_MOCK_SLUG,
   mockAfterWritingSubmitPath,
   mockModulePath,
+  mockPathFromProgress,
   mockHubPath,
   mockResultsPath,
   TEST1_WRITING_TASK_COUNT,
@@ -23,9 +24,33 @@ import {
   writingMinWords,
   writingResultsPath,
 } from "@/lib/writing-test";
-import { WritingTask1Chart } from "@/modules/writing/components/writing-task1-chart";
+import { WritingTask1Prompt } from "@/modules/writing/components/writing-task1-prompt";
+import { WritingTask2Prompt } from "@/modules/writing/components/writing-task2-prompt";
 import { TestHeader, TestShell, TestTimer, WordCounter } from "@/modules/shared";
 import { cn } from "@/lib/utils";
+import { SectionInstructionsModal } from "@/modules/shared/components/section-instructions-modal";
+import {
+  ExamBusyOverlay,
+  ExamSectionLoader,
+} from "@/modules/shared/components/exam-section-loader";
+
+function readConsent(moduleKey: string, attemptScope: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(`bf-instructions:${moduleKey}:${attemptScope}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeConsent(moduleKey: string, attemptScope: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`bf-instructions:${moduleKey}:${attemptScope}`, "1");
+  } catch {
+    /* ignore */
+  }
+}
 
 const STORAGE_PREFIX = "bf-writing-";
 
@@ -58,28 +83,70 @@ export function WritingPage({
   const mockAttemptId = searchParams.get("mock_attempt");
   const sectionStart = searchParams.get("section_start") === "1";
 
-  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
+  const [phase, setPhase] = useState<"loading" | "intro" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [task, setTask] = useState<WritingTask | null>(null);
   const [essay, setEssay] = useState("");
   const [saved, setSaved] = useState(true);
+  const [introAgreed, setIntroAgreed] = useState(false);
+  const [introPassed, setIntroPassed] = useState(false);
   const [durationSeconds, setDurationSeconds] = useState(
     part === 1 ? 20 * 60 : 40 * 60,
   );
   const [remaining, setRemaining] = useState(durationSeconds);
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveBlockedRef = useRef(false);
   const bootedRef = useRef(false);
+  const needsConsentGateRef = useRef(false);
 
   const minWords =
     task?.options?.min_words ?? writingMinWords(part);
+  const activePart = (task?.part === 1 || task?.part === 2) ? task.part : part;
 
   const wordCount = useMemo(() => countWords(essay), [essay]);
   const estimatedBand = useMemo(
     () => estimateWritingBand(wordCount, part),
     [wordCount, part],
   );
+  const needsConsentGate = part === 1 && !introPassed;
+  const instructionScope = useMemo(
+    () => mockAttemptId ?? `${mockTestId}:writing`,
+    [mockAttemptId, mockTestId],
+  );
+
+  useEffect(() => {
+    needsConsentGateRef.current = needsConsentGate;
+  }, [needsConsentGate]);
+
+  useEffect(() => {
+    if (part !== 1) {
+      setIntroAgreed(true);
+      setIntroPassed(true);
+      return;
+    }
+    const seen = readConsent("writing", instructionScope);
+    setIntroAgreed(seen);
+    setIntroPassed(false);
+  }, [part, instructionScope]);
+
+  // Client navigation part=1 → part=2 reuses this component; reset so Task 2 gets a new attempt.
+  useEffect(() => {
+    bootedRef.current = false;
+    autosaveBlockedRef.current = false;
+    if (autosaveRef.current) {
+      clearTimeout(autosaveRef.current);
+      autosaveRef.current = null;
+    }
+    setAttemptId(null);
+    setTask(null);
+    setEssay("");
+    setError(null);
+    setBusy(false);
+    setSaved(true);
+    setPhase("loading");
+  }, [part, mockTestId, mockAttemptId]);
 
   useEffect(() => {
     setRemaining(durationSeconds);
@@ -113,11 +180,18 @@ export function WritingPage({
           : "");
       setEssay(initial);
       setSaved(true);
+      autosaveBlockedRef.current = false;
       setPhase("ready");
     } catch (e) {
-      if (e instanceof ApiError && e.status === 403 && mockAttemptId) {
-        router.replace(mockResultsPath(mockSlug, mockAttemptId));
-        return;
+      if (e instanceof ApiError && mockAttemptId && (e.status === 403 || e.status === 409)) {
+        try {
+          const progress = await fetchMockProgressDeduped(mockAttemptId);
+          router.replace(mockPathFromProgress(mockSlug, mockAttemptId, progress));
+          return;
+        } catch {
+          router.replace(mockHubPath(mockSlug));
+          return;
+        }
       }
       setError(e instanceof Error ? e.message : "Could not start writing task.");
       setPhase("error");
@@ -127,6 +201,10 @@ export function WritingPage({
   useEffect(() => {
     if (initialBoot?.task) {
       if (bootedRef.current) return;
+      if (part === 1 && !introPassed) {
+        setPhase("intro");
+        return;
+      }
       bootedRef.current = true;
       setAttemptId(initialBoot.attempt_id);
       setTask(initialBoot.task as WritingTask);
@@ -139,6 +217,7 @@ export function WritingPage({
           : "");
       setEssay(initial);
       setSaved(true);
+      autosaveBlockedRef.current = false;
       setPhase("ready");
       return;
     }
@@ -146,12 +225,17 @@ export function WritingPage({
       setPhase("loading");
       return;
     }
+    if (part === 1 && !introPassed) {
+      setPhase("intro");
+      return;
+    }
     if (bootedRef.current) return;
     bootedRef.current = true;
     void beginSession();
-  }, [autoStart, beginSession, initialBoot, mockAttemptId, part]);
+  }, [autoStart, beginSession, initialBoot, mockAttemptId, part, introPassed]);
 
   useEffect(() => {
+    if (needsConsentGateRef.current) return;
     if (!mockAttemptId) return;
     if (shouldSkipMockGuard(mockAttemptId, sectionStart)) return;
     let cancelled = false;
@@ -192,6 +276,7 @@ export function WritingPage({
 
   useEffect(() => {
     return () => {
+      autosaveBlockedRef.current = true;
       if (autosaveRef.current) {
         clearTimeout(autosaveRef.current);
         autosaveRef.current = null;
@@ -199,33 +284,25 @@ export function WritingPage({
     };
   }, []);
 
-  const scheduleAutosave = useCallback(
-    (value: string) => {
-      if (!attemptId || !task) return;
-      setSaved(false);
-      if (autosaveRef.current) clearTimeout(autosaveRef.current);
-      autosaveRef.current = setTimeout(() => {
-        void writingApi
-          .autosave(attemptId, task.id, value)
-          .then(() => setSaved(true))
-          .catch(() => setSaved(false));
-        try {
-          localStorage.setItem(storageKey(attemptId), value);
-        } catch {
-          /* ignore */
-        }
-      }, 600);
-    },
-    [attemptId, task],
-  );
-
   const handleChange = (value: string) => {
     setEssay(value);
-    scheduleAutosave(value);
+    if (attemptId) {
+      try {
+        localStorage.setItem(storageKey(attemptId), value);
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   const submitTask = async () => {
     if (!attemptId || !task || busy) return;
+    if (task.part !== part) {
+      setError(null);
+      bootedRef.current = false;
+      void beginSession();
+      return;
+    }
     const trimmed = essay.trim();
     if (!trimmed) {
       setError("Please write your response before submitting.");
@@ -233,12 +310,12 @@ export function WritingPage({
     }
     setBusy(true);
     setError(null);
+    autosaveBlockedRef.current = true;
     try {
       if (autosaveRef.current) {
         clearTimeout(autosaveRef.current);
         autosaveRef.current = null;
       }
-      await writingApi.autosave(attemptId, task.id, trimmed);
       const result = await writingApi.submit(attemptId, [
         { question_id: task.id, user_answer: trimmed },
       ]);
@@ -258,8 +335,7 @@ export function WritingPage({
         });
         if (
           result.mock_writing_complete ||
-          result.mock_next_module === "speaking" ||
-          result.status === "completed"
+          result.mock_next_module === "speaking"
         ) {
           router.push(
             `/mock/${mockSlug}/results?mock_attempt=${encodeURIComponent(mockAttemptId)}`,
@@ -267,6 +343,7 @@ export function WritingPage({
           return;
         }
         if (result.next_part === 2 && part === 1 && TEST1_WRITING_TASK_COUNT > 1) {
+          bootedRef.current = false;
           router.push(
             mockModulePath(mockSlug, "writing", {
               part: 2,
@@ -302,18 +379,30 @@ export function WritingPage({
         : "";
       router.push(`${writingResultsPath(result.attempt_id)}${q}`);
     } catch (e) {
+      autosaveBlockedRef.current = false;
       setError(e instanceof Error ? e.message : "Submit failed.");
     } finally {
       setBusy(false);
     }
   };
 
+  const handleWritingIntroContinue = () => {
+    if (part !== 1 || !introAgreed) return;
+    writeConsent("writing", instructionScope);
+    setIntroPassed(true);
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    void beginSession();
+  };
+
   if (phase === "loading") {
     return (
       <TestShell header={<TestHeader timer={<span className="text-meta">Loading…</span>} />}>
-        <main className="flex flex-1 items-center justify-center p-8 text-[14px] text-ink/60">
-          Preparing writing task…
-        </main>
+        <ExamSectionLoader
+          className="min-h-0"
+          title={`Loading Writing · Task ${part}`}
+          subtitle="Fetching your task prompt and starting the timer."
+        />
       </TestShell>
     );
   }
@@ -333,14 +422,48 @@ export function WritingPage({
     );
   }
 
+  if (phase === "intro" && part === 1) {
+    return (
+      <SectionInstructionsModal
+        title="Writing Test Instructions"
+        description="You will complete two writing tasks in order: Task 1, then Task 2."
+        instructions={[
+          "Task 1 and Task 2 are timed separately and must be completed in order.",
+          "Your draft is kept in this browser while you type.",
+          "Submit Task 1 to continue to Task 2.",
+          "Submit Task 2 to finish the writing module.",
+          "Aim to meet the minimum word count for each task before submission.",
+        ]}
+        ctaLabel="Begin Writing"
+        agreed={introAgreed}
+        onAgreeChange={setIntroAgreed}
+        onContinue={handleWritingIntroContinue}
+      />
+    );
+  }
+
   return (
     <TestShell
       header={<TestHeader timer={<TestTimer remainingSeconds={remaining} />} />}
     >
+      {busy ? (
+        <ExamBusyOverlay
+          title={
+            activePart === 1
+              ? "Submitting Task 1…"
+              : "Submitting Writing…"
+          }
+          subtitle={
+            activePart === 1
+              ? "Saving your response and loading Task 2."
+              : "Saving your response and opening your results."
+          }
+        />
+      ) : null}
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 md:px-6">
-          <p className="text-meta font-semibold text-navy">
-            Writing Task {part}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--reading-border)] bg-[var(--reading-bar)]/5 px-4 py-3 md:px-6">
+          <p className="text-meta font-semibold text-[var(--reading-ink)]">
+            Writing Task {activePart}
             {mockAttemptId ? " · Full mock" : ""}
           </p>
           <div className="flex items-center gap-4">
@@ -350,7 +473,7 @@ export function WritingPage({
                 "rounded-full px-2.5 py-0.5 text-meta font-semibold tabular-nums",
                 wordCount >= minWords
                   ? "bg-emerald-100 text-emerald-800"
-                  : "bg-surface text-ink/55",
+                  : "bg-[var(--reading-surface)] text-[var(--reading-ink-muted)]",
               )}
               title={`Estimated band from word count (minimum ${minWords} words)`}
             >
@@ -359,7 +482,7 @@ export function WritingPage({
             <span
               className={cn(
                 "text-meta",
-                saved ? "text-success" : "text-ink/45",
+                saved ? "text-emerald-700" : "text-[var(--reading-ink-muted)]",
               )}
             >
               {saved ? "Saved" : "Saving…"}
@@ -367,40 +490,23 @@ export function WritingPage({
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 lg:flex-row lg:p-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
           <section
-            className="lg:w-2/5 lg:overflow-y-auto"
+            className="min-h-[34vh] border-b border-[var(--reading-border)] bg-[var(--reading-paper)] p-4 lg:min-h-0 lg:w-[min(44%,560px)] lg:border-b-0 lg:border-r lg:p-6 lg:overflow-y-auto"
             aria-label="Task prompt"
           >
-            <p className="text-question mt-1 leading-relaxed text-ink" data-test-question>
-              {task?.prompt}
-            </p>
-            {task?.options?.image_url ? (
-              <img
-                src={task.options.image_url}
-                alt="Task 1 visual"
-                className="mt-4 max-w-full rounded-lg border border-border"
+            {task && activePart === 2 ? (
+              <WritingTask2Prompt
+                task={task}
+                minutes={40}
+                minWords={minWords}
               />
-            ) : task?.options?.chart?.cities?.length ? (
-              <WritingTask1Chart chart={task.options.chart} />
-            ) : part === 1 ? (
-              <p className="mt-4 text-meta text-ink/50">
-                Chart image will appear here when available.
-              </p>
-            ) : null}
-            {part === 2 ? (
-              <aside className="mt-4 rounded-lg border border-border bg-surface p-4">
-                <p className="text-meta font-semibold text-navy">Tips</p>
-                <ul className="mt-2 list-inside list-disc space-y-1 text-meta text-ink/65">
-                  <li>State your position in the introduction</li>
-                  <li>Use clear paragraphs with one main idea each</li>
-                  <li>Leave time to proofread</li>
-                </ul>
-              </aside>
+            ) : task ? (
+              <WritingTask1Prompt task={task} minutes={20} minWords={minWords} />
             ) : null}
           </section>
 
-          <section className="flex min-h-[280px] flex-1 flex-col">
+          <section className="flex min-h-[280px] flex-1 flex-col bg-[var(--reading-surface)] p-4 lg:p-6">
             <label htmlFor="essay" className="sr-only">
               Your response
             </label>
@@ -409,20 +515,24 @@ export function WritingPage({
               value={essay}
               onChange={(e) => handleChange(e.target.value)}
               placeholder="Type your response here…"
-              className="answer-input min-h-[240px] flex-1 resize-none rounded-lg border border-border bg-white p-4 text-ink transition-colors duration-200 focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/20"
+              className="answer-input min-h-[240px] flex-1 resize-none rounded-lg border border-[var(--reading-border)] bg-white p-4 text-[var(--reading-ink)] transition-colors duration-200 focus:border-[var(--reading-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--reading-accent)]/20"
             />
             {error ? (
               <p className="mt-2 text-[13px] text-red-600" role="alert">
                 {error}
               </p>
             ) : null}
-            <div className="sticky-test-actions mt-4 flex justify-end gap-3">
+            <div className="sticky-test-actions mt-4 flex justify-end gap-3 border-t border-[var(--reading-border)] pt-4">
               <Button
                 variant="primary"
                 disabled={busy}
                 onClick={() => void submitTask()}
               >
-                {busy ? "Submitting…" : "Submit task"}
+                {busy
+                  ? "Submitting…"
+                  : activePart === 1
+                    ? "Continue to Task 2"
+                    : "Submit Writing"}
               </Button>
             </div>
           </section>

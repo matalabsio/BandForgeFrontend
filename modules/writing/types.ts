@@ -2,6 +2,7 @@ export type WritingChartSpec = {
   type?: string;
   title?: string;
   source?: string;
+  y_max?: number;
   cities: string[];
   series: Array<{ mode: string; values: number[] }>;
 };
@@ -11,6 +12,8 @@ export type WritingTaskOptions = {
   image_url?: string | null;
   title?: string;
   difficulty?: string;
+  figure_label?: string;
+  figure_note?: string;
   chart?: WritingChartSpec;
 };
 

@@ -2,8 +2,8 @@ import {
   DEFAULT_MOCK_SLUG,
   M01_MOCK_TEST_ID,
   isFullMock,
-  mockHubPath,
   mockModulePath,
+  test1HubPath,
 } from "@/lib/mock-catalog";
 
 export { M01_MOCK_TEST_ID };
@@ -51,9 +51,7 @@ export function writingModuleResultsPath(
 }
 
 export function writingMockHubPath(mockAttemptId?: string): string {
-  const base = mockHubPath(DEFAULT_MOCK_SLUG);
-  if (!mockAttemptId) return base;
-  return `${base}?mock_attempt=${encodeURIComponent(mockAttemptId)}`;
+  return test1HubPath(mockAttemptId);
 }
 
 /** IELTS minimum word counts per task (mirrors backend WRITING_MIN_WORDS). */

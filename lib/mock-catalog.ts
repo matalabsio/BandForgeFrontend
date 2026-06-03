@@ -53,8 +53,23 @@ export function isFullMock(testId: string): boolean {
   return PUBLISHED_FULL_MOCK_IDS.includes(resolveMockId(testId));
 }
 
-export function mockHubPath(slug: string = DEFAULT_MOCK_SLUG): string {
-  return `/mock/${canonicalMockSlug(slug)}`;
+/** Canonical Test 1 hub — section cards (Listening, Reading, Writing). */
+export function test1HubPath(mockAttemptId?: string | null): string {
+  const base = "/test/1";
+  if (!mockAttemptId) return base;
+  return `${base}?mock_attempt=${encodeURIComponent(mockAttemptId)}`;
+}
+
+export function mockHubPath(
+  slug: string = DEFAULT_MOCK_SLUG,
+  mockAttemptId?: string | null,
+): string {
+  if (canonicalMockSlug(slug) === DEFAULT_MOCK_SLUG) {
+    return test1HubPath(mockAttemptId);
+  }
+  const base = `/mock/${canonicalMockSlug(slug)}`;
+  if (!mockAttemptId) return base;
+  return `${base}?mock_attempt=${encodeURIComponent(mockAttemptId)}`;
 }
 
 export function mockModulePath(
@@ -100,14 +115,14 @@ export function mockResultsPath(slugOrId: string, mockAttemptId: string): string
   return `/mock/${slug}/results?${params.toString()}`;
 }
 
-/** Listening parts included in Test 1 quick flow. */
-export const TEST1_LISTENING_PART_COUNT = 1;
+/** Listening parts included in Test 1 flow. */
+export const TEST1_LISTENING_PART_COUNT = 4;
 
 /** Reading passages in Test 1 quick flow. */
-export const TEST1_READING_PASSAGE_COUNT = 1;
+export const TEST1_READING_PASSAGE_COUNT = 2;
 
 /** Writing tasks in Test 1 quick flow. */
-export const TEST1_WRITING_TASK_COUNT = 1;
+export const TEST1_WRITING_TASK_COUNT = 2;
 
 /**
  * Where to go after finishing a section inside a full mock (Test 1).
@@ -302,13 +317,13 @@ export const DEFAULT_MOCK_TEST_ID = M01_MOCK_TEST_ID;
 /** User-facing label (UI only; routes/API stay mock/m01). */
 export const MOCK_DISPLAY_LABEL = "Test 1";
 export const MOCK_DISPLAY_SUBTITLE =
-  "Quick Test 1 — Listening (Part 1 · 30 min) → Reading (Passage 1 · 30 min) → Writing (Task 1 · 20 min) → Score";
+  "Test 1 — Listening (Parts 1-4 · 30 min) → Reading (Passages 1-2 · 60 min) → Writing (Tasks 1-2 · 60 min) → Score";
 export const MOCK_DISPLAY_FLOW_HINT =
-  "One section per module · submit each to unlock the next · overall band on results";
+  "Listening has 4 parts · reading has 2 passages · writing has 2 tasks · submit each section to unlock the next · overall band on results";
 
 /** Per-section limits for Test 1 (matches MODULE_LIVE_PARTS). */
 export const TEST1_LISTENING_MINUTES = 30;
 export const TEST1_READING_MINUTES = 30;
-export const TEST1_WRITING_MINUTES = 20;
+export const TEST1_WRITING_MINUTES = 60;
 export const TEST1_TOTAL_MINUTES =
   TEST1_LISTENING_MINUTES + TEST1_READING_MINUTES + TEST1_WRITING_MINUTES;

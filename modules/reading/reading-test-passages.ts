@@ -14,7 +14,7 @@ export const READING_PASSAGE_STAGES: ReadingPassageStage[] = [
     passage: 1,
     title: "Passage 1",
     context: "The Hidden Forces Behind Everyday Choices",
-    description: "Behavioural economics — TFNG, matching headings, sentence completion",
+    description: "Behavioural economics — TFNG, matching headings, sentence completion (Band 7–8)",
     questionRange: "Questions 1–13",
     questionCount: 13,
     durationMinutes: 60,
@@ -24,10 +24,11 @@ export const READING_PASSAGE_STAGES: ReadingPassageStage[] = [
     passage: 2,
     title: "Passage 2",
     context: "When the Rainforests of the Sea Fall Silent",
-    description: "Coral reefs and climate — TFNG, matching headings, sentence completion",
-    questionRange: "Questions 14–26",
+    description:
+      "Coral reefs and climate — TFNG, matching headings (D–G), sentence completion (Band 7–8)",
+    questionRange: "Questions 1–13",
     questionCount: 13,
-    durationMinutes: 60,
+    durationMinutes: 30,
     live: true,
   },
 ];

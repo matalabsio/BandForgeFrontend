@@ -40,7 +40,7 @@ const STEPS: StepDef[] = [
     key: "writing",
     order: 3,
     label: "Writing",
-    detail: `${TEST1_WRITING_MINUTES} min · Task ${TEST1_WRITING_TASK_COUNT} · word-count band`,
+    detail: `${TEST1_WRITING_MINUTES} min · Tasks 1–${TEST1_WRITING_TASK_COUNT} · word-count band`,
   },
   {
     key: "results",

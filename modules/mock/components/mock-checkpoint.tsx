@@ -209,7 +209,7 @@ function MockCheckpointBody({ mockSlug, mockAttemptId, attemptId, from }: Props)
                 </button>
               ) : null}
               <Link
-                href={mockHubPath(mockSlug)}
+                href={mockHubPath(mockSlug, mockAttemptId)}
                 className="inline-flex min-h-[44px] cursor-pointer items-center rounded-xl border border-[var(--exam-border)] px-4 py-2.5 text-[13px] font-semibold text-[var(--exam-ink-muted)]"
               >
                 Back to mock hub

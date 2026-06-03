@@ -2,8 +2,8 @@
 import {
   DEFAULT_MOCK_SLUG,
   isFullMock,
-  mockHubPath,
   mockModulePath,
+  test1HubPath,
 } from "@/lib/mock-catalog";
 
 export function isListeningTest(testId: string): boolean {
@@ -15,7 +15,7 @@ export function listeningTestPath(): string {
 }
 
 export function listeningTestHubPath(): string {
-  return mockHubPath(DEFAULT_MOCK_SLUG);
+  return test1HubPath();
 }
 
 export function listeningResultsPath(attemptId: string): string {

@@ -6,6 +6,10 @@ export { TestShell } from "@/modules/shared/components/test-shell";
 export { TestTimer } from "@/modules/shared/components/test-timer";
 export { WordCounter } from "@/modules/shared/components/word-counter";
 export {
+  ExamBusyOverlay,
+  ExamSectionLoader,
+} from "@/modules/shared/components/exam-section-loader";
+export {
   formatRemaining,
   useListeningTimer,
 } from "@/modules/shared/hooks/use-exam-timer";

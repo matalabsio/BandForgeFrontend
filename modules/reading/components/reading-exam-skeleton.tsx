@@ -1,15 +1,13 @@
+import { ExamSectionLoader } from "@/modules/shared/components/exam-section-loader";
+
 type ReadingExamSkeletonProps = {
-  message?: string;
+  title?: string;
+  subtitle?: string;
 };
 
-export function ReadingExamSkeleton({ message }: ReadingExamSkeletonProps = {}) {
+function ReadingExamSkeletonLayout() {
   return (
     <div className="flex min-h-[calc(100dvh-3rem)] flex-col animate-pulse">
-      {message ? (
-        <p className="border-b border-[var(--reading-border)] bg-[var(--reading-paper)] px-6 py-3 text-center text-[13px] text-[var(--reading-ink-muted)]">
-          {message}
-        </p>
-      ) : null}
       <div className="h-12 border-b border-[var(--reading-border)] bg-[var(--reading-bar)]" />
       <div className="flex flex-1 flex-col lg:flex-row">
         <div className="flex-1 border-b border-[var(--reading-border)] bg-[var(--reading-paper)] p-6 lg:border-b-0 lg:border-r">
@@ -21,13 +19,24 @@ export function ReadingExamSkeleton({ message }: ReadingExamSkeletonProps = {}) 
             <div className="h-3 w-full rounded bg-[var(--reading-border)]/80" />
           </div>
         </div>
-        <div className="w-full space-y-4 bg-[var(--reading-surface)] p-4 lg:w-[min(44%,520px)] lg:shrink-0">
+        <div className="w-full space-y-4 bg-[var(--reading-surface)] p-4 lg:w-[min(44%,560px)] lg:shrink-0">
           <div className="h-4 w-32 rounded bg-[var(--reading-border)]" />
           <div className="h-24 rounded-lg bg-white" />
           <div className="h-24 rounded-lg bg-white" />
         </div>
       </div>
     </div>
+  );
+}
+
+export function ReadingExamSkeleton({
+  title = "Loading reading section…",
+  subtitle,
+}: ReadingExamSkeletonProps = {}) {
+  return (
+    <ExamSectionLoader title={title} subtitle={subtitle}>
+      <ReadingExamSkeletonLayout />
+    </ExamSectionLoader>
   );
 }
 

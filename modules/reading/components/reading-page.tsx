@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import {
@@ -23,9 +23,40 @@ import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
 import { ReadingExamToolbar } from "@/modules/reading/components/reading-exam-toolbar";
+import { ReadingIntroOverlay } from "@/modules/reading/components/reading-intro-overlay";
 import { ReadingPassagePanel } from "@/modules/reading/components/reading-passage-panel";
-import { ReadingQuestionsPanel } from "@/modules/reading/components/reading-questions-panel";
+import { ReadingQuestionSection } from "@/modules/reading/components/reading-question-section";
+import { ReadingSectionStepper } from "@/modules/reading/components/reading-section-stepper";
 import { ReadingExamSkeleton } from "@/modules/reading/components/reading-exam-skeleton";
+import { ExamBusyOverlay } from "@/modules/shared/components/exam-section-loader";
+import {
+  clearFlowSnapshot,
+  nextSection,
+  prevSection,
+  readFlowSnapshot,
+  type QuestionSectionId,
+  type ReadingExamPhase,
+  writeFlowSnapshot,
+} from "@/modules/reading/lib/reading-exam-flow";
+import { groupReadingQuestions } from "@/modules/reading/lib/question-groups";
+
+function readConsent(moduleKey: string, attemptScope: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(`bf-instructions:${moduleKey}:${attemptScope}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeConsent(moduleKey: string, attemptScope: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`bf-instructions:${moduleKey}:${attemptScope}`, "1");
+  } catch {
+    /* ignore */
+  }
+}
 
 const STORAGE_PREFIX = "bf-reading-";
 
@@ -33,10 +64,16 @@ function storageKey(attemptId: string): string {
   return `${STORAGE_PREFIX}${attemptId}`;
 }
 
+function passageDisplayTitle(text: string, fallback: string): string {
+  const line = text.split("\n").map((s) => s.trim()).find(Boolean);
+  return line ?? fallback;
+}
+
 type Props = {
   testId: string;
   mockSlug?: string;
   passage: number;
+  /** @deprecated Timer and API start are deferred to intro CTA */
   autoStart?: boolean;
   initialBoot?: ReadingBootServer | null;
 };
@@ -45,18 +82,25 @@ export function ReadingPage({
   testId,
   mockSlug = "m01",
   passage,
-  autoStart = true,
   initialBoot = null,
 }: Props) {
   const { replace, push } = useRouter();
   const searchParams = useSearchParams();
   const mockAttemptId = searchParams.get("mock_attempt");
   const sectionStart = searchParams.get("section_start") === "1";
-  const bootedRef = useRef(false);
+
   const beginSessionInFlightRef = useRef<Promise<void> | null>(null);
-  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
+
+  const [loadStatus, setLoadStatus] = useState<"booting" | "ready" | "error">(
+    "booting",
+  );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [introAgreed, setIntroAgreed] = useState(false);
+  const [examPhase, setExamPhase] = useState<ReadingExamPhase>("intro");
+  const [questionSection, setQuestionSection] =
+    useState<QuestionSectionId>("tfng");
+
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [startedAtIso, setStartedAtIso] = useState<string | null>(null);
   const [serverTimeIso, setServerTimeIso] = useState<string | null>(null);
@@ -65,28 +109,82 @@ export function ReadingPage({
   const [passageText, setPassageText] = useState("");
   const [questions, setQuestions] = useState<ReadingQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [activeQuestion, setActiveQuestion] = useState(1);
   const autosaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const shouldShowIntro = !mockAttemptId || passage === 1;
+  const shouldShowIntroRef = useRef(shouldShowIntro);
+  const instructionScope = useMemo(
+    () => mockAttemptId ?? `${testId}:reading`,
+    [mockAttemptId, testId],
+  );
+
+  const questionGroups = useMemo(
+    () => groupReadingQuestions(questions),
+    [questions],
+  );
+
+  const currentGroup = useMemo(
+    () => questionGroups.find((g) => g.id === questionSection) ?? null,
+    [questionGroups, questionSection],
+  );
+  const sectionQuestionRanges = useMemo(() => {
+    const map: Record<QuestionSectionId, string> = {
+      tfng: "Questions 1–5",
+      matching_headings: "Questions 6–9",
+      sentence_completion: "Questions 10–13",
+    };
+    for (const g of questionGroups) {
+      const id = g.id as QuestionSectionId;
+      if (id in map) map[id] = g.title;
+    }
+    return map;
+  }, [questionGroups]);
+  const continueLabel = useMemo(() => {
+    if (questionSection === "tfng") {
+      return `Continue to ${sectionQuestionRanges.matching_headings}`;
+    }
+    if (questionSection === "matching_headings") {
+      return `Continue to ${sectionQuestionRanges.sentence_completion}`;
+    }
+    return "Submit passage";
+  }, [questionSection, sectionQuestionRanges]);
 
   const answeredCount = useMemo(
     () => questions.filter((q) => (answers[q.id] ?? "").trim()).length,
     [questions, answers],
   );
 
+  const persistFlow = useCallback(
+    (
+      phase: ReadingExamPhase,
+      section: QuestionSectionId,
+      nextAnswers: Record<string, string>,
+      nextAttemptId: string | null,
+    ) => {
+      if (!nextAttemptId) return;
+      writeFlowSnapshot(testId, passage, mockAttemptId, {
+        attemptId: nextAttemptId,
+        passage,
+        examPhase: phase,
+        questionSection: section,
+        answers: nextAnswers,
+      });
+      try {
+        localStorage.setItem(
+          storageKey(nextAttemptId),
+          JSON.stringify({ answers: nextAnswers, passage }),
+        );
+      } catch {
+        /* ignore */
+      }
+    },
+    [testId, passage, mockAttemptId],
+  );
+
   const setAnswer = useCallback(
     (id: string, value: string) => {
       setAnswers((prev) => {
         const next = { ...prev, [id]: value };
-        if (attemptId) {
-          try {
-            localStorage.setItem(
-              storageKey(attemptId),
-              JSON.stringify({ answers: next, passage }),
-            );
-          } catch {
-            /* ignore */
-          }
-        }
+        persistFlow(examPhase, questionSection, next, attemptId);
         return next;
       });
       if (!attemptId) return;
@@ -95,7 +193,7 @@ export function ReadingPage({
         void readingApi.autosave(attemptId, id, value).catch(() => undefined);
       }, 500);
     },
-    [attemptId, passage],
+    [attemptId, examPhase, questionSection, persistFlow],
   );
 
   const goToResults = useCallback(
@@ -125,10 +223,18 @@ export function ReadingPage({
     [replace, push, testId, mockSlug, mockAttemptId, passage],
   );
 
+  const clearAutosaveTimers = useCallback(() => {
+    for (const handle of Object.values(autosaveTimers.current)) {
+      clearTimeout(handle);
+    }
+    autosaveTimers.current = {};
+  }, []);
+
   const submitAll = useCallback(async () => {
-    if (!attemptId || questions.length === 0) return;
+    if (!attemptId || questions.length === 0 || busy) return;
     setBusy(true);
     setError(null);
+    clearAutosaveTimers();
     try {
       const body = questions.map((q) => ({
         question_id: q.id,
@@ -150,7 +256,7 @@ export function ReadingPage({
         });
         cacheMockNavHint({
           mock_attempt_id: mockAttemptId,
-          next_module: result.mock_reading_complete ? "listening" : "reading",
+          next_module: result.mock_reading_complete ? "writing" : "reading",
           next_part: result.mock_reading_complete
             ? 1
             : result.mock_next_part ?? passage + 1,
@@ -158,26 +264,60 @@ export function ReadingPage({
       }
       try {
         localStorage.removeItem(storageKey(attemptId));
+        clearFlowSnapshot(testId, passage, mockAttemptId);
       } catch {
         /* ignore */
       }
-      void goToResults(result.attempt_id, result);
+      goToResults(result.attempt_id, result);
     } catch (e) {
+      if (e instanceof ApiError && e.status === 409 && mockAttemptId) {
+        try {
+          const p = await fetchMockProgressDeduped(mockAttemptId);
+          replace(
+            mockPathFromProgress(mockSlug, mockAttemptId, {
+              next_module: p.next_module,
+              next_part: p.next_part,
+              status: p.status,
+            }),
+          );
+          return;
+        } catch {
+          /* fall through */
+        }
+      }
       setError(e instanceof ApiError ? e.message : "Submit failed.");
+    } finally {
       setBusy(false);
     }
-  }, [attemptId, questions, answers, goToResults, mockAttemptId]);
+  }, [
+    attemptId,
+    questions,
+    answers,
+    goToResults,
+    mockAttemptId,
+    testId,
+    passage,
+    busy,
+    clearAutosaveTimers,
+    mockSlug,
+    replace,
+  ]);
 
   const onTimerExpire = useCallback(() => {
     if (!attemptId || busy) return;
     void submitAll();
   }, [attemptId, busy, submitAll]);
 
+  const timerActive =
+    loadStatus === "ready" &&
+    (examPhase === "passage" || examPhase === "questions") &&
+    Boolean(attemptId);
+
   const remaining = useListeningTimer({
     startedAtIso,
     serverTimeIso,
     durationSeconds,
-    active: phase === "ready" && Boolean(attemptId),
+    active: timerActive,
     onExpire: onTimerExpire,
   });
 
@@ -185,6 +325,7 @@ export function ReadingPage({
     (
       start: Awaited<ReturnType<typeof readingApi.start>>,
       freshPassage = false,
+      snap?: ReturnType<typeof readFlowSnapshot>,
     ) => {
       setAttemptId(start.attempt_id);
       setStartedAtIso(start.started_at);
@@ -196,14 +337,18 @@ export function ReadingPage({
       setQuestions(qs);
       const init: Record<string, string> = {};
       for (const q of qs) init[q.id] = "";
-      if (!freshPassage) {
+      if (snap?.answers && !freshPassage) {
+        for (const q of qs) {
+          if (snap.answers[q.id]) init[q.id] = snap.answers[q.id];
+        }
+      } else if (!freshPassage) {
         try {
           const raw = localStorage.getItem(storageKey(start.attempt_id));
           if (raw) {
-            const snap = JSON.parse(raw) as { answers?: Record<string, string> };
-            if (snap.answers) {
+            const parsed = JSON.parse(raw) as { answers?: Record<string, string> };
+            if (parsed.answers) {
               for (const q of qs) {
-                if (snap.answers[q.id]) init[q.id] = snap.answers[q.id];
+                if (parsed.answers[q.id]) init[q.id] = parsed.answers[q.id];
               }
             }
           }
@@ -212,14 +357,116 @@ export function ReadingPage({
         }
       }
       setAnswers(init);
-      if (qs.length > 0) {
-        const first = qs[0];
-        setActiveQuestion(first.display_number ?? first.question_number);
-      }
-      setPhase("ready");
+      return init;
     },
     [],
   );
+
+  const beginSession = useCallback(
+    async (freshPassage = false, snap?: ReturnType<typeof readFlowSnapshot>) => {
+      if (beginSessionInFlightRef.current) {
+        await beginSessionInFlightRef.current;
+        return;
+      }
+      const task = (async () => {
+        setError(null);
+        try {
+          let start: Awaited<ReturnType<typeof readingApi.start>>;
+
+          // Reuse server-fetched boot (MockReadingPage) to avoid a second /start on section_start.
+          if (
+            initialBoot?.passage_text &&
+            initialBoot.questions?.length &&
+            initialBoot.status === "in_progress"
+          ) {
+            start = {
+              attempt_id: initialBoot.attempt_id,
+              started_at: initialBoot.started_at,
+              server_time: initialBoot.server_time,
+              status: initialBoot.status,
+              module: "reading",
+              duration_seconds: initialBoot.duration_seconds,
+              resumed: initialBoot.resumed,
+              test: initialBoot.test ?? { id: testId, title: "Reading" },
+              passage_text: initialBoot.passage_text,
+              questions: initialBoot.questions as ReadingQuestion[],
+            };
+          } else {
+            start = await readingApi.start(testId, {
+              forceNew: false,
+              part: passage,
+              mockAttemptId: mockAttemptId ?? undefined,
+            });
+            if (!start.questions?.length || !start.passage_text) {
+              const qs = await readingApi.questions(testId, { part: passage });
+              start = {
+                ...start,
+                test: qs.test,
+                passage_text: qs.passage_text,
+                questions: qs.questions,
+              };
+            }
+          }
+
+          hydrateFromStart(start, freshPassage, snap);
+          if (snap && (snap.examPhase === "passage" || snap.examPhase === "questions")) {
+            setExamPhase(snap.examPhase);
+            setQuestionSection(snap.questionSection);
+          }
+        } catch (e) {
+          const apiMessage =
+            e instanceof ApiError
+              ? e.message
+              : "Could not load this passage. Sign in and try again.";
+          if (e instanceof ApiError && e.status === 403 && mockAttemptId) {
+            try {
+              const p = await fetchMockProgressDeduped(mockAttemptId);
+              replace(
+                mockPathFromProgress(mockSlug, mockAttemptId, {
+                  next_module: p.next_module,
+                  next_part: p.next_part,
+                  status: p.status,
+                }),
+              );
+              return;
+            } catch {
+              setLoadStatus("error");
+              setError(apiMessage);
+              return;
+            }
+          }
+          setLoadStatus("error");
+          setError(apiMessage);
+          throw e;
+        }
+      })();
+      beginSessionInFlightRef.current = task;
+      try {
+        await task;
+      } finally {
+        beginSessionInFlightRef.current = null;
+      }
+    },
+    [
+      testId,
+      passage,
+      mockAttemptId,
+      mockSlug,
+      hydrateFromStart,
+      replace,
+      initialBoot,
+    ],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const seen = readConsent("reading", instructionScope);
+    setIntroAgreed(seen);
+  }, [instructionScope]);
+
+  useEffect(() => {
+    shouldShowIntroRef.current = shouldShowIntro;
+  }, [shouldShowIntro]);
 
   useEffect(() => {
     if (!mockAttemptId) return;
@@ -246,108 +493,142 @@ export function ReadingPage({
     };
   }, [mockAttemptId, mockSlug, passage, sectionStart, replace]);
 
-  useLayoutEffect(() => {
-    if (initialBoot?.passage_text && initialBoot.questions?.length) {
-      if (bootedRef.current) return;
-      bootedRef.current = true;
-      hydrateFromStart(
-        {
-          attempt_id: initialBoot.attempt_id,
-          started_at: initialBoot.started_at,
-          server_time: initialBoot.server_time,
-          status: initialBoot.status,
-          module: "reading",
-          duration_seconds: initialBoot.duration_seconds,
-          resumed: initialBoot.resumed,
-          test: initialBoot.test ?? { id: testId, title: "Reading" },
-          passage_text: initialBoot.passage_text,
-          questions: initialBoot.questions as ReadingQuestion[],
-        },
-        sectionStart,
-      );
-      return;
-    }
-    if (beginSessionInFlightRef.current) return;
-    bootedRef.current = false;
-    setAttemptId(null);
-    setPhase("loading");
-  }, [passage, mockAttemptId, initialBoot, hydrateFromStart, sectionStart, testId]);
+  useEffect(() => {
+    let cancelled = false;
 
-  const beginSession = useCallback(async () => {
-    if (beginSessionInFlightRef.current) {
-      await beginSessionInFlightRef.current;
-      return;
+    setLoadStatus("booting");
+    setError(null);
+    setAttemptId(null);
+    setAnswers({});
+    setQuestions([]);
+    setPassageText("");
+
+    if (sectionStart) {
+      clearFlowSnapshot(testId, passage, mockAttemptId);
     }
-    const task = (async () => {
-    setPhase("loading");
+
+    const snap = sectionStart
+      ? null
+      : readFlowSnapshot(testId, passage, mockAttemptId);
+
+    const finishReady = () => {
+      if (!cancelled) setLoadStatus("ready");
+    };
+
+    if (
+      snap &&
+      snap.attemptId &&
+      (snap.examPhase === "passage" || snap.examPhase === "questions")
+    ) {
+      void (async () => {
+        try {
+          await beginSession(false, snap);
+          finishReady();
+        } catch {
+          if (!cancelled) {
+            setExamPhase("intro");
+            finishReady();
+          }
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!shouldShowIntroRef.current) {
+      void (async () => {
+        try {
+          await beginSession(sectionStart, null);
+          if (cancelled) return;
+          setExamPhase("questions");
+          setQuestionSection("tfng");
+          finishReady();
+        } catch {
+          if (!cancelled) setLoadStatus("error");
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setExamPhase("intro");
+    finishReady();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [testId, passage, mockAttemptId, sectionStart, beginSession, initialBoot]);
+
+  const handleIntroStart = useCallback(async () => {
+    if (!introAgreed) return;
+    setBusy(true);
     setError(null);
     try {
-      const start = await readingApi.start(testId, {
-        forceNew: false,
-        part: passage,
-        mockAttemptId: mockAttemptId ?? undefined,
-      });
-      if (!start.questions?.length || !start.passage_text) {
-        const qs = await readingApi.questions(testId, { part: passage });
-        hydrateFromStart(
-          {
-            ...start,
-            test: qs.test,
-            passage_text: qs.passage_text,
-            questions: qs.questions,
-          },
-          sectionStart,
-        );
-      } else {
-        hydrateFromStart(start, sectionStart);
-      }
-    } catch (e) {
-      const apiMessage =
-        e instanceof ApiError ? e.message : "Could not load this passage. Sign in and try again.";
-      if (e instanceof ApiError && e.status === 403 && mockAttemptId) {
-        try {
-          const p = await fetchMockProgressDeduped(mockAttemptId);
-          replace(
-            mockPathFromProgress(mockSlug, mockAttemptId, {
-              next_module: p.next_module,
-              next_part: p.next_part,
-              status: p.status,
-            }),
-          );
-          return;
-        } catch {
-          setPhase("error");
-          setError(apiMessage);
-          return;
-        }
-      }
-      setPhase("error");
-      setError(apiMessage);
-    }
-    })();
-    beginSessionInFlightRef.current = task;
-    try {
-      await task;
+      await beginSession(sectionStart, null);
+      writeConsent("reading", instructionScope);
+      setExamPhase("questions");
+      setQuestionSection("tfng");
+    } catch {
+      /* error state set in beginSession */
     } finally {
-      beginSessionInFlightRef.current = null;
+      setBusy(false);
     }
-  }, [testId, passage, mockAttemptId, mockSlug, sectionStart, hydrateFromStart, replace]);
+  }, [beginSession, sectionStart, introAgreed, instructionScope]);
+
+  const handleContinueToQuestions = useCallback(() => {
+    setExamPhase("questions");
+    setQuestionSection("tfng");
+    if (attemptId) {
+      persistFlow("questions", "tfng", answers, attemptId);
+    }
+  }, [attemptId, answers, persistFlow]);
+
+  const handleSectionContinue = useCallback(() => {
+    const nxt = nextSection(questionSection);
+    if (!nxt) return;
+    setQuestionSection(nxt);
+    if (attemptId) {
+      persistFlow("questions", nxt, answers, attemptId);
+    }
+  }, [questionSection, attemptId, answers, persistFlow]);
+
+  const handleSectionBack = useCallback(() => {
+    const prev = prevSection(questionSection);
+    if (!prev) return;
+    setQuestionSection(prev);
+    if (attemptId) {
+      persistFlow("questions", prev, answers, attemptId);
+    }
+  }, [questionSection, attemptId, answers, persistFlow]);
+
+  const handleStepperSelect = useCallback(
+    (section: QuestionSectionId) => {
+      setQuestionSection(section);
+      if (attemptId) {
+        persistFlow("questions", section, answers, attemptId);
+      }
+    },
+    [attemptId, answers, persistFlow],
+  );
 
   useEffect(() => {
-    if (initialBoot?.passage_text && initialBoot.questions?.length) return;
-    if (beginSessionInFlightRef.current) return;
-    if (bootedRef.current) return;
-    bootedRef.current = true;
-    void beginSession();
-  }, [beginSession, autoStart, passage, initialBoot]);
+    if (attemptId && examPhase !== "intro") {
+      persistFlow(examPhase, questionSection, answers, attemptId);
+    }
+  }, [attemptId, examPhase, questionSection, answers, persistFlow]);
 
-  if (phase === "loading") {
+  if (loadStatus === "booting") {
     return (
-      <ReadingExamSkeleton message="Loading reading passage (may take up to 10 seconds)…" />
+      <ReadingExamSkeleton
+        title={`Loading Reading · Passage ${passage}`}
+        subtitle="Fetching the passage and questions for this section."
+      />
     );
   }
 
-  if (phase === "error") {
+  if (loadStatus === "error") {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="max-w-md text-[14px] text-red-700" role="alert">
@@ -355,7 +636,10 @@ export function ReadingPage({
         </p>
         <button
           type="button"
-          onClick={() => void beginSession()}
+          onClick={() => {
+            setLoadStatus("booting");
+            void beginSession(sectionStart).then(() => setLoadStatus("ready"));
+          }}
           className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-5 py-2.5 text-[13px] font-bold text-white"
         >
           Try again
@@ -364,56 +648,117 @@ export function ReadingPage({
     );
   }
 
+  const displayTitle = passageText
+    ? passageDisplayTitle(passageText, testTitle)
+    : testTitle;
+  const durationMinutes = Math.round(durationSeconds / 60);
+
+  const submitOverlayTitle =
+    mockAttemptId && passage >= TEST1_READING_PASSAGE_COUNT
+      ? "Finishing reading…"
+      : `Submitting Passage ${passage}…`;
+  const submitOverlaySubtitle =
+    mockAttemptId && passage >= TEST1_READING_PASSAGE_COUNT
+      ? "Saving your answers and opening writing."
+      : `Saving your answers and loading Passage ${passage + 1}.`;
+
   return (
     <div className="flex min-h-dvh flex-col">
-      <ReadingExamToolbar
-        passage={passage}
-        testTitle={mockAttemptId ? MOCK_DISPLAY_LABEL : testTitle}
-        hubHref={mockAttemptId ? mockHubPath(mockSlug) : undefined}
-        hubLabel={mockAttemptId ? "← Test 1" : undefined}
-        sectionHint={
-          mockAttemptId
-            ? `Passage ${passage} of ${TEST1_READING_PASSAGE_COUNT}`
-            : undefined
-        }
-        submitLabel={
-          mockAttemptId
-            ? passage < TEST1_READING_PASSAGE_COUNT
-              ? `Submit passage ${passage} · Continue`
-              : "Finish reading"
-            : undefined
-        }
-        remainingSeconds={remaining}
-        timerActive={Boolean(attemptId)}
-        answeredCount={answeredCount}
-        totalQuestions={questions.length}
-        busy={busy}
-        onSubmit={() => void submitAll()}
-      />
-
-      {error ? (
-        <p
-          className="shrink-0 border-b border-red-200 bg-red-50 px-4 py-2 text-center text-[13px] text-red-700"
-          role="alert"
-        >
-          {error}
-        </p>
+      {busy ? (
+        <ExamBusyOverlay
+          title={submitOverlayTitle}
+          subtitle={submitOverlaySubtitle}
+        />
+      ) : null}
+      {examPhase === "intro" && shouldShowIntro ? (
+        <ReadingIntroOverlay
+          passageTitle={displayTitle}
+          passageNumber={passage}
+          totalPassages={TEST1_READING_PASSAGE_COUNT}
+          durationMinutes={durationMinutes}
+          busy={busy}
+          agreed={introAgreed}
+          onAgreeChange={setIntroAgreed}
+          onStart={() => void handleIntroStart()}
+        />
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className="min-h-[40vh] flex-1 lg:min-h-0 lg:max-h-[calc(100dvh-3rem)]">
-          <ReadingPassagePanel passageText={passageText} />
-        </div>
-        <div className="min-h-[50vh] border-t border-[var(--reading-border)] lg:min-h-0 lg:w-[min(44%,520px)] lg:shrink-0 lg:border-l lg:border-t-0 lg:max-h-[calc(100dvh-3rem)]">
-          <ReadingQuestionsPanel
-            questions={questions}
-            answers={answers}
-            onAnswer={setAnswer}
-            activeQuestion={activeQuestion}
-            onActiveQuestion={setActiveQuestion}
+      {examPhase !== "intro" ? (
+        <>
+          <ReadingExamToolbar
+            passage={passage}
+            testTitle={mockAttemptId ? MOCK_DISPLAY_LABEL : testTitle}
+            hubHref={
+              mockAttemptId ? mockHubPath(mockSlug, mockAttemptId) : undefined
+            }
+            hubLabel={mockAttemptId ? "← Test 1" : undefined}
+            sectionHint={
+              mockAttemptId
+                ? `Passage ${passage} of ${TEST1_READING_PASSAGE_COUNT}`
+                : undefined
+            }
+            submitLabel={
+              mockAttemptId
+                ? passage < TEST1_READING_PASSAGE_COUNT
+                  ? `Submit passage ${passage} · Continue`
+                  : "Finish reading"
+                : undefined
+            }
+            remainingSeconds={remaining}
+            timerActive={timerActive}
+            answeredCount={answeredCount}
+            totalQuestions={questions.length}
+            busy={busy}
+            showSubmit={
+              examPhase === "questions" &&
+              questionSection === "sentence_completion"
+            }
+            onSubmit={() => void submitAll()}
           />
-        </div>
-      </div>
+
+          {error ? (
+            <p
+              className="shrink-0 border-b border-red-200 bg-red-50 px-4 py-2 text-center text-[13px] text-red-700"
+              role="alert"
+            >
+              {error}
+            </p>
+          ) : null}
+
+          {examPhase === "questions" && currentGroup ? (
+            <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+              <div className="min-h-[34vh] border-b border-[var(--reading-border)] lg:min-h-0 lg:w-[min(56%,1fr)] lg:border-b-0 lg:border-r">
+                <ReadingPassagePanel passageText={passageText} />
+              </div>
+              <div className="min-h-[52vh] min-w-0 flex-1 lg:w-[min(44%,560px)] lg:shrink-0">
+                <div className="flex h-full min-h-0 flex-col">
+                  <ReadingSectionStepper
+                    current={questionSection}
+                    onSelect={handleStepperSelect}
+                    labels={{
+                      tfng: `${sectionQuestionRanges.tfng} · TFNG`,
+                      matching_headings: `${sectionQuestionRanges.matching_headings} · Headings`,
+                      sentence_completion: `${sectionQuestionRanges.sentence_completion} · Completion`,
+                    }}
+                    onBack={handleSectionBack}
+                    onContinue={handleSectionContinue}
+                    onSubmit={() => void submitAll()}
+                    busy={busy}
+                    isLastSection={questionSection === "sentence_completion"}
+                    continueLabel={continueLabel}
+                  />
+                  <ReadingQuestionSection
+                    group={currentGroup}
+                    sectionId={questionSection}
+                    answers={answers}
+                    onAnswer={setAnswer}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }

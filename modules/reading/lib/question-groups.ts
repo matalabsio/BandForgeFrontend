@@ -7,6 +7,10 @@ export type QuestionGroup = {
   questions: ReadingQuestion[];
 };
 
+function qDisplay(q: ReadingQuestion): number {
+  return q.display_number ?? q.question_number;
+}
+
 const GROUP_META: Record<
   string,
   { title: string; instruction: string; order: number }
@@ -15,13 +19,13 @@ const GROUP_META: Record<
     order: 1,
     title: "Questions 1–5",
     instruction:
-      "Do the following statements agree with the information in the passage? Write TRUE, FALSE, or NOT GIVEN.",
+      "Do the following statements agree with the information given in the passage? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
   },
   matching_headings: {
     order: 2,
     title: "Questions 6–9",
     instruction:
-      "Choose the correct heading for each paragraph from the list of headings below.",
+      "The passage has seven paragraphs, A–G. Choose the correct heading for Paragraphs C–F from the list of headings below. Write the correct number, i–vii.",
   },
   sentence_completion: {
     order: 3,
@@ -47,10 +51,10 @@ export function groupReadingQuestions(questions: ReadingQuestion[]): QuestionGro
         title: "Questions",
         instruction: "Answer the questions below.",
       };
-      const sorted = qs.toSorted((a, b) => a.question_number - b.question_number);
+      const sorted = qs.toSorted((a, b) => qDisplay(a) - qDisplay(b));
       const range =
         sorted.length > 0
-          ? `Questions ${sorted[0].question_number}–${sorted[sorted.length - 1].question_number}`
+          ? `Questions ${qDisplay(sorted[0])}–${qDisplay(sorted[sorted.length - 1])}`
           : meta.title;
       return {
         id: type,

@@ -1,4 +1,11 @@
-export function IeltsExamSkeleton() {
+import { ExamSectionLoader } from "@/modules/shared/components/exam-section-loader";
+
+type IeltsExamSkeletonProps = {
+  title?: string;
+  subtitle?: string;
+};
+
+function IeltsExamSkeletonLayout() {
   return (
     <div className="flex min-h-dvh flex-col animate-pulse">
       <div className="h-12 border-b border-[var(--exam-border)] bg-[var(--exam-bar)]" />
@@ -16,6 +23,17 @@ export function IeltsExamSkeleton() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function IeltsExamSkeleton({
+  title = "Loading section…",
+  subtitle,
+}: IeltsExamSkeletonProps = {}) {
+  return (
+    <ExamSectionLoader title={title} subtitle={subtitle}>
+      <IeltsExamSkeletonLayout />
+    </ExamSectionLoader>
   );
 }
 

@@ -1,42 +1,32 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { authBootstrapPath } from "@/lib/auth";
+import {
+  DEFAULT_MOCK_SLUG,
+  mockApiId,
+  mockHubPath,
+  test1HubPath,
+} from "@/lib/mock-catalog";
+import { ensureCanonicalMockHub } from "@/lib/mock-route-guard";
 
 export const metadata: Metadata = {
   title: "Mock test · BandForge",
   robots: { index: false, follow: false },
 };
-import { authBootstrapPath } from "@/lib/auth";
-import { MOCK_DISPLAY_LABEL, mockApiId, mockHubPath } from "@/lib/mock-catalog";
-import { ensureCanonicalMockHub } from "@/lib/mock-route-guard";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
-import { fetchMockSessionServer } from "@/lib/mock-server";
-import { MockLayout } from "@/modules/mock/components/mock-layout";
-import { MockTestHub } from "@/modules/mock/components/mock-test-hub";
 
-type Props = { params: Promise<{ mockSlug: string }> };
+type Props = {
+  params: Promise<{ mockSlug: string }>;
+  searchParams: Promise<{ mock_attempt?: string }>;
+};
 
-export default async function MockTestPage({ params }: Props) {
+export default async function MockTestPage({ params, searchParams }: Props) {
   const { mockSlug } = await params;
+  const sp = await searchParams;
   ensureCanonicalMockHub(mockSlug);
 
-  const mockTestId = mockApiId(mockSlug);
-  const cookieHeader = await getCachedCookieHeader();
-  const [user, initialProgress] = await Promise.all([
-    getCachedServerUser(cookieHeader),
-    fetchMockSessionServer(cookieHeader, mockTestId),
-  ]);
-  if (!user) {
-    redirect(authBootstrapPath(mockHubPath(mockSlug)));
+  if (mockSlug === DEFAULT_MOCK_SLUG) {
+    redirect(test1HubPath(sp.mock_attempt ?? undefined));
   }
 
-  return (
-    <MockLayout>
-      <MockTestHub
-        mockSlug={mockSlug}
-        mockTestId={mockTestId}
-        title={MOCK_DISPLAY_LABEL}
-        initialProgress={initialProgress}
-      />
-    </MockLayout>
-  );
+  redirect(authBootstrapPath(mockHubPath(mockApiId(mockSlug))));
 }

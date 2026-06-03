@@ -1,19 +1,23 @@
 "use client";
 
+import { useCallback, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ClockIcon } from "@/components/bandforge/dashboard/icons";
 import {
-  MOCK_DISPLAY_FLOW_HINT,
   MOCK_DISPLAY_LABEL,
-  MOCK_DISPLAY_SUBTITLE,
+  examPathForMockStart,
   mockResultsPath,
   TEST1_TOTAL_MINUTES,
+  mockPathFromProgress,
 } from "@/lib/mock-catalog";
-import { navigateAfterMockStart, navigateFromProgress } from "@/lib/mock-exam-nav";
+import { clearMockExamLocalData } from "@/lib/mock-client-session";
 import { MockAttemptHistory } from "@/modules/mock/components/mock-attempt-history";
 import { useMockSession } from "@/modules/mock/hooks/use-mock-session";
 import { defaultModuleProgress } from "@/modules/mock/lib/mock-progress";
-import { Test1FlowStepper } from "@/modules/mock/components/test1-flow-stepper";
+import { ModuleProgressChips } from "@/modules/mock/components/module-progress-chips";
+import { Test1ModuleCards } from "@/modules/mock/components/test1-module-cards";
+import { Test1ReadinessChecklist } from "@/modules/mock/components/test1-readiness-checklist";
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 
 type Props = {
@@ -30,70 +34,92 @@ export function MockTestHub({
   initialProgress = null,
 }: Props) {
   const { push, replace } = useRouter();
-  const nav = { push, replace };
   const { mockAttemptId, progress, busy, error, start } = useMockSession(
     mockTestId,
     { initialProgress },
   );
+  const [readinessReady, setReadinessReady] = useState(false);
+  const onReadinessChange = useCallback((ready: boolean) => {
+    setReadinessReady(ready);
+  }, []);
 
   const showRetake = progress?.status === "completed";
+  const startLabel = busy ? "Starting…" : `Start ${MOCK_DISPLAY_LABEL}`;
+  const startDisabled = busy || !readinessReady;
+  const hasAttempt = Boolean(progress?.mock_attempt_id ?? mockAttemptId);
 
-  const startFullMock = async (forceNew = false) => {
+  const ensureAttempt = async (forceNew = false) => {
+    if (forceNew) {
+      clearMockExamLocalData(mockTestId);
+      await start(true);
+      return;
+    }
+    if (progress?.mock_attempt_id) return;
+    await start(false);
+  };
+
+  const handleStartOrRetake = async () => {
     try {
-      const res = await start(forceNew || showRetake);
-      navigateAfterMockStart(nav, mockSlug, res);
+      await ensureAttempt(showRetake);
     } catch {
       /* error surfaced via hook */
     }
   };
 
-  const resumeFullMock = async () => {
-    if (!progress?.mock_attempt_id) return;
-    if (progress.status === "completed") {
-      push(mockResultsPath(mockSlug, progress.mock_attempt_id));
-      return;
-    }
-    if (progress.next_module) {
-      navigateFromProgress(nav, mockSlug, progress.mock_attempt_id, progress);
-      return;
-    }
-    if (progress.status === "in_progress" && progress.current_module) {
-      navigateFromProgress(nav, mockSlug, progress.mock_attempt_id, {
-        status: progress.status,
-        next_module: progress.current_module,
-        next_part:
-          progress.next_part ??
-          progress.modules.find((m) => m.module === progress.current_module)
-            ?.part ??
-          1,
-      });
+  const handleNewAttempt = async () => {
+    try {
+      clearMockExamLocalData(mockTestId);
+      const res = await start(true);
+      replace(examPathForMockStart(mockSlug, res));
+    } catch {
+      /* error surfaced via hook */
     }
   };
 
   const modules = progress?.modules ?? defaultModuleProgress();
+  const activeAttemptId = progress?.mock_attempt_id ?? mockAttemptId;
+
+  const resumeToCurrentModule = () => {
+    if (!progress?.mock_attempt_id || !activeAttemptId) return;
+    const url = mockPathFromProgress(mockSlug, activeAttemptId, progress);
+    replace(url);
+  };
 
   return (
     <div className="px-4 py-8 sm:px-6 sm:py-10">
-      <div className="bf-dash-enter mx-auto max-w-2xl">
+      <div className="bf-dash-enter mx-auto max-w-3xl">
+        <p className="mb-4">
+          <Link
+            href="/dashboard"
+            className="text-[12px] font-semibold text-[var(--exam-accent)] hover:underline"
+          >
+            ← Back to dashboard
+          </Link>
+        </p>
+
         <div className="rounded-xl border border-[var(--exam-border)] bg-white p-5 shadow-sm sm:p-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--exam-accent)]">
-            IELTS Academic · Full test
-          </p>
-          <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-[var(--exam-ink)] sm:text-[1.65rem]">
-            {title}
-          </h1>
-          <p className="mt-3 text-[14px] leading-relaxed text-[var(--exam-ink-muted)]">
-            {MOCK_DISPLAY_SUBTITLE}
-          </p>
-          <p className="mt-2 text-[13px] text-[var(--exam-ink-muted)]">
-            Complete each section in order to unlock the next. {MOCK_DISPLAY_FLOW_HINT}
-          </p>
-          <ul className="mt-4 flex flex-wrap gap-3 text-[11px] font-medium text-[var(--exam-ink-muted)]">
-            <li className="inline-flex items-center gap-1">
-              <ClockIcon className="size-3.5 text-[var(--exam-accent)]" />
-              ~{TEST1_TOTAL_MINUTES} min live sections
-            </li>
-          </ul>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-[var(--exam-accent)] px-3 py-1 text-[11px] font-bold text-white">
+              Test 1
+            </span>
+            <span className="rounded-full border border-[var(--exam-border)] bg-[var(--exam-surface)] px-3 py-1 text-[11px] font-semibold text-[var(--exam-ink-muted)]">
+              Test 2
+            </span>
+            <span className="rounded-full border border-[var(--exam-border)] bg-[var(--exam-surface)] px-3 py-1 text-[11px] font-semibold text-[var(--exam-ink-muted)]">
+              Test 3
+            </span>
+          </div>
+
+          {hasAttempt ? (
+            <div className="mt-4">
+              <ModuleProgressChips modules={modules} />
+            </div>
+          ) : null}
+
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[var(--exam-ink-muted)]">
+            <ClockIcon className="size-3.5 text-[var(--exam-accent)]" />
+            <span>~{TEST1_TOTAL_MINUTES} min live sections</span>
+          </div>
 
           {error ? (
             <p
@@ -104,70 +130,80 @@ export function MockTestHub({
             </p>
           ) : null}
 
-          <div className="mt-5 flex flex-wrap gap-3">
-            {progress?.status === "in_progress" ? (
+          {progress?.status !== "completed" ? (
+            <Test1ReadinessChecklist
+              className="mt-5"
+              onReadyChange={onReadinessChange}
+            />
+          ) : null}
+
+          {!hasAttempt ? (
+            <div className="mt-5">
               <button
                 type="button"
-                disabled={busy}
-                onClick={() => void resumeFullMock()}
+                disabled={startDisabled}
+                onClick={() => void handleStartOrRetake()}
                 className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Resume {MOCK_DISPLAY_LABEL}
+                {startLabel}
               </button>
-            ) : showRetake ? (
+            </div>
+          ) : progress?.status === "in_progress" ? (
+            <div className="mt-5 flex flex-wrap gap-3">
               <button
                 type="button"
-                disabled={busy}
-                onClick={() => void startFullMock(true)}
+                disabled={startDisabled}
+                onClick={() => resumeToCurrentModule()}
                 className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Retake {MOCK_DISPLAY_LABEL}
+                {startLabel}
               </button>
-            ) : (
               <button
                 type="button"
-                disabled={busy}
-                onClick={() => void startFullMock(false)}
-                className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={busy || !readinessReady}
+                onClick={() => void handleNewAttempt()}
+                className="cursor-pointer rounded-xl border border-[var(--exam-border)] px-4 py-2.5 text-[13px] font-semibold text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {busy ? "Starting…" : `Start ${MOCK_DISPLAY_LABEL}`}
+                New attempt
               </button>
-            )}
-            {progress?.status === "in_progress" ? (
+            </div>
+          ) : progress?.status === "completed" && activeAttemptId ? (
+            <div className="mt-5 space-y-5">
               <button
                 type="button"
-                disabled={busy}
-                onClick={() => void startFullMock(true)}
-                className="cursor-pointer rounded-xl border border-[var(--exam-border)] px-4 py-2.5 text-[13px] font-semibold text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)] disabled:opacity-60"
+                onClick={() =>
+                  push(mockResultsPath(mockSlug, activeAttemptId))
+                }
+                className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0891B2]"
               >
-                Start fresh
+                View results
               </button>
-            ) : null}
-          </div>
+              <Test1ReadinessChecklist onReadyChange={onReadinessChange} />
+              <button
+                type="button"
+                disabled={busy || !readinessReady}
+                onClick={() => void handleNewAttempt()}
+                className="cursor-pointer rounded-xl border border-[var(--exam-border)] px-4 py-2.5 text-[13px] font-semibold text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                New attempt
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-6">
-          <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-[var(--exam-ink-muted)]">
-            Your test journey
-          </h2>
-          <Test1FlowStepper
+          <Test1ModuleCards
             mockSlug={mockSlug}
             modules={modules}
-            mockAttemptId={progress?.mock_attempt_id}
+            mockAttemptId={activeAttemptId}
             mockStatus={progress?.status}
           />
         </div>
 
-        <p className="mt-6 text-center text-[12px] leading-relaxed text-[var(--exam-ink-muted)]">
-          Each section has its own timer. When time runs out, your answers submit
-          automatically. <strong className="font-semibold">Finish section</strong> moves
-          you to the next part (Reading → Listening → Results).
-        </p>
-
         <MockAttemptHistory
           mockSlug={mockSlug}
           mockTestId={mockTestId}
-          currentMockAttemptId={mockAttemptId}
+          currentMockAttemptId={activeAttemptId}
         />
       </div>
     </div>

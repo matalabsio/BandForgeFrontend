@@ -17,6 +17,7 @@ type Props = {
   busy: boolean;
   submitLabel?: string;
   sectionHint?: string;
+  showSubmit?: boolean;
   onSubmit: () => void;
 };
 
@@ -32,6 +33,7 @@ export function ReadingExamToolbar({
   busy,
   submitLabel = "Submit",
   sectionHint,
+  showSubmit = true,
   onSubmit,
 }: Props) {
   const warning = remainingSeconds <= 300 && timerActive;
@@ -82,14 +84,16 @@ export function ReadingExamToolbar({
         </span>
         {formatRemaining(remainingSeconds)}
       </div>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={onSubmit}
-        className="shrink-0 cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {busy ? "…" : submitLabel}
-      </button>
+      {showSubmit ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onSubmit}
+          className="shrink-0 cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? "Submitting…" : submitLabel}
+        </button>
+      ) : null}
     </header>
   );
 }

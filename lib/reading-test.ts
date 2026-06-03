@@ -1,12 +1,12 @@
 /** Published IELTS reading — Test 1 uses M01 passage 1 only for orchestrated flow. */
-import { DEFAULT_MOCK_SLUG, isFullMock, mockHubPath } from "@/lib/mock-catalog";
+import { isFullMock, test1HubPath } from "@/lib/mock-catalog";
 
 function isReadingTest(testId: string): boolean {
   return isFullMock(testId);
 }
 
 export function readingTestHubPath(): string {
-  return mockHubPath(DEFAULT_MOCK_SLUG);
+  return test1HubPath();
 }
 
 export function readingResultsPath(attemptId: string): string {

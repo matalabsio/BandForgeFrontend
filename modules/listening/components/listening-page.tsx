@@ -15,6 +15,7 @@ import {
   MOCK_DISPLAY_LABEL,
   mockAfterSectionSubmitPath,
   mockHubPath,
+  mockPathFromProgress,
   TEST1_LISTENING_PART_COUNT,
 } from "@/lib/mock-catalog";
 import {
@@ -23,6 +24,7 @@ import {
   listeningTestHubPath,
 } from "@/lib/listening-test";
 import { IeltsExamSkeleton } from "@/components/exam/ielts-exam-skeleton";
+import { ExamBusyOverlay } from "@/modules/shared/components/exam-section-loader";
 import { IeltsExamToolbar } from "@/components/exam/ielts-exam-toolbar";
 import { listeningApi } from "@/modules/listening/services/listening-api";
 import { useListeningStore } from "@/modules/listening/store/listening-store";
@@ -41,6 +43,7 @@ import {
 } from "@/modules/listening/components/submission-manager";
 import { ListeningAudioPanel } from "@/modules/listening/components/listening-audio-panel";
 import { ListeningQuestionsPanel } from "@/modules/listening/components/listening-questions-panel";
+import { ListeningIntroCard } from "@/modules/listening/components/listening-intro-card";
 import {
   groupInstruction,
   instructionForQuestion,
@@ -48,6 +51,25 @@ import {
 } from "@/modules/listening/lib/part-instructions";
 import { GREENFIELD_LISTENING_STAGES } from "@/modules/listening/listening-test-stages";
 import { useListeningMockGuard } from "@/modules/listening/hooks/use-listening-mock-guard";
+import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
+
+function readConsent(moduleKey: string, attemptScope: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(`bf-instructions:${moduleKey}:${attemptScope}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeConsent(moduleKey: string, attemptScope: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`bf-instructions:${moduleKey}:${attemptScope}`, "1");
+  } catch {
+    /* ignore */
+  }
+}
 
 type Props = {
   testId: string;
@@ -83,11 +105,17 @@ export function ListeningPage({
     allQuestions,
   } = useListeningStore();
   const [busy, setBusy] = useState(false);
+  const [introSeen, setIntroSeen] = useState(false);
+  const [introAgreed, setIntroAgreed] = useState(false);
   const [sectionAdvance, setSectionAdvance] = useState<SectionAdvanceNotice | null>(
     null,
   );
 
   const { schedule, flushNow } = useAutosave(state.attemptId);
+  const introStorageKey = useMemo(
+    () => mockAttemptId ?? `${testId}:listening`,
+    [mockAttemptId, testId, part],
+  );
 
   const submissionActive = state.status === "in_progress";
 
@@ -131,8 +159,9 @@ export function ListeningPage({
     setBusy(true);
     dispatch({ type: "submitting" });
     try {
-      await flushNow();
+      // Answers are taken from client state; do not block submit on autosave flush.
       const payload = await listeningApi.submit(state.attemptId, submitAnswers);
+      const listeningDoneOnClient = part >= TEST1_LISTENING_PART_COUNT;
       if (mockAttemptId) {
         cacheCheckpointSubmit(payload.attempt_id, {
           band: payload.band,
@@ -148,16 +177,14 @@ export function ListeningPage({
         });
         cacheMockNavHint({
           mock_attempt_id: mockAttemptId,
-          next_module: payload.mock_listening_complete ? "reading" : "listening",
-          next_part: payload.mock_listening_complete
-            ? 1
-            : payload.mock_next_part ?? part + 1,
+          next_module: listeningDoneOnClient ? "reading" : "listening",
+          next_part: listeningDoneOnClient ? 1 : part + 1,
         });
       }
       dispatch({ type: "completed", payload });
       clearSnapshot(state.attemptId);
       void goToResults(payload.attempt_id, {
-        mockListeningComplete: payload.mock_listening_complete === true,
+        mockListeningComplete: listeningDoneOnClient,
       });
     } catch (e) {
       dispatch({
@@ -171,7 +198,6 @@ export function ListeningPage({
     state.status,
     submitAnswers,
     dispatch,
-    flushNow,
     goToResults,
     mockAttemptId,
     part,
@@ -257,6 +283,20 @@ export function ListeningPage({
                 ? "No listening questions for this test. Run: cd backend && python -m scripts.verify_greenfield_mock, then refresh."
                 : "No listening questions for this mock. Run the appropriate seed in Supabase, then refresh.";
           } else if (e.status === 403) {
+            if (mockAttemptId) {
+              try {
+                const progress = await fetchMockProgressDeduped(mockAttemptId);
+                const dest = mockPathFromProgress(
+                  mockSlug,
+                  mockAttemptId,
+                  progress,
+                );
+                replace(dest);
+                return;
+              } catch {
+                /* fallback to API error message below */
+              }
+            }
             message = e.message;
           } else if (e.status === 503) {
             message =
@@ -275,7 +315,7 @@ export function ListeningPage({
         beginAttemptInFlightRef.current = null;
       }
     },
-    [testId, part, mockAttemptId, sectionStart, dispatch],
+    [testId, part, mockAttemptId, sectionStart, dispatch, mockSlug, replace],
   );
 
   useEffect(() => {
@@ -332,13 +372,26 @@ export function ListeningPage({
   });
 
   useEffect(() => {
+    if (!isExam || part !== 1) {
+      setIntroSeen(true);
+      setIntroAgreed(true);
+      return;
+    }
+    if (typeof window === "undefined") return;
+    const seen = readConsent("listening", introStorageKey);
+    setIntroSeen(seen);
+    setIntroAgreed(seen);
+  }, [isExam, part, introStorageKey]);
+
+  useEffect(() => {
     if (!isExam) return;
     if (hydratedFromServerRef.current || initialBoot?.parts?.length) return;
     if (bootedRef.current) return;
+    if (part === 1 && !introSeen) return;
     if (state.status !== "idle") return;
     bootedRef.current = true;
     void beginAttempt(false);
-  }, [isExam, state.status, beginAttempt, part, mockAttemptId, initialBoot]);
+  }, [isExam, state.status, beginAttempt, part, mockAttemptId, initialBoot, introSeen]);
 
   useEffect(() => {
     if (!isExam && autoStart && !bootedRef.current && state.status === "idle") {
@@ -392,12 +445,34 @@ export function ListeningPage({
   );
 
   if (isExam) {
-    if (
-      state.status === "idle" ||
-      state.status === "starting" ||
-      state.status === "ready"
-    ) {
-      return <IeltsExamSkeleton />;
+    if (part === 1 && !introSeen && state.status === "idle") {
+      return (
+        <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
+          <ListeningIntroCard
+            onBegin={() => {
+              if (typeof window !== "undefined") {
+                writeConsent("listening", introStorageKey);
+              }
+              setIntroSeen(true);
+              setIntroAgreed(true);
+              bootedRef.current = true;
+              void beginAttempt(false);
+            }}
+            busy={busy}
+            agreed={introAgreed}
+            onAgreeChange={setIntroAgreed}
+          />
+        </div>
+      );
+    }
+
+    if (state.status === "idle" || state.status === "starting") {
+      return (
+        <IeltsExamSkeleton
+          title={`Loading Listening · Part ${part}`}
+          subtitle="Fetching questions and audio for this part."
+        />
+      );
     }
 
     if (state.status === "error") {
@@ -430,6 +505,7 @@ export function ListeningPage({
       const instruction = current
         ? instructionForQuestion(examPart, current)
         : groupInstruction(examPart);
+      const questionsVisible = Boolean(state.playedParts[examPart.part]);
       const testTitle = mockAttemptId
         ? MOCK_DISPLAY_LABEL
         : (state.test?.title ?? stageMeta?.context ?? "Listening");
@@ -437,7 +513,7 @@ export function ListeningPage({
         ? `Part ${part} of ${TEST1_LISTENING_PART_COUNT}`
         : (stageMeta?.title ?? `Part ${part}`);
       const hubHref = mockAttemptId
-        ? mockHubPath(mockSlug)
+        ? mockHubPath(mockSlug, mockAttemptId)
         : listeningTestHubPath();
       const mockSubmitLabel = mockAttemptId
         ? part >= TEST1_LISTENING_PART_COUNT
@@ -445,8 +521,24 @@ export function ListeningPage({
           : `Submit Part ${part} & continue`
         : undefined;
 
+      const submitting = busy || state.status === "submitting";
+
       return (
         <div className="flex min-h-dvh flex-col">
+          {submitting ? (
+            <ExamBusyOverlay
+              title={
+                part >= TEST1_LISTENING_PART_COUNT
+                  ? "Finishing listening…"
+                  : `Submitting Part ${part}…`
+              }
+              subtitle={
+                part >= TEST1_LISTENING_PART_COUNT
+                  ? "Saving your answers and opening reading."
+                  : `Saving your answers and loading Part ${part + 1}.`
+              }
+            />
+          ) : null}
           <IeltsExamToolbar
             moduleName="Listening"
             stageLabel={stageLabel}
@@ -511,6 +603,7 @@ export function ListeningPage({
                 onAnswer={handleAnswerChange}
                 onFocus={setCurrent}
                 instruction={instruction}
+                visible={questionsVisible}
               />
             </div>
           </div>
@@ -518,7 +611,12 @@ export function ListeningPage({
       );
     }
 
-    return <IeltsExamSkeleton />;
+    return (
+      <IeltsExamSkeleton
+        title={`Loading Listening · Part ${part}`}
+        subtitle="Preparing your session."
+      />
+    );
   }
 
   if (state.status === "idle" || state.status === "starting") {
@@ -616,9 +714,8 @@ export function ListeningPage({
           attemptId={state.attemptId}
           answers={submitAnswers}
           disabled={state.status === "submitting"}
-          onBeforeSubmit={async () => {
+          onBeforeSubmit={() => {
             dispatch({ type: "submitting" });
-            await flushNow();
           }}
           onSubmitted={(payload) => {
             dispatch({ type: "completed", payload });

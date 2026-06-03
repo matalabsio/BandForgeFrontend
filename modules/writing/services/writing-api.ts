@@ -48,7 +48,11 @@ export const writingApi = {
     );
   },
 
-  autosave(attemptId: string, questionId: string, userAnswer: string) {
+  autosave(
+    attemptId: string,
+    questionId: string,
+    userAnswer: string,
+  ) {
     return call<{ ok: boolean }>(
       `/api/writing/attempts/${encodeURIComponent(attemptId)}/autosave`,
       {

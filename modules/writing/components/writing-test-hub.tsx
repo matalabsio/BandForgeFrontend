@@ -2,24 +2,12 @@
 
 import Link from "next/link";
 import { M01_MOCK_TEST_ID, TEST1_WRITING_TASK_COUNT } from "@/lib/mock-catalog";
+import { WRITING_TASK_STAGES } from "@/modules/writing/writing-test-tasks";
 import { writingTaskPath, writingTestHubPath } from "@/lib/writing-test";
 import { useMockSession } from "@/modules/mock/hooks/use-mock-session";
 import { cn } from "@/lib/utils";
 
-const TASKS = [
-  {
-    part: 1 as const,
-    title: "Writing Task 1",
-    subtitle: "Academic · describe a chart (20 min, ≥150 words)",
-    minutes: 20,
-  },
-  {
-    part: 2 as const,
-    title: "Writing Task 2",
-    subtitle: "Essay · agree/disagree (40 min, ≥250 words)",
-    minutes: 40,
-  },
-];
+const TASKS = WRITING_TASK_STAGES;
 
 type Props = {
   mockAttemptId?: string | null;
@@ -39,8 +27,8 @@ export function WritingTestHub({ mockAttemptId, mockSlug }: Props) {
         Practice writing tasks
       </h1>
       <p className="mt-2 text-[14px] text-ink/65">
-        Complete the writing task. Your band is estimated from word count when
-        you submit (minimum 150 words for Task 1).
+        Complete each task in order. Your band is estimated from word count when
+        you submit (Task 1: ≥150 words · 20 min; Task 2: ≥250 words · 40 min).
       </p>
 
       <ul className="mt-8 space-y-4">
@@ -77,10 +65,12 @@ export function WritingTestHub({ mockAttemptId, mockSlug }: Props) {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h2 className="font-display text-lg font-bold text-navy">
-                    {t.title}
+                    {t.examinerTitle ?? t.title}
                   </h2>
                   <p className="mt-1 text-[13px] text-ink/60">{t.subtitle}</p>
-                  <p className="mt-2 text-[12px] text-ink/45">{t.minutes} minutes</p>
+                  <p className="mt-2 text-[12px] text-ink/45">
+                    {t.minutes} min · ≥{t.minWords} words
+                  </p>
                 </div>
                 <span
                   className={cn(

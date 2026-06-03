@@ -1,7 +1,5 @@
 "use client";
 
-import { googleOAuthStartUrl } from "@/lib/auth-site";
-
 type GoogleSignInButtonProps = {
   next?: string;
   label?: string;
@@ -13,11 +11,7 @@ export function GoogleSignInButton({
   label = "Continue with Google",
   className = "",
 }: GoogleSignInButtonProps) {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  const href = origin
-    ? googleOAuthStartUrl(next, origin)
-    : `/api/auth/google?next=${encodeURIComponent(next)}`;
+  const href = `/api/auth/google?next=${encodeURIComponent(next)}`;
 
   return (
     <a

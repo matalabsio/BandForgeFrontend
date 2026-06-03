@@ -53,6 +53,7 @@ export default async function MockReadingPage({ params, searchParams }: Props) {
   return (
     <MockLayout>
       <ReadingPage
+        key={`${passage}-${sp.mock_attempt ?? "solo"}`}
         testId={mockTestId}
         mockSlug={mockSlug}
         passage={passage}
