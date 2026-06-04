@@ -27,6 +27,7 @@ import {
 import { WritingTask1Prompt } from "@/modules/writing/components/writing-task1-prompt";
 import { WritingTask2Prompt } from "@/modules/writing/components/writing-task2-prompt";
 import { TestHeader, TestShell, TestTimer, WordCounter } from "@/modules/shared";
+import { useExamSessionRefresh } from "@/modules/shared/hooks/use-exam-session-refresh";
 import { cn } from "@/lib/utils";
 import { SectionInstructionsModal } from "@/modules/shared/components/section-instructions-modal";
 import {
@@ -159,6 +160,8 @@ export function WritingPage({
     }, 1000);
     return () => window.clearInterval(id);
   }, [phase]);
+
+  useExamSessionRefresh(phase === "ready" && Boolean(attemptId));
 
   const beginSession = useCallback(async () => {
     setPhase("loading");

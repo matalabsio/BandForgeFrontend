@@ -23,6 +23,7 @@ import { readingModuleResultsPath } from "@/lib/reading-test";
 import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
+import { useExamSessionRefresh } from "@/modules/shared/hooks/use-exam-session-refresh";
 import { ReadingExamToolbar } from "@/modules/reading/components/reading-exam-toolbar";
 import { ReadingIntroOverlay } from "@/modules/reading/components/reading-intro-overlay";
 import { ReadingPassagePanel } from "@/modules/reading/components/reading-passage-panel";
@@ -138,8 +139,8 @@ export function ReadingPage({
   );
 
   const questionGroups = useMemo(
-    () => groupReadingQuestions(questions),
-    [questions],
+    () => groupReadingQuestions(questions, passage),
+    [questions, passage],
   );
 
   const activeQuestionSection = useMemo(() => {
@@ -341,6 +342,8 @@ export function ReadingPage({
     (examPhase === "passage" || examPhase === "questions") &&
     Boolean(attemptId);
 
+  useExamSessionRefresh(timerActive);
+
   const remaining = useListeningTimer({
     startedAtIso,
     serverTimeIso,
@@ -518,17 +521,19 @@ export function ReadingPage({
       if (opts?.examPhase) setExamPhase(opts.examPhase);
       if (opts?.questionSection) {
         setQuestionSection(
-          groupReadingQuestions(start.questions).some(
+          groupReadingQuestions(start.questions, passage).some(
             (g) => g.id === opts.questionSection,
           )
             ? opts.questionSection
-            : defaultQuestionSection(groupReadingQuestions(start.questions)),
+            : defaultQuestionSection(
+                groupReadingQuestions(start.questions, passage),
+              ),
         );
       }
       setLoadStatus("ready");
       return true;
     },
-    [],
+    [passage],
   );
 
   useEffect(() => {

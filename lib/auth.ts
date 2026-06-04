@@ -4,6 +4,7 @@ import {
   parseJsonResponse,
   type ApiErrorBody,
 } from "@/lib/api";
+import { coalescedClientRefresh } from "@/lib/auth-refresh-coordinator";
 import { getServerAuth } from "@/lib/auth-server";
 import { isAuthEnabled } from "@/lib/flags";
 import {
@@ -143,9 +144,11 @@ export async function verifyEmail(token: string): Promise<AuthResponse> {
 }
 
 export async function refreshSession(): Promise<AuthResponse> {
-  const data = await authFetch<AuthResponse>("refresh", { method: "POST" });
-  storeAuthFromResponse(data);
-  return data;
+  return coalescedClientRefresh(async () => {
+    const data = await authFetch<AuthResponse>("refresh", { method: "POST" });
+    storeAuthFromResponse(data);
+    return data;
+  });
 }
 
 /** Restore session from localStorage refresh token when cookies were cleared. */

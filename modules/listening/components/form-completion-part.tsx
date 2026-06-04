@@ -2,6 +2,7 @@
 
 import { memo, type ReactNode } from "react";
 import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
+import { LabelInlineBlank } from "@/modules/listening/components/listening-inline-answer";
 import { QuestionAudio } from "@/modules/listening/components/question-audio";
 import { sanitizeInstructionText } from "@/modules/listening/lib/part-instructions";
 
@@ -104,39 +105,48 @@ function FormCompletionPartBase({
           <div className="space-y-6 px-5 py-6 sm:px-8">
             <FormSection title="Personal details">
               {questions.slice(0, 4).map((q) => (
-                <ExamFormField
+                <LabelInlineBlank
                   key={q.id}
-                  question={q}
+                  questionNumber={q.question_number}
+                  label={q.prompt}
                   value={answers[q.id] ?? ""}
                   isActive={currentQuestionId === q.id}
                   onChange={(v) => onAnswer(q.id, v)}
                   onFocus={() => onFocus(q.id)}
+                  variant="exam"
+                  layout="exam-form"
                 />
               ))}
             </FormSection>
 
             <FormSection title="Course details">
               {questions.slice(4, 7).map((q) => (
-                <ExamFormField
+                <LabelInlineBlank
                   key={q.id}
-                  question={q}
+                  questionNumber={q.question_number}
+                  label={q.prompt}
                   value={answers[q.id] ?? ""}
                   isActive={currentQuestionId === q.id}
                   onChange={(v) => onAnswer(q.id, v)}
                   onFocus={() => onFocus(q.id)}
+                  variant="exam"
+                  layout="exam-form"
                 />
               ))}
             </FormSection>
 
             <FormSection title="Payment & additional information">
               {questions.slice(7).map((q) => (
-                <ExamFormField
+                <LabelInlineBlank
                   key={q.id}
-                  question={q}
+                  questionNumber={q.question_number}
+                  label={q.prompt}
                   value={answers[q.id] ?? ""}
                   isActive={currentQuestionId === q.id}
                   onChange={(v) => onAnswer(q.id, v)}
                   onFocus={() => onFocus(q.id)}
+                  variant="exam"
+                  layout="exam-form"
                   prefix={q.question_number === 8 ? "£" : undefined}
                 />
               ))}
@@ -188,39 +198,48 @@ function FormCompletionPartBase({
             Personal details
           </p>
           {questions.slice(0, 4).map((q) => (
-            <LegacyFormField
+            <LabelInlineBlank
               key={q.id}
-              question={q}
+              questionNumber={q.question_number}
+              label={q.prompt}
               value={answers[q.id] ?? ""}
               isActive={currentQuestionId === q.id}
               onChange={(v) => onAnswer(q.id, v)}
               onFocus={() => onFocus(q.id)}
+              variant="default"
+              layout="legacy"
             />
           ))}
           <p className="pt-2 text-[11px] font-bold uppercase tracking-wider text-navy/70">
             Course details
           </p>
           {questions.slice(4, 7).map((q) => (
-            <LegacyFormField
+            <LabelInlineBlank
               key={q.id}
-              question={q}
+              questionNumber={q.question_number}
+              label={q.prompt}
               value={answers[q.id] ?? ""}
               isActive={currentQuestionId === q.id}
               onChange={(v) => onAnswer(q.id, v)}
               onFocus={() => onFocus(q.id)}
+              variant="default"
+              layout="legacy"
             />
           ))}
           <p className="pt-2 text-[11px] font-bold uppercase tracking-wider text-navy/70">
             Payment &amp; additional information
           </p>
           {questions.slice(7).map((q) => (
-            <LegacyFormField
+            <LabelInlineBlank
               key={q.id}
-              question={q}
+              questionNumber={q.question_number}
+              label={q.prompt}
               value={answers[q.id] ?? ""}
               isActive={currentQuestionId === q.id}
               onChange={(v) => onAnswer(q.id, v)}
               onFocus={() => onFocus(q.id)}
+              variant="default"
+              layout="legacy"
               prefix={q.question_number === 8 ? "£" : undefined}
             />
           ))}
@@ -244,89 +263,6 @@ function FormSection({
       </h3>
       <div className="space-y-4">{children}</div>
     </div>
-  );
-}
-
-function ExamFormField({
-  question,
-  value,
-  isActive,
-  onChange,
-  onFocus,
-  prefix,
-}: {
-  question: ListeningQuestion;
-  value: string;
-  isActive: boolean;
-  onChange: (v: string) => void;
-  onFocus: () => void;
-  prefix?: string;
-}) {
-  return (
-    <div
-      className={`grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 sm:grid-cols-[2.5rem_8rem_1fr] ${
-        isActive ? "rounded-sm bg-[#fafafa] ring-1 ring-[#18181b]/15" : ""
-      }`}
-    >
-      <span className="font-mono text-[12px] font-semibold tabular-nums text-[#18181b]">
-        {question.question_number}
-      </span>
-      <span className="text-[13px] text-[#52525b] sm:col-start-2">{question.prompt}</span>
-      <span className="col-span-2 flex min-w-0 items-baseline gap-1 border-b border-[#18181b] pb-0.5 sm:col-span-1 sm:col-start-3">
-        {prefix ? <span className="shrink-0 text-[13px] text-[#52525b]">{prefix}</span> : null}
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={onFocus}
-          aria-label={`Question ${question.question_number}: ${question.prompt}`}
-          className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181b] outline-none placeholder:text-[#d4d4d8]"
-          placeholder=""
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </span>
-    </div>
-  );
-}
-
-function LegacyFormField({
-  question,
-  value,
-  isActive,
-  onChange,
-  onFocus,
-  prefix,
-}: {
-  question: ListeningQuestion;
-  value: string;
-  isActive: boolean;
-  onChange: (v: string) => void;
-  onFocus: () => void;
-  prefix?: string;
-}) {
-  return (
-    <label
-      className={`flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3 ${
-        isActive ? "rounded-lg ring-2 ring-teal/30 ring-offset-2" : ""
-      }`}
-    >
-      <span className="min-w-[10rem] shrink-0 text-[12px] text-ink/70">
-        ({question.question_number}) {question.prompt}:
-      </span>
-      <span className="flex min-w-0 flex-1 items-center gap-1 border-b border-[#0F172A]/25 pb-1">
-        {prefix ? <span className="shrink-0 text-ink/60">{prefix}</span> : null}
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={onFocus}
-          aria-label={`Question ${question.question_number}: ${question.prompt}`}
-          className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[13px] text-ink outline-none placeholder:text-ink/30"
-          placeholder="………………"
-        />
-      </span>
-    </label>
   );
 }
 

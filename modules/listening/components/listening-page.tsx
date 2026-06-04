@@ -29,6 +29,7 @@ import { IeltsExamToolbar } from "@/components/exam/ielts-exam-toolbar";
 import { listeningApi } from "@/modules/listening/services/listening-api";
 import { useListeningStore } from "@/modules/listening/store/listening-store";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
+import { useExamSessionRefresh } from "@/modules/shared/hooks/use-exam-session-refresh";
 import {
   clearSnapshot,
   readSnapshot,
@@ -215,6 +216,8 @@ export function ListeningPage({
     active: submissionActive,
     onExpire: onTimerExpire,
   });
+
+  useExamSessionRefresh(submissionActive);
 
   useAttemptRecovery({
     attemptId: state.attemptId,
@@ -605,6 +608,7 @@ export function ListeningPage({
                 currentQuestionId={state.currentQuestionId}
                 onAnswer={handleAnswerChange}
                 onFocus={setCurrent}
+                partPlayed={Boolean(state.playedParts[examPart.part])}
                 instruction={instruction}
                 visible={questionsVisible}
               />

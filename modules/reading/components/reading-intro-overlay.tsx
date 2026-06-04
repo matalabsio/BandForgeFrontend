@@ -1,5 +1,7 @@
 "use client";
 
+import { readingMatchingHeadingsIntro } from "@/modules/reading/lib/question-groups";
+
 type Props = {
   passageTitle: string;
   passageNumber: number;
@@ -59,7 +61,7 @@ export function ReadingIntroOverlay({
 
         <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[13px] text-[var(--reading-ink-muted)]">
           <li>Part 1 — True / False / Not Given</li>
-          <li>Part 2 — Matching headings (Paragraphs C–F)</li>
+          <li>{readingMatchingHeadingsIntro(passageNumber)}</li>
           <li>Part 3 — Sentence completion</li>
         </ol>
 

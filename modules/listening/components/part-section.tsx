@@ -190,6 +190,9 @@ function PartSectionBase({
               question={q}
               value={answers[q.id] ?? ""}
               onChange={(value) => onAnswer(q.id, value)}
+              onFocus={() => onFocus(q.id)}
+              isActive={currentQuestionId === q.id}
+              variant={variant}
               hideMeta={false}
               audioSlot={
                 sharedAudio ? null : (

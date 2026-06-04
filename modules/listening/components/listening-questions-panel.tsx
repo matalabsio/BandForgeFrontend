@@ -1,8 +1,10 @@
 "use client";
 
 import { memo, useMemo } from "react";
-import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
+import { FormCompletionPart } from "@/modules/listening/components/form-completion-part";
 import { ListeningQuestionPanel } from "@/modules/listening/components/listening-question-panel";
+import { isFormCompletionPart } from "@/modules/listening/lib/form-completion";
+import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -11,6 +13,7 @@ type Props = {
   currentQuestionId: string | null;
   onAnswer: (questionId: string, value: string) => void;
   onFocus: (questionId: string) => void;
+  partPlayed?: boolean;
   instruction?: string | null;
   visible?: boolean;
 };
@@ -26,13 +29,16 @@ function sortedQuestions(questions: ListeningQuestion[]) {
 function ListeningQuestionsPanelBase({
   part,
   answers,
-  currentQuestionId: _currentQuestionId,
+  currentQuestionId,
   onAnswer,
   onFocus,
+  partPlayed = false,
   instruction,
   visible = true,
 }: Props) {
   const sorted = useMemo(() => sortedQuestions(part.questions), [part.questions]);
+  const isFormPart = useMemo(() => isFormCompletionPart(part), [part]);
+
   if (sorted.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-[13px] text-[var(--exam-ink-muted)]">
@@ -56,6 +62,7 @@ function ListeningQuestionsPanelBase({
           <div className="mt-2.5 flex flex-wrap gap-1" role="tablist" aria-label="Question navigation">
             {sorted.map((q) => {
               const answered = Boolean((answers[q.id] ?? "").trim());
+              const isCurrent = currentQuestionId === q.id;
               return (
                 <button
                   key={q.id}
@@ -64,12 +71,14 @@ function ListeningQuestionsPanelBase({
                   onClick={() => onFocus(q.id)}
                   className={cn(
                     "flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-md border text-[12px] font-bold transition-colors duration-150",
-                    answered
-                      ? "border-[var(--exam-accent)]/50 bg-[var(--exam-accent-soft)] text-[var(--exam-accent)]"
-                      : "border-[var(--exam-border)] bg-white text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)]",
+                    isCurrent
+                      ? "border-[var(--exam-accent)] bg-[var(--exam-accent)] text-white"
+                      : answered
+                        ? "border-[var(--exam-accent)]/50 bg-[var(--exam-accent-soft)] text-[var(--exam-accent)]"
+                        : "border-[var(--exam-border)] bg-white text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)]",
                   )}
                   aria-label={`Question ${qDisplay(q)}${answered ? ", answered" : ""}`}
-                  aria-selected={false}
+                  aria-selected={isCurrent}
                 >
                   {qDisplay(q)}
                 </button>
@@ -101,14 +110,37 @@ function ListeningQuestionsPanelBase({
           </div>
         ) : null}
 
-        {visible ? (
+        {visible && isFormPart ? (
+          <FormCompletionPart
+            part={part}
+            answers={answers}
+            partPlayed={partPlayed}
+            currentQuestionId={currentQuestionId}
+            onAnswer={onAnswer}
+            onFocus={onFocus}
+            onPartPlayed={() => {}}
+            variant="exam"
+            deferAudio
+          />
+        ) : null}
+
+        {visible && !isFormPart ? (
           <ol className="space-y-3">
             {sorted.map((q) => (
-              <li key={q.id} className="rounded-lg border border-[var(--exam-border)] bg-white p-4">
+              <li
+                key={q.id}
+                className={cn(
+                  "rounded-lg border border-[var(--exam-border)] bg-white p-4",
+                  currentQuestionId === q.id &&
+                    "ring-1 ring-[var(--exam-accent)]/30",
+                )}
+              >
                 <ListeningQuestionPanel
                   question={q}
                   value={answers[q.id] ?? ""}
                   onChange={(v) => onAnswer(q.id, v)}
+                  onFocus={() => onFocus(q.id)}
+                  isActive={currentQuestionId === q.id}
                   variant="exam"
                 />
               </li>

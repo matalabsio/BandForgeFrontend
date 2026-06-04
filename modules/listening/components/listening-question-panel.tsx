@@ -1,12 +1,24 @@
 "use client";
 
 import { memo, type ReactNode } from "react";
+import {
+  LabelInlineBlank,
+  SentenceInlineBlank,
+} from "@/modules/listening/components/listening-inline-answer";
+import {
+  shouldUseInlineBlank,
+  shouldUseLabelBlank,
+  splitPromptBlank,
+} from "@/modules/listening/lib/inline-blank";
 import type { ListeningQuestion } from "@/modules/listening/types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   question: ListeningQuestion;
   value: string;
   onChange: (value: string) => void;
+  onFocus?: () => void;
+  isActive?: boolean;
   audioSlot?: ReactNode;
   hideMeta?: boolean;
   variant?: "default" | "exam";
@@ -14,10 +26,77 @@ type Props = {
 
 const TFNG = ["TRUE", "FALSE", "NOT GIVEN"] as const;
 
+function renderTextAnswer(
+  question: ListeningQuestion,
+  value: string,
+  onChange: (value: string) => void,
+  variant: "default" | "exam",
+  opts: { onFocus?: () => void; isActive?: boolean; hideMeta?: boolean },
+) {
+  const { onFocus, isActive, hideMeta } = opts;
+  const ariaLabel = `Question ${question.question_number}: ${question.prompt}`;
+
+  if (shouldUseInlineBlank(question)) {
+    const parts = splitPromptBlank(question.prompt);
+    if (parts) {
+      return (
+        <SentenceInlineBlank
+          before={parts.before}
+          after={parts.after}
+          value={value}
+          onChange={onChange}
+          onFocus={onFocus}
+          ariaLabel={ariaLabel}
+          variant={variant}
+          isActive={isActive}
+          questionNumber={question.question_number}
+          showQuestionNumber={!hideMeta}
+        />
+      );
+    }
+  }
+
+  if (shouldUseLabelBlank(question)) {
+    return (
+      <LabelInlineBlank
+        questionNumber={question.question_number}
+        label={question.prompt}
+        value={value}
+        onChange={onChange}
+        onFocus={onFocus}
+        variant={variant}
+        isActive={isActive}
+        layout={variant === "exam" ? "exam-form" : "legacy"}
+        prefix={question.question_number === 8 ? "£" : undefined}
+      />
+    );
+  }
+
+  const isExam = variant === "exam";
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onFocus={onFocus}
+      aria-label={ariaLabel}
+      placeholder="Your answer"
+      className={cn(
+        "w-full outline-none",
+        isExam
+          ? "mt-4 rounded-md border border-[var(--exam-border)] bg-white px-3 py-2.5 text-[14px] focus:border-[var(--exam-accent)] focus:ring-2 focus:ring-[var(--exam-accent)]/20"
+          : "mt-4 rounded-lg border border-border bg-white px-3 py-2 text-body focus:border-teal focus:ring-2 focus:ring-teal/20",
+      )}
+    />
+  );
+}
+
 function ListeningQuestionPanelBase({
   question,
   value,
   onChange,
+  onFocus,
+  isActive = false,
   audioSlot,
   hideMeta,
   variant = "default",
@@ -25,22 +104,24 @@ function ListeningQuestionPanelBase({
   const type = question.question_type.toLowerCase();
   const options = question.options ?? null;
   const isExam = variant === "exam";
+  const usesInlineLayout =
+    shouldUseInlineBlank(question) || shouldUseLabelBlank(question);
 
   if (isExam) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        {!hideMeta ? (
+        {!usesInlineLayout && !hideMeta ? (
           <p className="text-[14px] font-semibold leading-snug text-[var(--exam-ink)]">
             <span className="mr-2 inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[var(--exam-bar)] text-[12px] font-bold text-white">
               {question.question_number}
             </span>
             {question.prompt}
           </p>
-        ) : (
+        ) : !usesInlineLayout && hideMeta ? (
           <p className="text-[14px] font-semibold leading-snug text-[var(--exam-ink)]">
             {question.prompt}
           </p>
-        )}
+        ) : null}
         {audioSlot ? <div className="mt-3">{audioSlot}</div> : null}
         {options && options.length > 0 ? (
           <fieldset className="mt-4 space-y-2">
@@ -82,13 +163,13 @@ function ListeningQuestionPanelBase({
             ))}
           </div>
         ) : (
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="Your answer"
-            className="mt-4 w-full rounded-md border border-[var(--exam-border)] bg-white px-3 py-2.5 text-[14px] outline-none focus:border-[var(--exam-accent)] focus:ring-2 focus:ring-[var(--exam-accent)]/20"
-          />
+          <div className={usesInlineLayout ? undefined : "mt-0"}>
+            {renderTextAnswer(question, value, onChange, "exam", {
+              onFocus,
+              isActive,
+              hideMeta,
+            })}
+          </div>
         )}
       </div>
     );
@@ -96,7 +177,7 @@ function ListeningQuestionPanelBase({
 
   return (
     <article className="rounded-2xl border border-border bg-white p-5 shadow-sm">
-      {hideMeta ? null : (
+      {!usesInlineLayout && hideMeta ? null : !usesInlineLayout ? (
         <header>
           <p className="text-meta font-semibold uppercase tracking-wider text-teal">
             Q{question.question_number} · {question.question_type}
@@ -109,7 +190,7 @@ function ListeningQuestionPanelBase({
           ) : null}
           <p className="mt-2 text-body text-ink">{question.prompt}</p>
         </header>
-      )}
+      ) : null}
 
       {audioSlot ? <div className="mt-3">{audioSlot}</div> : null}
 
@@ -153,13 +234,13 @@ function ListeningQuestionPanelBase({
           ))}
         </div>
       ) : (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Your answer"
-          className="mt-4 w-full rounded-lg border border-border bg-white px-3 py-2 text-body outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
-        />
+        <div className={usesInlineLayout ? "mt-2" : undefined}>
+          {renderTextAnswer(question, value, onChange, "default", {
+            onFocus,
+            isActive,
+            hideMeta,
+          })}
+        </div>
       )}
     </article>
   );

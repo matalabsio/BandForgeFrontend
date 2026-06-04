@@ -10,6 +10,7 @@ import { ReadingQuestionInput } from "@/modules/reading/components/reading-quest
 import { cn } from "@/lib/utils";
 
 type Props = {
+  passage: number;
   questions: ReadingQuestion[];
   answers: Record<string, string>;
   onAnswer: (id: string, value: string) => void;
@@ -31,13 +32,17 @@ function findGroupForQuestion(
 }
 
 export function ReadingQuestionsPanel({
+  passage,
   questions,
   answers,
   onAnswer,
   activeQuestion,
   onActiveQuestion,
 }: Props) {
-  const groups = useMemo(() => groupReadingQuestions(questions), [questions]);
+  const groups = useMemo(
+    () => groupReadingQuestions(questions, passage),
+    [questions, passage],
+  );
 
   const sorted = useMemo(
     () => questions.toSorted((a, b) => qDisplay(a) - qDisplay(b)),

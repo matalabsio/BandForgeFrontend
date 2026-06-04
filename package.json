@@ -9,7 +9,9 @@
     "lint": "eslint",
     "doctor": "react-doctor",
     "sync:favicons": "node scripts/sync-favicons.mjs",
-    "test:bootstrap-next": "node scripts/test-bootstrap-next-path.mjs"
+    "test:bootstrap-next": "node scripts/test-bootstrap-next-path.mjs",
+    "test:auth-refresh": "node scripts/verify-auth-refresh-flow.mjs",
+    "test:listening-inline-blank": "node modules/listening/lib/inline-blank.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
