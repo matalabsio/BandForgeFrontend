@@ -3,8 +3,14 @@ import type { ListeningQuestion } from "@/modules/listening/types";
 /** Matches IELTS-style gap markers in prompts (___ or ______). */
 export const INLINE_BLANK_PATTERN = /_{3,}/;
 
+const GAP_FILL_TYPES = new Set(["sentence_completion", "note_completion"]);
+
 export function hasInlineBlank(prompt: string): boolean {
   return INLINE_BLANK_PATTERN.test(prompt);
+}
+
+function isGapFillType(questionType: string): boolean {
+  return GAP_FILL_TYPES.has(questionType.toLowerCase());
 }
 
 /**
@@ -30,7 +36,11 @@ export function shouldUseInlineBlank(question: ListeningQuestion): boolean {
   if (hasSelectableOptions(question)) return false;
   const type = question.question_type.toLowerCase();
   if (type === "tfng") return false;
-  return hasInlineBlank(question.prompt);
+  if (hasInlineBlank(question.prompt)) return true;
+  return (
+    isGapFillType(type) &&
+    (hasInlineBlank(question.prompt) || splitPromptBlank(question.prompt) !== null)
+  );
 }
 
 export function shouldUseLabelBlank(question: ListeningQuestion): boolean {
@@ -40,4 +50,12 @@ export function shouldUseLabelBlank(question: ListeningQuestion): boolean {
   if (shouldUseInlineBlank(question)) return false;
   if (type === "form_completion") return true;
   return false;
+}
+
+/** Inline layout when gap marker present or gap-fill type with splittable prompt. */
+export function usesInlineAnswerLayout(question: ListeningQuestion): boolean {
+  return (
+    shouldUseInlineBlank(question) ||
+    shouldUseLabelBlank(question)
+  );
 }

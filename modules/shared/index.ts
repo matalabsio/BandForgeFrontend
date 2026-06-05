@@ -10,6 +10,8 @@ export {
   ExamSectionLoader,
 } from "@/modules/shared/components/exam-section-loader";
 export {
+  computeRemainingSeconds,
   formatRemaining,
   useListeningTimer,
 } from "@/modules/shared/hooks/use-exam-timer";
+export { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";

@@ -6,9 +6,11 @@ import {
   SentenceInlineBlank,
 } from "@/modules/listening/components/listening-inline-answer";
 import {
+  INLINE_BLANK_PATTERN,
   shouldUseInlineBlank,
   shouldUseLabelBlank,
   splitPromptBlank,
+  usesInlineAnswerLayout,
 } from "@/modules/listening/lib/inline-blank";
 import type { ListeningQuestion } from "@/modules/listening/types";
 import { cn } from "@/lib/utils";
@@ -54,6 +56,21 @@ function renderTextAnswer(
         />
       );
     }
+    const stripped = question.prompt.replace(INLINE_BLANK_PATTERN, " ").replace(/\s+/g, " ").trim();
+    return (
+      <SentenceInlineBlank
+        before={stripped}
+        after=""
+        value={value}
+        onChange={onChange}
+        onFocus={onFocus}
+        ariaLabel={ariaLabel}
+        variant={variant}
+        isActive={isActive}
+        questionNumber={question.question_number}
+        showQuestionNumber={!hideMeta}
+      />
+    );
   }
 
   if (shouldUseLabelBlank(question)) {
@@ -104,8 +121,7 @@ function ListeningQuestionPanelBase({
   const type = question.question_type.toLowerCase();
   const options = question.options ?? null;
   const isExam = variant === "exam";
-  const usesInlineLayout =
-    shouldUseInlineBlank(question) || shouldUseLabelBlank(question);
+  const usesInlineLayout = usesInlineAnswerLayout(question);
 
   if (isExam) {
     return (

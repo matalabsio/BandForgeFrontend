@@ -27,13 +27,20 @@ import {
 import { WritingTask1Prompt } from "@/modules/writing/components/writing-task1-prompt";
 import { WritingTask2Prompt } from "@/modules/writing/components/writing-task2-prompt";
 import { TestHeader, TestShell, TestTimer, WordCounter } from "@/modules/shared";
-import { useExamSessionRefresh } from "@/modules/shared/hooks/use-exam-session-refresh";
+import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
+import { useListeningTimer } from "@/modules/shared/hooks/use-exam-timer";
+import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
+import {
+  formatExamSubmitError,
+  submitWithExamSession,
+} from "@/modules/shared/lib/submit-with-exam-session";
 import { cn } from "@/lib/utils";
 import { SectionInstructionsModal } from "@/modules/shared/components/section-instructions-modal";
 import {
   ExamBusyOverlay,
   ExamSectionLoader,
 } from "@/modules/shared/components/exam-section-loader";
+import { ExamPartFooter } from "@/components/exam/exam-part-footer";
 
 function readConsent(moduleKey: string, attemptScope: string): boolean {
   if (typeof window === "undefined") return false;
@@ -96,11 +103,13 @@ export function WritingPage({
   const [durationSeconds, setDurationSeconds] = useState(
     part === 1 ? 20 * 60 : 40 * 60,
   );
-  const [remaining, setRemaining] = useState(durationSeconds);
+  const [startedAtIso, setStartedAtIso] = useState<string | null>(null);
+  const [serverTimeIso, setServerTimeIso] = useState<string | null>(null);
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autosaveBlockedRef = useRef(false);
   const bootedRef = useRef(false);
   const needsConsentGateRef = useRef(false);
+  const expiryFiredRef = useRef(false);
 
   const minWords =
     task?.options?.min_words ?? writingMinWords(part);
@@ -146,22 +155,16 @@ export function WritingPage({
     setError(null);
     setBusy(false);
     setSaved(true);
+    setStartedAtIso(null);
+    setServerTimeIso(null);
     setPhase("loading");
   }, [part, mockTestId, mockAttemptId]);
 
   useEffect(() => {
-    setRemaining(durationSeconds);
-  }, [durationSeconds]);
+    expiryFiredRef.current = false;
+  }, [startedAtIso]);
 
-  useEffect(() => {
-    if (phase !== "ready") return;
-    const id = window.setInterval(() => {
-      setRemaining((s) => (s > 0 ? s - 1 : 0));
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [phase]);
-
-  useExamSessionRefresh(phase === "ready" && Boolean(attemptId));
+  useExamSessionGuard(Boolean(attemptId));
 
   const beginSession = useCallback(async () => {
     setPhase("loading");
@@ -175,7 +178,8 @@ export function WritingPage({
       setAttemptId(res.attempt_id);
       setTask(res.task ?? null);
       setDurationSeconds(res.duration_seconds);
-      setRemaining(res.duration_seconds);
+      setStartedAtIso(res.started_at);
+      setServerTimeIso(res.server_time);
       const initial =
         res.saved_answer?.trim() ||
         (typeof window !== "undefined"
@@ -205,6 +209,17 @@ export function WritingPage({
     if (initialBoot?.task) {
       if (bootedRef.current) return;
       if (part === 1 && !introPassed) {
+        setAttemptId(initialBoot.attempt_id);
+        setTask(initialBoot.task as WritingTask);
+        setDurationSeconds(initialBoot.duration_seconds);
+        setStartedAtIso(initialBoot.started_at);
+        setServerTimeIso(initialBoot.server_time);
+        const introEssay =
+          initialBoot.saved_answer?.trim() ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem(storageKey(initialBoot.attempt_id)) ?? ""
+            : "");
+        setEssay(introEssay);
         setPhase("intro");
         return;
       }
@@ -212,7 +227,8 @@ export function WritingPage({
       setAttemptId(initialBoot.attempt_id);
       setTask(initialBoot.task as WritingTask);
       setDurationSeconds(initialBoot.duration_seconds);
-      setRemaining(initialBoot.duration_seconds);
+      setStartedAtIso(initialBoot.started_at);
+      setServerTimeIso(initialBoot.server_time);
       const initial =
         initialBoot.saved_answer?.trim() ||
         (typeof window !== "undefined"
@@ -297,7 +313,7 @@ export function WritingPage({
     }
   };
 
-  const submitTask = async () => {
+  const submitTask = useCallback(async (opts?: { onExpiry?: boolean }) => {
     if (!attemptId || !task || busy) return;
     if (task.part !== part) {
       setError(null);
@@ -306,7 +322,7 @@ export function WritingPage({
       return;
     }
     const trimmed = essay.trim();
-    if (!trimmed) {
+    if (!trimmed && !opts?.onExpiry) {
       setError("Please write your response before submitting.");
       return;
     }
@@ -318,9 +334,12 @@ export function WritingPage({
         clearTimeout(autosaveRef.current);
         autosaveRef.current = null;
       }
-      const result = await writingApi.submit(attemptId, [
-        { question_id: task.id, user_answer: trimmed },
-      ]);
+      const result = await submitWithExamSession({
+        submit: () =>
+          writingApi.submit(attemptId, [
+            { question_id: task.id, user_answer: trimmed },
+          ]),
+      });
       try {
         localStorage.removeItem(storageKey(attemptId));
       } catch {
@@ -382,11 +401,65 @@ export function WritingPage({
       router.push(`${writingResultsPath(result.attempt_id)}${q}`);
     } catch (e) {
       autosaveBlockedRef.current = false;
-      setError(e instanceof Error ? e.message : "Submit failed.");
+      setError(formatExamSubmitError(e));
     } finally {
       setBusy(false);
     }
-  };
+  }, [
+    attemptId,
+    task,
+    busy,
+    part,
+    essay,
+    beginSession,
+    mockAttemptId,
+    mockSlug,
+    router,
+  ]);
+
+  const timerActive = phase === "ready" && Boolean(attemptId);
+  const expiryHandlerRef = useRef<() => void>(() => {});
+
+  const remaining = useListeningTimer({
+    startedAtIso,
+    serverTimeIso,
+    durationSeconds,
+    active: timerActive,
+    onExpire: () => expiryHandlerRef.current(),
+  });
+
+  const canSubmitOnExpiry =
+    Boolean(attemptId) &&
+    Boolean(task) &&
+    !busy &&
+    (phase === "ready" || (phase === "intro" && remaining <= 0));
+
+  const onTimerExpire = useCallback(() => {
+    if (expiryFiredRef.current) return;
+    if (!canSubmitOnExpiry) return;
+    expiryFiredRef.current = true;
+    void submitTask({ onExpiry: true });
+  }, [canSubmitOnExpiry, submitTask]);
+
+  useEffect(() => {
+    expiryHandlerRef.current = onTimerExpire;
+  }, [onTimerExpire]);
+
+  useExamExpiryCatchUp({
+    remaining,
+    canSubmit: canSubmitOnExpiry,
+    onExpire: onTimerExpire,
+    resetKey: startedAtIso,
+  });
+
+  useEffect(() => {
+    if (!startedAtIso || !attemptId || !task) return;
+    if (remaining > 0) return;
+    if (phase === "intro") {
+      setIntroPassed(true);
+      setPhase("ready");
+    }
+  }, [startedAtIso, attemptId, task, remaining, phase]);
 
   const handleWritingIntroContinue = () => {
     if (part !== 1 || !introAgreed) return;
@@ -424,7 +497,7 @@ export function WritingPage({
     );
   }
 
-  if (phase === "intro" && part === 1) {
+  if (phase === "intro" && part === 1 && remaining > 0) {
     return (
       <SectionInstructionsModal
         title="Writing Test Instructions"
@@ -451,14 +524,18 @@ export function WritingPage({
       {busy ? (
         <ExamBusyOverlay
           title={
-            activePart === 1
-              ? "Submitting Task 1…"
-              : "Submitting Writing…"
+            remaining <= 0
+              ? "Time's up — submitting…"
+              : activePart === 1
+                ? "Submitting Task 1…"
+                : "Submitting Writing…"
           }
           subtitle={
-            activePart === 1
-              ? "Saving your response and loading Task 2."
-              : "Saving your response and opening your results."
+            remaining <= 0
+              ? "Saving your response before the deadline."
+              : activePart === 1
+                ? "Saving your response and loading Task 2."
+                : "Saving your response and opening your results."
           }
         />
       ) : null}
@@ -508,35 +585,38 @@ export function WritingPage({
             ) : null}
           </section>
 
-          <section className="flex min-h-[280px] flex-1 flex-col bg-[var(--reading-surface)] p-4 lg:p-6">
-            <label htmlFor="essay" className="sr-only">
-              Your response
-            </label>
-            <textarea
-              id="essay"
-              value={essay}
-              onChange={(e) => handleChange(e.target.value)}
-              placeholder="Type your response here…"
-              className="answer-input min-h-[240px] flex-1 resize-none rounded-lg border border-[var(--reading-border)] bg-white p-4 text-[var(--reading-ink)] transition-colors duration-200 focus:border-[var(--reading-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--reading-accent)]/20"
-            />
-            {error ? (
-              <p className="mt-2 text-[13px] text-red-600" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <div className="sticky-test-actions mt-4 flex justify-end gap-3 border-t border-[var(--reading-border)] pt-4">
-              <Button
-                variant="primary"
-                disabled={busy}
-                onClick={() => void submitTask()}
-              >
-                {busy
-                  ? "Submitting…"
+          <section className="flex min-h-0 flex-1 flex-col bg-[var(--reading-surface)] lg:max-h-[calc(100dvh-8rem)]">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
+              <label htmlFor="essay" className="sr-only">
+                Your response
+              </label>
+              <textarea
+                id="essay"
+                value={essay}
+                onChange={(e) => handleChange(e.target.value)}
+                placeholder="Type your response here…"
+                className="answer-input min-h-[240px] w-full flex-1 resize-none rounded-lg border border-[var(--reading-border)] bg-white p-4 text-[var(--reading-ink)] transition-colors duration-200 focus:border-[var(--reading-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--reading-accent)]/20"
+              />
+              {error ? (
+                <p className="mt-2 text-[13px] text-red-600" role="alert">
+                  {error}
+                </p>
+              ) : null}
+            </div>
+            <ExamPartFooter
+              variant="writing"
+              label={
+                mockAttemptId
+                  ? activePart === 1
+                    ? "Next Part"
+                    : "Finish writing"
                   : activePart === 1
                     ? "Continue to Task 2"
-                    : "Submit Writing"}
-              </Button>
-            </div>
+                    : "Submit Writing"
+              }
+              busy={busy}
+              onAction={() => void submitTask()}
+            />
           </section>
         </div>
       </main>

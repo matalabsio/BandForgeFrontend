@@ -7,6 +7,7 @@ import {
 import { coalescedClientRefresh } from "@/lib/auth-refresh-coordinator";
 import { getServerAuth } from "@/lib/auth-server";
 import { isAuthEnabled } from "@/lib/flags";
+import { accessTokenExpired } from "@/lib/jwt-expiry";
 import {
   ACCESS_COOKIE,
   clearAuthStorage,
@@ -40,7 +41,9 @@ function clientAuthHeaders(extra?: HeadersInit): Headers {
   }
   if (typeof window !== "undefined") {
     const token = getAccessToken();
-    if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (token && !accessTokenExpired(token)) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
   }
   return headers;
 }

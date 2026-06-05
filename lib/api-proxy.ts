@@ -4,7 +4,25 @@ import type { AuthResponse } from "@/lib/auth";
 import { logAuthMetric } from "@/lib/auth-metrics";
 import { applyAuthCookiesToResponse, DEFAULT_MAX_AGE } from "@/lib/auth-cookies";
 import { refreshAuthSession } from "@/lib/auth-server";
+import { accessTokenExpired } from "@/lib/jwt-expiry";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+
+function parseBearerToken(authorization: string | null): string | null {
+  if (!authorization?.startsWith("Bearer ")) return null;
+  const token = authorization.slice(7).trim();
+  return token || null;
+}
+
+/** Prefer httpOnly cookie access when the client sent an expired bearer. */
+function shouldPreferCookieAccess(
+  cookieHeader: string,
+  authorization: string | null,
+): boolean {
+  const cookieAccess = readCookieHeader(cookieHeader, ACCESS_COOKIE);
+  const clientBearer = parseBearerToken(authorization);
+  if (!cookieAccess || !clientBearer) return false;
+  return accessTokenExpired(clientBearer) && !accessTokenExpired(cookieAccess);
+}
 
 /** Read a cookie value from the raw Cookie request header (Route Handlers). */
 export function readCookieHeader(cookieHeader: string, name: string): string | null {
@@ -29,8 +47,11 @@ function buildProxyHeaders(
 ): Record<string, string> {
   const access = readCookieHeader(cookieHeader, ACCESS_COOKIE);
   const headers: Record<string, string> = { cookie: cookieHeader };
+  const preferCookie =
+    Boolean(options?.preferCookieAccess && access) ||
+    shouldPreferCookieAccess(cookieHeader, authorization);
 
-  if (options?.preferCookieAccess && access) {
+  if (preferCookie && access) {
     headers.Authorization = `Bearer ${access}`;
   } else if (authorization) {
     headers.Authorization = authorization;

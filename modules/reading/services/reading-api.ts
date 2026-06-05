@@ -1,46 +1,10 @@
-import {
-  ApiError,
-  parseApiError,
-  parseJsonResponse,
-  type ApiErrorBody,
-} from "@/lib/api";
+import { examApiCall } from "@/lib/exam-api-call";
 import type {
   ReadingQuestionsPayload,
   ReadingScoreReport,
   StartReadingPayload,
   SubmitReadingPayload,
 } from "@/modules/reading/types";
-
-const CLIENT_FETCH_TIMEOUT_MS = 15_000;
-
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CLIENT_FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(path, {
-      ...init,
-      credentials: "include",
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
-      },
-      cache: "no-store",
-    });
-    const body = await parseJsonResponse<T | ApiErrorBody>(res);
-    if (!res.ok) {
-      throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
-    }
-    return body as T;
-  } catch (e) {
-    if (e instanceof Error && e.name === "AbortError") {
-      throw new ApiError("Request timed out. Please try again.", 408);
-    }
-    throw e;
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 export const readingApi = {
   start(
@@ -59,7 +23,7 @@ export const readingApi = {
       params.set("mock_attempt_id", options.mockAttemptId);
     }
     const qs = `?${params.toString()}`;
-    return call<StartReadingPayload>(
+    return examApiCall<StartReadingPayload>(
       `/api/reading/${encodeURIComponent(mockTestId)}/start${qs}`,
       { method: "POST" },
     );
@@ -71,7 +35,7 @@ export const readingApi = {
     const params = new URLSearchParams();
     if (options?.part) params.set("passage", String(options.part));
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return call<ReadingQuestionsPayload>(
+    return examApiCall<ReadingQuestionsPayload>(
       `/api/reading/${encodeURIComponent(mockTestId)}/questions${qs}`,
       { method: "GET" },
     );
@@ -81,7 +45,7 @@ export const readingApi = {
     questionId: string,
     userAnswer: string,
   ): Promise<{ ok: boolean }> {
-    return call(
+    return examApiCall(
       `/api/reading/attempts/${encodeURIComponent(attemptId)}/autosave`,
       {
         method: "POST",
@@ -93,7 +57,7 @@ export const readingApi = {
     attemptId: string,
     answers: { question_id: string; user_answer: string }[],
   ): Promise<SubmitReadingPayload> {
-    return call<SubmitReadingPayload>(
+    return examApiCall<SubmitReadingPayload>(
       `/api/reading/attempts/${encodeURIComponent(attemptId)}/submit`,
       {
         method: "POST",
@@ -102,7 +66,7 @@ export const readingApi = {
     );
   },
   scoreReport(attemptId: string): Promise<ReadingScoreReport> {
-    return call<ReadingScoreReport>(
+    return examApiCall<ReadingScoreReport>(
       `/api/reading/attempts/${encodeURIComponent(attemptId)}/score-report`,
       { method: "GET" },
     );

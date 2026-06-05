@@ -23,13 +23,20 @@ import { readingModuleResultsPath } from "@/lib/reading-test";
 import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
-import { useExamSessionRefresh } from "@/modules/shared/hooks/use-exam-session-refresh";
+import { ensureExamSessionIfStale } from "@/lib/exam-session";
+import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
+import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
+import {
+  formatExamSubmitError,
+  submitWithExamSession,
+} from "@/modules/shared/lib/submit-with-exam-session";
 import { ReadingExamToolbar } from "@/modules/reading/components/reading-exam-toolbar";
 import { ReadingIntroOverlay } from "@/modules/reading/components/reading-intro-overlay";
 import { ReadingPassagePanel } from "@/modules/reading/components/reading-passage-panel";
 import { ReadingQuestionSection } from "@/modules/reading/components/reading-question-section";
 import { ReadingSectionStepper } from "@/modules/reading/components/reading-section-stepper";
 import { ReadingExamSkeleton } from "@/modules/reading/components/reading-exam-skeleton";
+import { ExamPartFooter } from "@/components/exam/exam-part-footer";
 import { ExamBusyOverlay } from "@/modules/shared/components/exam-section-loader";
 import {
   clearFlowSnapshot,
@@ -176,6 +183,23 @@ export function ReadingPage({
     return "Submit passage";
   }, [activeQuestionSection, sectionQuestionRanges]);
 
+  const isLastQuestionSection = activeQuestionSection === "sentence_completion";
+
+  const footerLabel = useMemo(() => {
+    if (!isLastQuestionSection) return continueLabel;
+    if (mockAttemptId) {
+      return passage < TEST1_READING_PASSAGE_COUNT ? "Next Part" : "Finish reading";
+    }
+    return continueLabel;
+  }, [isLastQuestionSection, continueLabel, mockAttemptId, passage]);
+
+  const toolbarSubmitLabel = useMemo(() => {
+    if (mockAttemptId) {
+      return passage < TEST1_READING_PASSAGE_COUNT ? "Next Part" : "Finish reading";
+    }
+    return `Submit passage ${passage}`;
+  }, [mockAttemptId, passage]);
+
   const answeredCount = useMemo(
     () => questions.filter((q) => (answers[q.id] ?? "").trim()).length,
     [questions, answers],
@@ -218,7 +242,14 @@ export function ReadingPage({
       if (!attemptId) return;
       if (autosaveTimers.current[id]) clearTimeout(autosaveTimers.current[id]);
       autosaveTimers.current[id] = setTimeout(() => {
-        void readingApi.autosave(attemptId, id, value).catch(() => undefined);
+        void (async () => {
+          try {
+            await ensureExamSessionIfStale();
+            await readingApi.autosave(attemptId, id, value);
+          } catch {
+            /* ignore */
+          }
+        })();
       }, 500);
     },
     [attemptId, examPhase, questionSection, persistFlow],
@@ -258,17 +289,33 @@ export function ReadingPage({
     autosaveTimers.current = {};
   }, []);
 
+  const flushAutosaves = useCallback(
+    async (id: string, snapshot: Record<string, string>) => {
+      clearAutosaveTimers();
+      await Promise.all(
+        questions.map((q) =>
+          readingApi
+            .autosave(id, q.id, (snapshot[q.id] ?? "").trim())
+            .catch(() => undefined),
+        ),
+      );
+    },
+    [questions, clearAutosaveTimers],
+  );
+
   const submitAll = useCallback(async () => {
     if (!attemptId || questions.length === 0 || busy) return;
     setBusy(true);
     setError(null);
-    clearAutosaveTimers();
     try {
       const body = questions.map((q) => ({
         question_id: q.id,
         user_answer: (answers[q.id] ?? "").trim(),
       }));
-      const result = await readingApi.submit(attemptId, body);
+      const result = await submitWithExamSession({
+        flush: () => flushAutosaves(attemptId, answers),
+        submit: () => readingApi.submit(attemptId, body),
+      });
       if (mockAttemptId) {
         cacheCheckpointSubmit(result.attempt_id, {
           band: result.band,
@@ -314,7 +361,7 @@ export function ReadingPage({
           /* fall through */
         }
       }
-      setError(e instanceof ApiError ? e.message : "Submit failed.");
+      setError(formatExamSubmitError(e));
     } finally {
       setBusy(false);
     }
@@ -327,22 +374,38 @@ export function ReadingPage({
     testId,
     passage,
     busy,
-    clearAutosaveTimers,
+    flushAutosaves,
     mockSlug,
     replace,
   ]);
 
+  const expiryFiredRef = useRef(false);
+
+  useEffect(() => {
+    expiryFiredRef.current = false;
+  }, [startedAtIso]);
+
+  const canSubmitOnExpiry =
+    loadStatus === "ready" &&
+    Boolean(attemptId) &&
+    questions.length > 0 &&
+    !busy;
+
   const onTimerExpire = useCallback(() => {
-    if (!attemptId || busy) return;
+    if (expiryFiredRef.current) return;
+    if (!canSubmitOnExpiry) return;
+    expiryFiredRef.current = true;
     void submitAll();
-  }, [attemptId, busy, submitAll]);
+  }, [canSubmitOnExpiry, submitAll]);
 
   const timerActive =
     loadStatus === "ready" &&
     (examPhase === "passage" || examPhase === "questions") &&
     Boolean(attemptId);
 
-  useExamSessionRefresh(timerActive);
+  const examSessionGuardActive = loadStatus === "ready" && Boolean(attemptId);
+
+  useExamSessionGuard(examSessionGuardActive);
 
   const remaining = useListeningTimer({
     startedAtIso,
@@ -350,6 +413,13 @@ export function ReadingPage({
     durationSeconds,
     active: timerActive,
     onExpire: onTimerExpire,
+  });
+
+  useExamExpiryCatchUp({
+    remaining,
+    canSubmit: canSubmitOnExpiry,
+    onExpire: onTimerExpire,
+    resetKey: startedAtIso,
   });
 
   const hydrateFromStart = useCallback(
@@ -745,23 +815,32 @@ export function ReadingPage({
   const durationMinutes = Math.round(durationSeconds / 60);
 
   const submitOverlayTitle =
-    mockAttemptId && passage >= TEST1_READING_PASSAGE_COUNT
-      ? "Finishing reading…"
-      : `Submitting Passage ${passage}…`;
+    remaining <= 0
+      ? "Time's up — submitting…"
+      : mockAttemptId && passage >= TEST1_READING_PASSAGE_COUNT
+        ? "Finishing reading…"
+        : `Submitting Passage ${passage}…`;
   const submitOverlaySubtitle =
-    mockAttemptId && passage >= TEST1_READING_PASSAGE_COUNT
-      ? "Saving your answers and opening writing."
-      : `Saving your answers and loading Passage ${passage + 1}.`;
+    remaining <= 0
+      ? "Saving your answers before the deadline."
+      : mockAttemptId && passage >= TEST1_READING_PASSAGE_COUNT
+        ? "Saving your answers and opening writing."
+        : `Saving your answers and loading Passage ${passage + 1}.`;
 
   return (
     <div className="flex min-h-dvh flex-col">
-      {busy ? (
+      {busy ||
+      (remaining <= 0 &&
+        loadStatus === "ready" &&
+        Boolean(attemptId) &&
+        questions.length > 0 &&
+        examPhase === "intro") ? (
         <ExamBusyOverlay
           title={submitOverlayTitle}
           subtitle={submitOverlaySubtitle}
         />
       ) : null}
-      {examPhase === "intro" && shouldShowIntro ? (
+      {examPhase === "intro" && shouldShowIntro && remaining > 0 ? (
         <ReadingIntroOverlay
           passageTitle={displayTitle}
           passageNumber={passage}
@@ -788,13 +867,7 @@ export function ReadingPage({
                 ? `Passage ${passage} of ${TEST1_READING_PASSAGE_COUNT}`
                 : undefined
             }
-            submitLabel={
-              mockAttemptId
-                ? passage < TEST1_READING_PASSAGE_COUNT
-                  ? `Submit passage ${passage} · Continue`
-                  : "Finish reading"
-                : undefined
-            }
+            submitLabel={mockAttemptId ? toolbarSubmitLabel : undefined}
             remainingSeconds={remaining}
             timerActive={timerActive}
             answeredCount={answeredCount}
@@ -822,28 +895,40 @@ export function ReadingPage({
               <div className="min-h-[34vh] border-b border-[var(--reading-border)] lg:min-h-0 lg:w-[min(56%,1fr)] lg:border-b-0 lg:border-r">
                 <ReadingPassagePanel passageText={passageText} />
               </div>
-              <div className="min-h-[52vh] min-w-0 flex-1 lg:w-[min(44%,560px)] lg:shrink-0">
-                <div className="flex h-full min-h-0 flex-col">
-                  <ReadingSectionStepper
-                    current={activeQuestionSection}
-                    onSelect={handleStepperSelect}
-                    labels={{
-                      tfng: `${sectionQuestionRanges.tfng} · TFNG`,
-                      matching_headings: `${sectionQuestionRanges.matching_headings} · Headings`,
-                      sentence_completion: `${sectionQuestionRanges.sentence_completion} · Completion`,
-                    }}
-                    onBack={handleSectionBack}
-                    onContinue={handleSectionContinue}
-                    onSubmit={() => void submitAll()}
-                    busy={busy}
-                    isLastSection={activeQuestionSection === "sentence_completion"}
-                    continueLabel={continueLabel}
-                  />
+              <div className="flex min-h-[52vh] min-w-0 flex-1 flex-col lg:min-h-0 lg:w-[min(44%,560px)] lg:shrink-0 lg:max-h-[calc(100dvh-3rem)]">
+                <ReadingSectionStepper
+                  current={activeQuestionSection}
+                  onSelect={handleStepperSelect}
+                  labels={{
+                    tfng: `${sectionQuestionRanges.tfng} · TFNG`,
+                    matching_headings: `${sectionQuestionRanges.matching_headings} · Headings`,
+                    sentence_completion: `${sectionQuestionRanges.sentence_completion} · Completion`,
+                  }}
+                  onBack={handleSectionBack}
+                  onContinue={handleSectionContinue}
+                  onSubmit={() => void submitAll()}
+                  busy={busy}
+                  isLastSection={isLastQuestionSection}
+                  continueLabel={continueLabel}
+                />
+                <div className="flex min-h-0 flex-1 flex-col">
                   <ReadingQuestionSection
                     group={currentGroup}
                     sectionId={activeQuestionSection}
                     answers={answers}
                     onAnswer={setAnswer}
+                  />
+                  <ExamPartFooter
+                    variant="reading"
+                    label={footerLabel}
+                    busy={busy}
+                    onAction={() => {
+                      if (isLastQuestionSection) {
+                        void submitAll();
+                      } else {
+                        handleSectionContinue();
+                      }
+                    }}
                   />
                 </div>
               </div>

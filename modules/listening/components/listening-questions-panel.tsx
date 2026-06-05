@@ -2,8 +2,12 @@
 
 import { memo, useMemo } from "react";
 import { FormCompletionPart } from "@/modules/listening/components/form-completion-part";
+import { ListeningChooseTwoBlock } from "@/modules/listening/components/listening-choose-two-block";
+import { ListeningMatchingBlock } from "@/modules/listening/components/listening-matching-block";
+import { ListeningPartFooter } from "@/modules/listening/components/listening-part-footer";
 import { ListeningQuestionPanel } from "@/modules/listening/components/listening-question-panel";
-import { isFormCompletionPart } from "@/modules/listening/lib/form-completion";
+import { ListeningSentenceCompletionBlock } from "@/modules/listening/components/listening-sentence-completion-block";
+import { groupListeningQuestions } from "@/modules/listening/lib/listening-question-groups";
 import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +18,10 @@ type Props = {
   onAnswer: (questionId: string, value: string) => void;
   onFocus: (questionId: string) => void;
   partPlayed?: boolean;
-  instruction?: string | null;
   visible?: boolean;
+  nextPartLabel?: string;
+  submitBusy?: boolean;
+  onSubmitPart?: () => void;
 };
 
 function qDisplay(q: ListeningQuestion): number {
@@ -33,11 +39,13 @@ function ListeningQuestionsPanelBase({
   onAnswer,
   onFocus,
   partPlayed = false,
-  instruction,
   visible = true,
+  nextPartLabel,
+  submitBusy = false,
+  onSubmitPart,
 }: Props) {
   const sorted = useMemo(() => sortedQuestions(part.questions), [part.questions]);
-  const isFormPart = useMemo(() => isFormCompletionPart(part), [part]);
+  const blocks = useMemo(() => groupListeningQuestions(part), [part]);
 
   if (sorted.length === 0) {
     return (
@@ -88,7 +96,12 @@ function ListeningQuestionsPanelBase({
         </div>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-5">
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-5",
+          visible && nextPartLabel && onSubmitPart && "pb-4",
+        )}
+      >
         {!visible ? (
           <div className="flex min-h-full flex-1 items-center justify-center">
             <div className="max-w-sm rounded-lg border border-[var(--exam-border)] bg-white p-5 text-center shadow-sm">
@@ -102,52 +115,98 @@ function ListeningQuestionsPanelBase({
           </div>
         ) : null}
 
-        {visible && instruction ? (
-          <div className="mb-4 shrink-0 rounded-lg border border-[var(--exam-border)] bg-white px-4 py-3">
-            <p className="text-[12px] leading-relaxed text-[var(--exam-ink-muted)] whitespace-pre-wrap">
-              {instruction}
-            </p>
+        {visible ? (
+          <div className="space-y-4">
+            {blocks.map((block) => {
+              if (block.kind === "form") {
+                return (
+                  <FormCompletionPart
+                    key="form"
+                    part={part}
+                    answers={answers}
+                    partPlayed={partPlayed}
+                    currentQuestionId={currentQuestionId}
+                    onAnswer={onAnswer}
+                    onFocus={onFocus}
+                    onPartPlayed={() => {}}
+                    variant="exam"
+                    deferAudio
+                  />
+                );
+              }
+              if (block.kind === "choose_two") {
+                return (
+                  <ListeningChooseTwoBlock
+                    key={`choose-two-${block.questions[0].id}`}
+                    questions={block.questions}
+                    instruction={block.instruction}
+                    stem={block.stem}
+                    options={block.options}
+                    answers={answers}
+                    currentQuestionId={currentQuestionId}
+                    onAnswer={onAnswer}
+                    onFocus={onFocus}
+                  />
+                );
+              }
+              if (block.kind === "matching") {
+                return (
+                  <ListeningMatchingBlock
+                    key={`matching-${block.questions[0].id}`}
+                    questions={block.questions}
+                    instruction={block.instruction}
+                    options={block.options}
+                    answers={answers}
+                    currentQuestionId={currentQuestionId}
+                    onAnswer={onAnswer}
+                    onFocus={onFocus}
+                  />
+                );
+              }
+              if (block.kind === "sentence_completion") {
+                return (
+                  <ListeningSentenceCompletionBlock
+                    key={`sentence-${block.questions[0].id}`}
+                    questions={block.questions}
+                    instruction={block.instruction}
+                    answers={answers}
+                    currentQuestionId={currentQuestionId}
+                    onAnswer={onAnswer}
+                    onFocus={onFocus}
+                  />
+                );
+              }
+              return (
+                <div
+                  key={block.question.id}
+                  className={cn(
+                    "rounded-lg border border-[var(--exam-border)] bg-white p-4",
+                    currentQuestionId === block.question.id &&
+                      "ring-1 ring-[var(--exam-accent)]/30",
+                  )}
+                >
+                  <ListeningQuestionPanel
+                    question={block.question}
+                    value={answers[block.question.id] ?? ""}
+                    onChange={(v) => onAnswer(block.question.id, v)}
+                    onFocus={() => onFocus(block.question.id)}
+                    isActive={currentQuestionId === block.question.id}
+                    variant="exam"
+                  />
+                </div>
+              );
+            })}
           </div>
         ) : null}
-
-        {visible && isFormPart ? (
-          <FormCompletionPart
-            part={part}
-            answers={answers}
-            partPlayed={partPlayed}
-            currentQuestionId={currentQuestionId}
-            onAnswer={onAnswer}
-            onFocus={onFocus}
-            onPartPlayed={() => {}}
-            variant="exam"
-            deferAudio
-          />
-        ) : null}
-
-        {visible && !isFormPart ? (
-          <ol className="space-y-3">
-            {sorted.map((q) => (
-              <li
-                key={q.id}
-                className={cn(
-                  "rounded-lg border border-[var(--exam-border)] bg-white p-4",
-                  currentQuestionId === q.id &&
-                    "ring-1 ring-[var(--exam-accent)]/30",
-                )}
-              >
-                <ListeningQuestionPanel
-                  question={q}
-                  value={answers[q.id] ?? ""}
-                  onChange={(v) => onAnswer(q.id, v)}
-                  onFocus={() => onFocus(q.id)}
-                  isActive={currentQuestionId === q.id}
-                  variant="exam"
-                />
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </div>
+
+      {visible && nextPartLabel && onSubmitPart ? (
+        <ListeningPartFooter
+          label={nextPartLabel}
+          busy={submitBusy}
+          onSubmit={onSubmitPart}
+        />
+      ) : null}
     </div>
   );
 }

@@ -11,9 +11,14 @@
     "sync:favicons": "node scripts/sync-favicons.mjs",
     "test:bootstrap-next": "node scripts/test-bootstrap-next-path.mjs",
     "test:auth-refresh": "node scripts/verify-auth-refresh-flow.mjs",
-    "test:listening-inline-blank": "node modules/listening/lib/inline-blank.test.mjs"
+    "test:listening-inline-blank": "node modules/listening/lib/inline-blank.test.mjs",
+    "test:jwt-expiry": "node lib/jwt-expiry.test.mjs",
+    "test:exam-session": "node lib/exam-session.test.mjs",
+    "test:exam-timer": "node modules/shared/hooks/exam-timer.test.mjs"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.0.1",
     "@supabase/supabase-js": "^2.106.2",
     "lucide-react": "^1.16.0",

@@ -36,3 +36,15 @@ test("splitPromptBlank splits on first marker only", () => {
     after: "b ___ c",
   });
 });
+
+test("S3/S4-style sentence completion prompts split inline", () => {
+  assert.deepEqual(
+    splitPromptBlank("more than ___ hours per week"),
+    { before: "more than", after: "hours per week" },
+  );
+  assert.deepEqual(
+    splitPromptBlank("The main cause was ___ pollution"),
+    { before: "The main cause was", after: "pollution" },
+  );
+  assert.equal(hasInlineBlank("Complete the notes below."), false);
+});

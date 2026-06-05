@@ -1,8 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { ensureExamSessionIfStale } from "@/lib/exam-session";
 import { listeningApi } from "@/modules/listening/services/listening-api";
+import {
+  formatExamSubmitError,
+  submitWithExamSession,
+} from "@/modules/shared/lib/submit-with-exam-session";
 import type { AutosaveQueueItem, SubmitListeningPayload } from "@/modules/listening/types";
 
 const QUEUE_PREFIX = "bf-listening-queue-";
@@ -43,6 +47,7 @@ async function tryAutosave(
   userAnswer: string,
 ): Promise<boolean> {
   try {
+    await ensureExamSessionIfStale();
     await listeningApi.autosave(attemptId, questionId, userAnswer);
     return true;
   } catch {
@@ -143,11 +148,13 @@ export function SubmissionButton({
     if (!attemptId || busy) return;
     setBusy(true);
     try {
-      await onBeforeSubmit?.();
-      const payload = await listeningApi.submit(attemptId, answers);
+      const payload = await submitWithExamSession({
+        flush: onBeforeSubmit,
+        submit: () => listeningApi.submit(attemptId, answers),
+      });
       onSubmitted(payload);
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : "Submission failed.");
+      onError(formatExamSubmitError(e));
     } finally {
       setBusy(false);
     }

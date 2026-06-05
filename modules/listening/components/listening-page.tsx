@@ -29,7 +29,12 @@ import { IeltsExamToolbar } from "@/components/exam/ielts-exam-toolbar";
 import { listeningApi } from "@/modules/listening/services/listening-api";
 import { useListeningStore } from "@/modules/listening/store/listening-store";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
-import { useExamSessionRefresh } from "@/modules/shared/hooks/use-exam-session-refresh";
+import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
+import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
+import {
+  formatExamSubmitError,
+  submitWithExamSession,
+} from "@/modules/shared/lib/submit-with-exam-session";
 import {
   clearSnapshot,
   readSnapshot,
@@ -45,12 +50,12 @@ import {
 import { ListeningAudioPanel } from "@/modules/listening/components/listening-audio-panel";
 import { ListeningQuestionsPanel } from "@/modules/listening/components/listening-questions-panel";
 import { ListeningIntroCard } from "@/modules/listening/components/listening-intro-card";
-import {
-  groupInstruction,
-  instructionForQuestion,
-  sortedPartQuestions,
-} from "@/modules/listening/lib/part-instructions";
+import { audioPanelInstruction } from "@/modules/listening/lib/listening-question-groups";
 import { GREENFIELD_LISTENING_STAGES } from "@/modules/listening/listening-test-stages";
+import {
+  initialPartAudioPhase,
+  type ListeningPartAudioPhase,
+} from "@/modules/listening/lib/listening-part-intro";
 import { useListeningMockGuard } from "@/modules/listening/hooks/use-listening-mock-guard";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 
@@ -111,6 +116,10 @@ export function ListeningPage({
   const [sectionAdvance, setSectionAdvance] = useState<SectionAdvanceNotice | null>(
     null,
   );
+  const partPlayed = Boolean(state.playedParts[part]);
+  const [partAudioPhase, setPartAudioPhase] = useState<ListeningPartAudioPhase>(
+    () => initialPartAudioPhase(partPlayed),
+  );
 
   const { schedule, flushNow } = useAutosave(state.attemptId);
   const introStorageKey = useMemo(
@@ -119,6 +128,21 @@ export function ListeningPage({
   );
 
   const submissionActive = state.status === "in_progress";
+  const examSessionGuardActive = Boolean(state.attemptId);
+
+  useEffect(() => {
+    setPartAudioPhase(initialPartAudioPhase(partPlayed));
+  }, [part, partPlayed]);
+
+  useEffect(() => {
+    if (partPlayed) {
+      setPartAudioPhase("complete");
+    }
+  }, [partPlayed]);
+
+  const handleBeginSection = useCallback(() => {
+    setPartAudioPhase("playing");
+  }, []);
 
   const stageMeta = GREENFIELD_LISTENING_STAGES.find((s) => s.part === part);
 
@@ -160,8 +184,10 @@ export function ListeningPage({
     setBusy(true);
     dispatch({ type: "submitting" });
     try {
-      // Answers are taken from client state; do not block submit on autosave flush.
-      const payload = await listeningApi.submit(state.attemptId, submitAnswers);
+      const payload = await submitWithExamSession({
+        flush: flushNow,
+        submit: () => listeningApi.submit(state.attemptId!, submitAnswers),
+      });
       const listeningDoneOnClient = part >= TEST1_LISTENING_PART_COUNT;
       if (mockAttemptId) {
         cacheCheckpointSubmit(payload.attempt_id, {
@@ -190,7 +216,7 @@ export function ListeningPage({
     } catch (e) {
       dispatch({
         type: "error",
-        message: e instanceof ApiError ? e.message : "Submit failed.",
+        message: formatExamSubmitError(e),
       });
       setBusy(false);
     }
@@ -202,12 +228,27 @@ export function ListeningPage({
     goToResults,
     mockAttemptId,
     part,
+    flushNow,
   ]);
 
+  const expiryFiredRef = useRef(false);
+
+  useEffect(() => {
+    expiryFiredRef.current = false;
+  }, [state.startedAtIso]);
+
+  const canSubmitOnExpiry =
+    submissionActive &&
+    Boolean(state.attemptId) &&
+    !busy &&
+    allQuestions.length > 0;
+
   const onTimerExpire = useCallback(() => {
-    if (!submissionActive || busy) return;
+    if (expiryFiredRef.current) return;
+    if (!canSubmitOnExpiry) return;
+    expiryFiredRef.current = true;
     void handleSubmit();
-  }, [submissionActive, busy, handleSubmit]);
+  }, [canSubmitOnExpiry, handleSubmit]);
 
   const remaining = useListeningTimer({
     startedAtIso: state.startedAtIso,
@@ -217,7 +258,14 @@ export function ListeningPage({
     onExpire: onTimerExpire,
   });
 
-  useExamSessionRefresh(submissionActive);
+  useExamExpiryCatchUp({
+    remaining,
+    canSubmit: canSubmitOnExpiry,
+    onExpire: onTimerExpire,
+    resetKey: state.startedAtIso,
+  });
+
+  useExamSessionGuard(examSessionGuardActive);
 
   useAttemptRecovery({
     attemptId: state.attemptId,
@@ -438,8 +486,11 @@ export function ListeningPage({
       const p = state.parts.find((x) => x.part === partNumber);
       const questionIds = p?.questions.map((q) => q.id) ?? [];
       markPartPlayed(partNumber, questionIds);
+      if (partNumber === part) {
+        setPartAudioPhase("complete");
+      }
     },
-    [markPartPlayed, state.parts],
+    [markPartPlayed, state.parts, part],
   );
 
   const answeredCount = useMemo(
@@ -505,13 +556,8 @@ export function ListeningPage({
     ) {
       const examPart =
         state.parts.find((p) => p.part === part) ?? state.parts[0];
-      const ordered = sortedPartQuestions(examPart);
-      const current =
-        ordered.find((q) => q.id === state.currentQuestionId) ?? ordered[0];
-      const instruction = current
-        ? instructionForQuestion(examPart, current)
-        : groupInstruction(examPart);
-      const questionsVisible = Boolean(state.playedParts[examPart.part]);
+      const instruction = audioPanelInstruction(examPart);
+      const questionsVisible = partPlayed;
       const testTitle = mockAttemptId
         ? MOCK_DISPLAY_LABEL
         : (state.test?.title ?? stageMeta?.context ?? "Listening");
@@ -521,11 +567,12 @@ export function ListeningPage({
       const hubHref = mockAttemptId
         ? mockHubPath(mockSlug, mockAttemptId)
         : listeningTestHubPath();
-      const mockSubmitLabel = mockAttemptId
+      const nextPartLabel = mockAttemptId
         ? part >= TEST1_LISTENING_PART_COUNT
           ? "Finish listening"
-          : `Submit Part ${part} & continue`
-        : undefined;
+          : "Next Part"
+        : "Submit part";
+      const mockSubmitLabel = mockAttemptId ? nextPartLabel : undefined;
 
       const submitting = busy || state.status === "submitting";
 
@@ -598,7 +645,8 @@ export function ListeningPage({
                 onPlayed={markPlayed}
                 onPartPlayed={handlePartPlayed}
                 instruction={instruction}
-                sectionAutoplay={!Boolean(state.playedParts[examPart.part])}
+                phase={partAudioPhase}
+                onBeginSection={handleBeginSection}
               />
             </div>
             <div className="min-h-[52vh] border-t border-[var(--exam-border)] lg:min-h-0 lg:w-[min(44%,480px)] lg:shrink-0 lg:border-l lg:border-t-0 lg:max-h-[calc(100dvh-3rem)]">
@@ -608,9 +656,11 @@ export function ListeningPage({
                 currentQuestionId={state.currentQuestionId}
                 onAnswer={handleAnswerChange}
                 onFocus={setCurrent}
-                partPlayed={Boolean(state.playedParts[examPart.part])}
-                instruction={instruction}
+                partPlayed={partPlayed}
                 visible={questionsVisible}
+                nextPartLabel={nextPartLabel}
+                submitBusy={submitting}
+                onSubmitPart={() => void handleSubmit()}
               />
             </div>
           </div>

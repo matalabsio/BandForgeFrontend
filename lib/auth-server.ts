@@ -4,6 +4,7 @@ import { coalescedServerRefresh } from "@/lib/auth-refresh-coordinator";
 import { fetchWithTimeout } from "@/lib/fetch-server";
 import { serverAuthHeaders } from "@/lib/server-auth-headers";
 import { isAuthEnabled } from "@/lib/flags";
+import { accessTokenExpired } from "@/lib/jwt-expiry";
 import {
   ACCESS_COOKIE,
   GUEST_USER,
@@ -11,29 +12,13 @@ import {
   type AuthUser,
 } from "@/lib/session";
 
+export { accessTokenExpired };
+
 function backendBase(): string {
   return (
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
     "http://localhost:8000"
   );
-}
-
-/** True when JWT access token is missing or past expiry (30s skew). */
-export function accessTokenExpired(token: string): boolean {
-  try {
-    const part = token.split(".")[1];
-    if (!part) return true;
-    const padded = part.replace(/-/g, "+").replace(/_/g, "/");
-    const json = JSON.parse(
-      typeof atob !== "undefined"
-        ? atob(padded)
-        : Buffer.from(padded, "base64").toString("utf8"),
-    ) as { exp?: number };
-    if (typeof json.exp !== "number") return true;
-    return Date.now() / 1000 >= json.exp - 30;
-  } catch {
-    return true;
-  }
 }
 
 function mergeAuthCookieHeader(

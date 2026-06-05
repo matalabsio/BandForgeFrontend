@@ -11,6 +11,8 @@ type Props = {
   variant?: "default" | "exam";
   /** Exam: autoplay once when the section loads and audio is ready. */
   autoplay?: boolean;
+  /** After Begin Test: show manual start if browser blocks autoplay. */
+  allowManualStartAfterBegin?: boolean;
   /** Shown under the player (exam). */
   sectionNote?: string;
 };
@@ -45,6 +47,7 @@ export function QuestionAudio({
   onCompleted,
   variant = "default",
   autoplay = false,
+  allowManualStartAfterBegin = false,
   sectionNote,
 }: Props) {
   const audio = useListeningAudio(played ? null : audioUrl);
@@ -153,11 +156,13 @@ export function QuestionAudio({
   if (isExam) {
     const statusLabel = audio.isStarted
       ? "Now playing — do not leave this page"
-      : autoplayBlocked
+      : autoplayBlocked && allowManualStartAfterBegin
         ? "Tap below to start the recording"
         : audio.isLoading || !audio.isReady
           ? "Preparing audio…"
-          : "Starting playback…";
+          : autoplay
+            ? "Starting playback…"
+            : "Ready to play";
 
     return (
       <div className="overflow-hidden rounded-lg border border-[var(--exam-border)] bg-white shadow-sm">
@@ -205,7 +210,10 @@ export function QuestionAudio({
             />
           </div>
 
-          {autoplayBlocked && !audio.isStarted && !audio.error ? (
+          {allowManualStartAfterBegin &&
+          autoplayBlocked &&
+          !audio.isStarted &&
+          !audio.error ? (
             <button
               type="button"
               disabled={!audio.isReady}

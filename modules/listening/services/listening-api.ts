@@ -1,9 +1,4 @@
-import {
-  ApiError,
-  parseApiError,
-  parseJsonResponse,
-  type ApiErrorBody,
-} from "@/lib/api";
+import { examApiCall } from "@/lib/exam-api-call";
 import type {
   AutosavePayload,
   ListeningQuestionsPayload,
@@ -11,23 +6,6 @@ import type {
   StartListeningPayload,
   SubmitListeningPayload,
 } from "@/modules/listening/types";
-
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
-  const body = await parseJsonResponse<T | ApiErrorBody>(res);
-  if (!res.ok) {
-    throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
-  }
-  return body as T;
-}
 
 export const listeningApi = {
   start(
@@ -49,7 +27,7 @@ export const listeningApi = {
       params.set("include_questions", "true");
     }
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return call<StartListeningPayload>(
+    return examApiCall<StartListeningPayload>(
       `/api/listening/${encodeURIComponent(mockTestId)}/start${qs}`,
       { method: "POST" },
     );
@@ -61,7 +39,7 @@ export const listeningApi = {
     const params = new URLSearchParams();
     if (options?.part) params.set("part", String(options.part));
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return call<ListeningQuestionsPayload>(
+    return examApiCall<ListeningQuestionsPayload>(
       `/api/listening/${encodeURIComponent(mockTestId)}/questions${qs}`,
       { method: "GET" },
     );
@@ -71,7 +49,7 @@ export const listeningApi = {
     questionId: string,
     userAnswer: string,
   ): Promise<AutosavePayload> {
-    return call<AutosavePayload>(
+    return examApiCall<AutosavePayload>(
       `/api/listening/attempts/${encodeURIComponent(attemptId)}/autosave`,
       {
         method: "POST",
@@ -83,7 +61,7 @@ export const listeningApi = {
     attemptId: string,
     answers: { question_id: string; user_answer: string }[],
   ): Promise<SubmitListeningPayload> {
-    return call<SubmitListeningPayload>(
+    return examApiCall<SubmitListeningPayload>(
       `/api/listening/attempts/${encodeURIComponent(attemptId)}/submit`,
       {
         method: "POST",
@@ -92,7 +70,7 @@ export const listeningApi = {
     );
   },
   scoreReport(attemptId: string): Promise<ListeningScoreReport> {
-    return call<ListeningScoreReport>(
+    return examApiCall<ListeningScoreReport>(
       `/api/listening/attempts/${encodeURIComponent(attemptId)}/score-report`,
       { method: "GET" },
     );

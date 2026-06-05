@@ -4,9 +4,57 @@ import {
   collectSetCookieHeaders,
   DEFAULT_MAX_AGE,
 } from "@/lib/auth-cookies";
+import type { AuthResponse } from "@/lib/auth";
+import { refreshAuthSession } from "@/lib/auth-server";
 import { getApiUrl, type ApiErrorBody } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+
+function applyAuthTokensToResponse(
+  res: NextResponse,
+  auth: AuthResponse,
+  setCookieHeaders: string[] = [],
+): void {
+  applyAuthCookiesToResponse(res, setCookieHeaders);
+  const secure = process.env.NODE_ENV === "production";
+  if (auth.access_token) {
+    res.cookies.set(ACCESS_COOKIE, auth.access_token, {
+      httpOnly: true,
+      secure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: DEFAULT_MAX_AGE[ACCESS_COOKIE],
+    });
+  }
+  if (auth.refresh_token) {
+    res.cookies.set(REFRESH_COOKIE, auth.refresh_token, {
+      httpOnly: true,
+      secure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
+    });
+  }
+}
+
+async function proxyCoalescedRefresh(
+  cookieHeader: string,
+): Promise<NextResponse> {
+  const refreshed = await refreshAuthSession(cookieHeader);
+  if (!refreshed) {
+    return NextResponse.json(
+      { detail: "No refresh token." },
+      { status: 401 },
+    );
+  }
+  const body = JSON.stringify(refreshed.auth);
+  const res = new NextResponse(body, {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+  applyAuthTokensToResponse(res, refreshed.auth, refreshed.setCookieHeaders);
+  return res;
+}
 
 const AUTH_PATHS = new Set([
   "register",
@@ -38,8 +86,13 @@ export async function proxyAuthRequest(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const backendUrl = `${getApiUrl()}/auth/${path}`;
   const cookieHeader = req.headers.get("cookie") ?? "";
+
+  if (path === "refresh" && req.method === "POST") {
+    return proxyCoalescedRefresh(cookieHeader);
+  }
+
+  const backendUrl = `${getApiUrl()}/auth/${path}`;
 
   const contentType = req.headers.get("content-type") ?? "";
   const authorization = req.headers.get("authorization");
@@ -67,10 +120,21 @@ export async function proxyAuthRequest(
     }
   }
 
-  const backendRes = await fetchWithTimeout(backendUrl, {
-    ...init,
-    timeoutMs: 10_000,
-  });
+  let backendRes: Response;
+  try {
+    backendRes = await fetchWithTimeout(backendUrl, {
+      ...init,
+      timeoutMs: 10_000,
+    });
+  } catch (e) {
+    const unreachable =
+      e instanceof TypeError &&
+      (e.cause as NodeJS.ErrnoException | undefined)?.code === "ECONNREFUSED";
+    const message = unreachable
+      ? "Backend API is not reachable. Start it: cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+      : "Backend API request failed. Check that the API is running on port 8000.";
+    return NextResponse.json({ error: message }, { status: 503 });
+  }
   const body = await backendRes.text();
   const res = new NextResponse(body, {
     status: backendRes.status,
@@ -84,36 +148,14 @@ export async function proxyAuthRequest(
 
   if (
     backendRes.ok &&
-    (path === "refresh" ||
-      path === "restore" ||
+    (path === "restore" ||
       path === "login" ||
       path === "verify-otp" ||
       path === "verify-email")
   ) {
     try {
-      const parsed = JSON.parse(body) as {
-        access_token?: string;
-        refresh_token?: string | null;
-      };
-      const secure = process.env.NODE_ENV === "production";
-      if (parsed.access_token) {
-        res.cookies.set(ACCESS_COOKIE, parsed.access_token, {
-          httpOnly: true,
-          secure,
-          sameSite: "lax",
-          path: "/",
-          maxAge: DEFAULT_MAX_AGE[ACCESS_COOKIE],
-        });
-      }
-      if (parsed.refresh_token) {
-        res.cookies.set(REFRESH_COOKIE, parsed.refresh_token, {
-          httpOnly: true,
-          secure,
-          sameSite: "lax",
-          path: "/",
-          maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
-        });
-      }
+      const parsed = JSON.parse(body) as AuthResponse;
+      applyAuthTokensToResponse(res, parsed);
     } catch {
       /* body may not be JSON */
     }

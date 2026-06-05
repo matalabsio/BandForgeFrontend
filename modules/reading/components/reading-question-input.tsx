@@ -15,37 +15,6 @@ export function ReadingQuestionInput({ q, value, onChange }: Props) {
   const opts = q.options;
   const type = q.question_type.toLowerCase();
 
-  if (opts && opts.length > 0 && type === "matching_headings") {
-    return (
-      <div className="mt-3 grid gap-1.5 sm:grid-cols-1">
-        {opts.map((o) => (
-          <label
-            key={o.label}
-            className={cn(
-              "flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 text-[13px] leading-snug transition-colors",
-              value === o.label
-                ? "border-[var(--reading-accent)] bg-[var(--reading-accent-soft)]"
-                : "border-[var(--reading-border)] bg-white hover:border-[var(--reading-muted)]",
-            )}
-          >
-            <input
-              type="radio"
-              name={q.id}
-              value={o.label}
-              checked={value === o.label}
-              onChange={() => onChange(o.label)}
-              className="mt-0.5 accent-[var(--reading-accent)]"
-            />
-            <span>
-              <span className="font-semibold text-[var(--reading-ink)]">{o.label}</span>
-              <span className="text-[var(--reading-ink-muted)]">: {o.text}</span>
-            </span>
-          </label>
-        ))}
-      </div>
-    );
-  }
-
   if (type === "tfng" || (opts && opts.length > 0)) {
     return (
       <div className="mt-3 flex flex-wrap gap-2">

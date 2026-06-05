@@ -1,31 +1,9 @@
-import {
-  ApiError,
-  parseApiError,
-  parseJsonResponse,
-  type ApiErrorBody,
-} from "@/lib/api";
+import { examApiCall } from "@/lib/exam-api-call";
 import type {
   StartWritingPayload,
   SubmitWritingPayload,
   WritingReview,
 } from "@/modules/writing/types";
-
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
-  const body = await parseJsonResponse<T | ApiErrorBody>(res);
-  if (!res.ok) {
-    throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
-  }
-  return body as T;
-}
 
 export const writingApi = {
   start(
@@ -42,7 +20,7 @@ export const writingApi = {
     if (options?.mockAttemptId) {
       params.set("mock_attempt_id", options.mockAttemptId);
     }
-    return call<StartWritingPayload>(
+    return examApiCall<StartWritingPayload>(
       `/api/writing/${encodeURIComponent(mockTestId)}/start?${params.toString()}`,
       { method: "POST" },
     );
@@ -53,7 +31,7 @@ export const writingApi = {
     questionId: string,
     userAnswer: string,
   ) {
-    return call<{ ok: boolean }>(
+    return examApiCall<{ ok: boolean }>(
       `/api/writing/attempts/${encodeURIComponent(attemptId)}/autosave`,
       {
         method: "POST",
@@ -69,7 +47,7 @@ export const writingApi = {
     attemptId: string,
     answers: { question_id: string; user_answer: string }[],
   ): Promise<SubmitWritingPayload> {
-    return call<SubmitWritingPayload>(
+    return examApiCall<SubmitWritingPayload>(
       `/api/writing/attempts/${encodeURIComponent(attemptId)}/submit`,
       {
         method: "POST",
@@ -79,7 +57,7 @@ export const writingApi = {
   },
 
   review(attemptId: string): Promise<WritingReview> {
-    return call<WritingReview>(
+    return examApiCall<WritingReview>(
       `/api/writing/attempts/${encodeURIComponent(attemptId)}/review`,
     );
   },

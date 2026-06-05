@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-type Variant = "default" | "exam";
+type Variant = "default" | "exam" | "reading";
 
 type SentenceInlineBlankProps = {
   before: string;
@@ -30,27 +30,33 @@ export function SentenceInlineBlank({
   showQuestionNumber = true,
 }: SentenceInlineBlankProps) {
   const isExam = variant === "exam";
+  const isReading = variant === "reading";
 
   return (
     <div
       className={cn(
         isExam && isActive && "rounded-sm bg-[#fafafa] px-1 py-0.5 ring-1 ring-[#18181b]/15",
-        !isExam && isActive && "rounded-lg ring-2 ring-teal/30 ring-offset-2",
+        isReading &&
+          isActive &&
+          "rounded-sm bg-[var(--reading-accent-soft)]/40 px-1 py-0.5 ring-1 ring-[var(--reading-accent)]/25",
+        !isExam && !isReading && isActive && "rounded-lg ring-2 ring-teal/30 ring-offset-2",
       )}
     >
       <p
         className={cn(
           "font-semibold leading-relaxed",
-          isExam
-            ? "text-[14px] text-[var(--exam-ink)]"
-            : "text-body text-ink",
+          isExam && "text-[14px] text-[var(--exam-ink)]",
+          isReading && "text-[14px] text-[var(--reading-ink)]",
+          !isExam && !isReading && "text-body text-ink",
         )}
       >
         {showQuestionNumber && questionNumber != null ? (
           <span
             className={cn(
               "mr-2 inline-flex h-7 min-w-7 items-center justify-center rounded-md text-[12px] font-bold text-white",
-              isExam ? "bg-[var(--exam-bar)]" : "bg-teal",
+              isExam && "bg-[var(--exam-bar)]",
+              isReading && "bg-[var(--reading-bar)]",
+              !isExam && !isReading && "bg-teal",
             )}
           >
             {questionNumber}
@@ -68,9 +74,13 @@ export function SentenceInlineBlank({
             spellCheck={false}
             className={cn(
               "mx-0.5 min-w-[5rem] max-w-full border-0 border-b-2 bg-transparent px-0.5 py-0 text-[14px] outline-none",
-              isExam
-                ? "border-[var(--exam-ink)] text-[var(--exam-ink)] focus:border-[var(--exam-accent)] focus:ring-0"
-                : "border-[#0F172A]/40 font-mono text-ink focus:border-teal",
+              isExam &&
+                "border-[var(--exam-ink)] text-[var(--exam-ink)] focus:border-[var(--exam-accent)] focus:ring-0",
+              isReading &&
+                "border-[var(--reading-ink)] text-[var(--reading-ink)] focus:border-[var(--reading-accent)] focus:ring-0",
+              !isExam &&
+                !isReading &&
+                "border-[#0F172A]/40 font-mono text-ink focus:border-teal",
             )}
           />
         </span>
