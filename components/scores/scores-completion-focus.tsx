@@ -1,17 +1,31 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { MOCK_DISPLAY_LABEL } from "@/lib/mock-catalog";
+import {
+  canonicalMockSlug,
+  getMockMeta,
+  PUBLISHED_MOCK_SLUGS,
+  type MockSlug,
+} from "@/lib/mock-catalog";
 
 type Props = {
   fresh: boolean;
   highlightAttemptId?: string | null;
+  mockSlug?: MockSlug | null;
 };
 
 export function ScoresCompletionFocus({
   fresh,
   highlightAttemptId,
+  mockSlug = null,
 }: Props) {
+  const resolvedSlug = mockSlug
+    ? (canonicalMockSlug(mockSlug) as MockSlug)
+    : null;
+  const completionLabel =
+    resolvedSlug && PUBLISHED_MOCK_SLUGS.includes(resolvedSlug)
+      ? `${getMockMeta(resolvedSlug).displayLabel} complete`
+      : "Mock test complete";
   const didFocus = useRef(false);
 
   useEffect(() => {
@@ -38,7 +52,7 @@ export function ScoresCompletionFocus({
     <output
       className="block rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-[13px] text-emerald-900"
     >
-      <p className="font-bold">{MOCK_DISPLAY_LABEL} complete</p>
+      <p className="font-bold">{completionLabel}</p>
       <p className="mt-0.5 text-emerald-800/85">
         Your latest scores are below. Open a section for question-by-question
         breakdown.

@@ -1,17 +1,16 @@
 import { AiCoachCard } from "@/components/bandforge/dashboard/ai-coach-card";
-import { FullMockCard } from "@/components/bandforge/dashboard/full-mock-card";
-import { M01_MOCK_TEST_ID } from "@/lib/mock-catalog";
+import { MockTestsSection } from "@/components/bandforge/dashboard/mock-tests-section";
 import { DashboardStatRow } from "@/components/bandforge/dashboard/dashboard-stat-row";
 import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
 import { PerformanceChartLazy } from "@/components/bandforge/dashboard/performance-chart-lazy";
 import { ProTipBar } from "@/components/bandforge/dashboard/pro-tip-bar";
 import { RecentActivity } from "@/components/bandforge/dashboard/recent-activity";
 import { StudyActivityCard } from "@/components/bandforge/dashboard/study-activity-card";
-import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 import type {
   DashboardSummary,
   MockTestSummary,
 } from "@/components/bandforge/dashboard/types";
+import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 
 type Props = {
   firstName: string;
@@ -21,7 +20,7 @@ type Props = {
   mockTests: MockTestSummary[];
   summary: DashboardSummary;
   profileTargetBand?: number | null;
-  initialMockProgress?: MockAttemptProgress | null;
+  initialMockProgressById?: Partial<Record<string, MockAttemptProgress | null>>;
 };
 
 export function DashboardExperience({
@@ -32,12 +31,9 @@ export function DashboardExperience({
   mockTests,
   summary,
   profileTargetBand = null,
-  initialMockProgress = null,
+  initialMockProgressById = {},
 }: Props) {
   const streak = summary.stats.current_streak ?? 0;
-
-  const fullMock = mockTests.find((t) => t.id === M01_MOCK_TEST_ID) ?? mockTests[0];
-  const hasFullMock = Boolean(fullMock);
 
   return (
     <div className="space-y-6">
@@ -54,12 +50,10 @@ export function DashboardExperience({
         profileTargetBand={profileTargetBand}
       />
 
-      {hasFullMock ? (
-        <FullMockCard
-          title={fullMock?.title}
-          initialProgress={initialMockProgress}
-        />
-      ) : null}
+      <MockTestsSection
+        mockTests={mockTests}
+        initialMockProgressById={initialMockProgressById}
+      />
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-stretch">
         <div className="min-w-0">

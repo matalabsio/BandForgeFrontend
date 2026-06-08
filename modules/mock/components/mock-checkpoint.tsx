@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SkillBar } from "@/components/scores/skill-bar";
-import {
-  MOCK_DISPLAY_LABEL,
-  mockHubPath,
-  mockModulePath,
-} from "@/lib/mock-catalog";
+import { mockHubPath, mockModulePath } from "@/lib/mock-catalog";
 import { scoresAfterMockCompletePath } from "@/lib/scores-path";
 import {
   clearCheckpointSubmit,

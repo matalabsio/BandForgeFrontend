@@ -46,7 +46,7 @@ export function IeltsExamShell({
           </div>
         </header>
       ) : null}
-      {isExam ? children : <main className="mx-auto w-full max-w-4xl">{children}</main>}
+      {isExam ? children : <main className="mx-auto w-full max-w-6xl">{children}</main>}
     </div>
   );
 }

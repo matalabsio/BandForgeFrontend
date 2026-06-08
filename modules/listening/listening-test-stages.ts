@@ -9,7 +9,7 @@ export type ListeningStage = {
   live: boolean;
 };
 
-/** IELTS Listening — four parts; Part 1 (Greenfield) is live in v1. */
+/** M01 (Test 1) listening stage labels — fallback only when DB instructions are absent. */
 export const GREENFIELD_LISTENING_STAGES: ListeningStage[] = [
   {
     part: 1,

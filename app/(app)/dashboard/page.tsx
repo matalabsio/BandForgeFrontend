@@ -4,9 +4,8 @@ import { DashboardDataRetry } from "@/components/bandforge/dashboard/dashboard-d
 import { DashboardProfileSync } from "@/components/bandforge/dashboard/dashboard-profile-sync";
 import { authGuardRedirectPath } from "@/lib/auth";
 import { isAuthEnabled } from "@/lib/flags";
-import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
-import { M01_MOCK_TEST_ID } from "@/lib/mock-catalog";
 import { shouldFetchDashboardApi } from "@/lib/dashboard-server";
+import { M01_MOCK_TEST_ID, M02_MOCK_TEST_ID } from "@/lib/mock-catalog";
 import { fetchMockSessionServer } from "@/lib/mock-server";
 import {
   getCachedCookieHeader,
@@ -26,11 +25,13 @@ export const metadata = {
 
 async function DashboardPageContent() {
   const cookieHeader = await getCachedCookieHeader();
-  const [user, payloadResult, initialProgress] = await Promise.all([
-    getCachedServerUser(cookieHeader),
-    getCachedDashboardPayload(cookieHeader),
-    fetchMockSessionServer(cookieHeader, M01_MOCK_TEST_ID),
-  ]);
+  const [user, payloadResult, initialM01Progress, initialM02Progress] =
+    await Promise.all([
+      getCachedServerUser(cookieHeader),
+      getCachedDashboardPayload(cookieHeader),
+      fetchMockSessionServer(cookieHeader, M01_MOCK_TEST_ID),
+      fetchMockSessionServer(cookieHeader, M02_MOCK_TEST_ID),
+    ]);
   if (!user) {
     redirect(authGuardRedirectPath("/dashboard"));
   }
@@ -55,7 +56,10 @@ async function DashboardPageContent() {
             ? user.target_band
             : null
         }
-        initialMockProgress={initialProgress}
+        initialMockProgressById={{
+          [M01_MOCK_TEST_ID]: initialM01Progress,
+          [M02_MOCK_TEST_ID]: initialM02Progress,
+        }}
       />
     </DashboardDataRetry>
   );

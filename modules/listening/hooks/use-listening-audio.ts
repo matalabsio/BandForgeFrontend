@@ -45,9 +45,6 @@ export function useListeningAudio(audioUrl: string | null) {
       return `listening/${preset}/part-${part}/full.mp3`;
     }
 
-    const partOnly = clean.match(/part-(\d+)/i)?.[1];
-    if (partOnly) return `listening/m01/part-${partOnly}/full.mp3`;
-
     return null;
   }, [audioUrl]);
 

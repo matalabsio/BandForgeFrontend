@@ -5,15 +5,129 @@ import { scoresAfterMockCompletePath } from "@/lib/scores-path";
 /** Academic Mock 1 — valid Postgres UUID (a000 prefix; `m` is not hex). */
 export const M01_MOCK_TEST_ID = "a0000000-0000-4000-8000-000000000001";
 
-const PUBLISHED_FULL_MOCK_IDS: readonly string[] = [M01_MOCK_TEST_ID];
+/** Academic Mock 2 — valid Postgres UUID (a000 prefix). */
+export const M02_MOCK_TEST_ID = "a0000000-0000-4000-8000-000000000002";
+
+const PUBLISHED_FULL_MOCK_IDS: readonly string[] = [
+  M01_MOCK_TEST_ID,
+  M02_MOCK_TEST_ID,
+];
 
 const MOCK_SLUGS = {
   m01: M01_MOCK_TEST_ID,
+  m02: M02_MOCK_TEST_ID,
 } as const;
 
 export type MockSlug = keyof typeof MOCK_SLUGS;
 
 export const DEFAULT_MOCK_SLUG: MockSlug = "m01";
+
+/** Slugs shown on the dashboard (in order). */
+export const PUBLISHED_MOCK_SLUGS: readonly MockSlug[] = ["m01", "m02"];
+
+/** Full mock test panel — five slots; only available slots are startable. */
+export type MockTestPanelSlot = {
+  number: 1 | 2 | 3 | 4 | 5;
+  slug: MockSlug | null;
+  displayLabel: string;
+  examTitle: string;
+  available: boolean;
+};
+
+export const MOCK_TEST_PANEL: readonly MockTestPanelSlot[] = [
+  {
+    number: 1,
+    slug: "m01",
+    displayLabel: "Test 1",
+    examTitle: "IELTS Academic Mock 1",
+    available: true,
+  },
+  {
+    number: 2,
+    slug: "m02",
+    displayLabel: "Test 2",
+    examTitle: "IELTS Academic Mock 2",
+    available: true,
+  },
+  {
+    number: 3,
+    slug: null,
+    displayLabel: "Test 3",
+    examTitle: "IELTS Academic Mock 3",
+    available: false,
+  },
+  {
+    number: 4,
+    slug: null,
+    displayLabel: "Test 4",
+    examTitle: "IELTS Academic Mock 4",
+    available: false,
+  },
+  {
+    number: 5,
+    slug: null,
+    displayLabel: "Test 5",
+    examTitle: "IELTS Academic Mock 5",
+    available: false,
+  },
+];
+
+export function getMockPanelSlot(number: number): MockTestPanelSlot | undefined {
+  return MOCK_TEST_PANEL.find((slot) => slot.number === number);
+}
+
+export function getMockPanelSlotBySlug(slug: MockSlug): MockTestPanelSlot | undefined {
+  return MOCK_TEST_PANEL.find((slot) => slot.slug === slug);
+}
+
+export function mockTestNumberPath(number: number): string {
+  return `/test/${number}`;
+}
+
+export type MockMeta = {
+  slug: MockSlug;
+  id: string;
+  displayLabel: string;
+  subtitle: string;
+  flowHint: string;
+  listeningPartCount: number;
+  readingPassageCount: number;
+  writingTaskCount: number;
+  listeningMinutes: number;
+  readingMinutes: number;
+  writingMinutes: number;
+  totalMinutes: number;
+};
+
+const DEFAULT_SECTION_COUNTS = {
+  listeningPartCount: 4,
+  readingPassageCount: 2,
+  writingTaskCount: 2,
+  listeningMinutes: 30,
+  readingMinutes: 30,
+  writingMinutes: 60,
+};
+
+type SectionCountOverrides = Partial<typeof DEFAULT_SECTION_COUNTS>;
+
+function buildMockMeta(
+  slug: MockSlug,
+  displayLabel: string,
+  subtitle: string,
+  flowHint: string,
+  overrides: SectionCountOverrides = {},
+): MockMeta {
+  const c = { ...DEFAULT_SECTION_COUNTS, ...overrides };
+  return {
+    slug,
+    id: MOCK_SLUGS[slug],
+    displayLabel,
+    subtitle,
+    flowHint,
+    ...c,
+    totalMinutes: c.listeningMinutes + c.readingMinutes + c.writingMinutes,
+  };
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -53,23 +167,44 @@ export function isFullMock(testId: string): boolean {
   return PUBLISHED_FULL_MOCK_IDS.includes(resolveMockId(testId));
 }
 
-/** Canonical Test 1 hub — section cards (Listening, Reading, Writing). */
-export function test1HubPath(mockAttemptId?: string | null): string {
-  const base = "/test/1";
+/** Canonical hub for a published mock — section cards (Listening, Reading, Writing). */
+export function testHubPath(
+  slugOrId: string = DEFAULT_MOCK_SLUG,
+  mockAttemptId?: string | null,
+): string {
+  const slug = canonicalMockSlug(slugOrId) as MockSlug;
+  const slot = getMockPanelSlotBySlug(slug);
+  const base = slot ? mockTestNumberPath(slot.number) : mockTestNumberPath(1);
   if (!mockAttemptId) return base;
   return `${base}?mock_attempt=${encodeURIComponent(mockAttemptId)}`;
+}
+
+/** Canonical Test 1 hub — section cards (Listening, Reading, Writing). */
+export function test1HubPath(mockAttemptId?: string | null): string {
+  return testHubPath("m01", mockAttemptId);
+}
+
+/** Canonical Test 2 hub. */
+export function test2HubPath(mockAttemptId?: string | null): string {
+  return testHubPath("m02", mockAttemptId);
 }
 
 export function mockHubPath(
   slug: string = DEFAULT_MOCK_SLUG,
   mockAttemptId?: string | null,
 ): string {
-  if (canonicalMockSlug(slug) === DEFAULT_MOCK_SLUG) {
-    return test1HubPath(mockAttemptId);
+  const canonical = canonicalMockSlug(slug);
+  if (canonical === "m01" || canonical === "m02") {
+    return testHubPath(canonical, mockAttemptId);
   }
-  const base = `/mock/${canonicalMockSlug(slug)}`;
+  const base = `/mock/${canonical}`;
   if (!mockAttemptId) return base;
   return `${base}?mock_attempt=${encodeURIComponent(mockAttemptId)}`;
+}
+
+export function getMockMeta(slugOrId: string): MockMeta {
+  const slug = canonicalMockSlug(slugOrId) as MockSlug;
+  return MOCK_CATALOG[slug];
 }
 
 export function mockModulePath(
@@ -164,8 +299,9 @@ export function mockAfterSectionSubmitPath(
     );
   }
 
-  const finishedPassage = opts?.completedPart ?? TEST1_READING_PASSAGE_COUNT;
-  if (finishedPassage < TEST1_READING_PASSAGE_COUNT) {
+  const readingPassageCount = getMockMeta(slugOrId).readingPassageCount;
+  const finishedPassage = opts?.completedPart ?? readingPassageCount;
+  if (finishedPassage < readingPassageCount) {
     return appendSectionStart(
       mockModulePath(slugOrId, "reading", {
         passage: finishedPassage + 1,
@@ -320,6 +456,28 @@ export const MOCK_DISPLAY_SUBTITLE =
   "Test 1 — Listening (Parts 1-4 · 30 min) → Reading (Passages 1-2 · 60 min) → Writing (Tasks 1-2 · 60 min) → Score";
 export const MOCK_DISPLAY_FLOW_HINT =
   "Listening has 4 parts · reading has 2 passages · writing has 2 tasks · submit each section to unlock the next · overall band on results";
+
+export const MOCK2_DISPLAY_LABEL = "Test 2";
+export const MOCK2_DISPLAY_SUBTITLE =
+  "Test 2 — Listening (Parts 1-4 · 30 min) → Reading (Passages 1-3 · 30 min) → Writing (Tasks 1-2 · 60 min) → Score";
+export const MOCK2_DISPLAY_FLOW_HINT =
+  "Listening has 4 parts · reading has 3 passages · writing has 2 tasks · submit each section to unlock the next · overall band on results";
+
+export const MOCK_CATALOG: Record<MockSlug, MockMeta> = {
+  m01: buildMockMeta(
+    "m01",
+    MOCK_DISPLAY_LABEL,
+    MOCK_DISPLAY_SUBTITLE,
+    MOCK_DISPLAY_FLOW_HINT,
+  ),
+  m02: buildMockMeta(
+    "m02",
+    MOCK2_DISPLAY_LABEL,
+    MOCK2_DISPLAY_SUBTITLE,
+    MOCK2_DISPLAY_FLOW_HINT,
+    { readingPassageCount: 3 },
+  ),
+};
 
 /** Per-section limits for Test 1 (matches MODULE_LIVE_PARTS). */
 export const TEST1_LISTENING_MINUTES = 30;

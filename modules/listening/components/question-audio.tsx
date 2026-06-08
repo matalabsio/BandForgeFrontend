@@ -100,7 +100,7 @@ export function QuestionAudio({
         </code>
         , run{" "}
         <code className="rounded bg-[var(--exam-border)] px-1 text-[11px]">
-          python -m scripts.upload_listening_audio --preset m01
+          python -m scripts.upload_listening_audio --preset m01|m02
         </code>
         .
       </p>

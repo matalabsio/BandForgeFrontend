@@ -2,17 +2,12 @@
 
 import Link from "next/link";
 import {
-  TEST1_LISTENING_MINUTES,
-  TEST1_LISTENING_PART_COUNT,
-  TEST1_READING_MINUTES,
-  TEST1_READING_PASSAGE_COUNT,
-  TEST1_WRITING_MINUTES,
-  TEST1_WRITING_TASK_COUNT,
+  getMockMeta,
   mockModulePath,
   mockResultsPath,
+  type MockSlug,
 } from "@/lib/mock-catalog";
 import type { ModuleProgress } from "@/modules/mock/services/mock-api";
-import { computeMockProgressPercent } from "@/modules/mock/lib/mock-progress";
 import { cn } from "@/lib/utils";
 
 type ModuleKey = "listening" | "reading" | "writing";
@@ -21,42 +16,42 @@ const MODULE_CARDS: {
   key: ModuleKey;
   order: number;
   label: string;
-  detail: (mod: ModuleProgress | undefined) => string;
+  detail: (mod: ModuleProgress | undefined, meta: ReturnType<typeof getMockMeta>) => string;
 }[] = [
   {
     key: "listening",
     order: 1,
     label: "Listening",
-    detail: (mod) => {
+    detail: (mod, meta) => {
       const part = mod?.part ?? 1;
       if (mod?.status === "in_progress") {
-        return `${TEST1_LISTENING_MINUTES} min · Part ${part} of ${TEST1_LISTENING_PART_COUNT}`;
+        return `${meta.listeningMinutes} min · Part ${part} of ${meta.listeningPartCount}`;
       }
-      return `${TEST1_LISTENING_MINUTES} min · Parts 1-${TEST1_LISTENING_PART_COUNT}`;
+      return `${meta.listeningMinutes} min · Parts 1-${meta.listeningPartCount}`;
     },
   },
   {
     key: "reading",
     order: 2,
     label: "Reading",
-    detail: (mod) => {
+    detail: (mod, meta) => {
       const part = mod?.part ?? 1;
       if (mod?.status === "in_progress") {
-        return `${TEST1_READING_MINUTES} min · Passage ${part} of ${TEST1_READING_PASSAGE_COUNT}`;
+        return `${meta.readingMinutes} min · Passage ${part} of ${meta.readingPassageCount}`;
       }
-      return `${TEST1_READING_MINUTES} min · Passages 1-${TEST1_READING_PASSAGE_COUNT}`;
+      return `${meta.readingMinutes} min · Passages 1-${meta.readingPassageCount}`;
     },
   },
   {
     key: "writing",
     order: 3,
     label: "Writing",
-    detail: (mod) => {
+    detail: (mod, meta) => {
       const part = mod?.part ?? 1;
       if (mod?.status === "in_progress" && part === 2) {
-        return `${TEST1_WRITING_MINUTES} min · Task 2 of ${TEST1_WRITING_TASK_COUNT}`;
+        return `${meta.writingMinutes} min · Task 2 of ${meta.writingTaskCount}`;
       }
-      return `${TEST1_WRITING_MINUTES} min · Tasks 1–${TEST1_WRITING_TASK_COUNT}`;
+      return `${meta.writingMinutes} min · Tasks 1–${meta.writingTaskCount}`;
     },
   },
 ];
@@ -108,7 +103,7 @@ function statusLabel(status: ModuleProgress["status"]): string {
 }
 
 type Props = {
-  mockSlug: string;
+  mockSlug: MockSlug;
   modules: ModuleProgress[];
   mockAttemptId: string | null;
   mockStatus?: string;
@@ -120,7 +115,8 @@ export function Test1ModuleCards({
   mockAttemptId,
   mockStatus,
 }: Props) {
-  const percent = computeMockProgressPercent(modules);
+  const meta = getMockMeta(mockSlug);
+  const displayLabel = meta.displayLabel;
   const mockComplete = mockStatus === "completed";
   const writingDone =
     modules.find((m) => m.module === "writing")?.status === "completed";
@@ -128,21 +124,21 @@ export function Test1ModuleCards({
   if (!mockAttemptId) {
     return (
       <p className="rounded-xl border border-dashed border-[var(--exam-border)] bg-[var(--exam-surface)] px-4 py-8 text-center text-[13px] text-[var(--exam-ink-muted)]">
-        Start or resume Test 1 above to open Listening, Reading, and Writing.
+        Start or resume {displayLabel} above to open Listening, Reading, and Writing.
       </p>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[13px] font-bold text-[var(--exam-ink)]">Test sections</p>
-        <span className="text-[12px] font-semibold tabular-nums text-[var(--exam-accent)]">
-          {percent}% complete
-        </span>
-      </div>
+    <section className="space-y-4" aria-labelledby="mock-sections-heading">
+      <h3
+        id="mock-sections-heading"
+        className="text-[13px] font-bold text-[var(--exam-ink)]"
+      >
+        Sections
+      </h3>
 
-      <ul className="grid gap-4 sm:grid-cols-3">
+      <ul className="grid gap-3 sm:grid-cols-3">
         {MODULE_CARDS.map((card) => {
           const mod = modules.find((m) => m.module === card.key);
           const status = mod?.status ?? "locked";
@@ -196,7 +192,7 @@ export function Test1ModuleCards({
                 {card.label}
               </h3>
               <p className="mt-1 flex-1 text-[12px] leading-snug text-[var(--exam-ink-muted)]">
-                {card.detail(mod)}
+                {card.detail(mod, meta)}
               </p>
               {mod?.band != null && mod.band > 0 ? (
                 <p className="mt-2 text-[11px] font-semibold text-emerald-700">
@@ -241,6 +237,6 @@ export function Test1ModuleCards({
           View band report →
         </Link>
       ) : null}
-    </div>
+    </section>
   );
 }

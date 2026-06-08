@@ -2,8 +2,9 @@ import type { WritingTask } from "@/modules/writing/types";
 import { WritingTaskPromptHeader } from "@/modules/writing/components/writing-task-prompt-header";
 import {
   WritingTask1Chart,
-  type WritingChartSpec,
+  WritingTask1LineChart,
 } from "@/modules/writing/components/writing-task1-chart";
+import type { WritingChartSpec } from "@/modules/writing/types";
 
 type Props = {
   task: WritingTask;
@@ -29,30 +30,48 @@ function parseChartSpec(value: unknown): WritingChartSpec | null {
     datasets?: unknown;
     data?: unknown;
   };
-  if (Array.isArray(candidate.cities) && Array.isArray(candidate.series)) {
+  const parsedSeries: WritingChartSpec["series"] = Array.isArray(candidate.series)
+    ? candidate.series.flatMap((s) => {
+        if (!s || typeof s !== "object") return [];
+        const row = s as { mode?: unknown; values?: unknown; label?: unknown; data?: unknown };
+        const mode = typeof row.mode === "string" ? row.mode : undefined;
+        const label = typeof row.label === "string" ? row.label : undefined;
+        const values = Array.isArray(row.values)
+          ? row.values
+          : Array.isArray(row.data)
+            ? row.data
+            : null;
+        if ((!mode && !label) || !values) return [];
+        return [
+          {
+            mode,
+            label,
+            values: values.map((v) => Number(v) || 0),
+          },
+        ];
+      })
+    : [];
+
+  if (Array.isArray(candidate.labels) && parsedSeries.length) {
+    return {
+      type: candidate.type,
+      title: candidate.title,
+      source: candidate.source,
+      y_max: candidate.y_max,
+      y_unit: typeof candidate.y_unit === "string" ? candidate.y_unit : undefined,
+      labels: candidate.labels.filter((l): l is string => typeof l === "string"),
+      series: parsedSeries,
+    };
+  }
+
+  if (Array.isArray(candidate.cities) && parsedSeries.length) {
     return {
       type: candidate.type,
       title: candidate.title,
       source: candidate.source,
       y_max: candidate.y_max,
       cities: candidate.cities.filter((c): c is string => typeof c === "string"),
-      series: candidate.series
-        .map((s) => {
-          if (!s || typeof s !== "object") return null;
-          const row = s as { mode?: unknown; values?: unknown; label?: unknown; data?: unknown };
-          const mode = typeof row.mode === "string" ? row.mode : typeof row.label === "string" ? row.label : null;
-          const values = Array.isArray(row.values)
-            ? row.values
-            : Array.isArray(row.data)
-              ? row.data
-              : null;
-          if (!mode || !values) return null;
-          return {
-            mode,
-            values: values.map((v) => Number(v) || 0),
-          };
-        })
-        .filter((s): s is { mode: string; values: number[] } => s !== null),
+      series: parsedSeries,
     };
   }
   if (Array.isArray(candidate.labels) && Array.isArray(candidate.datasets)) {
@@ -126,12 +145,22 @@ export function WritingTask1Prompt({
     "[Grouped bar chart — four cities on x-axis; percentage on y-axis; four transport modes shown per city]";
   const { beforeChart, afterChart } = splitTask1Prompt(task.prompt);
 
+  const isLineGraph =
+    chart?.type === "line_graph" ||
+    (Boolean(chart?.labels?.length) && !chart?.cities?.length);
+
   const chartBlock =
     task.options?.image_url ? (
       <img
         src={task.options.image_url}
         alt="Task 1 visual"
         className="max-w-full rounded-lg border border-border"
+      />
+    ) : chart && isLineGraph ? (
+      <WritingTask1LineChart
+        chart={chart}
+        figureLabel={figureLabel}
+        figureNote={figureNote}
       />
     ) : chart?.cities?.length ? (
       <WritingTask1Chart

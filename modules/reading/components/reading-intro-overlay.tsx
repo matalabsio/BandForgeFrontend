@@ -1,11 +1,15 @@
 "use client";
 
-import { readingMatchingHeadingsIntro } from "@/modules/reading/lib/question-groups";
+import {
+  readingMatchingHeadingsIntro,
+  readingTfngIntro,
+} from "@/modules/reading/lib/question-groups";
 
 type Props = {
   passageTitle: string;
   passageNumber: number;
   totalPassages?: number;
+  mockSlug?: string;
   durationMinutes: number;
   busy: boolean;
   agreed: boolean;
@@ -17,6 +21,7 @@ export function ReadingIntroOverlay({
   passageTitle,
   passageNumber,
   totalPassages = 2,
+  mockSlug,
   durationMinutes,
   busy,
   agreed,
@@ -47,7 +52,7 @@ export function ReadingIntroOverlay({
         <ul className="mt-6 space-y-3 text-[13px] leading-relaxed text-[var(--reading-ink-muted)]">
           <li>
             This Reading module has <strong className="text-[var(--reading-ink)]">{totalPassages} passages</strong>.
-            Complete Passage 1 first, then Passage 2.
+            Complete passages in order from 1 to {totalPassages}.
           </li>
           <li>
             You have <strong className="text-[var(--reading-ink)]">{durationMinutes} minutes</strong>{" "}
@@ -60,8 +65,8 @@ export function ReadingIntroOverlay({
         </ul>
 
         <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[13px] text-[var(--reading-ink-muted)]">
-          <li>Part 1 — True / False / Not Given</li>
-          <li>{readingMatchingHeadingsIntro(passageNumber)}</li>
+          <li>{readingTfngIntro(passageNumber, mockSlug)}</li>
+          <li>{readingMatchingHeadingsIntro(passageNumber, mockSlug)}</li>
           <li>Part 3 — Sentence completion</li>
         </ol>
 

@@ -13,7 +13,7 @@ type Props = {
   mockTests: MockTestSummary[];
   summary: DashboardSummary;
   profileTargetBand?: number | null;
-  initialMockProgress?: MockAttemptProgress | null;
+  initialMockProgressById?: Partial<Record<string, MockAttemptProgress | null>>;
 };
 
 export function DashboardData({
@@ -24,7 +24,7 @@ export function DashboardData({
   mockTests,
   summary,
   profileTargetBand = null,
-  initialMockProgress = null,
+  initialMockProgressById = {},
 }: Props) {
   return (
     <DashboardExperience
@@ -35,7 +35,7 @@ export function DashboardData({
       mockTests={mockTests}
       summary={summary}
       profileTargetBand={profileTargetBand}
-      initialMockProgress={initialMockProgress}
+      initialMockProgressById={initialMockProgressById}
     />
   );
 }

@@ -1,14 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ClockIcon } from "@/components/bandforge/dashboard/icons";
 import { DashboardCard } from "@/components/bandforge/dashboard/dashboard-card";
 import {
-  M01_MOCK_TEST_ID,
-  MOCK_DISPLAY_LABEL,
-  TEST1_TOTAL_MINUTES,
+  getMockMeta,
+  getMockPanelSlotBySlug,
   mockResultsPath,
-  test1HubPath,
+  testHubPath,
+  type MockSlug,
 } from "@/lib/mock-catalog";
 import { clearMockExamLocalData } from "@/lib/mock-client-session";
 import { useMockSession } from "@/modules/mock/hooks/use-mock-session";
@@ -17,23 +18,34 @@ import { ModuleProgressChips } from "@/modules/mock/components/module-progress-c
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 
 type Props = {
+  mockSlug: MockSlug;
   title?: string;
+  description?: string | null;
   initialProgress?: MockAttemptProgress | null;
 };
 
-export function FullMockCard({ title = MOCK_DISPLAY_LABEL, initialProgress = null }: Props) {
+export function FullMockCard({
+  mockSlug,
+  title,
+  description,
+  initialProgress = null,
+}: Props) {
+  const meta = getMockMeta(mockSlug);
+  const panelSlot = getMockPanelSlotBySlug(mockSlug);
+  const displayLabel = panelSlot?.displayLabel ?? meta.displayLabel;
+  const examTitle = title ?? panelSlot?.examTitle ?? displayLabel;
   const { push } = useRouter();
-  const { progress, loading, busy, error, start } = useMockSession(M01_MOCK_TEST_ID, {
+  const { progress, loading, busy, error, start } = useMockSession(meta.id, {
     initialProgress,
   });
 
   const goToTestPage = (attemptId?: string | null) => {
-    push(test1HubPath(attemptId ?? progress?.mock_attempt_id));
+    push(testHubPath(mockSlug, attemptId ?? progress?.mock_attempt_id));
   };
 
   const handlePrimary = async () => {
     if (progress?.status === "completed" && progress.mock_attempt_id) {
-      push(mockResultsPath("m01", progress.mock_attempt_id));
+      push(mockResultsPath(mockSlug, progress.mock_attempt_id));
       return;
     }
 
@@ -51,7 +63,7 @@ export function FullMockCard({ title = MOCK_DISPLAY_LABEL, initialProgress = nul
         (raw.includes("complete") || raw.includes("retake")) &&
         progress?.mock_attempt_id
       ) {
-        push(mockResultsPath("m01", progress.mock_attempt_id));
+        push(mockResultsPath(mockSlug, progress.mock_attempt_id));
         return;
       }
       goToTestPage();
@@ -59,7 +71,7 @@ export function FullMockCard({ title = MOCK_DISPLAY_LABEL, initialProgress = nul
   };
 
   const handleNewAttempt = async () => {
-    clearMockExamLocalData(M01_MOCK_TEST_ID);
+    clearMockExamLocalData(meta.id);
     try {
       const res = await start(true);
       goToTestPage(res.mock_attempt_id);
@@ -72,8 +84,8 @@ export function FullMockCard({ title = MOCK_DISPLAY_LABEL, initialProgress = nul
     progress?.status === "completed"
       ? "View results"
       : progress?.status === "in_progress"
-        ? `Resume ${MOCK_DISPLAY_LABEL}`
-        : `Start ${MOCK_DISPLAY_LABEL}`;
+        ? `Resume ${displayLabel}`
+        : `Start ${displayLabel}`;
 
   const showNewAttempt =
     progress?.status === "in_progress" || progress?.status === "completed";
@@ -83,15 +95,20 @@ export function FullMockCard({ title = MOCK_DISPLAY_LABEL, initialProgress = nul
       <div className="absolute left-0 top-0 h-1 w-full bg-[#06B6D4]" />
       <div className="p-5 sm:p-6">
         <span className="inline-flex rounded-md bg-[#0F172A] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-          {MOCK_DISPLAY_LABEL}
+          {displayLabel}
         </span>
         <h2 className="mt-3 font-display text-xl font-bold leading-snug text-[#0F172A] sm:text-2xl">
-          {title}
+          {examTitle}
         </h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-[#0F172A]/55">
-          Full mock on a dedicated test page with clear Resume and New attempt flow.
-          Listening runs Parts 1-4, then Reading Passages 1-2, then Writing Tasks 1-2.
-        </p>
+        {description ? (
+          <p className="mt-2 text-[13px] leading-relaxed text-[#0F172A]/55">
+            {description}
+          </p>
+        ) : (
+          <p className="mt-2 text-[13px] leading-relaxed text-[#0F172A]/55">
+            {meta.flowHint}
+          </p>
+        )}
 
         {!loading ? (
           <div className="mt-4">
@@ -103,7 +120,7 @@ export function FullMockCard({ title = MOCK_DISPLAY_LABEL, initialProgress = nul
 
         <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#0F172A]/50">
           <ClockIcon className="size-3.5 text-[#06B6D4]" />
-          ~{TEST1_TOTAL_MINUTES} min
+          ~{meta.totalMinutes} min
         </p>
 
         <div className="mt-5 flex flex-wrap gap-3">
@@ -126,6 +143,12 @@ export function FullMockCard({ title = MOCK_DISPLAY_LABEL, initialProgress = nul
               {busy ? "Starting…" : "New attempt"}
             </button>
           ) : null}
+          <Link
+            href={testHubPath(mockSlug)}
+            className="inline-flex min-h-[44px] items-center rounded-xl border border-[#0F172A]/10 px-4 py-2.5 text-[13px] font-semibold text-[#0F172A]/60 hover:border-[#06B6D4]/30 hover:text-[#0891B2]"
+          >
+            Open test page
+          </Link>
         </div>
         {error ? (
           <p className="mt-2 text-[13px] text-red-600" role="alert">

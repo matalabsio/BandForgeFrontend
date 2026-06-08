@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { M01_MOCK_TEST_ID, TEST1_WRITING_TASK_COUNT } from "@/lib/mock-catalog";
+import {
+  getMockMeta,
+  mockApiId,
+  mockHubPath,
+  TEST1_WRITING_TASK_COUNT,
+} from "@/lib/mock-catalog";
 import { WRITING_TASK_STAGES } from "@/modules/writing/writing-test-tasks";
 import { writingTaskPath, writingTestHubPath } from "@/lib/writing-test";
 import { useMockSession } from "@/modules/mock/hooks/use-mock-session";
@@ -14,8 +19,9 @@ type Props = {
   mockSlug?: string;
 };
 
-export function WritingTestHub({ mockAttemptId, mockSlug }: Props) {
-  const { progress } = useMockSession(M01_MOCK_TEST_ID);
+export function WritingTestHub({ mockAttemptId, mockSlug = "m01" }: Props) {
+  const resolvedSlug = mockSlug ?? "m01";
+  const { progress } = useMockSession(mockApiId(resolvedSlug));
   const writingMod = progress?.modules.find((m) => m.module === "writing");
 
   return (
@@ -123,10 +129,10 @@ export function WritingTestHub({ mockAttemptId, mockSlug }: Props) {
           <>
             {" · "}
             <Link
-              href={`/mock/m01?mock_attempt=${encodeURIComponent(mockAttemptId)}`}
+              href={mockHubPath(resolvedSlug, mockAttemptId)}
               className="font-medium text-teal hover:underline"
             >
-              Back to mock hub
+              Back to {getMockMeta(resolvedSlug).displayLabel} hub
             </Link>
           </>
         ) : null}

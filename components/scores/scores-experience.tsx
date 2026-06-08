@@ -8,11 +8,14 @@ import { ScoresPageHeader } from "@/components/scores/scores-page-header";
 import { ScoresStatRow } from "@/components/scores/scores-stat-row";
 import { latestBandByModule } from "@/components/scores/scores-utils";
 
+import type { MockSlug } from "@/lib/mock-catalog";
+
 type Props = {
   summary: DashboardSummary;
   profileTargetBand?: number | null;
   fresh?: boolean;
   highlightAttemptId?: string | null;
+  mockSlug?: MockSlug | null;
 };
 
 export function ScoresExperience({
@@ -20,6 +23,7 @@ export function ScoresExperience({
   profileTargetBand = null,
   fresh = false,
   highlightAttemptId = null,
+  mockSlug = null,
 }: Props) {
   const moduleBands = latestBandByModule(summary.recent);
 
@@ -30,6 +34,7 @@ export function ScoresExperience({
       <ScoresCompletionFocus
         fresh={fresh}
         highlightAttemptId={highlightAttemptId}
+        mockSlug={mockSlug}
       />
 
       <ScoresStatRow

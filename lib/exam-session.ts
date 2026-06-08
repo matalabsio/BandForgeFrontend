@@ -3,6 +3,9 @@ import type { AuthResponse } from "@/lib/auth";
 import { refreshSession, restoreSessionFromStorage } from "@/lib/auth";
 import { isAuthEnabled } from "@/lib/flags";
 import {
+  shouldRunProactiveRefresh,
+} from "@/lib/exam-session-refresh-policy";
+import {
   accessTokenExpired,
   EXAM_ACCESS_REFRESH_MARGIN_SEC,
 } from "@/lib/jwt-expiry";
@@ -82,6 +85,26 @@ function guestAuthResponse(): AuthResponse {
   return guestSession;
 }
 
+let lastSuccessfulRefreshAtMs: number | null = null;
+
+export function markExamRefreshSuccess(atMs: number = Date.now()): void {
+  lastSuccessfulRefreshAtMs = atMs;
+}
+
+export function resetExamRefreshCooldownForTests(): void {
+  lastSuccessfulRefreshAtMs = null;
+}
+
+function shouldRefreshProactivelyNow(): boolean {
+  return shouldRunProactiveRefresh(
+    Date.now(),
+    lastSuccessfulRefreshAtMs,
+    getAccessToken(),
+    accessTokenExpired,
+    accessNeedsExamRefresh,
+  );
+}
+
 function freshAccessResponse(access: string): AuthResponse {
   return {
     user: {
@@ -101,11 +124,16 @@ function freshAccessResponse(access: string): AuthResponse {
 async function refreshExamSession(): Promise<AuthResponse> {
   purgeExpiredAccessMirror();
   try {
-    return await refreshSession();
+    const result = await refreshSession();
+    markExamRefreshSuccess();
+    return result;
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) {
       const restored = await restoreSessionFromStorage();
-      if (restored) return restored;
+      if (restored) {
+        markExamRefreshSuccess();
+        return restored;
+      }
       throw new ExamSessionError();
     }
     throw e;
@@ -127,7 +155,7 @@ async function refreshExamSessionQuietly(): Promise<void> {
  * Never throws — valid httpOnly cookies can still authenticate until submit retry.
  */
 export async function maintainExamSession(): Promise<void> {
-  if (!needsProactiveExamRefresh()) return;
+  if (!isAuthEnabled() || !shouldRefreshProactivelyNow()) return;
   purgeExpiredAccessMirror();
   await refreshExamSessionQuietly();
 }
@@ -156,7 +184,7 @@ export async function ensureExamSession(): Promise<AuthResponse> {
 
 /** Proactive refresh before access expires (autosave / API preflight). */
 export async function ensureExamSessionIfStale(): Promise<void> {
-  if (!isAuthEnabled() || !needsProactiveExamRefresh()) return;
+  if (!isAuthEnabled() || !shouldRefreshProactivelyNow()) return;
   await refreshExamSessionQuietly();
 }
 

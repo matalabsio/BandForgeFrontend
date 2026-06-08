@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   passage: number;
+  mockSlug?: string;
   questions: ReadingQuestion[];
   answers: Record<string, string>;
   onAnswer: (id: string, value: string) => void;
@@ -33,6 +34,7 @@ function findGroupForQuestion(
 
 export function ReadingQuestionsPanel({
   passage,
+  mockSlug,
   questions,
   answers,
   onAnswer,
@@ -40,8 +42,8 @@ export function ReadingQuestionsPanel({
   onActiveQuestion,
 }: Props) {
   const groups = useMemo(
-    () => groupReadingQuestions(questions, passage),
-    [questions, passage],
+    () => groupReadingQuestions(questions, passage, mockSlug),
+    [questions, passage, mockSlug],
   );
 
   const sorted = useMemo(

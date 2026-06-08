@@ -83,11 +83,7 @@ function matchingOptions(questions: ListeningQuestion[]): ListeningOption[] {
   return anchor?.options ?? [];
 }
 
-/** Part-level instruction for the audio panel (avoid Q1-only "Choose TWO" for the whole part). */
-export function audioPanelInstruction(part: ListeningPart): string | null {
-  const stage = GREENFIELD_LISTENING_STAGES.find((s) => s.part === part.part);
-  if (stage?.description) return stage.description;
-
+function instructionFromBlocks(part: ListeningPart): string | null {
   const blocks = groupListeningQuestions(part);
   for (const block of blocks) {
     if (block.kind === "choose_two") continue;
@@ -102,6 +98,21 @@ export function audioPanelInstruction(part: ListeningPart): string | null {
       const instr = questionInstruction(block.question);
       if (instr && !isChooseTwoInstruction(instr)) return instr;
     }
+  }
+  return null;
+}
+
+/** Part-level instruction for the audio panel (avoid Q1-only "Choose TWO" for the whole part). */
+export function audioPanelInstruction(
+  part: ListeningPart,
+  mockSlug?: string,
+): string | null {
+  const fromDb = instructionFromBlocks(part);
+  if (fromDb) return fromDb;
+
+  if (mockSlug === "m01" || mockSlug === undefined) {
+    const stage = GREENFIELD_LISTENING_STAGES.find((s) => s.part === part.part);
+    if (stage?.description) return stage.description;
   }
   return null;
 }

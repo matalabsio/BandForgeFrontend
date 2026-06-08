@@ -1,27 +1,40 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClockIcon } from "@/components/bandforge/dashboard/icons";
 import {
-  MOCK_DISPLAY_LABEL,
   examPathForMockStart,
+  getMockMeta,
+  getMockPanelSlotBySlug,
   mockResultsPath,
-  TEST1_TOTAL_MINUTES,
   mockPathFromProgress,
+  type MockSlug,
 } from "@/lib/mock-catalog";
+import { MockTestHubShell } from "@/modules/mock/components/mock-test-hub-shell";
 import { clearMockExamLocalData } from "@/lib/mock-client-session";
-import { MockAttemptHistory } from "@/modules/mock/components/mock-attempt-history";
 import { useMockSession } from "@/modules/mock/hooks/use-mock-session";
-import { defaultModuleProgress } from "@/modules/mock/lib/mock-progress";
-import { ModuleProgressChips } from "@/modules/mock/components/module-progress-chips";
+import { computeMockProgressPercent } from "@/modules/mock/lib/mock-progress";
 import { Test1ModuleCards } from "@/modules/mock/components/test1-module-cards";
 import { Test1ReadinessChecklist } from "@/modules/mock/components/test1-readiness-checklist";
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 
+const MockAttemptHistory = dynamic(
+  () =>
+    import("@/modules/mock/components/mock-attempt-history").then(
+      (mod) => mod.MockAttemptHistory,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="text-[12px] text-[var(--exam-ink-muted)]">Loading history…</p>
+    ),
+  },
+);
+
 type Props = {
-  mockSlug: string;
+  mockSlug: MockSlug;
   mockTestId: string;
   title?: string;
   initialProgress?: MockAttemptProgress | null;
@@ -30,9 +43,13 @@ type Props = {
 export function MockTestHub({
   mockSlug,
   mockTestId,
-  title = MOCK_DISPLAY_LABEL,
+  title,
   initialProgress = null,
 }: Props) {
+  const meta = getMockMeta(mockSlug);
+  const panelSlot = getMockPanelSlotBySlug(mockSlug);
+  const displayLabel = title ?? meta.displayLabel;
+  const examTitle = panelSlot?.examTitle ?? displayLabel;
   const { push, replace } = useRouter();
   const { mockAttemptId, progress, busy, error, start } = useMockSession(
     mockTestId,
@@ -43,10 +60,25 @@ export function MockTestHub({
     setReadinessReady(ready);
   }, []);
 
-  const showRetake = progress?.status === "completed";
-  const startLabel = busy ? "Starting…" : `Start ${MOCK_DISPLAY_LABEL}`;
-  const startDisabled = busy || !readinessReady;
+  const status = progress?.status;
   const hasAttempt = Boolean(progress?.mock_attempt_id ?? mockAttemptId);
+  const activeAttemptId = progress?.mock_attempt_id ?? mockAttemptId;
+  const percent = useMemo(
+    () => computeMockProgressPercent(progress?.modules ?? []),
+    [progress?.modules],
+  );
+
+  const showReadiness = !hasAttempt || status === "completed";
+  const showNewAttempt = status === "in_progress" || status === "completed";
+
+  const primaryLabel =
+    busy
+      ? "Please wait…"
+      : status === "completed"
+        ? "View results"
+        : status === "in_progress"
+          ? `Resume ${displayLabel}`
+          : `Start ${displayLabel}`;
 
   const ensureAttempt = async (forceNew = false) => {
     if (forceNew) {
@@ -58,9 +90,18 @@ export function MockTestHub({
     await start(false);
   };
 
-  const handleStartOrRetake = async () => {
+  const handlePrimary = async () => {
+    if (status === "completed" && activeAttemptId) {
+      push(mockResultsPath(mockSlug, activeAttemptId));
+      return;
+    }
+    if (status === "in_progress" && activeAttemptId) {
+      const url = mockPathFromProgress(mockSlug, activeAttemptId, progress!);
+      replace(url);
+      return;
+    }
     try {
-      await ensureAttempt(showRetake);
+      await ensureAttempt(false);
     } catch {
       /* error surfaced via hook */
     }
@@ -76,136 +117,118 @@ export function MockTestHub({
     }
   };
 
-  const modules = progress?.modules ?? defaultModuleProgress();
-  const activeAttemptId = progress?.mock_attempt_id ?? mockAttemptId;
-
-  const resumeToCurrentModule = () => {
-    if (!progress?.mock_attempt_id || !activeAttemptId) return;
-    const url = mockPathFromProgress(mockSlug, activeAttemptId, progress);
-    replace(url);
-  };
+  const primaryNeedsReadiness =
+    showReadiness && status !== "completed" && status !== "in_progress";
+  const primaryDisabled = busy || (primaryNeedsReadiness && !readinessReady);
+  const newAttemptDisabled = busy || !readinessReady;
 
   return (
-    <div className="px-4 py-8 sm:px-6 sm:py-10">
-      <div className="bf-dash-enter mx-auto max-w-3xl">
-        <p className="mb-4">
-          <Link
-            href="/dashboard"
-            className="text-[12px] font-semibold text-[var(--exam-accent)] hover:underline"
-          >
-            ← Back to dashboard
-          </Link>
-        </p>
-
-        <div className="rounded-xl border border-[var(--exam-border)] bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-[var(--exam-accent)] px-3 py-1 text-[11px] font-bold text-white">
-              Test 1
-            </span>
-            <span className="rounded-full border border-[var(--exam-border)] bg-[var(--exam-surface)] px-3 py-1 text-[11px] font-semibold text-[var(--exam-ink-muted)]">
-              Test 2
-            </span>
-            <span className="rounded-full border border-[var(--exam-border)] bg-[var(--exam-surface)] px-3 py-1 text-[11px] font-semibold text-[var(--exam-ink-muted)]">
-              Test 3
-            </span>
+    <MockTestHubShell activeNumber={panelSlot?.number ?? 1}>
+      <section className="overflow-hidden rounded-2xl border border-[var(--exam-border)] bg-white shadow-sm">
+        <div className="border-b border-[var(--exam-border)] bg-gradient-to-br from-slate-50/90 to-white px-5 py-5 sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--exam-accent)]">
+                {displayLabel}
+              </p>
+              <h2 className="mt-1 font-display text-lg font-bold leading-snug text-[var(--exam-ink)] sm:text-xl">
+                {examTitle}
+              </h2>
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--exam-ink-muted)]">
+                <span className="inline-flex items-center gap-1">
+                  <ClockIcon className="size-3.5 text-[var(--exam-accent)]" />
+                  ~{meta.totalMinutes} min
+                </span>
+                <span>·</span>
+                <span>L · R · W</span>
+              </p>
+            </div>
+            {hasAttempt ? (
+              <div className="text-right">
+                <p className="text-2xl font-bold tabular-nums leading-none text-[var(--exam-accent)]">
+                  {percent}%
+                </p>
+                <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--exam-ink-muted)]">
+                  Complete
+                </p>
+              </div>
+            ) : null}
           </div>
 
           {hasAttempt ? (
-            <div className="mt-4">
-              <ModuleProgressChips modules={modules} />
+            <div
+              className="mt-4 h-1.5 overflow-hidden rounded-full bg-[var(--exam-border)]"
+              role="progressbar"
+              aria-valuenow={percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full rounded-full bg-[var(--exam-accent)] transition-[width] duration-300"
+                style={{ width: `${percent}%` }}
+              />
             </div>
           ) : null}
+        </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[var(--exam-ink-muted)]">
-            <ClockIcon className="size-3.5 text-[var(--exam-accent)]" />
-            <span>~{TEST1_TOTAL_MINUTES} min live sections</span>
-          </div>
-
+        <div className="space-y-5 p-5 sm:p-6">
           {error ? (
             <p
-              className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] text-red-800"
+              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] text-red-800"
               role="alert"
             >
               {error}
             </p>
           ) : null}
 
-          {progress?.status !== "completed" ? (
-            <Test1ReadinessChecklist
-              className="mt-5"
-              onReadyChange={onReadinessChange}
-            />
+          {showReadiness ? (
+            <Test1ReadinessChecklist onReadyChange={onReadinessChange} />
           ) : null}
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={primaryDisabled}
+              onClick={() => void handlePrimary()}
+              className="inline-flex min-h-[44px] cursor-pointer items-center rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {primaryLabel}
+            </button>
+            {showNewAttempt ? (
+              <button
+                type="button"
+                disabled={newAttemptDisabled}
+                onClick={() => void handleNewAttempt()}
+                className="inline-flex min-h-[44px] cursor-pointer items-center rounded-xl border border-[var(--exam-border)] px-4 py-2.5 text-[13px] font-semibold text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                New attempt
+              </button>
+            ) : null}
+          </div>
 
           {!hasAttempt ? (
-            <div className="mt-5">
-              <button
-                type="button"
-                disabled={startDisabled}
-                onClick={() => void handleStartOrRetake()}
-                className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {startLabel}
-              </button>
-            </div>
-          ) : progress?.status === "in_progress" ? (
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                type="button"
-                disabled={startDisabled}
-                onClick={() => resumeToCurrentModule()}
-                className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {startLabel}
-              </button>
-              <button
-                type="button"
-                disabled={busy || !readinessReady}
-                onClick={() => void handleNewAttempt()}
-                className="cursor-pointer rounded-xl border border-[var(--exam-border)] px-4 py-2.5 text-[13px] font-semibold text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                New attempt
-              </button>
-            </div>
-          ) : progress?.status === "completed" && activeAttemptId ? (
-            <div className="mt-5 space-y-5">
-              <button
-                type="button"
-                onClick={() =>
-                  push(mockResultsPath(mockSlug, activeAttemptId))
-                }
-                className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0891B2]"
-              >
-                View results
-              </button>
-              <Test1ReadinessChecklist onReadyChange={onReadinessChange} />
-              <button
-                type="button"
-                disabled={busy || !readinessReady}
-                onClick={() => void handleNewAttempt()}
-                className="cursor-pointer rounded-xl border border-[var(--exam-border)] px-4 py-2.5 text-[13px] font-semibold text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                New attempt
-              </button>
-            </div>
+            <p className="text-[12px] leading-relaxed text-[var(--exam-ink-muted)]">
+              After you start, Listening, Reading, and Writing sections unlock below
+              in sequence.
+            </p>
           ) : null}
         </div>
+      </section>
 
-        <div className="mt-6">
-          <Test1ModuleCards
-            mockSlug={mockSlug}
-            modules={modules}
-            mockAttemptId={activeAttemptId}
-            mockStatus={progress?.status}
-          />
-        </div>
+      <Test1ModuleCards
+        mockSlug={mockSlug}
+        modules={progress?.modules ?? []}
+        mockAttemptId={activeAttemptId}
+        mockStatus={status}
+      />
 
+      {hasAttempt ? (
         <MockAttemptHistory
           mockSlug={mockSlug}
           mockTestId={mockTestId}
           currentMockAttemptId={activeAttemptId}
         />
-      </div>
-    </div>
+      ) : null}
+    </MockTestHubShell>
   );
 }

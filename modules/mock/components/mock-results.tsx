@@ -9,7 +9,7 @@ import {
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
 import {
-  MOCK_DISPLAY_LABEL,
+  getMockMeta,
   mockApiId,
 } from "@/lib/mock-catalog";
 import {
@@ -116,6 +116,7 @@ function MockResultsBody({
   initialSummary = null,
 }: Props) {
   const { push, replace } = useRouter();
+  const displayLabel = getMockMeta(mockSlug).displayLabel;
   const mockTestId = mockApiId(mockSlug);
   const storageKey = mockAttemptStorageKey(mockTestId);
   const [loading, setLoading] = useState(!initialSummary);
@@ -185,7 +186,7 @@ function MockResultsBody({
                 Mock complete
               </p>
               <h1 className="mt-2 font-display text-2xl font-bold text-[var(--exam-ink)] sm:text-3xl">
-                {MOCK_DISPLAY_LABEL} results
+                {displayLabel} results
               </h1>
               {completedLabel ? (
                 <p className="mt-1 text-[13px] text-[var(--exam-ink-muted)]">
@@ -239,7 +240,7 @@ function MockResultsBody({
 
             <div className="mt-8 space-y-3">
               <Link
-                href="/scores?fresh=1"
+                href={`/scores?fresh=1&mock=${encodeURIComponent(mockSlug)}`}
                 className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[var(--exam-accent)] px-5 py-3.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#0891B2]"
               >
                 View full performance
@@ -266,7 +267,7 @@ function MockResultsBody({
                   onClick={() => void startRetest()}
                   className="cursor-pointer rounded-xl border border-[var(--exam-border)] bg-white px-5 py-3 text-[14px] font-bold text-[var(--exam-ink)] shadow-sm transition-colors hover:border-[var(--exam-accent)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-1"
                 >
-                  {retestBusy ? "Starting…" : `Retake ${MOCK_DISPLAY_LABEL}`}
+                  {retestBusy ? "Starting…" : `Retake ${displayLabel}`}
                 </button>
                 <Link
                   href={MOCK_COMPLETED_EXIT}

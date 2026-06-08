@@ -47,16 +47,24 @@ export async function examApiCall<T>(
     purgeExpiredAccessMirror();
     await ensureExamSessionIfStale();
 
-    const controller = new AbortController();
+    const externalSignal = init?.signal ?? undefined;
+    if (externalSignal?.aborted) {
+      throw new DOMException("The operation was aborted.", "AbortError");
+    }
+
+    const timeoutController = new AbortController();
     const timer = setTimeout(
-      () => controller.abort(),
+      () => timeoutController.abort(),
       options?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     );
+    const onExternalAbort = () => timeoutController.abort();
+    externalSignal?.addEventListener("abort", onExternalAbort);
+
     try {
       const res = await fetch(path, {
         ...init,
         credentials: "include",
-        signal: controller.signal,
+        signal: timeoutController.signal,
         headers: examRequestHeaders(init),
         cache: "no-store",
       });
@@ -67,11 +75,13 @@ export async function examApiCall<T>(
       return body as T;
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") {
+        if (externalSignal?.aborted) throw e;
         throw new ApiError("Request timed out. Please try again.", 408);
       }
       throw e;
     } finally {
       clearTimeout(timer);
+      externalSignal?.removeEventListener("abort", onExternalAbort);
     }
   };
 

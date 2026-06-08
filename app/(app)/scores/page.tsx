@@ -4,6 +4,11 @@ import { ScoresContentSkeleton } from "@/components/scores/scores-content-skelet
 import { ScoresExperience } from "@/components/scores/scores-experience";
 import { authGuardRedirectPath } from "@/lib/auth";
 import {
+  canonicalMockSlug,
+  PUBLISHED_MOCK_SLUGS,
+  type MockSlug,
+} from "@/lib/mock-catalog";
+import {
   getCachedCookieHeader,
   getCachedDashboardSummary,
   getCachedServerUser,
@@ -17,7 +22,7 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ attempt?: string; fresh?: string }>;
+  searchParams: Promise<{ attempt?: string; fresh?: string; mock?: string }>;
 };
 
 async function ScoresPageContent({ searchParams }: PageProps) {
@@ -30,6 +35,10 @@ async function ScoresPageContent({ searchParams }: PageProps) {
   const sp = await searchParams;
   const highlightAttemptId = sp.attempt?.trim() || null;
   const fresh = sp.fresh === "1";
+  const mockParam = sp.mock?.trim();
+  const resolvedMock = mockParam ? (canonicalMockSlug(mockParam) as MockSlug) : null;
+  const mockSlug =
+    resolvedMock && PUBLISHED_MOCK_SLUGS.includes(resolvedMock) ? resolvedMock : null;
 
   const summary = await getCachedDashboardSummary(cookieHeader);
 
@@ -44,6 +53,7 @@ async function ScoresPageContent({ searchParams }: PageProps) {
       profileTargetBand={profileTarget}
       fresh={fresh}
       highlightAttemptId={highlightAttemptId}
+      mockSlug={mockSlug}
     />
   );
 }

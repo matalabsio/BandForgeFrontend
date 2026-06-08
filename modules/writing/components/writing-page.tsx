@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   DEFAULT_MOCK_SLUG,
+  getMockMeta,
   mockAfterWritingSubmitPath,
   mockModulePath,
   mockPathFromProgress,
@@ -110,6 +111,7 @@ export function WritingPage({
   const bootedRef = useRef(false);
   const needsConsentGateRef = useRef(false);
   const expiryFiredRef = useRef(false);
+  const mockMeta = useMemo(() => getMockMeta(mockSlug), [mockSlug]);
 
   const minWords =
     task?.options?.min_words ?? writingMinWords(part);
@@ -500,6 +502,7 @@ export function WritingPage({
   if (phase === "intro" && part === 1 && remaining > 0) {
     return (
       <SectionInstructionsModal
+        badge={`IELTS Academic · ${mockMeta.displayLabel}`}
         title="Writing Test Instructions"
         description="You will complete two writing tasks in order: Task 1, then Task 2."
         instructions={[

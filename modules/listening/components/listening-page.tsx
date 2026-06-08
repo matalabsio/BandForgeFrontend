@@ -12,7 +12,7 @@ import {
   type SectionAdvanceNotice,
 } from "@/lib/mock-checkpoint-cache";
 import {
-  MOCK_DISPLAY_LABEL,
+  getMockMeta,
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
@@ -122,6 +122,9 @@ export function ListeningPage({
   );
 
   const { schedule, flushNow } = useAutosave(state.attemptId);
+  const mockMeta = useMemo(() => getMockMeta(mockSlug), [mockSlug]);
+  const listeningPartCount = mockMeta.listeningPartCount;
+
   const introStorageKey = useMemo(
     () => mockAttemptId ?? `${testId}:listening`,
     [mockAttemptId, testId, part],
@@ -503,6 +506,7 @@ export function ListeningPage({
       return (
         <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
           <ListeningIntroCard
+            mockSlug={mockSlug}
             onBegin={() => {
               if (typeof window !== "undefined") {
                 writeConsent("listening", introStorageKey);
@@ -556,19 +560,19 @@ export function ListeningPage({
     ) {
       const examPart =
         state.parts.find((p) => p.part === part) ?? state.parts[0];
-      const instruction = audioPanelInstruction(examPart);
+      const instruction = audioPanelInstruction(examPart, mockSlug);
       const questionsVisible = partPlayed;
       const testTitle = mockAttemptId
-        ? MOCK_DISPLAY_LABEL
+        ? mockMeta.displayLabel
         : (state.test?.title ?? stageMeta?.context ?? "Listening");
       const stageLabel = mockAttemptId
-        ? `Part ${part} of ${TEST1_LISTENING_PART_COUNT}`
+        ? `Part ${part} of ${listeningPartCount}`
         : (stageMeta?.title ?? `Part ${part}`);
       const hubHref = mockAttemptId
         ? mockHubPath(mockSlug, mockAttemptId)
         : listeningTestHubPath();
       const nextPartLabel = mockAttemptId
-        ? part >= TEST1_LISTENING_PART_COUNT
+        ? part >= listeningPartCount
           ? "Finish listening"
           : "Next Part"
         : "Submit part";
@@ -581,12 +585,12 @@ export function ListeningPage({
           {submitting ? (
             <ExamBusyOverlay
               title={
-                part >= TEST1_LISTENING_PART_COUNT
+                part >= listeningPartCount
                   ? "Finishing listening…"
                   : `Submitting Part ${part}…`
               }
               subtitle={
-                part >= TEST1_LISTENING_PART_COUNT
+                part >= listeningPartCount
                   ? "Saving your answers and opening reading."
                   : `Saving your answers and loading Part ${part + 1}.`
               }
@@ -597,10 +601,10 @@ export function ListeningPage({
             stageLabel={stageLabel}
             testTitle={testTitle}
             hubHref={hubHref}
-            hubLabel={mockAttemptId ? "← Test 1" : "← Back"}
+            hubLabel={mockAttemptId ? `← ${mockMeta.displayLabel}` : "← Back"}
             sectionHint={
               mockAttemptId
-                ? `Listening · Part ${part} of ${TEST1_LISTENING_PART_COUNT} · 30 min total`
+                ? `Listening · Part ${part} of ${listeningPartCount} · ${mockMeta.listeningMinutes} min total`
                 : undefined
             }
             submitLabel={mockSubmitLabel}

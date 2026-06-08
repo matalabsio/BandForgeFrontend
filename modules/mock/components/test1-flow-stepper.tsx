@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import {
-  TEST1_LISTENING_MINUTES,
-  TEST1_LISTENING_PART_COUNT,
-  TEST1_READING_MINUTES,
-  TEST1_READING_PASSAGE_COUNT,
-  TEST1_WRITING_MINUTES,
-  TEST1_WRITING_TASK_COUNT,
+  getMockMeta,
   mockModulePath,
   mockResultsPath,
 } from "@/lib/mock-catalog";
@@ -23,32 +18,35 @@ type StepDef = {
   detail: string;
 };
 
-const STEPS: StepDef[] = [
-  {
-    key: "listening",
-    order: 1,
-    label: "Listening",
-    detail: `${TEST1_LISTENING_MINUTES} min · Part 1`,
-  },
-  {
-    key: "reading",
-    order: 2,
-    label: "Reading",
-    detail: `${TEST1_READING_MINUTES} min · Passage 1`,
-  },
-  {
-    key: "writing",
-    order: 3,
-    label: "Writing",
-    detail: `${TEST1_WRITING_MINUTES} min · Tasks 1–${TEST1_WRITING_TASK_COUNT} · word-count band`,
-  },
-  {
-    key: "results",
-    order: 4,
-    label: "Results",
-    detail: "Band report",
-  },
-];
+function buildSteps(mockSlug: string): StepDef[] {
+  const meta = getMockMeta(mockSlug);
+  return [
+    {
+      key: "listening",
+      order: 1,
+      label: "Listening",
+      detail: `${meta.listeningMinutes} min · Parts 1–${meta.listeningPartCount}`,
+    },
+    {
+      key: "reading",
+      order: 2,
+      label: "Reading",
+      detail: `${meta.readingMinutes} min · Passages 1–${meta.readingPassageCount}`,
+    },
+    {
+      key: "writing",
+      order: 3,
+      label: "Writing",
+      detail: `${meta.writingMinutes} min · Tasks 1–${meta.writingTaskCount} · word-count band`,
+    },
+    {
+      key: "results",
+      order: 4,
+      label: "Results",
+      detail: "Band report",
+    },
+  ];
+}
 
 function stepStatus(
   key: StepKey,
@@ -82,10 +80,11 @@ export function Test1FlowStepper({
   onStepClick,
 }: Props) {
   const mockComplete = mockStatus === "completed";
+  const steps = buildSteps(mockSlug);
 
   return (
     <ol className="space-y-0">
-      {STEPS.map((step, index) => {
+      {steps.map((step, index) => {
         const status = stepStatus(step.key, modules, mockComplete);
         const mod = modules.find((m) => m.module === step.key);
         const part = mod?.part ?? 1;
@@ -173,7 +172,7 @@ export function Test1FlowStepper({
           </div>
         );
 
-        const showConnector = index < STEPS.length - 1;
+        const showConnector = index < steps.length - 1;
 
         return (
           <li key={step.key} className="relative">

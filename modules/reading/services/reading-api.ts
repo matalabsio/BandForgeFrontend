@@ -44,12 +44,14 @@ export const readingApi = {
     attemptId: string,
     questionId: string,
     userAnswer: string,
+    options?: { signal?: AbortSignal },
   ): Promise<{ ok: boolean }> {
     return examApiCall(
       `/api/reading/attempts/${encodeURIComponent(attemptId)}/autosave`,
       {
         method: "POST",
         body: JSON.stringify({ question_id: questionId, user_answer: userAnswer }),
+        signal: options?.signal,
       },
     );
   },

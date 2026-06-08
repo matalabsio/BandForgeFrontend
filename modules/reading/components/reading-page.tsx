@@ -11,8 +11,7 @@ import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
 import type { ReadingBootServer } from "@/lib/mock-server";
 import {
-  MOCK_DISPLAY_LABEL,
-  TEST1_READING_PASSAGE_COUNT,
+  getMockMeta,
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
@@ -23,7 +22,6 @@ import { readingModuleResultsPath } from "@/lib/reading-test";
 import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
-import { ensureExamSessionIfStale } from "@/lib/exam-session";
 import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
 import {
@@ -69,6 +67,7 @@ function writeConsent(moduleKey: string, attemptScope: string): void {
 }
 
 const STORAGE_PREFIX = "bf-reading-";
+const READING_AUTOSAVE_DEBOUNCE_MS = 2500;
 
 function storageKey(attemptId: string): string {
   return `${STORAGE_PREFIX}${attemptId}`;
@@ -112,6 +111,7 @@ export function ReadingPage({
   const searchParams = useSearchParams();
   const mockAttemptId = searchParams.get("mock_attempt");
   const sectionStart = searchParams.get("section_start") === "1";
+  const readingPassageCount = getMockMeta(mockSlug).readingPassageCount;
 
   const beginSessionInFlightRef = useRef<Promise<SessionStart | null> | null>(
     null,
@@ -130,6 +130,8 @@ export function ReadingPage({
     useState<QuestionSectionId>("tfng");
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
+  const attemptIdRef = useRef<string | null>(null);
+  const autosaveAbortRef = useRef<AbortController | null>(null);
   const [startedAtIso, setStartedAtIso] = useState<string | null>(null);
   const [serverTimeIso, setServerTimeIso] = useState<string | null>(null);
   const [durationSeconds, setDurationSeconds] = useState(60 * 60);
@@ -146,8 +148,8 @@ export function ReadingPage({
   );
 
   const questionGroups = useMemo(
-    () => groupReadingQuestions(questions, passage),
-    [questions, passage],
+    () => groupReadingQuestions(questions, passage, mockSlug),
+    [questions, passage, mockSlug],
   );
 
   const activeQuestionSection = useMemo(() => {
@@ -188,17 +190,17 @@ export function ReadingPage({
   const footerLabel = useMemo(() => {
     if (!isLastQuestionSection) return continueLabel;
     if (mockAttemptId) {
-      return passage < TEST1_READING_PASSAGE_COUNT ? "Next Part" : "Finish reading";
+      return passage < readingPassageCount ? "Next Part" : "Finish reading";
     }
     return continueLabel;
-  }, [isLastQuestionSection, continueLabel, mockAttemptId, passage]);
+  }, [isLastQuestionSection, continueLabel, mockAttemptId, passage, readingPassageCount]);
 
   const toolbarSubmitLabel = useMemo(() => {
     if (mockAttemptId) {
-      return passage < TEST1_READING_PASSAGE_COUNT ? "Next Part" : "Finish reading";
+      return passage < readingPassageCount ? "Next Part" : "Finish reading";
     }
     return `Submit passage ${passage}`;
-  }, [mockAttemptId, passage]);
+  }, [mockAttemptId, passage, readingPassageCount]);
 
   const answeredCount = useMemo(
     () => questions.filter((q) => (answers[q.id] ?? "").trim()).length,
@@ -232,6 +234,19 @@ export function ReadingPage({
     [testId, passage, mockAttemptId],
   );
 
+  const cancelAutosaveInFlight = useCallback(() => {
+    autosaveAbortRef.current?.abort();
+    autosaveAbortRef.current = null;
+  }, []);
+
+  const clearAutosaveTimers = useCallback(() => {
+    for (const handle of Object.values(autosaveTimers.current)) {
+      clearTimeout(handle);
+    }
+    autosaveTimers.current = {};
+    cancelAutosaveInFlight();
+  }, [cancelAutosaveInFlight]);
+
   const setAnswer = useCallback(
     (id: string, value: string) => {
       setAnswers((prev) => {
@@ -240,20 +255,39 @@ export function ReadingPage({
         return next;
       });
       if (!attemptId) return;
+      const saveAttemptId = attemptId;
       if (autosaveTimers.current[id]) clearTimeout(autosaveTimers.current[id]);
       autosaveTimers.current[id] = setTimeout(() => {
         void (async () => {
+          if (attemptIdRef.current !== saveAttemptId) return;
+          cancelAutosaveInFlight();
+          const controller = new AbortController();
+          autosaveAbortRef.current = controller;
           try {
-            await ensureExamSessionIfStale();
-            await readingApi.autosave(attemptId, id, value);
-          } catch {
-            /* ignore */
+            await readingApi.autosave(saveAttemptId, id, value, {
+              signal: controller.signal,
+            });
+          } catch (e) {
+            if (e instanceof Error && e.name === "AbortError") return;
+            /* ignore other autosave errors */
+          } finally {
+            if (autosaveAbortRef.current === controller) {
+              autosaveAbortRef.current = null;
+            }
           }
         })();
-      }, 500);
+      }, READING_AUTOSAVE_DEBOUNCE_MS);
     },
-    [attemptId, examPhase, questionSection, persistFlow],
+    [attemptId, examPhase, questionSection, persistFlow, cancelAutosaveInFlight],
   );
+
+  useEffect(() => {
+    const prev = attemptIdRef.current;
+    attemptIdRef.current = attemptId;
+    if (prev !== null && prev !== attemptId) {
+      clearAutosaveTimers();
+    }
+  }, [attemptId, clearAutosaveTimers]);
 
   const goToResults = useCallback(
     (
@@ -267,7 +301,7 @@ export function ReadingPage({
       if (mockAttemptId && submit) {
         const dest = submit.mock_reading_complete
           ? mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
-              completedPart: TEST1_READING_PASSAGE_COUNT,
+              completedPart: readingPassageCount,
               attemptId: id,
             })
           : mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
@@ -281,13 +315,6 @@ export function ReadingPage({
     },
     [replace, push, testId, mockSlug, mockAttemptId, passage],
   );
-
-  const clearAutosaveTimers = useCallback(() => {
-    for (const handle of Object.values(autosaveTimers.current)) {
-      clearTimeout(handle);
-    }
-    autosaveTimers.current = {};
-  }, []);
 
   const flushAutosaves = useCallback(
     async (id: string, snapshot: Record<string, string>) => {
@@ -428,6 +455,10 @@ export function ReadingPage({
       freshPassage = false,
       snap?: ReturnType<typeof readFlowSnapshot>,
     ) => {
+      if (attemptIdRef.current !== start.attempt_id) {
+        clearAutosaveTimers();
+      }
+      attemptIdRef.current = start.attempt_id;
       setAttemptId(start.attempt_id);
       setStartedAtIso(start.started_at);
       setServerTimeIso(start.server_time);
@@ -460,7 +491,7 @@ export function ReadingPage({
       setAnswers(init);
       return init;
     },
-    [],
+    [clearAutosaveTimers],
   );
 
   const beginSession = useCallback(
@@ -591,12 +622,12 @@ export function ReadingPage({
       if (opts?.examPhase) setExamPhase(opts.examPhase);
       if (opts?.questionSection) {
         setQuestionSection(
-          groupReadingQuestions(start.questions, passage).some(
+          groupReadingQuestions(start.questions, passage, mockSlug).some(
             (g) => g.id === opts.questionSection,
           )
             ? opts.questionSection
             : defaultQuestionSection(
-                groupReadingQuestions(start.questions, passage),
+                groupReadingQuestions(start.questions, passage, mockSlug),
               ),
         );
       }
@@ -817,13 +848,13 @@ export function ReadingPage({
   const submitOverlayTitle =
     remaining <= 0
       ? "Time's up — submitting…"
-      : mockAttemptId && passage >= TEST1_READING_PASSAGE_COUNT
+      : mockAttemptId && passage >= readingPassageCount
         ? "Finishing reading…"
         : `Submitting Passage ${passage}…`;
   const submitOverlaySubtitle =
     remaining <= 0
       ? "Saving your answers before the deadline."
-      : mockAttemptId && passage >= TEST1_READING_PASSAGE_COUNT
+      : mockAttemptId && passage >= readingPassageCount
         ? "Saving your answers and opening writing."
         : `Saving your answers and loading Passage ${passage + 1}.`;
 
@@ -844,7 +875,8 @@ export function ReadingPage({
         <ReadingIntroOverlay
           passageTitle={displayTitle}
           passageNumber={passage}
-          totalPassages={TEST1_READING_PASSAGE_COUNT}
+          totalPassages={readingPassageCount}
+          mockSlug={mockSlug}
           durationMinutes={durationMinutes}
           busy={busy}
           agreed={introAgreed}
@@ -857,14 +889,14 @@ export function ReadingPage({
         <>
           <ReadingExamToolbar
             passage={passage}
-            testTitle={mockAttemptId ? MOCK_DISPLAY_LABEL : testTitle}
+            testTitle={mockAttemptId ? getMockMeta(mockSlug).displayLabel : testTitle}
             hubHref={
               mockAttemptId ? mockHubPath(mockSlug, mockAttemptId) : undefined
             }
-            hubLabel={mockAttemptId ? "← Test 1" : undefined}
+            hubLabel={mockAttemptId ? `← ${getMockMeta(mockSlug).displayLabel}` : undefined}
             sectionHint={
               mockAttemptId
-                ? `Passage ${passage} of ${TEST1_READING_PASSAGE_COUNT}`
+                ? `Passage ${passage} of ${readingPassageCount}`
                 : undefined
             }
             submitLabel={mockAttemptId ? toolbarSubmitLabel : undefined}

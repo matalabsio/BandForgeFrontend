@@ -1,10 +1,20 @@
+export type WritingChartSeries = {
+  mode?: string;
+  label?: string;
+  values: number[];
+};
+
 export type WritingChartSpec = {
   type?: string;
   title?: string;
   source?: string;
   y_max?: number;
-  cities: string[];
-  series: Array<{ mode: string; values: number[] }>;
+  y_unit?: string;
+  /** Grouped bar chart: category labels on x-axis */
+  cities?: string[];
+  /** Line graph: year labels on x-axis */
+  labels?: string[];
+  series: WritingChartSeries[];
 };
 
 export type WritingTaskOptions = {

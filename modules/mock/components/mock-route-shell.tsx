@@ -17,7 +17,11 @@ function MockRouteInner({ children }: { children: React.ReactNode }) {
   useExamSessionGuard(isExam || mockAttemptActive);
 
   return (
-    <IeltsExamShell layout={isExam ? "exam" : "hub"} moduleLabel="Mock Test">
+    <IeltsExamShell
+      layout={isExam ? "exam" : "hub"}
+      moduleLabel="Mock Test"
+      hubTitle="Mock tests"
+    >
       {children}
     </IeltsExamShell>
   );

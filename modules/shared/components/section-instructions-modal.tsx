@@ -14,7 +14,7 @@ type Props = {
 };
 
 export function SectionInstructionsModal({
-  badge = "IELTS Academic · Test 1",
+  badge = "IELTS Academic",
   title,
   description,
   instructions,
