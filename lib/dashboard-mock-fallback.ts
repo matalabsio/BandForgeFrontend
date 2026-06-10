@@ -22,10 +22,10 @@ export const M02_MOCK_FALLBACK: MockTestSummary = {
   id: M02_MOCK_TEST_ID,
   title: "IELTS Academic Mock 2",
   description:
-    "Listening (4 parts, 40 questions, 30 min) → Reading (2 passages, 30 min) → Writing (2 tasks, 60 min).",
+    "Listening (4 parts, 40 questions, 30 min) → Reading (3 passages, 30 min) → Writing (2 tasks, 60 min).",
   listening_question_count: 40,
   listening_duration_minutes: 30,
-  reading_question_count: 26,
+  reading_question_count: 40,
   reading_duration_minutes: 30,
 };
 

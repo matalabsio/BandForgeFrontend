@@ -932,7 +932,11 @@ export function ReadingPage({
                   current={activeQuestionSection}
                   onSelect={handleStepperSelect}
                   labels={{
-                    tfng: `${sectionQuestionRanges.tfng} · TFNG`,
+                    tfng: `${sectionQuestionRanges.tfng} · ${
+                      mockSlug === "m02" && passage === 3
+                        ? "Yes / No / Not Given"
+                        : "TFNG"
+                    }`,
                     matching_headings: `${sectionQuestionRanges.matching_headings} · Headings`,
                     sentence_completion: `${sectionQuestionRanges.sentence_completion} · Completion`,
                   }}

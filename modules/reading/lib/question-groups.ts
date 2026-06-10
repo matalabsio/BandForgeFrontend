@@ -82,7 +82,7 @@ const M02_PASSAGE_GROUP_META: Record<
     matching_headings: {
       order: 2,
       instruction:
-        "The passage has five paragraphs, A–E. Choose the correct heading for Paragraphs B–E from the list of headings below. Write the correct number, i–vii.",
+        "The passage has six paragraphs, A–F. Choose the correct heading for paragraphs C–F from the list of headings below. Write the correct number, i–vii.",
     },
     sentence_completion: {
       order: 3,
@@ -99,7 +99,7 @@ const M02_PASSAGE_GROUP_META: Record<
     matching_headings: {
       order: 2,
       instruction:
-        "The passage has five paragraphs, A–E. Choose the correct heading for Paragraphs B–E from the list of headings below. Write the correct number, i–vii.",
+        "The passage has six paragraphs, A–F. Choose the correct heading for Paragraphs C–F from the list of headings below. Write the correct number, i–vii.",
     },
     sentence_completion: {
       order: 3,
@@ -132,8 +132,8 @@ export function readingMatchingHeadingsIntro(
   mockSlug?: string,
 ): string {
   if (mockSlug === "m02") {
-    if (passage === 3) return "Part 2 — Matching headings (Paragraphs B–E)";
-    if (passage === 2) return "Part 2 — Matching headings (Paragraphs B–E)";
+    if (passage === 2) return "Part 2 — Matching headings (Paragraphs C–F)";
+    if (passage === 3) return "Part 2 — Matching headings (Paragraphs C–F)";
     return "Part 2 — Matching headings (Paragraphs C–F)";
   }
   return passage === 2

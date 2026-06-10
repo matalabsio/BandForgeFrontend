@@ -3,7 +3,15 @@
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { cn } from "@/lib/utils";
 
-const TFNG = ["TRUE", "FALSE", "NOT GIVEN"] as const;
+const TFNG_DEFAULT = ["TRUE", "FALSE", "NOT GIVEN"] as const;
+
+function choiceLabels(q: ReadingQuestion): readonly string[] {
+  const opts = q.options;
+  if (opts && opts.length > 0) {
+    return opts.map((o) => o.label || o.text);
+  }
+  return TFNG_DEFAULT;
+}
 
 type Props = {
   q: ReadingQuestion;
@@ -12,13 +20,13 @@ type Props = {
 };
 
 export function ReadingQuestionInput({ q, value, onChange }: Props) {
-  const opts = q.options;
   const type = q.question_type.toLowerCase();
+  const choices = choiceLabels(q);
 
-  if (type === "tfng" || (opts && opts.length > 0)) {
+  if (type === "tfng" || choices.length > 0) {
     return (
       <div className="mt-3 flex flex-wrap gap-2">
-        {TFNG.map((t) => (
+        {choices.map((t) => (
           <button
             key={t}
             type="button"
