@@ -131,9 +131,9 @@ export function MockTestHub({
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--exam-accent)]">
                 {displayLabel}
               </p>
-              <h2 className="mt-1 font-display text-lg font-bold leading-snug text-[var(--exam-ink)] sm:text-xl">
+              <h1 className="mt-1 font-display text-lg font-bold leading-snug text-[var(--exam-ink)] sm:text-xl">
                 {examTitle}
-              </h2>
+              </h1>
               <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--exam-ink-muted)]">
                 <span className="inline-flex items-center gap-1">
                   <ClockIcon className="size-3.5 text-[var(--exam-accent)]" />

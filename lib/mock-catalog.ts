@@ -80,6 +80,10 @@ export function getMockPanelSlotBySlug(slug: MockSlug): MockTestPanelSlot | unde
   return MOCK_TEST_PANEL.find((slot) => slot.slug === slug);
 }
 
+export function mockTestsIndexPath(): string {
+  return "/test";
+}
+
 export function mockTestNumberPath(number: number): string {
   return `/test/${number}`;
 }
