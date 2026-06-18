@@ -12,6 +12,7 @@ import {
   type MockSlug,
 } from "@/lib/mock-catalog";
 import { clearMockExamLocalData } from "@/lib/mock-client-session";
+import { persistMockAttemptId } from "@/lib/exam-session-storage";
 import { useMockSession } from "@/modules/mock/hooks/use-mock-session";
 import { ModuleProgressChips } from "@/modules/mock/components/module-progress-chips";
 
@@ -40,12 +41,15 @@ export function FullMockCard({
   });
 
   const goToTestPage = (attemptId?: string | null) => {
-    push(testHubPath(mockSlug, attemptId ?? progress?.mock_attempt_id));
+    const id = attemptId ?? progress?.mock_attempt_id;
+    if (id) persistMockAttemptId(meta.id, id);
+    push(testHubPath(mockSlug));
   };
 
   const handlePrimary = async () => {
     if (progress?.status === "completed" && progress.mock_attempt_id) {
-      push(mockResultsPath(mockSlug, progress.mock_attempt_id));
+      persistMockAttemptId(meta.id, progress.mock_attempt_id);
+      push(mockResultsPath(mockSlug));
       return;
     }
 
@@ -92,20 +96,20 @@ export function FullMockCard({
 
   return (
     <DashboardCard className="relative overflow-hidden">
-      <div className="absolute left-0 top-0 h-1 w-full bg-[#06B6D4]" />
+      <div className="absolute left-0 top-0 h-1 w-full bg-cyan" />
       <div className="p-5 sm:p-6">
-        <span className="inline-flex rounded-md bg-[#0F172A] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+        <span className="inline-flex rounded-md bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
           {displayLabel}
         </span>
-        <h2 className="mt-3 font-display text-xl font-bold leading-snug text-[#0F172A] sm:text-2xl">
+        <h2 className="mt-3 font-display text-xl font-bold leading-snug text-ink sm:text-2xl">
           {examTitle}
         </h2>
         {description ? (
-          <p className="mt-2 text-[13px] leading-relaxed text-[#0F172A]/55">
+          <p className="mt-2 text-[13px] leading-relaxed text-ink/55">
             {description}
           </p>
         ) : (
-          <p className="mt-2 text-[13px] leading-relaxed text-[#0F172A]/55">
+          <p className="mt-2 text-[13px] leading-relaxed text-ink/55">
             {meta.flowHint}
           </p>
         )}
@@ -115,11 +119,11 @@ export function FullMockCard({
             <ModuleProgressChips modules={progress?.modules} showProgressBar={false} />
           </div>
         ) : (
-          <p className="mt-4 text-[12px] text-[#0F172A]/45">Loading progress…</p>
+          <p className="mt-4 text-[12px] text-ink/45">Loading progress…</p>
         )}
 
-        <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#0F172A]/50">
-          <ClockIcon className="size-3.5 text-[#06B6D4]" />
+        <p className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-ink/50">
+          <ClockIcon className="size-3.5 text-cyan" />
           ~{meta.totalMinutes} min
         </p>
 
@@ -128,7 +132,7 @@ export function FullMockCard({
             type="button"
             disabled={busy}
             onClick={() => void handlePrimary()}
-            className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl bg-[#06B6D4] px-5 py-2.5 text-[14px] font-bold text-white hover:bg-[#0891B2] disabled:opacity-60"
+            className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl bg-cyan px-5 py-2.5 text-[14px] font-bold text-white hover:bg-cyan disabled:opacity-60"
           >
             {busy ? "Opening…" : primaryLabel}
             <ArrowRightIcon className="size-4" />
@@ -138,14 +142,14 @@ export function FullMockCard({
               type="button"
               disabled={busy}
               onClick={() => void handleNewAttempt()}
-              className="inline-flex min-h-[44px] cursor-pointer items-center rounded-xl border border-[#0F172A]/10 px-4 py-2.5 text-[13px] font-semibold text-[#0891B2] hover:border-[#06B6D4]/30 hover:bg-[#06B6D4]/5 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-[44px] cursor-pointer items-center rounded-xl border border-ink/10 px-4 py-2.5 text-[13px] font-semibold text-teal hover:border-cyan/30 hover:bg-cyan/5 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {busy ? "Starting…" : "New attempt"}
             </button>
           ) : null}
           <Link
             href={testHubPath(mockSlug)}
-            className="inline-flex min-h-[44px] items-center rounded-xl border border-[#0F172A]/10 px-4 py-2.5 text-[13px] font-semibold text-[#0F172A]/60 hover:border-[#06B6D4]/30 hover:text-[#0891B2]"
+            className="inline-flex min-h-[44px] items-center rounded-xl border border-ink/10 px-4 py-2.5 text-[13px] font-semibold text-ink/60 hover:border-cyan/30 hover:text-teal"
           >
             Open test page
           </Link>

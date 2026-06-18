@@ -81,3 +81,36 @@ export type WritingReview = {
   submitted_at: string | null;
   saved_for_review: boolean;
 };
+
+export type WritingCriterionKey =
+  | "task_achievement"
+  | "coherence_cohesion"
+  | "lexical_resource"
+  | "grammar";
+
+export type WritingCriterionScore = {
+  key: WritingCriterionKey;
+  label: string;
+  band: number;
+};
+
+export type WritingEssayHighlight = {
+  text: string;
+  type: "strong" | "improve";
+};
+
+export type WritingVocabTag = {
+  word: string;
+  alternatives?: string[];
+};
+
+export type WritingFeedback = {
+  overall_band: number;
+  criteria: WritingCriterionScore[];
+  strengths: string[];
+  improvements: string[];
+  strong_words: string[];
+  weak_words: WritingVocabTag[];
+  highlights: WritingEssayHighlight[];
+  evaluated_label: string;
+};

@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import { DM_Mono, DM_Sans, Inter } from "next/font/google";
+import { Bricolage_Grotesque, DM_Mono, DM_Sans } from "next/font/google";
 import { AppRoot } from "@/components/bandforge/app-root";
 import { GOOGLE_FONTS_STYLESHEET_HREF } from "@/lib/google-fonts";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["700", "800"],
   display: "swap",
 });
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600"],
   display: "swap",
 });
 
@@ -63,7 +63,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${inter.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+      className={`${bricolage.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

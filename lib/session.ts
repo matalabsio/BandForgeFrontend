@@ -80,6 +80,8 @@ export type AuthUser = {
   avatar_url?: string | null;
   avatar_display_url?: string | null;
   target_band?: number | null;
+  role?: string;
+  is_active?: boolean;
 };
 
 /** Used when NEXT_PUBLIC_AUTH_ENABLED is false (local UI / mock dev). */

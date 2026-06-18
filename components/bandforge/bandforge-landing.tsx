@@ -1,11 +1,12 @@
 import dynamic from "next/dynamic";
 import { BandForgeHeaderMarketing } from "@/components/bandforge/bf-header-marketing";
 import { BandForgeHero } from "@/components/bandforge/bf-hero";
-import { BandForgeFreeTrialStrip } from "@/components/bandforge/bf-free-trial-strip";
-import { BandForgeProofTiles } from "@/components/bandforge/bf-proof-tiles";
+import { BandForgeStatsBar } from "@/components/bandforge/bf-stats-bar";
+import { BandForgeHow } from "@/components/bandforge/bf-how";
+import { BandForgeModules } from "@/components/bandforge/bf-modules";
+import { BandForgePricing } from "@/components/bandforge/bf-pricing";
 import { BandForgeFeatures } from "@/components/bandforge/bf-features";
 import { BandForgeAiShowcase } from "@/components/bandforge/bf-ai-showcase";
-import { BandForgeHow } from "@/components/bandforge/bf-how";
 import { BandForgeSiteFooter } from "@/components/bandforge/bf-site-footer";
 import { BfSectionSkeleton } from "@/components/bandforge/bf-section-skeleton";
 
@@ -42,23 +43,22 @@ const BandForgeFinalCta = dynamic(
 /** Marketing home — BandForge IELTS landing at `/`. */
 export function BandForgeLanding() {
   return (
-    <div className="min-h-dvh text-ink">
+    <div className="min-h-dvh bg-white text-black">
       <BandForgeHeaderMarketing />
-      <div className="bf-page-shell">
       <main>
         <BandForgeHero />
-        <BandForgeFreeTrialStrip />
-        <BandForgeProofTiles />
+        <BandForgeStatsBar />
+        <BandForgeHow />
+        <BandForgeModules />
         <BandForgeFeatures />
         <BandForgeAiShowcase />
-        <BandForgeHow />
         <BandForgeComparison />
         <BandForgeTestimonials />
         <BandForgeTrust />
+        <BandForgePricing />
         <BandForgeFinalCta />
       </main>
       <BandForgeSiteFooter />
-      </div>
     </div>
   );
 }

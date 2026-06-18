@@ -37,7 +37,7 @@ function FeaturePreview({ type }: { type: (typeof features)[number]["preview"] }
       <div className="mt-5 rounded-2xl border border-border bg-surface/70 p-3">
         <div className="flex justify-between text-[0.625rem] font-medium text-ink/50">
           <span>Q 18 / 40</span>
-          <span className="font-mono text-teal">42:10</span>
+          <span className="font-mono text-cyan">42:10</span>
         </div>
         <div className="mt-2 h-1.5 rounded-full bg-border">
           <div className="h-full w-[45%] rounded-full bg-navy" />
@@ -71,7 +71,7 @@ function FeaturePreview({ type }: { type: (typeof features)[number]["preview"] }
         {Array.from({ length: 24 }).map((_, i) => (
           <div
             key={i}
-            className="w-0.5 rounded-full bg-teal/80"
+            className="w-0.5 rounded-full bg-cyan/80"
             style={{ height: `${20 + ((i * 17) % 55)}%` }}
           />
         ))}
@@ -81,15 +81,15 @@ function FeaturePreview({ type }: { type: (typeof features)[number]["preview"] }
   if (type === "radar") {
     return (
       <div className="mt-4 flex h-20 items-center justify-center rounded-lg border border-border bg-surface">
-        <svg viewBox="0 0 100 100" className="size-16 text-teal/30" aria-hidden>
+        <svg viewBox="0 0 100 100" className="size-16 text-cyan-soft" aria-hidden>
           <polygon
             fill="currentColor"
             points="50,8 88,38 72,88 28,88 12,38"
-            className="text-teal/15"
+            className="text-cyan-soft"
           />
           <polygon
-            fill="rgb(0 151 167 / 0.35)"
-            stroke="rgb(0 151 167)"
+            fill="rgb(0 188 212 / 0.35)"
+            stroke="rgb(0 188 212)"
             strokeWidth="1"
             points="50,22 74,42 64,74 36,74 26,42"
           />
@@ -103,7 +103,7 @@ function FeaturePreview({ type }: { type: (typeof features)[number]["preview"] }
         {[40, 65, 50, 78, 55].map((h, i) => (
           <div
             key={i}
-            className="w-3 rounded-sm bg-gradient-to-t from-navy to-teal"
+            className="w-3 rounded-sm bg-gradient-to-t from-teal to-cyan"
             style={{ height: `${h}%` }}
           />
         ))}
@@ -117,10 +117,10 @@ function FeaturePreview({ type }: { type: (typeof features)[number]["preview"] }
           key={t}
           className="flex items-center gap-2 rounded border border-transparent bg-white px-2 py-1.5 text-[0.625rem] font-medium text-ink/70"
         >
-          <span className="size-1.5 rounded-full bg-teal" />
+          <span className="size-1.5 rounded-full bg-cyan" />
           {t}
           {i === 0 ? (
-            <span className="ml-auto text-meta text-teal">Next</span>
+            <span className="ml-auto text-xs text-teal">Next</span>
           ) : null}
         </div>
       ))}
@@ -130,21 +130,16 @@ function FeaturePreview({ type }: { type: (typeof features)[number]["preview"] }
 
 export function BandForgeFeatures() {
   return (
-    <section
-      id="features"
-      className="bf-section bg-white/30"
-    >
+    <section id="features" className="bf-section bg-cyan-soft/30">
       <div className="bf-container">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="bf-eyebrow">
-            Core product
-          </p>
+          <p className="bf-eyebrow">Content library</p>
           <h2 className="bf-section-title mt-3">
-            Everything you need to close the gap to your target band.
+            Practice modules for every IELTS skill
           </h2>
           <p className="bf-copy mx-auto mt-5 max-w-2xl">
-            One platform for full mocks, granular AI feedback, and practice that
-            respects how you actually study, especially on your phone.
+            Listening, Reading, Writing, and Speaking — structured lessons with
+            progress tracking on desktop and mobile.
           </p>
         </div>
 
@@ -152,10 +147,10 @@ export function BandForgeFeatures() {
           {features.map((f) => (
             <li
               key={f.title}
-              className="bf-min-card bf-card-hover flex flex-col p-6 transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:transform-none"
+              className="bf-min-card bf-card-hover flex flex-col border-t-4 border-t-teal p-6 transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:transform-none"
             >
-              <h3 className="text-h4 text-navy">{f.title}</h3>
-              <p className="mt-2 text-body leading-relaxed text-ink/65">
+              <h3 className="text-lg font-bold text-black">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
                 {f.benefit}
               </p>
               <FeaturePreview type={f.preview} />

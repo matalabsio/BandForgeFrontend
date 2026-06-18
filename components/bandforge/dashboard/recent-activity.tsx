@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { DashboardRecentAttempt } from "@/components/bandforge/dashboard/types";
 import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
 import { formatDateShort } from "@/lib/date-format";
+import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import { testNumberForMockId } from "@/lib/mock-catalog";
 import { listeningModuleResultsPath } from "@/lib/listening-test";
 import { readingModuleResultsPath } from "@/lib/reading-test";
 import {
@@ -41,10 +43,17 @@ function reportHref(attempt: DashboardRecentAttempt): string | null {
   return null;
 }
 
+function primeResultSession(attempt: DashboardRecentAttempt): void {
+  const testNumber = testNumberForMockId(attempt.mock_test.id);
+  if (attempt.module === "listening" || attempt.module === "reading") {
+    persistModuleResultAttempt(testNumber, attempt.module, attempt.id);
+  }
+}
+
 function bandStyles(band: number | null): string {
-  if (band === null) return "bg-[#0F172A]/5 text-[#0F172A]/50";
+  if (band === null) return "bg-ink/5 text-ink/50";
   if (band >= 7.5) return "bg-emerald-500/12 text-emerald-700";
-  if (band >= 6) return "bg-[#06B6D4]/12 text-[#0891B2]";
+  if (band >= 6) return "bg-cyan/12 text-teal";
   if (band >= 5) return "bg-amber-500/12 text-amber-700";
   return "bg-red-500/10 text-red-600";
 }
@@ -82,14 +91,14 @@ export function RecentActivity({
       className="overflow-hidden rounded-[24px] border border-white/70 bg-white/70 shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl"
       style={{ animationDelay: "220ms" }}
     >
-      <header className="border-b border-[#0F172A]/6 px-5 py-4">
+      <header className="border-b border-ink/6 px-5 py-4">
         <div className="flex items-baseline justify-between gap-2">
           <div>
-            <h2 className="text-[15px] font-bold text-[#0F172A]">Timeline</h2>
-            <p className="text-[11px] text-[#0F172A]/45">Recent attempts & bands</p>
+            <h2 className="text-[15px] font-bold text-ink">Timeline</h2>
+            <p className="text-[11px] text-ink/45">Recent attempts & bands</p>
           </div>
           {sorted.length > 0 ? (
-            <p className="text-[11px] font-semibold tabular-nums text-[#0F172A]/40">
+            <p className="text-[11px] font-semibold tabular-nums text-ink/40">
               {sorted.length} total
             </p>
           ) : null}
@@ -102,7 +111,7 @@ export function RecentActivity({
         <>
           <ol className="relative px-5 py-4">
             <span
-              className="absolute bottom-6 left-[2.35rem] top-6 w-px bg-[#0F172A]/8"
+              className="absolute bottom-6 left-[2.35rem] top-6 w-px bg-ink/8"
               aria-hidden
             />
             {visible.map((a, i) => (
@@ -115,16 +124,16 @@ export function RecentActivity({
           </ol>
 
           {hasMore ? (
-            <div className="border-t border-[#0F172A]/6 px-5 py-3">
+            <div className="border-t border-ink/6 px-5 py-3">
               <button
                 type="button"
                 onClick={() =>
                   setVisibleCount((n) => Math.min(n + PAGE_SIZE, sorted.length))
                 }
-                className="w-full cursor-pointer rounded-xl border border-[#0F172A]/10 bg-[#F8FAFC] py-2.5 text-[13px] font-bold text-[#0891B2] transition-colors hover:border-[#06B6D4]/30 hover:bg-[#06B6D4]/5"
+                className="w-full cursor-pointer rounded-xl border border-ink/10 bg-surface py-2.5 text-[13px] font-bold text-teal transition-colors hover:border-cyan/30 hover:bg-cyan/5"
               >
                 View more
-                <span className="font-medium text-[#0F172A]/45">
+                <span className="font-medium text-ink/45">
                   {" "}
                   · show next {Math.min(PAGE_SIZE, remaining)} of {remaining}{" "}
                   remaining
@@ -153,14 +162,14 @@ function TimelineItem({
 
   const content = (
     <div className={`relative flex gap-4 pb-5 ${isLast ? "pb-0" : ""}`}>
-      <span className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-2xl border-2 border-white bg-[#06B6D4]/10 text-[#06B6D4] shadow-sm">
+      <span className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-2xl border-2 border-white bg-cyan/10 text-cyan shadow-sm">
         <Icon className="size-4" />
       </span>
       <div className="min-w-0 flex-1 pt-0.5">
-        <p className="truncate text-[13px] font-semibold text-[#0F172A]">
+        <p className="truncate text-[13px] font-semibold text-ink">
           {label} · {attempt.mock_test.title}
         </p>
-        <p className="mt-0.5 text-[11px] text-[#0F172A]/45">
+        <p className="mt-0.5 text-[11px] text-ink/45">
           {formatDateShort(attempt.completed_at ?? attempt.started_at)}
           {attempt.raw_score !== null && attempt.total_questions !== null
             ? ` · ${attempt.raw_score}/${attempt.total_questions}`
@@ -180,7 +189,8 @@ function TimelineItem({
       <li>
         <Link
           href={href}
-          className="block cursor-pointer rounded-xl transition-colors hover:bg-[#06B6D4]/5"
+          onClick={() => primeResultSession(attempt)}
+          className="block cursor-pointer rounded-xl transition-colors hover:bg-cyan/5"
         >
           {content}
         </Link>
@@ -194,19 +204,19 @@ function TimelineItem({
 function EmptyTimeline() {
   return (
     <div className="px-6 py-12 text-center">
-      <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-3xl bg-[#06B6D4]/10 text-[#06B6D4]">
+      <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-3xl bg-cyan/10 text-cyan">
         <HeadphonesIcon className="size-8" />
       </div>
-      <p className="font-display text-lg font-bold text-[#0F172A]">
+      <p className="font-display text-lg font-bold text-ink">
         Your timeline starts here
       </p>
-      <p className="mx-auto mt-2 max-w-xs text-[13px] text-[#0F172A]/55">
+      <p className="mx-auto mt-2 max-w-xs text-[13px] text-ink/55">
         Complete a listening mock: your band, score breakdown, and activity
         will appear on this timeline.
       </p>
       <Link
         href="/dashboard"
-        className="mt-5 inline-flex rounded-full bg-[#06B6D4] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:brightness-105"
+        className="mt-5 inline-flex rounded-full bg-cyan px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:brightness-105"
       >
         Pick a mock below
       </Link>

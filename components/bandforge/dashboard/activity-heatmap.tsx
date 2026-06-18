@@ -1,12 +1,13 @@
+import { BfEmptyState } from "@/components/bandforge/ui";
 import type { ActivityDay } from "@/components/bandforge/dashboard/types";
 import { cn } from "@/lib/utils";
 
 const LEVELS = [
-  "bg-[#0F172A]/[0.06]",
-  "bg-[#06B6D4]/30",
-  "bg-[#06B6D4]/55",
-  "bg-[#06B6D4]/80",
-  "bg-[#06B6D4]",
+  "bg-ink/[0.06]",
+  "bg-cyan/30",
+  "bg-cyan/55",
+  "bg-cyan/80",
+  "bg-cyan",
 ] as const;
 
 const ROW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -28,9 +29,14 @@ function parseDay(dateStr: string): Date {
 export function ActivityHeatmap({ days }: { days: ActivityDay[] }) {
   if (days.length === 0) {
     return (
-      <p className="text-[12px] text-[#0F172A]/45">
-        Complete a mock to start your activity streak.
-      </p>
+      <BfEmptyState
+        variant="no-tests"
+        title="No activity yet"
+        description="Complete a mock to start your activity streak."
+        actionLabel="Take a mock"
+        actionHref="/test"
+        className="border-0 bg-transparent p-4 shadow-none"
+      />
     );
   }
 
@@ -84,14 +90,14 @@ export function ActivityHeatmap({ days }: { days: ActivityDay[] }) {
           {weeks.map((_, wi) => (
             <span
               key={`m-${wi}`}
-              className="w-[12px] shrink-0 text-[9px] font-medium leading-none text-[#0F172A]/35"
+              className="w-[12px] shrink-0 text-[9px] font-medium leading-none text-ink/35"
             >
               {monthLabels[wi] ?? ""}
             </span>
           ))}
         </div>
         <div className="flex gap-2">
-          <div className="flex w-7 flex-col justify-between py-[2px] text-[9px] font-medium leading-none text-[#0F172A]/35">
+          <div className="flex w-7 flex-col justify-between py-[2px] text-[9px] font-medium leading-none text-ink/35">
             {ROW_LABELS.map((label) => (
               <span key={label}>{label}</span>
             ))}
@@ -124,7 +130,7 @@ export function ActivityHeatmap({ days }: { days: ActivityDay[] }) {
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-end gap-1.5 pt-1 text-[10px] text-[#0F172A]/40">
+        <div className="flex items-center justify-end gap-1.5 pt-1 text-[10px] text-ink/40">
           <span>Less</span>
           {LEVELS.map((c, i) => (
             <div key={i} className={cn("h-[10px] w-[10px] rounded-[2px]", c)} />

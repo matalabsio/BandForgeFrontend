@@ -184,17 +184,17 @@ export function WritingTask1Prompt({
       />
 
       {beforeChart ? (
-        <p className="text-question leading-relaxed text-ink">{beforeChart}</p>
+        <p className="text-[15px] leading-relaxed text-[#334155]">{beforeChart}</p>
       ) : null}
 
       <div data-test-question>{chartBlock}</div>
 
       {afterChart ? (
-        <p className="text-question leading-relaxed text-ink">{afterChart}</p>
+        <p className="text-[15px] leading-relaxed text-[#334155]">{afterChart}</p>
       ) : null}
 
       {!beforeChart && !afterChart ? (
-        <p className="text-question leading-relaxed text-ink" data-test-question>
+        <p className="text-[15px] leading-relaxed text-[#334155]" data-test-question>
           {task.prompt}
         </p>
       ) : null}

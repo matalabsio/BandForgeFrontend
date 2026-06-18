@@ -9,7 +9,7 @@ export function DashboardCard({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-[#0F172A]/8 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]",
+        "rounded-2xl border border-ink/8 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]",
         className,
       )}
       {...props}
@@ -29,11 +29,11 @@ export function DashboardCardHeader({
   action?: ReactNode;
 }) {
   return (
-    <header className="flex items-start justify-between gap-3 border-b border-[#0F172A]/6 px-5 py-4">
+    <header className="flex items-start justify-between gap-3 border-b border-ink/6 px-5 py-4">
       <div>
-        <h2 className="text-[15px] font-bold text-[#0F172A]">{title}</h2>
+        <h2 className="text-[15px] font-bold text-ink">{title}</h2>
         {subtitle ? (
-          <p className="mt-0.5 text-[12px] text-[#0F172A]/45">{subtitle}</p>
+          <p className="mt-0.5 text-[12px] text-ink/45">{subtitle}</p>
         ) : null}
       </div>
       {action}

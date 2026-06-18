@@ -3,7 +3,9 @@ import {
   M01_MOCK_TEST_ID,
   isFullMock,
   mockModulePath,
+  shortModuleResultsPath,
   test1HubPath,
+  testNumberForMockId,
 } from "@/lib/mock-catalog";
 
 export { M01_MOCK_TEST_ID };
@@ -23,35 +25,34 @@ export function writingTaskPath(
   if (opts?.mockSlug || opts?.mockAttemptId) {
     return mockModulePath(opts?.mockSlug ?? DEFAULT_MOCK_SLUG, "writing", {
       part,
-      mockAttemptId: opts.mockAttemptId,
-      auto: opts.auto,
+      auto: opts?.auto,
     });
   }
   const params = new URLSearchParams();
-  if (opts?.mockAttemptId) params.set("mock_attempt", opts.mockAttemptId);
   if (opts?.auto) params.set("auto", "1");
   const q = params.toString();
   const base = `/test/writing/task/${part}`;
   return q ? `${base}?${q}` : base;
 }
 
-export function writingResultsPath(attemptId: string): string {
-  return `/test/writing/results/${encodeURIComponent(attemptId)}`;
+/** Short canonical results URL — persist attempt in sessionStorage before navigating. */
+export function writingResultsPath(testNumber = 1): string {
+  return shortModuleResultsPath(testNumber, "writing");
 }
 
 export function writingModuleResultsPath(
   testId: string,
-  attemptId: string,
+  _attemptId: string,
   mockSlug = DEFAULT_MOCK_SLUG,
 ): string {
   if (isWritingTest(testId)) {
-    return writingResultsPath(attemptId);
+    return writingResultsPath(testNumberForMockId(testId));
   }
-  return `/mock/${encodeURIComponent(mockSlug)}/writing/results/${encodeURIComponent(attemptId)}`;
+  return `/mock/${encodeURIComponent(mockSlug)}/writing/results`;
 }
 
-export function writingMockHubPath(mockAttemptId?: string): string {
-  return test1HubPath(mockAttemptId);
+export function writingMockHubPath(_mockAttemptId?: string): string {
+  return test1HubPath();
 }
 
 /** IELTS minimum word counts per task (mirrors backend WRITING_MIN_WORDS). */

@@ -9,8 +9,10 @@ import {
   ArrowRightIcon,
   ChartIcon,
 } from "@/components/bandforge/dashboard/icons";
+import { BfEmptyState } from "@/components/bandforge/ui";
 import { formatBand } from "@/components/bandforge/dashboard/utils";
 import { formatDateShort } from "@/lib/date-format";
+import { FORGE_TEAL, INK, SIGNAL_CYAN } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 const CHART_W = 320;
@@ -90,7 +92,7 @@ function ModulePills({
   return (
     <div
       className={cn(
-        "flex w-fit max-w-full rounded-xl border border-[#0F172A]/8 bg-[#F8FAFC] p-0.5",
+        "flex w-fit max-w-full rounded-xl border border-ink/8 bg-surface p-0.5",
         className,
       )}
       role="tablist"
@@ -110,8 +112,8 @@ function ModulePills({
             className={cn(
               "cursor-pointer rounded-[10px] px-2.5 py-1 text-[11px] font-semibold transition-colors duration-200",
               active
-                ? "bg-white text-[#0F172A] shadow-[0_1px_4px_rgba(15,23,42,0.08)]"
-                : "text-[#0F172A]/50 hover:text-[#0F172A]/75",
+                ? "bg-white text-ink shadow-[0_1px_4px_rgba(15,23,42,0.08)]"
+                : "text-ink/50 hover:text-ink/75",
             )}
           >
             {label}
@@ -136,17 +138,17 @@ function StatPill({
       className={cn(
         "min-w-0 flex-1 rounded-xl border px-3 py-2.5",
         accent
-          ? "border-[#06B6D4]/25 bg-gradient-to-br from-[#06B6D4]/10 to-white"
-          : "border-[#0F172A]/6 bg-[#F8FAFC]",
+          ? "border-cyan/25 bg-gradient-to-br from-cyan/10 to-white"
+          : "border-ink/6 bg-surface",
       )}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#0F172A]/40">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/40">
         {label}
       </p>
       <p
         className={cn(
           "mt-0.5 font-display text-xl font-bold tabular-nums tracking-tight",
-          accent ? "text-[#0891B2]" : "text-[#0F172A]",
+          accent ? "text-teal" : "text-ink",
         )}
       >
         {value}
@@ -210,17 +212,17 @@ export function PerformanceChart({
 
   return (
     <DashboardCard className="flex h-full flex-col overflow-hidden">
-      <header className="border-b border-[#0F172A]/6 px-5 py-4">
+      <header className="border-b border-ink/6 px-5 py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#06B6D4] to-[#0891B2] text-white shadow-[0_4px_14px_rgba(6,182,212,0.35)]">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan to-teal text-white shadow-[0_4px_14px_rgba(6,182,212,0.35)]">
               <ChartIcon className="size-5" strokeWidth={2} />
             </span>
             <div className="min-w-0">
-              <h2 className="text-[15px] font-bold tracking-tight text-[#0F172A]">
+              <h2 className="text-[15px] font-bold tracking-tight text-ink">
                 Recent performance
               </h2>
-              <p className="mt-0.5 text-[12px] text-[#0F172A]/45">
+              <p className="mt-0.5 text-[12px] text-ink/45">
                 Band trend from your last mocks
               </p>
             </div>
@@ -255,38 +257,27 @@ export function PerformanceChart({
 
       <div className="relative flex-1 px-4 pb-2 pt-4 sm:px-5">
         {points.length === 0 ? (
-          <div className="flex min-h-[11rem] flex-col items-center justify-center rounded-xl border border-dashed border-[#0F172A]/12 bg-[#F8FAFC]/80 px-6 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-[#0F172A]/5 text-[#0F172A]/30">
-              <ChartIcon className="size-6" />
-            </span>
-            <p className="mt-3 text-[14px] font-semibold text-[#0F172A]">
-              No scores yet
-            </p>
-            <p className="mt-1 max-w-[220px] text-[12px] leading-relaxed text-[#0F172A]/50">
-              Finish a listening mock to see your band trend and progress over
-              time.
-            </p>
-            <Link
-              href="/test/listening"
-              className="mt-4 inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[#0F172A] px-4 py-2 text-[12px] font-semibold text-white transition-colors duration-200 hover:bg-[#0F172A]/90"
-            >
-              Start a mock
-              <ArrowRightIcon className="size-3.5" />
-            </Link>
-          </div>
+          <BfEmptyState
+            variant="no-tests"
+            title="No scores yet"
+            description="Finish a listening mock to see your band trend and progress over time."
+            actionLabel="Start a mock"
+            actionHref="/test/listening"
+            className="min-h-[11rem] border-dashed"
+          />
         ) : (
           <>
             {activePoint ? (
               <output
-                className="pointer-events-none absolute left-1/2 top-3 z-10 block -translate-x-1/2 rounded-lg border border-[#0F172A]/8 bg-white px-3 py-2 text-center shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
+                className="pointer-events-none absolute left-1/2 top-3 z-10 block -translate-x-1/2 rounded-lg border border-ink/8 bg-white px-3 py-2 text-center shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
               >
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#0F172A]/40">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-ink/40">
                   {activePoint.label}
                 </p>
-                <p className="text-lg font-bold tabular-nums text-[#0891B2]">
+                <p className="text-lg font-bold tabular-nums text-teal">
                   Band {activePoint.band.toFixed(1)}
                 </p>
-                <p className="max-w-[200px] truncate text-[11px] text-[#0F172A]/55">
+                <p className="max-w-[200px] truncate text-[11px] text-ink/55">
                   {activePoint.title}
                 </p>
               </output>
@@ -307,8 +298,8 @@ export function PerformanceChart({
                   x2="0"
                   y2="1"
                 >
-                  <stop offset="0%" stopColor="#06B6D4" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#06B6D4" stopOpacity="0" />
+                  <stop offset="0%" stopColor={SIGNAL_CYAN} stopOpacity="0.45" />
+                  <stop offset="100%" stopColor={SIGNAL_CYAN} stopOpacity="0" />
                 </linearGradient>
               </defs>
 
@@ -325,7 +316,7 @@ export function PerformanceChart({
                       y1={y}
                       x2={CHART_W - PAD_X}
                       y2={y}
-                      stroke="#0F172A"
+                      stroke={INK}
                       strokeOpacity={band === 6 ? 0.1 : 0.05}
                       strokeDasharray={band === 6 ? "4 4" : undefined}
                     />
@@ -335,7 +326,7 @@ export function PerformanceChart({
                       textAnchor="end"
                       fontSize="9"
                       fontWeight={band === 6 ? 600 : 500}
-                      fill="#0F172A"
+                      fill={INK}
                       fillOpacity={band === 6 ? 0.4 : 0.28}
                     >
                       {band % 1 === 0 ? band : band.toFixed(1)}
@@ -352,7 +343,7 @@ export function PerformanceChart({
                 <path
                   d={linePath}
                   fill="none"
-                  stroke="#06B6D4"
+                  stroke={SIGNAL_CYAN}
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -371,7 +362,7 @@ export function PerformanceChart({
                       cx={p.x}
                       cy={p.y}
                       r={active ? 14 : 10}
-                      fill="#06B6D4"
+                      fill={SIGNAL_CYAN}
                       fillOpacity={active ? 0.15 : 0}
                     />
                     <circle
@@ -379,7 +370,7 @@ export function PerformanceChart({
                       cy={p.y}
                       r={active ? 6 : 4.5}
                       fill="#fff"
-                      stroke="#06B6D4"
+                      stroke={SIGNAL_CYAN}
                       strokeWidth={active ? 2.5 : 2}
                     />
                     {i === points.length - 1 && hoverIndex === null ? (
@@ -389,7 +380,7 @@ export function PerformanceChart({
                         textAnchor="middle"
                         fontSize="10"
                         fontWeight="700"
-                        fill="#0891B2"
+                        fill={FORGE_TEAL}
                       >
                         {p.band.toFixed(1)}
                       </text>
@@ -404,9 +395,9 @@ export function PerformanceChart({
                 <span
                   key={`${p.label}-${i}`}
                   className={cn(
-                    "min-w-0 flex-1 truncate text-center text-[9px] font-medium text-[#0F172A]/35",
+                    "min-w-0 flex-1 truncate text-center text-[9px] font-medium text-ink/35",
                     i % 2 === 1 && points.length > 4 && "hidden sm:block",
-                    hoverIndex === i && "text-[#0891B2]",
+                    hoverIndex === i && "text-teal",
                   )}
                 >
                   {p.label}
@@ -417,24 +408,24 @@ export function PerformanceChart({
         )}
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#0F172A]/6 bg-[#F8FAFC]/60 px-5 py-3">
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-ink/6 bg-surface/60 px-5 py-3">
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-[12px]">
           <span>
-            <span className="text-[#0F172A]/45">Avg. band </span>
-            <span className="font-bold tabular-nums text-[#0F172A]">
+            <span className="text-ink/45">Avg. band </span>
+            <span className="font-bold tabular-nums text-ink">
               {formatBand(averageBand)}
             </span>
           </span>
           <span>
-            <span className="text-[#0F172A]/45">Completed </span>
-            <span className="font-bold tabular-nums text-[#0F172A]">
+            <span className="text-ink/45">Completed </span>
+            <span className="font-bold tabular-nums text-ink">
               {completed}
             </span>
           </span>
         </div>
         <Link
           href="/scores"
-          className="group inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-bold text-[#06B6D4] transition-colors duration-200 hover:bg-[#06B6D4]/8 hover:text-[#0891B2]"
+          className="group inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-bold text-cyan transition-colors duration-200 hover:bg-cyan/8 hover:text-teal"
         >
           Full breakdown
           <ArrowRightIcon className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />

@@ -3,7 +3,9 @@ import {
   DEFAULT_MOCK_SLUG,
   isFullMock,
   mockModulePath,
+  shortModuleResultsPath,
   test1HubPath,
+  testNumberForMockId,
 } from "@/lib/mock-catalog";
 
 export function isListeningTest(testId: string): boolean {
@@ -18,17 +20,17 @@ export function listeningTestHubPath(): string {
   return test1HubPath();
 }
 
-export function listeningResultsPath(attemptId: string): string {
-  return `/test/listening/results/${encodeURIComponent(attemptId)}`;
+/** Short canonical results URL — persist attempt in sessionStorage before navigating. */
+export function listeningResultsPath(testNumber = 1): string {
+  return shortModuleResultsPath(testNumber, "listening");
 }
 
 export function listeningModuleResultsPath(
   testId: string,
-  attemptId: string,
+  _attemptId: string,
 ): string {
   if (isListeningTest(testId)) {
-    return listeningResultsPath(attemptId);
+    return listeningResultsPath(testNumberForMockId(testId));
   }
-  return `/mock/${encodeURIComponent(testId)}/listening/results/${encodeURIComponent(attemptId)}`;
+  return `/mock/${encodeURIComponent(testId)}/listening/results`;
 }
-

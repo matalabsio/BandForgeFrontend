@@ -1,5 +1,9 @@
+import type { MockCatalogApiItem } from "@/lib/mock-catalog-api";
+import type { MockMeta } from "@/lib/mock-catalog";
+import { resolveMockMetaFromCatalog } from "@/lib/mock-catalog";
 import type { MockAttemptProgress, MockAttemptSummary } from "@/modules/mock/services/mock-api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
+import { perfLog } from "@/lib/performance";
 import { serverAuthHeaders } from "@/lib/server-auth-headers";
 
 function backendBase(): string {
@@ -14,17 +18,48 @@ async function fetchBackendJson<T>(
   cookieHeader: string,
   fallback: T,
 ): Promise<T> {
+  const started = performance.now();
   try {
     const res = await fetchWithTimeout(`${backendBase()}${path}`, {
       headers: serverAuthHeaders(cookieHeader),
       cache: "no-store",
       timeoutMs: 6_000,
     });
+    perfLog("server-fetch", {
+      path,
+      duration_ms: Math.round(performance.now() - started),
+      ok: res.ok,
+      status: res.status,
+    });
     if (!res.ok) return fallback;
     return (await res.json()) as T;
   } catch {
+    perfLog("server-fetch", {
+      path,
+      duration_ms: Math.round(performance.now() - started),
+      ok: false,
+      status: 0,
+    });
     return fallback;
   }
+}
+
+export async function fetchMockCatalogServer(
+  cookieHeader: string,
+): Promise<MockCatalogApiItem[]> {
+  return fetchBackendJson<MockCatalogApiItem[]>(
+    "/api/mock-attempts/catalog",
+    cookieHeader,
+    [],
+  );
+}
+
+export async function resolveMockMetaServer(
+  cookieHeader: string,
+  slugOrId: string,
+): Promise<MockMeta> {
+  const catalog = await fetchMockCatalogServer(cookieHeader);
+  return resolveMockMetaFromCatalog(catalog, slugOrId);
 }
 
 export async function fetchMockSessionServer(

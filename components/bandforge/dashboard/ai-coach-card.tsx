@@ -1,4 +1,5 @@
 import { SparkleIcon } from "@/components/bandforge/dashboard/icons";
+import { INK, PAPER } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 export function AiCoachCard() {
@@ -6,35 +7,35 @@ export function AiCoachCard() {
     <article
       className={cn(
         "flex h-full flex-col overflow-hidden rounded-2xl",
-        "border border-[#0F172A]/8 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]",
+        "border border-ink/8 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]",
       )}
     >
       <div className="flex flex-1 flex-col p-5 pb-0">
         <header className="flex flex-wrap items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-[#06B6D4]/12 text-[#06B6D4]">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-cyan/12 text-cyan">
             <SparkleIcon className="size-4" />
           </span>
-          <h2 className="font-display text-[17px] font-bold tracking-tight text-[#06B6D4]">
+          <h2 className="font-display text-[17px] font-bold tracking-tight text-cyan">
             AI Coach
           </h2>
-          <span className="ml-auto rounded-full border border-[#06B6D4]/25 bg-[#06B6D4]/8 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#0891B2]">
+          <span className="ml-auto rounded-full border border-cyan/25 bg-cyan/8 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-teal">
             Coming in a few days
           </span>
         </header>
 
         <div className="mt-4 space-y-3">
-          <p className="text-[14px] leading-[1.55] text-[#0F172A]/80">
+          <p className="text-[14px] leading-[1.55] text-ink/80">
             Personalised listening tips, weak-area analysis, and what to
             practise next — powered by AI — are almost ready.
           </p>
-          <p className="text-[12px] leading-snug text-[#0F172A]/45">
+          <p className="text-[12px] leading-snug text-ink/45">
             Keep completing mocks for now. Insights will appear here once AI
             Coach launches.
           </p>
         </div>
 
         <p
-          className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-dashed border-[#0F172A]/15 bg-[#0F172A]/[0.02] px-3 py-2 text-[12px] font-semibold text-[#0F172A]/45"
+          className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-dashed border-ink/15 bg-ink/[0.02] px-3 py-2 text-[12px] font-semibold text-ink/45"
           aria-disabled
         >
           View insights — available soon
@@ -78,13 +79,13 @@ function LighthouseScene({ className }: { className?: string }) {
         <ellipse cx="155" cy="184" rx="80" ry="16" fill="#26A69A" fillOpacity="0.25" />
         <path
           d="M148 200 L148 95 L158 88 L172 88 L182 95 L182 200 Z"
-          fill="#0F172A"
+          fill={INK}
         />
-        <rect x="148" y="118" width="34" height="14" fill="#F8FAFC" />
-        <rect x="148" y="148" width="34" height="12" fill="#F8FAFC" />
-        <rect x="144" y="78" width="42" height="18" rx="2" fill="#F8FAFC" />
+        <rect x="148" y="118" width="34" height="14" fill={PAPER} />
+        <rect x="148" y="148" width="34" height="12" fill={PAPER} />
+        <rect x="144" y="78" width="42" height="18" rx="2" fill={PAPER} />
         <rect x="146" y="80" width="38" height="14" rx="1" fill="#FDE68A" opacity="0.9" />
-        <path d="M165 78 L165 68 L148 78 Z" fill="#0F172A" />
+        <path d="M165 78 L165 68 L148 78 Z" fill={INK} />
         <path d="M165 78 L165 68 L182 78 Z" fill="#1E293B" />
         <circle cx="165" cy="87" r="8" fill="#FEF9C3" opacity="0.95" />
         <circle cx="165" cy="87" r="14" fill="#FEF9C3" opacity="0.35" />

@@ -15,10 +15,14 @@ import {
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
+  type MockMeta,
 } from "@/lib/mock-catalog";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { syncExamRoute } from "@/lib/mock-exam-nav";
 import { readingModuleResultsPath } from "@/lib/reading-test";
+import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import { testNumberForMockId } from "@/lib/mock-catalog";
+import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
@@ -81,6 +85,7 @@ function passageDisplayTitle(text: string, fallback: string): string {
 type Props = {
   testId: string;
   mockSlug?: string;
+  mockMeta?: MockMeta;
   passage: number;
   /** @deprecated Timer and API start are deferred to intro CTA */
   autoStart?: boolean;
@@ -104,14 +109,19 @@ function defaultQuestionSection(
 export function ReadingPage({
   testId,
   mockSlug = "m01",
+  mockMeta: mockMetaProp,
   passage,
   initialBoot = null,
 }: Props) {
   const { replace, push } = useRouter();
   const searchParams = useSearchParams();
-  const mockAttemptId = searchParams.get("mock_attempt");
+  const mockAttemptId = useResolvedMockAttemptId(testId);
   const sectionStart = searchParams.get("section_start") === "1";
-  const readingPassageCount = getMockMeta(mockSlug).readingPassageCount;
+  const mockMeta = useMemo(
+    () => mockMetaProp ?? getMockMeta(mockSlug),
+    [mockMetaProp, mockSlug],
+  );
+  const readingPassageCount = mockMeta.readingPassageCount;
 
   const beginSessionInFlightRef = useRef<Promise<SessionStart | null> | null>(
     null,
@@ -311,6 +321,8 @@ export function ReadingPage({
         replace(dest);
         return;
       }
+      const testNumber = testNumberForMockId(testId);
+      persistModuleResultAttempt(testNumber, "reading", id);
       push(readingModuleResultsPath(testId, id));
     },
     [replace, push, testId, mockSlug, mockAttemptId, passage],
@@ -889,11 +901,11 @@ export function ReadingPage({
         <>
           <ReadingExamToolbar
             passage={passage}
-            testTitle={mockAttemptId ? getMockMeta(mockSlug).displayLabel : testTitle}
+            testTitle={mockAttemptId ? mockMeta.displayLabel : testTitle}
             hubHref={
               mockAttemptId ? mockHubPath(mockSlug, mockAttemptId) : undefined
             }
-            hubLabel={mockAttemptId ? `← ${getMockMeta(mockSlug).displayLabel}` : undefined}
+            hubLabel={mockAttemptId ? `← ${mockMeta.displayLabel}` : undefined}
             sectionHint={
               mockAttemptId
                 ? `Passage ${passage} of ${readingPassageCount}`

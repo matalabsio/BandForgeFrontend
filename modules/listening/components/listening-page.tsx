@@ -17,6 +17,7 @@ import {
   mockHubPath,
   mockPathFromProgress,
   TEST1_LISTENING_PART_COUNT,
+  type MockMeta,
 } from "@/lib/mock-catalog";
 import {
   isListeningTest,
@@ -57,7 +58,10 @@ import {
   type ListeningPartAudioPhase,
 } from "@/modules/listening/lib/listening-part-intro";
 import { useListeningMockGuard } from "@/modules/listening/hooks/use-listening-mock-guard";
+import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
+import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import { testNumberForMockId } from "@/lib/mock-catalog";
 
 function readConsent(moduleKey: string, attemptScope: string): boolean {
   if (typeof window === "undefined") return false;
@@ -80,6 +84,7 @@ function writeConsent(moduleKey: string, attemptScope: string): void {
 type Props = {
   testId: string;
   mockSlug?: string;
+  mockMeta?: MockMeta;
   part?: number;
   variant?: "default" | "exam";
   initialBoot?: ListeningBootServer | null;
@@ -88,6 +93,7 @@ type Props = {
 export function ListeningPage({
   testId,
   mockSlug = "m01",
+  mockMeta: mockMetaProp,
   part = 1,
   variant = "default",
   initialBoot = null,
@@ -97,7 +103,7 @@ export function ListeningPage({
   const searchParams = useSearchParams();
   const autoStart = searchParams.get("auto") === "1";
   const sectionStart = searchParams.get("section_start") === "1";
-  const mockAttemptId = searchParams.get("mock_attempt");
+  const mockAttemptId = useResolvedMockAttemptId(testId);
   const bootedRef = useRef(false);
   const hydratedFromServerRef = useRef(false);
   const beginAttemptInFlightRef = useRef<Promise<void> | null>(null);
@@ -122,7 +128,10 @@ export function ListeningPage({
   );
 
   const { schedule, flushNow } = useAutosave(state.attemptId);
-  const mockMeta = useMemo(() => getMockMeta(mockSlug), [mockSlug]);
+  const mockMeta = useMemo(
+    () => mockMetaProp ?? getMockMeta(mockSlug),
+    [mockMetaProp, mockSlug],
+  );
   const listeningPartCount = mockMeta.listeningPartCount;
 
   const introStorageKey = useMemo(
@@ -168,6 +177,8 @@ export function ListeningPage({
         replace(dest);
         return;
       }
+      const testNumber = testNumberForMockId(testId);
+      persistModuleResultAttempt(testNumber, "listening", _attemptId);
       push(listeningModuleResultsPath(testId, _attemptId));
     },
     [replace, push, testId, mockSlug, mockAttemptId, part],
@@ -507,6 +518,7 @@ export function ListeningPage({
         <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
           <ListeningIntroCard
             mockSlug={mockSlug}
+            mockMeta={mockMeta}
             onBegin={() => {
               if (typeof window !== "undefined") {
                 writeConsent("listening", introStorageKey);
@@ -698,7 +710,7 @@ export function ListeningPage({
           type="button"
           disabled={busy}
           onClick={() => void beginAttempt()}
-          className="mt-5 min-h-[44px] cursor-pointer rounded-xl bg-teal px-5 py-2 text-body font-semibold text-white hover:bg-teal-light disabled:opacity-60"
+          className="mt-5 min-h-[44px] cursor-pointer rounded-xl bg-teal px-5 py-2 text-body font-semibold text-white hover:bg-cyan-light disabled:opacity-60"
         >
           {busy ? "Loading…" : autoStart ? "Resume listening" : "Start listening attempt"}
         </button>

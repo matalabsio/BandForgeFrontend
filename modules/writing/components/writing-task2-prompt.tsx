@@ -54,12 +54,12 @@ export function WritingTask2Prompt({
       />
 
       {parsed.intro ? (
-        <p className="text-question leading-relaxed text-ink">{parsed.intro}</p>
+        <p className="text-[15px] leading-relaxed text-[#334155]">{parsed.intro}</p>
       ) : null}
 
       {parsed.question ? (
         <blockquote
-          className="rounded-lg border-l-4 border-teal bg-teal/5 px-4 py-3 text-question font-semibold leading-relaxed text-navy"
+          className="rounded-xl border border-[#A5F3FC] border-l-4 border-l-cyan bg-[#ECFEFF]/60 px-4 py-3 text-[15px] font-semibold leading-relaxed text-ink"
           cite="task"
         >
           {parsed.question}
@@ -71,17 +71,34 @@ export function WritingTask2Prompt({
       )}
 
       {parsed.requirements ? (
-        <p className="text-body leading-relaxed text-ink/80">{parsed.requirements}</p>
+        <p className="text-[14px] leading-relaxed text-[#475569]">{parsed.requirements}</p>
       ) : null}
 
-      <aside className="rounded-lg border border-border bg-surface p-4">
-        <p className="text-meta font-semibold text-navy">Essay checklist</p>
-        <ul className="mt-2 list-inside list-disc space-y-1.5 text-meta text-ink/65">
-          <li>State your position clearly in the introduction</li>
-          <li>Develop 2–3 body paragraphs with reasons and examples</li>
-          <li>Address the other view briefly if relevant</li>
-          <li>Conclude by restating your opinion</li>
-          <li>Leave time to proofread grammar and linking words</li>
+      <aside className="rounded-xl border border-[#E2E8F0] bg-surface p-4">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
+          Essay checklist
+        </p>
+        <ul className="mt-2.5 space-y-2 text-[13px] leading-snug text-[#475569]">
+          <li className="flex gap-2">
+            <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden />
+            State your position clearly in the introduction
+          </li>
+          <li className="flex gap-2">
+            <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden />
+            Develop 2–3 body paragraphs with reasons and examples
+          </li>
+          <li className="flex gap-2">
+            <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden />
+            Address the other view briefly if relevant
+          </li>
+          <li className="flex gap-2">
+            <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden />
+            Conclude by restating your opinion
+          </li>
+          <li className="flex gap-2">
+            <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden />
+            Leave time to proofread grammar and linking words
+          </li>
         </ul>
       </aside>
     </div>

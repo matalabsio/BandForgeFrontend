@@ -43,7 +43,6 @@ export function ListeningResultsView({
       <p className="mt-1 text-h4 font-display text-teal">
         {report ? `${moduleLabel} Band ${bandLabel(report.band)}` : null}
       </p>
-      <p className="mt-2 text-[12px] text-ink/55">Attempt {attemptId}</p>
 
       {!report ? (
         <div className="mt-8 rounded-2xl border border-danger/30 bg-danger/5 p-6">
@@ -51,9 +50,7 @@ export function ListeningResultsView({
           <p className="mt-2 text-body text-ink/70">
             {status === 404
               ? "This attempt has not been scored yet (or was not a listening attempt)."
-              : status === 403
-                ? "You do not have access to this attempt."
-                : "Could not load score report. Please try again."}
+              : "Could not load score report. Please try again."}
           </p>
           <Link
             href={backHref}
@@ -138,7 +135,7 @@ export function ListeningResultsView({
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={retakeHref}
-              className="rounded-xl bg-teal px-5 py-2.5 text-meta font-semibold text-white hover:bg-teal-light"
+              className="rounded-xl bg-teal px-5 py-2.5 text-meta font-semibold text-white hover:bg-cyan-light"
             >
               Start next test
             </Link>

@@ -57,13 +57,13 @@ export function PracticeSectionsCard() {
 
   return (
     <DashboardCard>
-      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#06B6D4]">
+      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan">
         Practice sections
       </p>
-      <h2 className="mt-2 font-display text-lg font-bold text-[#0F172A]">
+      <h2 className="mt-2 font-display text-lg font-bold text-ink">
         Reading &amp; Writing
       </h2>
-      <p className="mt-1 text-[13px] text-[#0F172A]/55">
+      <p className="mt-1 text-[13px] text-ink/55">
         Open any section directly. Writing has two tasks; reading passages use the
         3-phase exam flow (intro → passage → questions).
       </p>
@@ -74,34 +74,34 @@ export function PracticeSectionsCard() {
             <Link
               href={item.href}
               className={cn(
-                "block rounded-xl border border-[#0F172A]/10 bg-[#F8FAFC] p-4 transition-colors",
-                "hover:border-[#06B6D4]/40 hover:bg-white",
+                "block rounded-xl border border-ink/10 bg-surface p-4 transition-colors",
+                "hover:border-cyan/40 hover:bg-white",
               )}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-[#06B6D4]">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-cyan">
                     {item.module === "reading" ? "Reading" : "Writing"} · {item.label}
                   </p>
-                  <p className="mt-1 font-display text-[15px] font-bold leading-snug text-[#0F172A]">
+                  <p className="mt-1 font-display text-[15px] font-bold leading-snug text-ink">
                     {item.title}
                   </p>
-                  <p className="mt-1 text-[12px] leading-relaxed text-[#0F172A]/55">
+                  <p className="mt-1 text-[12px] leading-relaxed text-ink/55">
                     {item.description}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[10px] font-bold text-[#0891B2]">
+                <span className="shrink-0 rounded-full bg-cyan/10 px-2 py-0.5 text-[10px] font-bold text-teal">
                   {item.meta}
                 </span>
               </div>
-              <p className="mt-2 text-[12px] font-bold text-[#06B6D4]">Open section →</p>
+              <p className="mt-2 text-[12px] font-bold text-cyan">Open section →</p>
             </Link>
           </li>
         ))}
       </ul>
 
-      <p className="mt-4 text-center text-[12px] text-[#0F172A]/45">
-        <Link href="/test/writing" className="font-medium text-[#06B6D4] hover:underline">
+      <p className="mt-4 text-center text-[12px] text-ink/45">
+        <Link href="/test/writing" className="font-medium text-cyan hover:underline">
           All writing tasks
         </Link>
       </p>

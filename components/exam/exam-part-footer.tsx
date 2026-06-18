@@ -14,9 +14,9 @@ type Props = {
 };
 
 const accentClass: Record<ExamPartFooterVariant, string> = {
-  listening: "bg-[var(--exam-accent)] hover:bg-[#0891B2]",
-  reading: "bg-[var(--reading-accent)] hover:bg-[#0891B2]",
-  writing: "bg-[var(--reading-accent)] hover:bg-[#0891B2]",
+  listening: "bg-[var(--exam-accent)] hover:bg-cyan",
+  reading: "bg-[var(--reading-accent)] hover:bg-cyan",
+  writing: "bg-cyan hover:bg-cyan",
 };
 
 const borderClass: Record<ExamPartFooterVariant, string> = {

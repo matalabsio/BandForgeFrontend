@@ -189,7 +189,7 @@ function FormCompletionPartBase({
         />
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border-2 border-[#0F172A]/20 bg-white p-4 shadow-sm sm:p-6">
+      <div className="mt-6 overflow-x-auto rounded-xl border-2 border-ink/20 bg-white p-4 shadow-sm sm:p-6">
         <p className="text-center text-[11px] font-bold uppercase tracking-widest text-navy">
           Greenfield College – Course Registration Form
         </p>

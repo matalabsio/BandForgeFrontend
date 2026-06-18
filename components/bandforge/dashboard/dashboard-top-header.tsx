@@ -77,15 +77,15 @@ export function DashboardTopHeader({
             />
             <div
               role="menu"
-              className="fixed z-[210] min-w-[220px] max-w-[min(280px,calc(100vw-16px))] overflow-hidden rounded-xl border border-[#0F172A]/10 bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.18)]"
+              className="fixed z-[210] min-w-[220px] max-w-[min(280px,calc(100vw-16px))] overflow-hidden rounded-xl border border-ink/10 bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.18)]"
               style={{ top: menuPos.top, right: menuPos.right }}
             >
-              <div className="border-b border-[#0F172A]/6 px-4 py-3">
-                <p className="truncate text-[13px] font-bold text-[#0F172A]">
+              <div className="border-b border-ink/6 px-4 py-3">
+                <p className="truncate text-[13px] font-bold text-ink">
                   {triggerLabel}
                 </p>
                 {emailLine ? (
-                  <p className="mt-0.5 truncate text-[11px] text-[#0F172A]/50">
+                  <p className="mt-0.5 truncate text-[11px] text-ink/50">
                     {emailLine}
                   </p>
                 ) : null}
@@ -93,7 +93,7 @@ export function DashboardTopHeader({
               <Link
                 href="/profile"
                 role="menuitem"
-                className="block px-4 py-2.5 text-[13px] font-medium text-[#0F172A] transition-colors hover:bg-[#0F172A]/5"
+                className="block px-4 py-2.5 text-[13px] font-medium text-ink transition-colors hover:bg-ink/5"
                 onClick={() => setMenuOpen(false)}
               >
                 Profile
@@ -107,10 +107,10 @@ export function DashboardTopHeader({
   return (
     <header className="bf-dash-enter relative z-40 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-[#0F172A] sm:text-[28px]">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-[28px]">
           {timeGreeting()}, {firstName}
         </h1>
-        <p className="mt-1 text-[14px] text-[#0F172A]/55">
+        <p className="mt-1 text-[14px] text-ink/55">
           Keep your IELTS journey consistent. Small steps, big band.
         </p>
       </div>
@@ -126,7 +126,7 @@ export function DashboardTopHeader({
         <button
           type="button"
           aria-label="Notifications"
-          className="flex size-10 cursor-pointer items-center justify-center rounded-xl border border-[#0F172A]/10 bg-white text-[#0F172A]/60 transition-colors hover:border-[#06B6D4]/30 hover:text-[#06B6D4]"
+          className="flex size-10 cursor-pointer items-center justify-center rounded-xl border border-ink/10 bg-white text-ink/60 transition-colors hover:border-cyan/30 hover:text-cyan"
         >
           <BellIcon className="size-5" />
         </button>
@@ -135,11 +135,11 @@ export function DashboardTopHeader({
           ref={triggerRef}
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
-          className="flex max-w-[200px] cursor-pointer items-center gap-2 rounded-xl border border-[#0F172A]/10 bg-white py-1.5 pl-1.5 pr-3 transition-colors hover:border-[#06B6D4]/25 sm:max-w-[240px]"
+          className="flex max-w-[200px] cursor-pointer items-center gap-2 rounded-xl border border-ink/10 bg-white py-1.5 pl-1.5 pr-3 transition-colors hover:border-cyan/25 sm:max-w-[240px]"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
         >
-          <span className="flex size-8 shrink-0 overflow-hidden rounded-full bg-[#0F172A] text-xs font-bold text-white">
+          <span className="flex size-8 shrink-0 overflow-hidden rounded-full bg-ink text-xs font-bold text-white">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -153,12 +153,12 @@ export function DashboardTopHeader({
               </span>
             )}
           </span>
-          <span className="hidden min-w-0 truncate text-[13px] font-semibold text-[#0F172A] sm:block">
+          <span className="hidden min-w-0 truncate text-[13px] font-semibold text-ink sm:block">
             {triggerLabel}
           </span>
           <ChevronDownIcon
             className={cn(
-              "hidden size-4 shrink-0 text-[#0F172A]/40 transition-transform sm:block",
+              "hidden size-4 shrink-0 text-ink/40 transition-transform sm:block",
               menuOpen && "rotate-180",
             )}
           />

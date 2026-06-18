@@ -21,7 +21,7 @@ export function BfHeaderMobileMenu({ items }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white/90 p-2 text-gray-900 transition-colors hover:bg-gray-100"
+        className="inline-flex items-center justify-center rounded-lg p-2 text-slate-700 transition-colors hover:bg-gray-50"
         aria-expanded={open}
         aria-label={open ? "Close menu" : "Open menu"}
       >

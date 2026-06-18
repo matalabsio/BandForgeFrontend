@@ -28,7 +28,7 @@ export function DashboardSidebarNav({
         {DASHBOARD_NAV.map((group) => (
           <div key={group.title || "main"}>
             {group.title ? (
-              <p className="mb-2 px-3 font-roboto-condensed text-[10px] font-bold uppercase tracking-[0.14em] text-[#0F172A]/35">
+              <p className="mb-2 px-3 font-roboto-condensed text-[10px] font-bold uppercase tracking-[0.14em] text-ink/35">
                 {group.title}
               </p>
             ) : null}
@@ -43,7 +43,7 @@ export function DashboardSidebarNav({
                     <item.Icon
                       className={cn(
                         "h-[18px] w-[18px] shrink-0",
-                        active ? "text-[#06B6D4]" : "text-[#0F172A]/40",
+                        active ? "text-cyan" : "text-ink/40",
                       )}
                     />
                     <span>{item.label}</span>
@@ -52,8 +52,8 @@ export function DashboardSidebarNav({
                 const className = cn(
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-colors",
                   active
-                    ? "bg-[#06B6D4]/10 text-[#0F172A]"
-                    : "text-[#0F172A]/60 hover:bg-[#0F172A]/5 hover:text-[#0F172A]",
+                    ? "bg-cyan/10 text-ink"
+                    : "text-ink/60 hover:bg-ink/5 hover:text-ink",
                   item.disabled && "pointer-events-none opacity-45",
                 );
 
@@ -78,13 +78,13 @@ export function DashboardSidebarNav({
         ))}
       </nav>
 
-      <div className="mt-6 space-y-4 border-t border-[#0F172A]/8 pt-5">
+      <div className="mt-6 space-y-4 border-t border-ink/8 pt-5">
         <PremiumCta />
         <Link
           href="/profile"
-          className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-[#0F172A]/5"
+          className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-ink/5"
         >
-          <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0F172A] text-xs font-bold text-white">
+          <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink text-xs font-bold text-white">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -94,7 +94,7 @@ export function DashboardSidebarNav({
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-semibold">{displayName}</p>
-            <p className="text-[11px] text-[#0F172A]/45">Edit profile</p>
+            <p className="text-[11px] text-ink/45">Edit profile</p>
           </div>
         </Link>
         <div className="lg:hidden">

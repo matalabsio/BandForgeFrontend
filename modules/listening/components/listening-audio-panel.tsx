@@ -114,7 +114,7 @@ function ListeningAudioPanelBase({
               type="button"
               disabled={!sharedUrl}
               onClick={onBeginSection}
-              className="flex w-full cursor-pointer items-center justify-center rounded-xl bg-[var(--exam-accent)] px-5 py-3.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full cursor-pointer items-center justify-center rounded-xl bg-[var(--exam-accent)] px-5 py-3.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-50"
             >
               Begin Test
             </button>

@@ -27,7 +27,7 @@ export function BandForgeTestimonials() {
           <p className="bf-eyebrow">
             Testimonials
           </p>
-          <h2 className="bf-section-title mt-3">
+          <h2 className="font-display mt-3 text-[2rem] leading-[1.08] font-bold tracking-[-0.03em] text-navy sm:text-[2.375rem]">
             Confidence grows when practice feels real.
           </h2>
         </div>

@@ -39,21 +39,21 @@ export function ModuleBandsPanel({ bands }: { bands: ModuleBand[] }) {
                     className={cn(
                       "flex size-8 shrink-0 items-center justify-center rounded-lg",
                       row.live
-                        ? "bg-[#06B6D4]/10 text-[#06B6D4]"
-                        : "bg-[#0F172A]/5 text-[#0F172A]/35",
+                        ? "bg-cyan/10 text-cyan"
+                        : "bg-ink/5 text-ink/35",
                     )}
                   >
                     <Icon className="size-4" />
                   </span>
-                  <span className="text-[13px] font-semibold text-[#0F172A]">
+                  <span className="text-[13px] font-semibold text-ink">
                     {row.label}
                   </span>
                 </div>
-                <span className="shrink-0 text-[13px] font-bold tabular-nums text-[#0F172A]">
+                <span className="shrink-0 text-[13px] font-bold tabular-nums text-ink">
                   {row.band !== null ? row.band.toFixed(1) : row.live ? "—" : "Soon"}
                 </span>
               </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#0F172A]/8">
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink/8">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-300",

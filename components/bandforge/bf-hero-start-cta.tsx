@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ensureSession, getMe } from "@/lib/auth";
 import { isAuthEnabled } from "@/lib/flags";
 import { marketingSignInHref } from "@/components/bandforge/bf-marketing-auth-links";
+import { mockTestNumberPath } from "@/lib/mock-catalog";
 
 type Props = {
   /** From server cookies on first paint. */
@@ -12,7 +13,9 @@ type Props = {
   className: string;
 };
 
-/** Hero primary CTA — dashboard when signed in, login when not. */
+const diagnosticPath = mockTestNumberPath(1);
+
+/** Hero primary CTA — free diagnostic mock test. */
 export function BfHeroStartCta({ initialAuthenticated, className }: Props) {
   const [authed, setAuthed] = useState(
     () => !isAuthEnabled() || initialAuthenticated,
@@ -40,12 +43,11 @@ export function BfHeroStartCta({ initialAuthenticated, className }: Props) {
     };
   }, [initialAuthenticated]);
 
-  const href = authed ? "/dashboard" : marketingSignInHref("/dashboard");
-  const label = authed ? "Go to dashboard" : "Start Practice";
+  const href = authed ? diagnosticPath : marketingSignInHref(diagnosticPath);
 
   return (
     <Link href={href} prefetch className={className}>
-      {label}
+      Take the Free Diagnostic Test
     </Link>
   );
 }

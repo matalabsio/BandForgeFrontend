@@ -6,7 +6,8 @@ import { authGuardRedirectPath } from "@/lib/auth";
 import { isAuthEnabled } from "@/lib/flags";
 import { shouldFetchDashboardApi } from "@/lib/dashboard-server";
 import { M01_MOCK_TEST_ID, M02_MOCK_TEST_ID } from "@/lib/mock-catalog";
-import { fetchMockSessionServer } from "@/lib/mock-server";
+import { buildCatalogPanel } from "@/lib/mock-catalog-api";
+import { fetchMockCatalogServer, fetchMockSessionServer } from "@/lib/mock-server";
 import {
   getCachedCookieHeader,
   getCachedDashboardPayload,
@@ -25,18 +26,20 @@ export const metadata = {
 
 async function DashboardPageContent() {
   const cookieHeader = await getCachedCookieHeader();
-  const [user, payloadResult, initialM01Progress, initialM02Progress] =
+  const [user, payloadResult, initialM01Progress, initialM02Progress, catalog] =
     await Promise.all([
       getCachedServerUser(cookieHeader),
       getCachedDashboardPayload(cookieHeader),
       fetchMockSessionServer(cookieHeader, M01_MOCK_TEST_ID),
       fetchMockSessionServer(cookieHeader, M02_MOCK_TEST_ID),
+      fetchMockCatalogServer(cookieHeader),
     ]);
   if (!user) {
     redirect(authGuardRedirectPath("/dashboard"));
   }
 
   const { mockTests, mockTestsFromApi, summary } = payloadResult;
+  const catalogSlots = buildCatalogPanel(catalog);
   const needsRetry =
     isAuthEnabled() &&
     shouldFetchDashboardApi(cookieHeader) &&
@@ -50,6 +53,7 @@ async function DashboardPageContent() {
         email={user.email}
         avatarUrl={user.avatar_display_url}
         mockTests={mockTests}
+        catalogSlots={catalogSlots}
         summary={summary}
         profileTargetBand={
           user.target_band !== null && user.target_band !== undefined

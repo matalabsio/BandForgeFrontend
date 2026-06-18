@@ -9,6 +9,7 @@ import { mockApiId, mockModulePath } from "@/lib/mock-catalog";
 import { ensureCanonicalMockSlug } from "@/lib/mock-route-guard";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
+import { resolveMockMetaServer } from "@/lib/mock-server";
 import { ListeningPage } from "@/modules/listening/components/listening-page";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 
@@ -37,12 +38,14 @@ export default async function MockListeningPage({ params, searchParams }: Props)
         }),
   );
   const mockTestId = mockApiId(mockSlug);
+  const mockMeta = await resolveMockMetaServer(cookieHeader, mockSlug);
 
   return (
     <MockLayout>
       <ListeningPage
         testId={mockTestId}
         mockSlug={mockSlug}
+        mockMeta={mockMeta}
         part={part}
         variant="exam"
       />

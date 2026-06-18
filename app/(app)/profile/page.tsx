@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ProfileForm } from "@/components/bandforge/profile/profile-form";
+import { ProfileSettingsHub } from "@/components/bandforge/profile/profile-settings-hub";
 import { authGuardRedirectPath } from "@/lib/auth";
 import {
   getCachedCookieHeader,
@@ -15,21 +16,26 @@ export default async function ProfilePage() {
     redirect(authGuardRedirectPath("/profile"));
   }
 
+  const displayName = user.full_name?.trim() || user.email || "Student";
+  const initial = displayName.charAt(0).toUpperCase();
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6 rounded-[24px] border border-white/70 bg-white/70 p-6 shadow-[0_10px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-8">
-      <header>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#06B6D4]">
-          Account
-        </p>
-        <h1 className="font-display text-2xl font-bold text-[#0F172A]">
-          Your profile
-        </h1>
-        <p className="mt-2 text-[14px] text-[#0F172A]/55">
-          Update your name, photo, phone, and target band. Email is managed
-          through Google sign-in.
-        </p>
-      </header>
-      <ProfileForm user={user} />
-    </div>
+    <ProfileSettingsHub
+      displayName={displayName}
+      email={user.email}
+      avatarInitial={initial}
+    >
+      <div className="rounded-2xl border border-border-soft bg-white p-6 shadow-sm sm:p-8">
+        <header className="mb-6">
+          <p className="font-mono text-[0.6875rem] tracking-wide text-cyan uppercase">
+            Account details
+          </p>
+          <h2 className="font-display mt-1 text-lg font-bold text-navy">
+            Edit profile
+          </h2>
+        </header>
+        <ProfileForm user={user} />
+      </div>
+    </ProfileSettingsHub>
   );
 }

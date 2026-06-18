@@ -85,7 +85,7 @@ export function ReadingSectionStepper({
             type="button"
             disabled={busy}
             onClick={onSubmit}
-            className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60"
           >
             {busy ? "Submitting…" : (continueLabel ?? "Submit passage")}
           </button>
@@ -93,7 +93,7 @@ export function ReadingSectionStepper({
           <button
             type="button"
             onClick={onContinue}
-            className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#0891B2]"
+            className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-cyan"
           >
             {continueLabel ?? "Continue"}
           </button>

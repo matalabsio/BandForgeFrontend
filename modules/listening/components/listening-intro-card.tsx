@@ -1,10 +1,11 @@
 "use client";
 
-import { getMockMeta } from "@/lib/mock-catalog";
+import { getMockMeta, type MockMeta } from "@/lib/mock-catalog";
 import { SectionInstructionsModal } from "@/modules/shared/components/section-instructions-modal";
 
 type Props = {
   mockSlug?: string;
+  mockMeta?: MockMeta;
   onBegin: () => void;
   busy?: boolean;
   agreed: boolean;
@@ -13,12 +14,13 @@ type Props = {
 
 export function ListeningIntroCard({
   mockSlug = "m01",
+  mockMeta: mockMetaProp,
   onBegin,
   busy = false,
   agreed,
   onAgreeChange,
 }: Props) {
-  const meta = getMockMeta(mockSlug);
+  const meta = mockMetaProp ?? getMockMeta(mockSlug);
   return (
     <SectionInstructionsModal
       badge={`IELTS Academic · ${meta.displayLabel}`}

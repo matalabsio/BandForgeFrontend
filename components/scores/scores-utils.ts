@@ -56,17 +56,17 @@ export function focusModule(bands: ModuleBand[]): ModuleBand | null {
 }
 
 export function bandBarColor(band: number | null): string {
-  if (band === null) return "bg-[#0F172A]/10";
+  if (band === null) return "bg-ink/10";
   if (band >= 7.5) return "bg-emerald-500";
-  if (band >= 6) return "bg-[#06B6D4]";
+  if (band >= 6) return "bg-cyan";
   if (band >= 5) return "bg-amber-500";
   return "bg-red-500";
 }
 
 export function bandBadgeClass(band: number | null): string {
-  if (band === null) return "bg-[#0F172A]/5 text-[#0F172A]/50";
+  if (band === null) return "bg-ink/5 text-ink/50";
   if (band >= 7.5) return "bg-emerald-500/12 text-emerald-700";
-  if (band >= 6) return "bg-[#06B6D4]/12 text-[#0891B2]";
+  if (band >= 6) return "bg-cyan/12 text-teal";
   if (band >= 5) return "bg-amber-500/12 text-amber-700";
   return "bg-red-500/10 text-red-600";
 }

@@ -9,7 +9,7 @@ export function BandForgeAiShowcase() {
           <p className="bf-eyebrow">
             AI evaluation
           </p>
-          <h2 className="bf-section-title mt-3">
+          <h2 className="font-display mt-3 text-[2rem] leading-[1.08] font-bold tracking-[-0.03em] text-navy sm:text-[2.375rem]">
             Detailed feedback in seconds, not days.
           </h2>
           <p className="bf-copy mx-auto mt-5 max-w-2xl">

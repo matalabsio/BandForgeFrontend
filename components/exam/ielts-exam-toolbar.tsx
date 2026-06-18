@@ -89,7 +89,7 @@ export function IeltsExamToolbar({
         type="button"
         disabled={busy}
         onClick={onSubmit}
-        className="shrink-0 cursor-pointer rounded-md bg-[var(--exam-accent)] px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-[12px]"
+        className="shrink-0 cursor-pointer rounded-md bg-[var(--exam-accent)] px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-[12px]"
       >
         {busy ? "…" : submitLabel}
       </button>

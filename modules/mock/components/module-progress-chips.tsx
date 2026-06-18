@@ -63,9 +63,9 @@ export function ModuleProgressChips({
                   "border-amber-200 bg-amber-50 text-amber-900",
                 m.status === "locked" &&
                   m.is_enabled &&
-                  "border-[#0F172A]/10 bg-[#F8FAFC] text-[#0F172A]/45",
+                  "border-ink/10 bg-surface text-ink/45",
                 !m.is_enabled &&
-                  "border-dashed border-[#0F172A]/15 bg-white text-[#0F172A]/40",
+                  "border-dashed border-ink/15 bg-white text-ink/40",
               )}
             >
               <span aria-hidden className="text-[10px] leading-none">
@@ -78,19 +78,19 @@ export function ModuleProgressChips({
       </ul>
       {showProgressBar ? (
         <div>
-          <div className="flex items-center justify-between text-[11px] font-medium text-[#0F172A]/50">
+          <div className="flex items-center justify-between text-[11px] font-medium text-ink/50">
             <span>Progress</span>
             <span>{percent}%</span>
           </div>
           <div
-            className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#0F172A]/8"
+            className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink/8"
             role="progressbar"
             aria-valuenow={percent}
             aria-valuemin={0}
             aria-valuemax={100}
           >
             <div
-              className="h-full rounded-full bg-[#06B6D4] transition-all duration-300"
+              className="h-full rounded-full bg-cyan transition-all duration-300"
               style={{ width: `${percent}%` }}
             />
           </div>

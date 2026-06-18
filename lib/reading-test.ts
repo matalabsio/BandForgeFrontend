@@ -1,5 +1,10 @@
 /** Published IELTS reading — Test 1 uses M01 passage 1 only for orchestrated flow. */
-import { isFullMock, test1HubPath } from "@/lib/mock-catalog";
+import {
+  isFullMock,
+  shortModuleResultsPath,
+  test1HubPath,
+  testNumberForMockId,
+} from "@/lib/mock-catalog";
 
 function isReadingTest(testId: string): boolean {
   return isFullMock(testId);
@@ -9,16 +14,17 @@ export function readingTestHubPath(): string {
   return test1HubPath();
 }
 
-export function readingResultsPath(attemptId: string): string {
-  return `/test/reading/results/${encodeURIComponent(attemptId)}`;
+/** Short canonical results URL — persist attempt in sessionStorage before navigating. */
+export function readingResultsPath(testNumber = 1): string {
+  return shortModuleResultsPath(testNumber, "reading");
 }
 
 export function readingModuleResultsPath(
   testId: string,
-  attemptId: string,
+  _attemptId: string,
 ): string {
   if (isReadingTest(testId)) {
-    return readingResultsPath(attemptId);
+    return readingResultsPath(testNumberForMockId(testId));
   }
-  return `/mock/${encodeURIComponent(testId)}/reading/results/${encodeURIComponent(attemptId)}`;
+  return `/mock/${encodeURIComponent(testId)}/reading/results`;
 }

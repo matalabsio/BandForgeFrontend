@@ -9,15 +9,15 @@ export function PremiumCta() {
           <CrownIcon className="size-4" />
         </span>
         <div>
-          <p className="text-[13px] font-bold text-[#0F172A]">Go Premium</p>
-          <p className="text-[11px] text-[#0F172A]/50">
+          <p className="text-[13px] font-bold text-ink">Go Premium</p>
+          <p className="text-[11px] text-ink/50">
             Unlimited mocks & AI feedback
           </p>
         </div>
       </div>
       <Link
         href="/features"
-        className="mt-3 inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#0F172A] px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#1e293b]"
+        className="mt-3 inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-ink px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#1e293b]"
       >
         Upgrade Now
         <ArrowRightIcon className="size-3.5" />

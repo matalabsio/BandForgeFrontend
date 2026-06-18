@@ -1,5 +1,5 @@
 /**
- * Regenerate app/icon.png and app/apple-icon.png from test/listening/img/logo.png.
+ * Regenerate app/icon.png and app/apple-icon.png from modules/listening/img/logo.png.
  * Run: node scripts/sync-favicons.mjs
  */
 import sharp from "sharp";
@@ -7,7 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const logo = path.join(root, "test/listening/img/logo.png");
+const logo = path.join(root, "modules/listening/img/logo.png");
 const appDir = path.join(root, "app");
 
 async function makeSquareIcon(size, filename) {

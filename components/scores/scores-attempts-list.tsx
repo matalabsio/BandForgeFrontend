@@ -17,6 +17,8 @@ import {
 } from "@/components/bandforge/dashboard/dashboard-card";
 import { bandBadgeClass } from "@/components/scores/scores-utils";
 import { formatDateShort } from "@/lib/date-format";
+import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import { testNumberForMockId } from "@/lib/mock-catalog";
 import {
   listeningModuleResultsPath,
   listeningTestPath,
@@ -48,6 +50,13 @@ function reportHref(attempt: DashboardRecentAttempt): string | null {
     return readingModuleResultsPath(attempt.mock_test.id, attempt.id);
   }
   return null;
+}
+
+function primeResultSession(attempt: DashboardRecentAttempt): void {
+  const testNumber = testNumberForMockId(attempt.mock_test.id);
+  if (attempt.module === "listening" || attempt.module === "reading") {
+    persistModuleResultAttempt(testNumber, attempt.module, attempt.id);
+  }
 }
 
 function sortCompletedNewestFirst(
@@ -95,7 +104,7 @@ export function ScoresAttemptsList({
         subtitle="Open a mock for question-by-question breakdown"
         action={
           completed.length > 0 ? (
-            <span className="text-[11px] font-semibold tabular-nums text-[#0F172A]/40">
+            <span className="text-[11px] font-semibold tabular-nums text-ink/40">
               {completed.length} total
             </span>
           ) : undefined
@@ -106,7 +115,7 @@ export function ScoresAttemptsList({
         <EmptyAttempts />
       ) : (
         <>
-          <ul className="divide-y divide-[#0F172A]/6">
+          <ul className="divide-y divide-ink/6">
             {visible.map((a) => (
               <AttemptRow
                 key={a.id}
@@ -117,7 +126,7 @@ export function ScoresAttemptsList({
           </ul>
 
           {hasMore ? (
-            <div className="border-t border-[#0F172A]/6 px-5 py-3">
+            <div className="border-t border-ink/6 px-5 py-3">
               <button
                 type="button"
                 onClick={() =>
@@ -125,10 +134,10 @@ export function ScoresAttemptsList({
                     Math.min(n + PAGE_SIZE, completed.length),
                   )
                 }
-                className="w-full cursor-pointer rounded-xl border border-[#0F172A]/10 bg-[#F8FAFC] py-2.5 text-[13px] font-bold text-[#0891B2] transition-colors hover:border-[#06B6D4]/30 hover:bg-[#06B6D4]/5"
+                className="w-full cursor-pointer rounded-xl border border-ink/10 bg-surface py-2.5 text-[13px] font-bold text-teal transition-colors hover:border-cyan/30 hover:bg-cyan/5"
               >
                 View more
-                <span className="font-medium text-[#0F172A]/45">
+                <span className="font-medium text-ink/45">
                   {" "}
                   · show next {Math.min(PAGE_SIZE, remaining)} of {remaining}{" "}
                   remaining
@@ -159,17 +168,17 @@ function AttemptRow({
     <div
       id={highlighted ? `score-attempt-${attempt.id}` : undefined}
       className={`flex items-center gap-4 px-5 py-4 ${
-        highlighted ? "bg-[#06B6D4]/8 ring-2 ring-inset ring-[#06B6D4]/35" : ""
+        highlighted ? "bg-cyan/8 ring-2 ring-inset ring-cyan/35" : ""
       }`}
     >
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#06B6D4]/10 text-[#06B6D4]">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-cyan/10 text-cyan">
         <Icon className="size-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-semibold text-[#0F172A]">
+        <p className="truncate text-[14px] font-semibold text-ink">
           {attempt.mock_test.title}
         </p>
-        <p className="mt-0.5 text-[12px] text-[#0F172A]/45">
+        <p className="mt-0.5 text-[12px] text-ink/45">
           {label} · {formatDateShort(attempt.completed_at ?? attempt.started_at)}
           {attempt.raw_score !== null && attempt.total_questions !== null
             ? ` · ${attempt.raw_score}/${attempt.total_questions} correct`
@@ -182,7 +191,7 @@ function AttemptRow({
         {attempt.band !== null ? `Band ${attempt.band.toFixed(1)}` : "—"}
       </span>
       {href ? (
-        <ArrowRightIcon className="size-4 shrink-0 text-[#0F172A]/30" />
+        <ArrowRightIcon className="size-4 shrink-0 text-ink/30" />
       ) : null}
     </div>
   );
@@ -192,7 +201,8 @@ function AttemptRow({
       <li>
         <Link
           href={href}
-          className="block cursor-pointer transition-colors hover:bg-[#06B6D4]/5"
+          onClick={() => primeResultSession(attempt)}
+          className="block cursor-pointer transition-colors hover:bg-cyan/5"
         >
           {row}
         </Link>
@@ -206,17 +216,17 @@ function AttemptRow({
 function EmptyAttempts() {
   return (
     <div className="px-6 py-14 text-center">
-      <HeadphonesIcon className="mx-auto size-10 text-[#06B6D4]" />
-      <p className="mt-4 font-display text-lg font-bold text-[#0F172A]">
+      <HeadphonesIcon className="mx-auto size-10 text-cyan" />
+      <p className="mt-4 font-display text-lg font-bold text-ink">
         No scored mocks yet
       </p>
-      <p className="mx-auto mt-2 max-w-sm text-[13px] text-[#0F172A]/55">
+      <p className="mx-auto mt-2 max-w-sm text-[13px] text-ink/55">
         Complete a reading or listening section to see your band, trends, and
         detailed reports here.
       </p>
       <Link
         href={listeningTestPath()}
-        className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#06B6D4] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-[#0891B2]"
+        className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-cyan"
       >
         Start listening mock
         <ArrowRightIcon className="size-4" />

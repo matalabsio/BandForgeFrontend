@@ -4,9 +4,10 @@ import bandforgeLogo from "@/modules/listening/img/logo.png";
 import { cn } from "@/lib/utils";
 
 const sizeClass = {
-  sm: "h-7 w-auto max-w-[140px] sm:max-w-[160px]",
-  md: "h-9 w-auto max-w-[180px] sm:h-10 sm:max-w-[220px]",
-  lg: "h-10 w-auto max-w-[200px] sm:h-11 sm:max-w-[240px]",
+  nav: "h-8 w-auto max-w-[190px] sm:h-9 sm:max-w-[210px]",
+  sm: "h-7 w-auto max-w-[180px] sm:max-w-[200px]",
+  md: "h-9 w-auto max-w-[220px] sm:h-10 sm:max-w-[260px]",
+  lg: "h-10 w-auto max-w-[260px] sm:h-11 sm:max-w-[300px]",
 } as const;
 
 type BandForgeLogoLinkProps = {
@@ -28,7 +29,7 @@ export function BandForgeLogoLink({
       href={href}
       prefetch
       className={cn(
-        "inline-flex shrink-0 items-center transition-opacity duration-200 hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 rounded-sm",
+        "inline-flex shrink-0 items-center transition-opacity duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 rounded-sm",
         className,
       )}
       aria-label="BandForge home"

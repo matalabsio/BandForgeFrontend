@@ -56,7 +56,7 @@ export function TestSpeakingView() {
               onClick={() => setRecording((r) => !r)}
               className={cn(
                 "touch-target flex size-16 cursor-pointer items-center justify-center rounded-full text-body font-semibold text-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
-                recording ? "bg-danger hover:bg-danger/90" : "bg-teal hover:bg-teal-light",
+                recording ? "bg-danger hover:bg-danger/90" : "bg-teal hover:bg-cyan-light",
               )}
             >
               {recording ? "Stop" : "Rec"}

@@ -71,7 +71,7 @@ export function SectionInstructionsModal({
           type="button"
           disabled={busy || !agreed}
           onClick={onContinue}
-          className="mt-6 w-full cursor-pointer rounded-lg bg-[var(--exam-accent)] px-5 py-3.5 text-[14px] font-bold text-white transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-6 w-full cursor-pointer rounded-lg bg-[var(--exam-accent)] px-5 py-3.5 text-[14px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "Starting…" : ctaLabel}
         </button>

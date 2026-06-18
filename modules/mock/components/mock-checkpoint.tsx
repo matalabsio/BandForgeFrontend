@@ -199,7 +199,7 @@ function MockCheckpointBody({ mockSlug, mockAttemptId, attemptId, from }: Props)
                 <button
                   type="button"
                   onClick={onContinue}
-                  className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[14px] font-bold text-white hover:bg-[#0891B2]"
+                  className="cursor-pointer rounded-xl bg-[var(--exam-accent)] px-5 py-2.5 text-[14px] font-bold text-white hover:bg-cyan"
                 >
                   {continueLabel(data)}
                 </button>

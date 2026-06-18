@@ -80,7 +80,7 @@ export function SentenceInlineBlank({
                 "border-[var(--reading-ink)] text-[var(--reading-ink)] focus:border-[var(--reading-accent)] focus:ring-0",
               !isExam &&
                 !isReading &&
-                "border-[#0F172A]/40 font-mono text-ink focus:border-teal",
+                "border-ink/40 font-mono text-ink focus:border-teal",
             )}
           />
         </span>
@@ -177,7 +177,7 @@ export function LabelInlineBlank({
       <span className="min-w-[10rem] shrink-0 text-[12px] text-ink/70">
         ({questionNumber}) {label}:
       </span>
-      <span className="flex min-w-0 flex-1 items-center gap-1 border-b border-[#0F172A]/25 pb-1">
+      <span className="flex min-w-0 flex-1 items-center gap-1 border-b border-ink/25 pb-1">
         {input}
       </span>
     </label>

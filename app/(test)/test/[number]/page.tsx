@@ -1,74 +1,29 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { authBootstrapPath } from "@/lib/auth";
-import {
-  MOCK_CATALOG,
-  getMockPanelSlot,
-  mockTestNumberPath,
-  type MockSlug,
-} from "@/lib/mock-catalog";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
-import { fetchMockSessionServer } from "@/lib/mock-server";
-import { MockLayout } from "@/modules/mock/components/mock-layout";
-import { MockTestComingSoon } from "@/modules/mock/components/mock-test-coming-soon";
-import { MockTestHub } from "@/modules/mock/components/mock-test-hub";
-
-type Props = {
-  params: Promise<{ number: string }>;
-};
+import { mockTestNumberPath } from "@/lib/mock-catalog";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { number } = await params;
-  const slot = getMockPanelSlot(Number.parseInt(number, 10));
   return {
-    title: `${slot?.displayLabel ?? "Mock test"} · BandForge`,
+    title: `Test ${number} · BandForge`,
     robots: { index: false, follow: false },
   };
 }
 
-export default async function TestNumberHubPage({ params }: Props) {
-  const { number: numberRaw } = await params;
-  const number = Number.parseInt(numberRaw, 10);
-  const slot = getMockPanelSlot(number);
+type Props = {
+  params: Promise<{ number: string }>;
+  searchParams: Promise<{ mock_attempt?: string }>;
+};
 
-  if (!slot) {
+/** Legacy `/test/[number]` → canonical `/test?test=N`. */
+export default async function TestNumberRedirectPage({ params, searchParams }: Props) {
+  const { number: numberRaw } = await params;
+  const sp = await searchParams;
+  const number = Number.parseInt(numberRaw, 10);
+
+  if (!Number.isFinite(number) || number < 1) {
     notFound();
   }
 
-  const cookieHeader = await getCachedCookieHeader();
-
-  if (!slot.available || !slot.slug) {
-    const user = await getCachedServerUser(cookieHeader);
-    if (!user) {
-      redirect(authBootstrapPath(mockTestNumberPath(number)));
-    }
-
-    return (
-      <MockLayout>
-        <MockTestComingSoon slot={slot} />
-      </MockLayout>
-    );
-  }
-
-  const mockSlug = slot.slug as MockSlug;
-  const catalog = MOCK_CATALOG[mockSlug];
-  const [user, initialProgress] = await Promise.all([
-    getCachedServerUser(cookieHeader),
-    fetchMockSessionServer(cookieHeader, catalog.id),
-  ]);
-
-  if (!user) {
-    redirect(authBootstrapPath(mockTestNumberPath(number)));
-  }
-
-  return (
-    <MockLayout>
-      <MockTestHub
-        mockSlug={mockSlug}
-        mockTestId={catalog.id}
-        title={slot.displayLabel}
-        initialProgress={initialProgress}
-      />
-    </MockLayout>
-  );
+  redirect(mockTestNumberPath(number, sp.mock_attempt ?? undefined));
 }

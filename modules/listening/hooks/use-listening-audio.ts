@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type AudioState = {
   isLoading: boolean;
@@ -31,11 +31,27 @@ const INITIAL: AudioState = {
 export function useListeningAudio(audioUrl: string | null) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const maxReachedRef = useRef(0);
+  const [reloadToken, setReloadToken] = useState(0);
   const [state, setState] = useState<AudioState>(INITIAL);
+
+  const retry = useCallback(() => {
+    setReloadToken((n) => n + 1);
+    setState({ ...INITIAL, isLoading: true });
+  }, []);
 
   const suggestedUpload = useCallback((): string | null => {
     if (!audioUrl) return null;
     const clean = audioUrl.split("?")[0] ?? audioUrl;
+
+    const proxy = audioUrl.match(
+      /\/api\/listening\/([^/]+)\/part-audio(?:\?|$)/i,
+    );
+    if (proxy) {
+      const partMatch = audioUrl.match(/[?&]part=(\d+)/i);
+      const mockId = proxy[1];
+      const part = partMatch?.[1] ?? "1";
+      return `listening/${mockId}/part-${part}/full.mp3`;
+    }
 
     // Expected key shape: listening/<preset>/part-<N>/full.mp3
     const m = clean.match(/listening\/([^/]+)\/part-(\d+)\/full\.mp3/i);
@@ -48,10 +64,17 @@ export function useListeningAudio(audioUrl: string | null) {
     return null;
   }, [audioUrl]);
 
+  const resolvedUrl = useMemo(() => {
+    if (!audioUrl) return null;
+    if (reloadToken === 0) return audioUrl;
+    const sep = audioUrl.includes("?") ? "&" : "?";
+    return `${audioUrl}${sep}_reload=${reloadToken}`;
+  }, [audioUrl, reloadToken]);
+
   useEffect(() => {
-    if (!audioUrl) return;
+    if (!resolvedUrl) return;
     setState({ ...INITIAL, isLoading: true });
-    const audio = new Audio(audioUrl);
+    const audio = new Audio(resolvedUrl);
     audio.preload = "auto";
     // Do not set crossOrigin: R2 presigned URLs omit CORS headers and the
     // browser will reject the resource with crossOrigin="anonymous".
@@ -126,7 +149,7 @@ export function useListeningAudio(audioUrl: string | null) {
     };
 
     audio.load();
-  }, [audioUrl, suggestedUpload]);
+  }, [resolvedUrl, suggestedUpload]);
 
   const start = useCallback(async () => {
     const audio = audioRef.current;
@@ -165,5 +188,5 @@ export function useListeningAudio(audioUrl: string | null) {
     return () => window.removeEventListener("keydown", blockSeekKeys);
   }, []);
 
-  return { ...state, start };
+  return { ...state, start, retry };
 }

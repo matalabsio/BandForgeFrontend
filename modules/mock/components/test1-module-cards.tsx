@@ -1,6 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
+import {
+  BookIcon,
+  HeadphonesIcon,
+  PencilIcon,
+} from "@/components/bandforge/dashboard/icons";
 import {
   getMockMeta,
   mockModulePath,
@@ -12,11 +18,35 @@ import { cn } from "@/lib/utils";
 
 type ModuleKey = "listening" | "reading" | "writing";
 
+type ModuleMeta = Pick<
+  ReturnType<typeof getMockMeta>,
+  | "displayLabel"
+  | "listeningPartCount"
+  | "readingPassageCount"
+  | "writingTaskCount"
+  | "listeningMinutes"
+  | "readingMinutes"
+  | "writingMinutes"
+>;
+
+const MODULE_ICONS = {
+  listening: HeadphonesIcon,
+  reading: BookIcon,
+  writing: PencilIcon,
+} as const;
+
+function moduleProgress(status: ModuleProgress["status"]): number {
+  if (status === "completed") return 100;
+  if (status === "in_progress") return 55;
+  if (status === "available") return 12;
+  return 0;
+}
+
 const MODULE_CARDS: {
   key: ModuleKey;
   order: number;
   label: string;
-  detail: (mod: ModuleProgress | undefined, meta: ReturnType<typeof getMockMeta>) => string;
+  detail: (mod: ModuleProgress | undefined, meta: ModuleMeta) => string;
 }[] = [
   {
     key: "listening",
@@ -102,26 +132,47 @@ function statusLabel(status: ModuleProgress["status"]): string {
   return "Locked";
 }
 
+type SectionFilter = "all" | ModuleKey;
+
+const SECTION_FILTERS: { id: SectionFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "listening", label: "Listening" },
+  { id: "reading", label: "Reading" },
+  { id: "writing", label: "Writing" },
+];
+
 type Props = {
-  mockSlug: MockSlug;
+  mockSlug: MockSlug | string;
+  moduleMeta?: ModuleMeta;
   modules: ModuleProgress[];
   mockAttemptId: string | null;
   mockStatus?: string;
+  showSectionFilters?: boolean;
+  previewWhenLocked?: boolean;
 };
 
 export function Test1ModuleCards({
   mockSlug,
+  moduleMeta,
   modules,
   mockAttemptId,
   mockStatus,
+  showSectionFilters = false,
+  previewWhenLocked = false,
 }: Props) {
-  const meta = getMockMeta(mockSlug);
+  const [sectionFilter, setSectionFilter] = useState<SectionFilter>("all");
+  const meta = moduleMeta ?? getMockMeta(mockSlug as MockSlug);
   const displayLabel = meta.displayLabel;
   const mockComplete = mockStatus === "completed";
   const writingDone =
     modules.find((m) => m.module === "writing")?.status === "completed";
 
-  if (!mockAttemptId) {
+  const visibleCards = useMemo(() => {
+    if (sectionFilter === "all") return MODULE_CARDS;
+    return MODULE_CARDS.filter((c) => c.key === sectionFilter);
+  }, [sectionFilter]);
+
+  if (!mockAttemptId && !previewWhenLocked) {
     return (
       <p className="rounded-xl border border-dashed border-[var(--exam-border)] bg-[var(--exam-surface)] px-4 py-8 text-center text-[13px] text-[var(--exam-ink-muted)]">
         Start or resume {displayLabel} above to open Listening, Reading, and Writing.
@@ -131,15 +182,47 @@ export function Test1ModuleCards({
 
   return (
     <section className="space-y-4" aria-labelledby="mock-sections-heading">
-      <h3
-        id="mock-sections-heading"
-        className="text-[13px] font-bold text-[var(--exam-ink)]"
-      >
-        Sections
-      </h3>
+      {showSectionFilters ? (
+        <>
+          <h3 id="mock-sections-heading" className="sr-only">
+            Sections
+          </h3>
+          <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <div className="flex min-w-min gap-2" role="tablist" aria-label="Filter sections">
+            {SECTION_FILTERS.map((chip) => {
+              const active = sectionFilter === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setSectionFilter(chip.id)}
+                  className={cn(
+                    "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+                    active
+                      ? "bg-[var(--exam-accent)] text-white"
+                      : "border border-[var(--exam-border)] bg-white text-[var(--exam-ink)]",
+                  )}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+          </div>
+        </>
+      ) : (
+        <h3
+          id="mock-sections-heading"
+          className="text-base font-bold text-[var(--exam-ink)] sm:text-[13px]"
+        >
+          Sections
+        </h3>
+      )}
 
-      <ul className="grid gap-3 sm:grid-cols-3">
-        {MODULE_CARDS.map((card) => {
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {visibleCards.map((card) => {
           const mod = modules.find((m) => m.module === card.key);
           const status = mod?.status ?? "locked";
           const href =
@@ -149,67 +232,67 @@ export function Test1ModuleCards({
           const isCurrent = status === "in_progress";
           const isDone = status === "completed";
 
+          const Icon = MODULE_ICONS[card.key];
+          const progress = moduleProgress(status);
+
           const inner = (
             <article
               className={cn(
-                "flex h-full min-h-[140px] flex-col rounded-xl border p-4 transition-colors",
-                isCurrent &&
-                  "border-[var(--exam-accent)] bg-[var(--exam-accent-soft)]/50 shadow-sm",
-                isDone && "border-emerald-200 bg-emerald-50/80",
-                status === "available" &&
-                  "border-[var(--exam-border)] bg-white hover:border-[var(--exam-accent)]/50 hover:shadow-sm",
-                status === "locked" &&
-                  "cursor-not-allowed border-dashed border-[var(--exam-border)] bg-[var(--exam-surface)] opacity-65",
-                href && "cursor-pointer",
+                "flex h-full min-h-[168px] flex-col rounded-2xl border border-[var(--exam-accent)]/30 border-t-[3px] border-t-[var(--exam-accent)] bg-white p-3.5 shadow-sm transition-shadow sm:p-4",
+                status === "locked" && "cursor-not-allowed opacity-65",
+                href && "hover:shadow-md",
               )}
             >
               <div className="flex items-start justify-between gap-2">
+                <div className="flex size-9 items-center justify-center rounded-full bg-[var(--exam-accent-soft)] text-[var(--exam-accent)]">
+                  <Icon className="size-4" aria-hidden />
+                </div>
                 <span
                   className={cn(
-                    "flex size-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold",
-                    isDone && "bg-emerald-600 text-white",
-                    isCurrent && "bg-[var(--exam-accent)] text-white",
-                    status === "available" && "bg-[var(--exam-bar)] text-white",
-                    status === "locked" &&
-                      "bg-[var(--exam-border)] text-[var(--exam-ink-muted)]",
-                  )}
-                >
-                  {isDone ? "✓" : card.order}
-                </span>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                    "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase",
                     isDone && "bg-emerald-100 text-emerald-800",
                     isCurrent && "bg-amber-100 text-amber-900",
                     status === "available" && "bg-[var(--exam-accent)]/15 text-[var(--exam-accent)]",
-                    status === "locked" && "bg-white text-[var(--exam-ink-muted)]",
+                    status === "locked" && "bg-[var(--exam-surface)] text-[var(--exam-ink-muted)]",
                   )}
                 >
                   {statusLabel(status)}
                 </span>
               </div>
-              <h3 className="mt-3 font-display text-[16px] font-bold text-[var(--exam-ink)]">
+              <h3 className="mt-3 text-[13px] font-bold leading-snug text-[var(--exam-ink)] sm:text-sm">
                 {card.label}
               </h3>
-              <p className="mt-1 flex-1 text-[12px] leading-snug text-[var(--exam-ink-muted)]">
+              <p className="mt-1 flex-1 text-[11px] leading-snug text-[var(--exam-ink-muted)] sm:text-xs">
                 {card.detail(mod, meta)}
               </p>
               {mod?.band != null && mod.band > 0 ? (
-                <p className="mt-2 text-[11px] font-semibold text-emerald-700">
+                <p className="mt-1 text-[10px] font-semibold text-emerald-700">
                   Band {mod.band.toFixed(1)}
                 </p>
               ) : null}
+              <div
+                className="mt-2.5 h-1 overflow-hidden rounded-full bg-[var(--exam-border)]"
+                role="progressbar"
+                aria-valuenow={progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="h-full rounded-full bg-[var(--exam-accent)]"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
               {href ? (
-                <p className="mt-3 text-[12px] font-bold text-[var(--exam-accent)]">
-                  {isDone ? "Open section →" : isCurrent ? "Resume →" : "Start section →"}
+                <p className="mt-2 text-[11px] font-bold text-[var(--exam-accent)]">
+                  {isDone ? "Open →" : isCurrent ? "Resume →" : "Start →"}
                 </p>
               ) : (
-                <p className="mt-3 text-[11px] text-[var(--exam-ink-muted)]">
+                <p className="mt-2 text-[10px] text-[var(--exam-ink-muted)]">
                   {card.key === "reading" && status === "locked"
                     ? "Complete Listening first"
                     : card.key === "writing" && status === "locked"
                       ? "Complete Reading first"
-                      : "Not available yet"}
+                      : "Locked"}
                 </p>
               )}
             </article>

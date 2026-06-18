@@ -3,6 +3,7 @@ import { mockApiId, mockModulePath } from "@/lib/mock-catalog";
 import { ensureCanonicalMockSlug } from "@/lib/mock-route-guard";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
+import { resolveMockMetaServer } from "@/lib/mock-server";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { WritingPage } from "@/modules/writing/components/writing-page";
 
@@ -32,12 +33,14 @@ export default async function MockWritingPage({ params, searchParams }: Props) {
     }),
   );
   const mockTestId = mockApiId(mockSlug);
+  const mockMeta = await resolveMockMetaServer(cookieHeader, mockSlug);
 
   return (
     <MockLayout>
       <WritingPage
         mockTestId={mockTestId}
         mockSlug={mockSlug}
+        mockMeta={mockMeta}
         part={part}
         autoStart={sp.auto === "1" || sp.auto === "true"}
       />

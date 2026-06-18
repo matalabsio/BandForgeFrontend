@@ -13,8 +13,8 @@ const variants: Record<ButtonVariant, string> = {
   secondary:
     "border border-navy/20 bg-white text-navy hover:border-teal hover:bg-surface focus-visible:ring-teal/30",
   ghost:
-    "text-teal hover:bg-teal/10 focus-visible:ring-teal/30",
-  teal: "bg-teal text-white hover:bg-teal-light focus-visible:ring-teal/40",
+    "text-teal hover:bg-cyan/10 focus-visible:ring-teal/30",
+  teal: "bg-teal text-white hover:bg-cyan-light focus-visible:ring-teal/40",
 };
 
 export function Button({

@@ -1,11 +1,12 @@
 export const BF_MARKETING_NAV = [
-  { href: "/features", label: "Features" },
-  { href: "/ai-feedback", label: "AI feedback" },
-  { href: "/how-it-works", label: "How it works" },
+  { href: "/#how", label: "How it works" },
+  { href: "/#modules", label: "Modules" },
+  { href: "/about", label: "About" },
+  { href: "/#pricing", label: "Pricing" },
 ] as const;
 
 export const BF_MARKETING_NAV_MOBILE_EXTRA = [
-  { href: "/why", label: "Why BandForge" },
+  { href: "/ai-feedback", label: "AI feedback" },
   { href: "/demo", label: "Product tour" },
   { href: "/mobile", label: "Mobile" },
   { href: "/stories", label: "Stories" },

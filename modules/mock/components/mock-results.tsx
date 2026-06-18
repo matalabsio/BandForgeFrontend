@@ -57,7 +57,7 @@ const MODULE_META = [
     label: "Listening",
     bandKey: "listening_band" as const,
     Icon: HeadphonesIcon,
-    accent: "from-sky-500/15 to-sky-600/5 text-sky-700",
+    accent: "from-teal/15 to-cyan/5 text-teal",
   },
   {
     key: "reading" as const,
@@ -241,7 +241,7 @@ function MockResultsBody({
             <div className="mt-8 space-y-3">
               <Link
                 href={`/scores?fresh=1&mock=${encodeURIComponent(mockSlug)}`}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[var(--exam-accent)] px-5 py-3.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#0891B2]"
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[var(--exam-accent)] px-5 py-3.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-cyan"
               >
                 View full performance
                 <span aria-hidden>→</span>

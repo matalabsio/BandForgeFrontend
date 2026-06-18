@@ -236,9 +236,16 @@ export function QuestionAudio({
           ) : null}
 
           {audio.error ? (
-            <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-800">
-              {audio.error}
-            </p>
+            <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-800">
+              <p>{audio.error}</p>
+              <button
+                type="button"
+                onClick={() => audio.retry()}
+                className="mt-2 cursor-pointer font-semibold text-red-900 underline"
+              >
+                Retry loading audio
+              </button>
+            </div>
           ) : null}
         </div>
 
@@ -260,7 +267,7 @@ export function QuestionAudio({
             await audio.start();
             onStarted?.();
           }}
-          className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-teal text-white shadow-sm transition-colors hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-teal text-white shadow-sm transition-colors hover:bg-cyan-light disabled:cursor-not-allowed disabled:opacity-60"
           aria-label="Play question audio"
         >
           {audio.isStarted ? (

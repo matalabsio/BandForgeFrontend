@@ -1,3 +1,4 @@
+import type { MockCatalogApiItem } from "@/lib/mock-catalog-api";
 import { scoresAfterMockCompletePath } from "@/lib/scores-path";
 
 /** Published full IELTS mocks (orchestrated multi-module exams). */
@@ -80,16 +81,41 @@ export function getMockPanelSlotBySlug(slug: MockSlug): MockTestPanelSlot | unde
   return MOCK_TEST_PANEL.find((slot) => slot.slug === slug);
 }
 
+export function mockTestIdForNumber(testNumber: number): string {
+  const slot = MOCK_TEST_PANEL.find((row) => row.number === testNumber);
+  if (slot?.slug) return MOCK_SLUGS[slot.slug];
+  return M01_MOCK_TEST_ID;
+}
+
+export function testNumberForMockId(mockTestId: string): number {
+  const slug = canonicalMockSlug(mockTestId);
+  if (slug === "m01" || slug === "m02") {
+    const panelSlot = getMockPanelSlotBySlug(slug as MockSlug);
+    if (panelSlot) return panelSlot.number;
+  }
+  return 1;
+}
+
+export function shortModuleResultsPath(
+  testNumber: number,
+  module: "listening" | "reading" | "writing",
+): string {
+  return `/test/${testNumber}/${module}/results`;
+}
+
 export function mockTestsIndexPath(): string {
   return "/test";
 }
 
-export function mockTestNumberPath(number: number): string {
-  return `/test/${number}`;
+export function mockTestNumberPath(
+  number: number,
+  _mockAttemptId?: string | null,
+): string {
+  return `/test?test=${number}`;
 }
 
 export type MockMeta = {
-  slug: MockSlug;
+  slug: MockSlug | string;
   id: string;
   displayLabel: string;
   subtitle: string;
@@ -162,9 +188,12 @@ function mockSlugForId(id: string): MockSlug | string {
 }
 
 export function canonicalMockSlug(slugOrId: string): string {
+  if (isUuid(slugOrId)) return slugOrId;
   const resolved = resolveMockId(slugOrId);
   const slug = mockSlugForId(resolved);
-  return typeof slug === "string" && slug in MOCK_SLUGS ? slug : DEFAULT_MOCK_SLUG;
+  if (typeof slug === "string" && slug in MOCK_SLUGS) return slug;
+  if (isUuid(resolved)) return resolved;
+  return DEFAULT_MOCK_SLUG;
 }
 
 export function isFullMock(testId: string): boolean {
@@ -174,13 +203,15 @@ export function isFullMock(testId: string): boolean {
 /** Canonical hub for a published mock — section cards (Listening, Reading, Writing). */
 export function testHubPath(
   slugOrId: string = DEFAULT_MOCK_SLUG,
-  mockAttemptId?: string | null,
+  _mockAttemptId?: string | null,
+  catalogNumber?: number | null,
 ): string {
+  if (catalogNumber != null && catalogNumber >= 1) {
+    return mockTestNumberPath(catalogNumber);
+  }
   const slug = canonicalMockSlug(slugOrId) as MockSlug;
   const slot = getMockPanelSlotBySlug(slug);
-  const base = slot ? mockTestNumberPath(slot.number) : mockTestNumberPath(1);
-  if (!mockAttemptId) return base;
-  return `${base}?mock_attempt=${encodeURIComponent(mockAttemptId)}`;
+  return slot ? mockTestNumberPath(slot.number) : mockTestNumberPath(1);
 }
 
 /** Canonical Test 1 hub — section cards (Listening, Reading, Writing). */
@@ -195,20 +226,74 @@ export function test2HubPath(mockAttemptId?: string | null): string {
 
 export function mockHubPath(
   slug: string = DEFAULT_MOCK_SLUG,
-  mockAttemptId?: string | null,
+  _mockAttemptId?: string | null,
 ): string {
   const canonical = canonicalMockSlug(slug);
   if (canonical === "m01" || canonical === "m02") {
-    return testHubPath(canonical, mockAttemptId);
+    return testHubPath(canonical);
   }
-  const base = `/mock/${canonical}`;
-  if (!mockAttemptId) return base;
-  return `${base}?mock_attempt=${encodeURIComponent(mockAttemptId)}`;
+  return `/mock/${canonical}`;
+}
+
+function buildFallbackMockMeta(id: string, slug: string): MockMeta {
+  const c = { ...DEFAULT_SECTION_COUNTS };
+  return {
+    slug,
+    id,
+    displayLabel: "Mock test",
+    subtitle: "Full IELTS Academic mock",
+    flowHint: `Listening has ${c.listeningPartCount} parts · reading has ${c.readingPassageCount} passages · writing has ${c.writingTaskCount} tasks`,
+    ...c,
+    totalMinutes: c.listeningMinutes + c.readingMinutes + c.writingMinutes,
+  };
+}
+
+/** Build UI meta from a live catalog API row (admin-created mocks). */
+export function mockMetaFromCatalogItem(item: MockCatalogApiItem): MockMeta {
+  const number = item.catalog_number;
+  const displayLabel = number != null ? `Test ${number}` : item.title;
+  const listeningPartCount =
+    item.listening_parts || DEFAULT_SECTION_COUNTS.listeningPartCount;
+  const readingPassageCount =
+    item.reading_passages || DEFAULT_SECTION_COUNTS.readingPassageCount;
+  const writingTaskCount =
+    item.writing_tasks || DEFAULT_SECTION_COUNTS.writingTaskCount;
+  const listeningMinutes = DEFAULT_SECTION_COUNTS.listeningMinutes;
+  const readingMinutes = DEFAULT_SECTION_COUNTS.readingMinutes;
+  const writingMinutes = DEFAULT_SECTION_COUNTS.writingMinutes;
+  return {
+    slug: item.id,
+    id: item.id,
+    displayLabel,
+    subtitle: item.description ?? displayLabel,
+    flowHint: `Listening has ${listeningPartCount} parts · reading has ${readingPassageCount} passages · writing has ${writingTaskCount} tasks`,
+    listeningPartCount,
+    readingPassageCount,
+    writingTaskCount,
+    listeningMinutes,
+    readingMinutes,
+    writingMinutes,
+    totalMinutes: listeningMinutes + readingMinutes + writingMinutes,
+  };
+}
+
+export function resolveMockMetaFromCatalog(
+  catalog: MockCatalogApiItem[],
+  slugOrId: string,
+): MockMeta {
+  const id = resolveMockId(slugOrId);
+  const item = catalog.find((row) => row.id === id);
+  if (item) return mockMetaFromCatalogItem(item);
+  return getMockMeta(slugOrId);
 }
 
 export function getMockMeta(slugOrId: string): MockMeta {
-  const slug = canonicalMockSlug(slugOrId) as MockSlug;
-  return MOCK_CATALOG[slug];
+  const slug = canonicalMockSlug(slugOrId);
+  if (slug in MOCK_CATALOG) {
+    return MOCK_CATALOG[slug as MockSlug];
+  }
+  const id = resolveMockId(slugOrId);
+  return buildFallbackMockMeta(id, slug);
 }
 
 export function mockModulePath(
@@ -230,7 +315,6 @@ export function mockModulePath(
     params.set("part", String(opts.part));
   }
   if (opts?.auto) params.set("auto", "1");
-  if (opts?.mockAttemptId) params.set("mock_attempt", opts.mockAttemptId);
   const q = params.toString();
   return q ? `${base}?${q}` : base;
 }
@@ -248,10 +332,9 @@ export function mockCheckpointPath(
   return `/mock/${slug}/checkpoint?${params.toString()}`;
 }
 
-export function mockResultsPath(slugOrId: string, mockAttemptId: string): string {
+export function mockResultsPath(slugOrId: string, _mockAttemptId?: string): string {
   const slug = canonicalMockSlug(slugOrId);
-  const params = new URLSearchParams({ mock_attempt: mockAttemptId });
-  return `/mock/${slug}/results?${params.toString()}`;
+  return `/mock/${slug}/results`;
 }
 
 /** Listening parts included in Test 1 flow. */
@@ -353,8 +436,8 @@ export function mockAfterWritingSubmitPath(
     return `${path}${sep}section_start=1`;
   }
   const slug = canonicalMockSlug(slugOrId);
-  const params = new URLSearchParams({ mock_attempt: mockAttemptId });
-  return `/test/writing/results/${encodeURIComponent(attemptId)}?${params.toString()}`;
+  const testNumber = testNumberForMockId(resolveMockId(slug));
+  return shortModuleResultsPath(testNumber, "writing");
 }
 
 /** Navigate after submit using orchestrator progress (respects listening → reading order). */

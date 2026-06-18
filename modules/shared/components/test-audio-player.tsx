@@ -45,7 +45,7 @@ export function TestAudioPlayer({ src, className }: TestAudioPlayerProps) {
       <button
         type="button"
         onClick={toggle}
-        className="touch-target flex size-14 shrink-0 cursor-pointer items-center justify-center rounded-full bg-teal text-white transition-colors duration-200 hover:bg-teal-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 motion-reduce:transition-none"
+        className="touch-target flex size-14 shrink-0 cursor-pointer items-center justify-center rounded-full bg-teal text-white transition-colors duration-200 hover:bg-cyan-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 motion-reduce:transition-none"
         aria-label={playing ? "Pause audio" : "Play audio"}
       >
         {playing ? (

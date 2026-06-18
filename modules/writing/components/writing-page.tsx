@@ -11,8 +11,13 @@ import {
   mockModulePath,
   mockPathFromProgress,
   mockHubPath,
+  mockResultsPath,
   TEST1_WRITING_TASK_COUNT,
+  testNumberForMockId,
+  type MockMeta,
 } from "@/lib/mock-catalog";
+import { persistMockAttemptId, persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
 import type { WritingBootServer } from "@/lib/mock-server";
@@ -25,9 +30,10 @@ import {
   writingMinWords,
   writingResultsPath,
 } from "@/lib/writing-test";
+import { WritingExamWorkspace } from "@/modules/writing/components/writing-exam-workspace";
 import { WritingTask1Prompt } from "@/modules/writing/components/writing-task1-prompt";
 import { WritingTask2Prompt } from "@/modules/writing/components/writing-task2-prompt";
-import { TestHeader, TestShell, TestTimer, WordCounter } from "@/modules/shared";
+import { TestHeader, TestShell, TestTimer } from "@/modules/shared";
 import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
 import { useListeningTimer } from "@/modules/shared/hooks/use-exam-timer";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
@@ -35,13 +41,11 @@ import {
   formatExamSubmitError,
   submitWithExamSession,
 } from "@/modules/shared/lib/submit-with-exam-session";
-import { cn } from "@/lib/utils";
-import { SectionInstructionsModal } from "@/modules/shared/components/section-instructions-modal";
 import {
   ExamBusyOverlay,
   ExamSectionLoader,
 } from "@/modules/shared/components/exam-section-loader";
-import { ExamPartFooter } from "@/components/exam/exam-part-footer";
+import { SectionInstructionsModal } from "@/modules/shared/components/section-instructions-modal";
 
 function readConsent(moduleKey: string, attemptScope: string): boolean {
   if (typeof window === "undefined") return false;
@@ -76,6 +80,7 @@ type Props = {
   mockTestId: string;
   part: 1 | 2;
   mockSlug?: string;
+  mockMeta?: MockMeta;
   autoStart?: boolean;
   initialBoot?: WritingBootServer | null;
 };
@@ -84,12 +89,13 @@ export function WritingPage({
   mockTestId,
   part,
   mockSlug = DEFAULT_MOCK_SLUG,
+  mockMeta: mockMetaProp,
   autoStart = true,
   initialBoot = null,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const mockAttemptId = searchParams.get("mock_attempt");
+  const mockAttemptId = useResolvedMockAttemptId(mockTestId);
   const sectionStart = searchParams.get("section_start") === "1";
 
   const [phase, setPhase] = useState<"loading" | "intro" | "ready" | "error">("loading");
@@ -111,7 +117,10 @@ export function WritingPage({
   const bootedRef = useRef(false);
   const needsConsentGateRef = useRef(false);
   const expiryFiredRef = useRef(false);
-  const mockMeta = useMemo(() => getMockMeta(mockSlug), [mockSlug]);
+  const mockMeta = useMemo(
+    () => mockMetaProp ?? getMockMeta(mockSlug),
+    [mockMetaProp, mockSlug],
+  );
 
   const minWords =
     task?.options?.min_words ?? writingMinWords(part);
@@ -272,10 +281,13 @@ export function WritingPage({
           writingMod?.status === "completed" &&
           writingMod.test_attempt_id
         ) {
-          const q = new URLSearchParams({ mock_attempt: mockAttemptId });
-          router.replace(
-            `${writingResultsPath(writingMod.test_attempt_id)}?${q.toString()}`,
+          const testNumber = testNumberForMockId(mockTestId);
+          persistModuleResultAttempt(
+            testNumber,
+            "writing",
+            writingMod.test_attempt_id,
           );
+          router.replace(writingResultsPath(testNumber));
           return;
         }
         syncExamRoute(
@@ -306,6 +318,7 @@ export function WritingPage({
 
   const handleChange = (value: string) => {
     setEssay(value);
+    setSaved(false);
     if (attemptId) {
       try {
         localStorage.setItem(storageKey(attemptId), value);
@@ -314,6 +327,29 @@ export function WritingPage({
       }
     }
   };
+
+  useEffect(() => {
+    if (!attemptId || !task || autosaveBlockedRef.current) return;
+    if (phase !== "ready") return;
+
+    if (autosaveRef.current) {
+      clearTimeout(autosaveRef.current);
+    }
+
+    autosaveRef.current = setTimeout(() => {
+      void writingApi
+        .autosave(attemptId, task.id, essay)
+        .then(() => setSaved(true))
+        .catch(() => setSaved(false));
+    }, 1200);
+
+    return () => {
+      if (autosaveRef.current) {
+        clearTimeout(autosaveRef.current);
+        autosaveRef.current = null;
+      }
+    };
+  }, [essay, attemptId, task, phase]);
 
   const submitTask = useCallback(async (opts?: { onExpiry?: boolean }) => {
     if (!attemptId || !task || busy) return;
@@ -360,9 +396,8 @@ export function WritingPage({
           result.mock_writing_complete ||
           result.mock_next_module === "speaking"
         ) {
-          router.replace(
-            `/mock/${mockSlug}/results?mock_attempt=${encodeURIComponent(mockAttemptId)}`,
-          );
+          persistMockAttemptId(mockTestId, mockAttemptId);
+          router.replace(mockResultsPath(mockSlug));
           return;
         }
         if (result.next_part === 2 && part === 1 && TEST1_WRITING_TASK_COUNT > 1) {
@@ -370,12 +405,16 @@ export function WritingPage({
           router.push(
             mockModulePath(mockSlug, "writing", {
               part: 2,
-              mockAttemptId,
               auto: true,
             }) + "&section_start=1",
           );
           return;
         }
+        persistModuleResultAttempt(
+          testNumberForMockId(mockTestId),
+          "writing",
+          result.attempt_id,
+        );
         router.push(
           mockAfterWritingSubmitPath(
             mockSlug,
@@ -397,10 +436,12 @@ export function WritingPage({
         return;
       }
 
-      const q = mockAttemptId
-        ? `?mock_attempt=${encodeURIComponent(mockAttemptId)}`
-        : "";
-      router.push(`${writingResultsPath(result.attempt_id)}${q}`);
+      persistModuleResultAttempt(
+        testNumberForMockId(mockTestId),
+        "writing",
+        result.attempt_id,
+      );
+      router.push(writingResultsPath(testNumberForMockId(mockTestId)));
     } catch (e) {
       autosaveBlockedRef.current = false;
       setError(formatExamSubmitError(e));
@@ -520,10 +561,23 @@ export function WritingPage({
     );
   }
 
+  const submitLabel = mockAttemptId
+    ? activePart === 1
+      ? "Next Part"
+      : "Finish writing"
+    : activePart === 1
+      ? "Continue to Task 2"
+      : "Submit Writing";
+
+  const promptNode =
+    task && activePart === 2 ? (
+      <WritingTask2Prompt task={task} minutes={40} minWords={minWords} />
+    ) : task ? (
+      <WritingTask1Prompt task={task} minutes={20} minWords={minWords} />
+    ) : null;
+
   return (
-    <TestShell
-      header={<TestHeader timer={<TestTimer remainingSeconds={remaining} />} />}
-    >
+    <>
       {busy ? (
         <ExamBusyOverlay
           title={
@@ -542,87 +596,23 @@ export function WritingPage({
           }
         />
       ) : null}
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--reading-border)] bg-[var(--reading-bar)]/5 px-4 py-3 md:px-6">
-          <p className="text-meta font-semibold text-[var(--reading-ink)]">
-            Writing Task {activePart}
-            {mockAttemptId ? " · Full mock" : ""}
-          </p>
-          <div className="flex items-center gap-4">
-            <WordCounter count={wordCount} min={minWords} />
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-0.5 text-meta font-semibold tabular-nums",
-                wordCount >= minWords
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-[var(--reading-surface)] text-[var(--reading-ink-muted)]",
-              )}
-              title={`Estimated band from word count (minimum ${minWords} words)`}
-            >
-              Est. band {estimatedBand > 0 ? estimatedBand.toFixed(1) : "—"}
-            </span>
-            <span
-              className={cn(
-                "text-meta",
-                saved ? "text-emerald-700" : "text-[var(--reading-ink-muted)]",
-              )}
-            >
-              {saved ? "Saved" : "Saving…"}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-          <section
-            className="min-h-[34vh] border-b border-[var(--reading-border)] bg-[var(--reading-paper)] p-4 lg:min-h-0 lg:w-[min(44%,560px)] lg:border-b-0 lg:border-r lg:p-6 lg:overflow-y-auto"
-            aria-label="Task prompt"
-          >
-            {task && activePart === 2 ? (
-              <WritingTask2Prompt
-                task={task}
-                minutes={40}
-                minWords={minWords}
-              />
-            ) : task ? (
-              <WritingTask1Prompt task={task} minutes={20} minWords={minWords} />
-            ) : null}
-          </section>
-
-          <section className="flex min-h-0 flex-1 flex-col bg-[var(--reading-surface)] lg:max-h-[calc(100dvh-8rem)]">
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
-              <label htmlFor="essay" className="sr-only">
-                Your response
-              </label>
-              <textarea
-                id="essay"
-                value={essay}
-                onChange={(e) => handleChange(e.target.value)}
-                placeholder="Type your response here…"
-                className="answer-input min-h-[240px] w-full flex-1 resize-none rounded-lg border border-[var(--reading-border)] bg-white p-4 text-[var(--reading-ink)] transition-colors duration-200 focus:border-[var(--reading-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--reading-accent)]/20"
-              />
-              {error ? (
-                <p className="mt-2 text-[13px] text-red-600" role="alert">
-                  {error}
-                </p>
-              ) : null}
-            </div>
-            <ExamPartFooter
-              variant="writing"
-              label={
-                mockAttemptId
-                  ? activePart === 1
-                    ? "Next Part"
-                    : "Finish writing"
-                  : activePart === 1
-                    ? "Continue to Task 2"
-                    : "Submit Writing"
-              }
-              busy={busy}
-              onAction={() => void submitTask()}
-            />
-          </section>
-        </div>
-      </main>
-    </TestShell>
+      <WritingExamWorkspace
+        activePart={activePart}
+        isMock={Boolean(mockAttemptId)}
+        displayLabel={mockMeta.displayLabel}
+        remainingSeconds={remaining}
+        wordCount={wordCount}
+        minWords={minWords}
+        estimatedBand={estimatedBand}
+        saved={saved}
+        busy={busy}
+        submitLabel={submitLabel}
+        error={error}
+        prompt={promptNode}
+        essay={essay}
+        onEssayChange={handleChange}
+        onSubmit={() => void submitTask()}
+      />
+    </>
   );
 }

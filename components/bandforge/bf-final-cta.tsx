@@ -1,31 +1,55 @@
+import Link from "next/link";
 import { Suspense } from "react";
-import { BfFinalConversionCtas } from "@/components/bandforge/bf-final-conversion-ctas";
+import { BfMarketingDarkCta } from "@/components/bandforge/ui/bf-marketing-dark-cta";
+import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links";
+import { getMarketingSessionUser } from "@/lib/marketing-auth-server";
+import { isAuthEnabled } from "@/lib/flags";
+
+async function FinalCtaButton({ mobile }: { mobile?: boolean }) {
+  const user = await getMarketingSessionUser();
+  const href =
+    !isAuthEnabled() || user ? "/dashboard" : marketingAppHref();
+
+  return (
+    <Link
+      href={href}
+      prefetch
+      className={
+        mobile
+          ? "flex w-full items-center justify-center rounded-full bg-cyan px-6 py-[17px] font-display text-[1.0625rem] font-semibold text-white no-underline shadow-[0_10px_26px_rgb(0_151_167/0.36)] transition-colors hover:bg-brand-sky-hover"
+          : "inline-flex items-center justify-center rounded-full bg-cyan px-9 py-[19px] font-display text-lg font-semibold text-white no-underline shadow-[0_14px_32px_rgb(0_151_167/0.4)] transition-colors hover:bg-brand-sky-hover"
+      }
+    >
+      Take the Free Diagnostic Test
+    </Link>
+  );
+}
 
 export function BandForgeFinalCta() {
   return (
-    <section
+    <BfMarketingDarkCta
       id="final-cta"
-      className="bf-section scroll-mt-20 border-t border-border/70 bg-white"
+      headline="If you took the IELTS today, what would your band be?"
+      className="scroll-mt-20"
     >
-      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-        <h2 className="bf-section-title">
-          Your next IELTS band score starts here.
-        </h2>
-        <p className="bf-copy mx-auto mt-5 max-w-xl">
-          Save your mobile number now, continue with Google, and start building
-          your mock-test dashboard without a cluttered signup flow.
-        </p>
-        <Suspense
-          fallback={
-            <div
-              className="mx-auto mt-8 h-12 w-56 animate-pulse rounded-full bg-navy/10"
-              aria-hidden
-            />
-          }
-        >
-          <BfFinalConversionCtas />
-        </Suspense>
-      </div>
-    </section>
+      <Suspense
+        fallback={
+          <div
+            className="mx-auto h-14 w-full max-w-sm animate-pulse rounded-full bg-white/10 lg:w-64"
+            aria-hidden
+          />
+        }
+      >
+        <div className="lg:hidden">
+          <FinalCtaButton mobile />
+        </div>
+        <div className="hidden lg:block">
+          <FinalCtaButton />
+        </div>
+      </Suspense>
+      <p className="mt-3.5 text-[0.8125rem] text-[#7e93ad] lg:mt-4 lg:text-sm">
+        No account needed to start. Results in 24 hours.
+      </p>
+    </BfMarketingDarkCta>
   );
 }

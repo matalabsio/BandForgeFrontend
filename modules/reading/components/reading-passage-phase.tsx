@@ -26,7 +26,7 @@ export function ReadingPassagePhase({ passageText, onContinue }: Props) {
             <button
               type="button"
               onClick={onContinue}
-              className="mt-4 w-full cursor-pointer rounded-lg bg-[var(--reading-accent)] px-5 py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#0891B2]"
+              className="mt-4 w-full cursor-pointer rounded-lg bg-[var(--reading-accent)] px-5 py-3 text-[14px] font-bold text-white transition-colors hover:bg-cyan"
             >
               Continue to Questions 1–5
             </button>

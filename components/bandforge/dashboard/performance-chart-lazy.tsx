@@ -6,7 +6,7 @@ import type { DashboardRecentAttempt } from "@/components/bandforge/dashboard/ty
 function ChartSkeleton() {
   return (
     <div
-      className="h-full min-h-[220px] animate-pulse rounded-[20px] bg-[#0F172A]/[0.06]"
+      className="h-full min-h-[220px] animate-pulse rounded-[20px] bg-ink/[0.06]"
       aria-hidden
     />
   );

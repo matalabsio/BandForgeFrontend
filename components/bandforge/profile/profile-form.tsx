@@ -112,7 +112,7 @@ export function ProfileForm({ user }: Props) {
           type="button"
           onClick={onPickAvatar}
           disabled={uploading}
-          className="group relative flex size-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-[#06B6D4]/30 bg-[#0F172A]/5 shadow-[0_8px_24px_rgba(6,182,212,0.2)] transition-transform hover:scale-[1.02] disabled:opacity-60"
+          className="group relative flex size-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-cyan/30 bg-ink/5 shadow-[0_8px_24px_rgba(6,182,212,0.2)] transition-transform hover:scale-[1.02] disabled:opacity-60"
           aria-label="Change profile photo"
         >
           {avatarPreview ? (
@@ -123,11 +123,11 @@ export function ProfileForm({ user }: Props) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <span className="font-display text-3xl font-bold text-[#06B6D4]">
+            <span className="font-display text-3xl font-bold text-cyan">
               {initial}
             </span>
           )}
-          <span className="absolute inset-x-0 bottom-0 bg-[#0F172A]/60 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="absolute inset-x-0 bottom-0 bg-ink/60 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
             {uploading ? "…" : "Edit"}
           </span>
         </button>
@@ -139,10 +139,10 @@ export function ProfileForm({ user }: Props) {
           onChange={onAvatarChange}
         />
         <div className="text-center sm:text-left">
-          <p className="text-[15px] font-semibold text-[#0F172A]">
+          <p className="text-[15px] font-semibold text-ink">
             Profile photo
           </p>
-          <p className="mt-1 text-[13px] text-[#0F172A]/55">
+          <p className="mt-1 text-[13px] text-ink/55">
             JPEG, PNG, or WebP · max 2 MB
           </p>
         </div>
@@ -183,7 +183,7 @@ export function ProfileForm({ user }: Props) {
             placeholder="9876543210"
           />
           {phone.length === 10 ? (
-            <p className="mt-1 text-[11px] text-[#0F172A]/45">
+            <p className="mt-1 text-[11px] text-ink/45">
               {formatIndiaDisplay(phone)}
             </p>
           ) : null}
@@ -208,9 +208,9 @@ export function ProfileForm({ user }: Props) {
         </Field>
       </div>
 
-      <dl className="grid gap-3 rounded-2xl border border-[#0F172A]/6 bg-[#0F172A]/[0.02] p-4 text-[13px] sm:grid-cols-2">
+      <dl className="grid gap-3 rounded-2xl border border-ink/6 bg-ink/[0.02] p-4 text-[13px] sm:grid-cols-2">
         <div>
-          <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#0F172A]/40">
+          <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40">
             Email verified
           </dt>
           <dd className="mt-0.5 font-medium">
@@ -218,7 +218,7 @@ export function ProfileForm({ user }: Props) {
           </dd>
         </div>
         <div>
-          <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#0F172A]/40">
+          <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40">
             Phone verified
           </dt>
           <dd className="mt-0.5 font-medium">
@@ -238,22 +238,22 @@ export function ProfileForm({ user }: Props) {
         </output>
       ) : null}
 
-      <div className="flex flex-col gap-4 border-t border-[#0F172A]/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 border-t border-ink/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="submit"
           disabled={saving || uploading}
-          className="inline-flex min-h-[48px] cursor-pointer items-center justify-center rounded-2xl bg-[#06B6D4] px-8 py-3 text-[14px] font-bold text-white transition-all hover:brightness-105 disabled:opacity-60"
+          className="inline-flex min-h-[48px] cursor-pointer items-center justify-center rounded-2xl bg-cyan px-8 py-3 text-[14px] font-bold text-white transition-all hover:brightness-105 disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save profile"}
         </button>
-        <SignOutButton className="inline-flex min-h-[48px] cursor-pointer items-center justify-center rounded-2xl border border-[#0F172A]/12 bg-white px-6 py-3 text-[14px] font-semibold text-[#0F172A]/70 transition-colors hover:border-[#0F172A]/20 hover:text-[#0F172A]" />
+        <SignOutButton className="inline-flex min-h-[48px] cursor-pointer items-center justify-center rounded-2xl border border-ink/12 bg-white px-6 py-3 text-[14px] font-semibold text-ink/70 transition-colors hover:border-ink/20 hover:text-ink" />
       </div>
     </form>
   );
 }
 
 const inputClass =
-  "mt-1.5 w-full rounded-xl border border-[#0F172A]/10 bg-white/80 px-4 py-2.5 text-[15px] text-[#0F172A] outline-none transition-shadow focus:border-[#06B6D4]/50 focus:ring-2 focus:ring-[#06B6D4]/20";
+  "mt-1.5 w-full rounded-xl border border-ink/10 bg-white/80 px-4 py-2.5 text-[15px] text-ink outline-none transition-shadow focus:border-cyan/50 focus:ring-2 focus:ring-cyan/20";
 
 function Field({
   label,
@@ -268,12 +268,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#0F172A]/45">
+      <label className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink/45">
         {label}
-        {required ? <span className="text-[#06B6D4]"> *</span> : null}
+        {required ? <span className="text-cyan"> *</span> : null}
       </label>
       {hint ? (
-        <p className="mt-0.5 text-[11px] text-[#0F172A]/40">{hint}</p>
+        <p className="mt-0.5 text-[11px] text-ink/40">{hint}</p>
       ) : null}
       {children}
     </div>

@@ -2,13 +2,15 @@ import type { ComponentType, SVGProps } from "react";
 import {
   BarChartIcon,
   BookIcon,
+  CrownIcon,
   FileTextIcon,
+  FlameIcon,
   HeadphonesIcon,
   HomeIcon,
   LayoutGridIcon,
   MicIcon,
   PencilIcon,
-  TrendIcon,
+  UserIcon,
 } from "@/components/bandforge/dashboard/icons";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -28,10 +30,10 @@ export type NavGroup = {
 export const DASHBOARD_NAV: NavGroup[] = [
   {
     title: "",
-    items: [{ label: "Dashboard", href: "/dashboard", Icon: HomeIcon }],
+    items: [{ label: "Home", href: "/dashboard", Icon: HomeIcon }],
   },
   {
-    title: "Practice",
+    title: "Tests",
     items: [
       { label: "Listening", href: "/test/listening", Icon: HeadphonesIcon },
       { label: "Reading", href: "/test/reading", Icon: BookIcon },
@@ -50,17 +52,26 @@ export const DASHBOARD_NAV: NavGroup[] = [
     ],
   },
   {
-    title: "Analytics",
+    title: "Progress",
     items: [
       { label: "Performance", href: "/scores", Icon: BarChartIcon },
-      { label: "Progress", href: "/dashboard", Icon: TrendIcon },
+      { label: "Streak", href: "/streak", Icon: FlameIcon },
     ],
   },
   {
-    title: "Resources",
+    title: "Content",
     items: [
-      { label: "Mock Tests", href: "/dashboard", Icon: LayoutGridIcon },
-      { label: "Study Plan", href: "/dashboard", Icon: FileTextIcon, disabled: true },
+      { label: "Content Library", href: "/content-library", Icon: LayoutGridIcon },
+      { label: "Study Plan", href: "/study-plan", Icon: FileTextIcon },
+      { label: "Plans", href: "/plan", Icon: CrownIcon },
     ],
   },
+];
+
+export const MOBILE_BOTTOM_NAV: NavLink[] = [
+  { label: "Home", href: "/dashboard", Icon: HomeIcon },
+  { label: "Tests", href: "/test", Icon: FileTextIcon },
+  { label: "Progress", href: "/scores", Icon: BarChartIcon },
+  { label: "Content", href: "/content-library", Icon: LayoutGridIcon },
+  { label: "Profile", href: "/profile", Icon: UserIcon },
 ];

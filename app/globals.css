@@ -1,19 +1,35 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-brand: #3d81e3;
   --color-navy: #0d1f3c;
   --color-teal: #0097a7;
+  --color-cyan: #00bcd4;
   --color-teal-light: #00bcd4;
+  --color-slate: #9fb3cc;
+  --color-brand-sky: #00bcd4;
+  --color-brand-sky-hover: #00a8bf;
+  --color-brand-sky-soft: #e0f7fa;
+  --color-cyan-soft: #e0f7fa;
+  --color-teal-soft: #e0f2f3;
   --color-success: #059669;
   --color-warning: #d97706;
   --color-danger: #dc2626;
   --color-ink: #0f1923;
   --color-surface: #f5f7fa;
-  --color-border: #e5e7eb;
+  --color-surface-alt: #f8fafc;
+  --color-muted: #5a6b82;
+  --color-muted-light: #8a99ac;
+  --color-border-soft: #eef1f5;
+  --color-border-muted: #e4e9f0;
+  --color-navy-deep: #0a1830;
+  --color-border: rgb(13 31 60 / 0.08);
 
-  --font-sans: var(--font-inter), var(--font-dm-sans), ui-sans-serif, system-ui,
-    sans-serif;
+  --font-display: var(--font-bricolage), var(--font-dm-sans), ui-sans-serif,
+    system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, monospace;
 
   --font-arvo: "Arvo", Georgia, serif;
@@ -75,6 +91,14 @@ html {
     line-height: 1.5;
     font-family: var(--font-sans);
     overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    @apply font-bold;
   }
 
   :focus-visible {
@@ -204,6 +228,7 @@ html {
   .text-meta {
     font-size: var(--text-meta);
     line-height: 1.4;
+    font-family: var(--font-mono);
   }
 
   .card-premium {
@@ -221,23 +246,7 @@ html {
   }
 
   .font-display {
-    font-family: var(--font-dm-sans), var(--font-inter), ui-sans-serif, system-ui,
-      sans-serif;
-  }
-
-  /* BandForge dashboard — Google Fonts bundle (Noto Sans UI, Bitter headings) */
-  .bf-dashboard {
-    font-family: var(--font-noto-sans);
-  }
-
-  .bf-dashboard .font-display,
-  .bf-dashboard h1,
-  .bf-dashboard h2 {
-    font-family: var(--font-bitter), ui-serif, Georgia, serif;
-  }
-
-  .bf-dashboard .font-dash-mono {
-    font-family: var(--font-roboto-slab), ui-serif, Georgia, serif;
+    font-family: var(--font-display);
   }
 
   .bf-grid-bg {
@@ -267,33 +276,28 @@ html {
   }
 
   .bf-card-hover:hover {
-    border-color: rgb(0 151 167 / 0.28);
-    box-shadow: 0 16px 48px -20px rgb(13 31 60 / 0.14);
+    border-color: rgb(0 188 212 / 0.35);
+    box-shadow: 0 16px 48px -20px rgb(0 151 167 / 0.18);
   }
 
   .bf-page-shell {
-    background:
-      radial-gradient(circle at 12% 8%, rgb(0 188 212 / 0.12), transparent 28rem),
-      radial-gradient(circle at 86% 18%, rgb(13 31 60 / 0.08), transparent 26rem),
-      linear-gradient(180deg, #ffffff 0%, #f7f9fc 48%, #ffffff 100%);
+    @apply bg-white;
   }
 
   .bf-section {
-    @apply scroll-mt-20 py-16 sm:py-20 lg:py-28;
+    @apply scroll-mt-20 py-12 sm:py-16 lg:py-[5.625rem] lg:pb-20;
   }
 
   .bf-container {
-    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto max-w-[1200px] px-6 sm:px-8 lg:px-10;
   }
 
   .bf-eyebrow {
-    @apply text-meta font-semibold uppercase tracking-[0.18em] text-teal;
+    @apply text-meta font-semibold uppercase tracking-[0.18em] text-cyan;
   }
 
   .bf-section-title {
-    @apply text-3xl font-bold text-navy sm:text-4xl lg:text-5xl;
-    font-family: var(--font-dm-sans), var(--font-inter), ui-sans-serif, system-ui,
-      sans-serif;
+    @apply font-display text-3xl font-bold text-ink sm:text-4xl lg:text-5xl;
     letter-spacing: -0.04em;
   }
 
@@ -308,8 +312,8 @@ html {
   }
 
   .bf-min-card {
-    @apply rounded-3xl border border-border/80 bg-white/85 backdrop-blur;
-    box-shadow: 0 18px 60px -36px rgb(13 31 60 / 0.35);
+    @apply rounded-2xl border border-border bg-white;
+    box-shadow: 0 18px 48px -32px rgb(0 151 167 / 0.15);
   }
 
   .bf-hairline {

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 import { mockApiId, mockModulePath } from "@/lib/mock-catalog";
 import { ensureCanonicalMockSlug } from "@/lib/mock-route-guard";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
-import { fetchReadingBootServer } from "@/lib/mock-server";
+import { fetchReadingBootServer, resolveMockMetaServer } from "@/lib/mock-server";
 import { getCachedCookieHeader } from "@/lib/server-cache";
 import { ReadingPage } from "@/modules/reading/components/reading-page";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
@@ -49,6 +49,7 @@ export default async function MockReadingPage({ params, searchParams }: Props) {
           sp.mock_attempt,
         )
       : null;
+  const mockMeta = await resolveMockMetaServer(authCookies, mockSlug);
 
   return (
     <MockLayout>
@@ -56,6 +57,7 @@ export default async function MockReadingPage({ params, searchParams }: Props) {
         key={`${passage}-${sp.mock_attempt ?? "solo"}`}
         testId={mockTestId}
         mockSlug={mockSlug}
+        mockMeta={mockMeta}
         passage={passage}
         autoStart={autoStart}
         initialBoot={initialBoot}

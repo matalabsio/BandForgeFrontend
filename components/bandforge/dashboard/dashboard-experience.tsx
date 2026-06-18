@@ -1,7 +1,13 @@
 import { AiCoachCard } from "@/components/bandforge/dashboard/ai-coach-card";
+import {
+  DashboardBandHero,
+  DashboardEmptyHero,
+} from "@/components/bandforge/dashboard/dashboard-band-hero";
+import { DashboardEmptyModules } from "@/components/bandforge/dashboard/dashboard-empty-modules";
+import { DashboardModuleProgress } from "@/components/bandforge/dashboard/dashboard-module-progress";
 import { MockTestsSection } from "@/components/bandforge/dashboard/mock-tests-section";
-import { DashboardStatRow } from "@/components/bandforge/dashboard/dashboard-stat-row";
 import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
+import { DashboardTodaysPlan } from "@/components/bandforge/dashboard/dashboard-todays-plan";
 import { PerformanceChartLazy } from "@/components/bandforge/dashboard/performance-chart-lazy";
 import { ProTipBar } from "@/components/bandforge/dashboard/pro-tip-bar";
 import { RecentActivity } from "@/components/bandforge/dashboard/recent-activity";
@@ -10,6 +16,7 @@ import type {
   DashboardSummary,
   MockTestSummary,
 } from "@/components/bandforge/dashboard/types";
+import type { MockCatalogSlot } from "@/lib/mock-catalog-api";
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 
 type Props = {
@@ -18,6 +25,7 @@ type Props = {
   email?: string | null;
   avatarUrl?: string | null;
   mockTests: MockTestSummary[];
+  catalogSlots?: MockCatalogSlot[];
   summary: DashboardSummary;
   profileTargetBand?: number | null;
   initialMockProgressById?: Partial<Record<string, MockAttemptProgress | null>>;
@@ -29,11 +37,15 @@ export function DashboardExperience({
   email = null,
   avatarUrl = null,
   mockTests,
+  catalogSlots,
   summary,
   profileTargetBand = null,
   initialMockProgressById = {},
 }: Props) {
   const streak = summary.stats.current_streak ?? 0;
+  const hasAttempts = summary.recent.length > 0;
+  const overallBand = summary.stats.average_band ?? 6.5;
+  const testsCompleted = summary.recent.length;
 
   return (
     <div className="space-y-6">
@@ -45,32 +57,43 @@ export function DashboardExperience({
         streakDays={streak}
       />
 
-      <DashboardStatRow
-        stats={summary.stats}
-        profileTargetBand={profileTargetBand}
-      />
-
-      <MockTestsSection />
-
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-stretch">
-        <div className="min-w-0">
-          <PerformanceChartLazy
-            attempts={summary.recent}
-            averageBand={summary.stats.average_band}
+      {hasAttempts ? (
+        <>
+          <DashboardBandHero
+            overallBand={overallBand}
+            testsCompleted={testsCompleted}
           />
-        </div>
-        <div className="min-w-0">
-          <StudyActivityCard days={summary.activity_days ?? []} />
-        </div>
-        <div className="min-w-0">
-          <AiCoachCard />
-        </div>
-      </div>
+          <DashboardModuleProgress />
+          <DashboardTodaysPlan />
+        </>
+      ) : (
+        <>
+          <DashboardEmptyHero firstName={firstName} />
+          <DashboardEmptyModules />
+        </>
+      )}
 
-      {summary.recent.length > 0 ? (
-        <div className="bf-below-fold">
-          <RecentActivity attempts={summary.recent} />
-        </div>
+      {hasAttempts ? (
+        <>
+          <MockTestsSection catalogSlots={catalogSlots} />
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-stretch">
+            <div className="min-w-0">
+              <PerformanceChartLazy
+                attempts={summary.recent}
+                averageBand={summary.stats.average_band}
+              />
+            </div>
+            <div className="min-w-0">
+              <StudyActivityCard days={summary.activity_days ?? []} />
+            </div>
+            <div className="min-w-0">
+              <AiCoachCard />
+            </div>
+          </div>
+          <div className="bf-below-fold">
+            <RecentActivity attempts={summary.recent} />
+          </div>
+        </>
       ) : null}
 
       <ProTipBar />

@@ -89,7 +89,7 @@ export function ReadingExamToolbar({
           type="button"
           disabled={busy}
           onClick={onSubmit}
-          className="shrink-0 cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
+          className="shrink-0 cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "Submitting…" : submitLabel}
         </button>

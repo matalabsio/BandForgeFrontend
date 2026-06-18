@@ -31,9 +31,11 @@ type CheckId = (typeof CHECKLIST_ITEMS)[number]["id"];
 export function Test1ReadinessChecklist({
   onReadyChange,
   className,
+  variant = "default",
 }: {
   onReadyChange: (ready: boolean) => void;
   className?: string;
+  variant?: "default" | "dark";
 }) {
   const [checked, setChecked] = useState<Record<CheckId, boolean>>({
     headphones: false,
@@ -56,10 +58,15 @@ export function Test1ReadinessChecklist({
     setChecked((prev) => ({ ...prev, [id]: value }));
   }, []);
 
+  const isDark = variant === "dark";
+
   return (
     <section
       className={cn(
-        "rounded-xl border border-[var(--exam-border)] bg-[var(--exam-surface,#f8fafc)] p-4 sm:p-5",
+        "rounded-xl border p-4 sm:p-5",
+        isDark
+          ? "border-white/10 bg-white/5"
+          : "border-[var(--exam-border)] bg-[var(--exam-surface,#f8fafc)]",
         className,
       )}
       aria-labelledby="test1-readiness-heading"
@@ -70,17 +77,34 @@ export function Test1ReadinessChecklist({
       >
         Before you start
       </p>
-      <h2 className="mt-1 text-[15px] font-bold text-[var(--exam-ink)] sm:text-base">
+      <h2
+        className={cn(
+          "mt-1 text-[15px] font-bold sm:text-base",
+          isDark ? "text-white" : "text-[var(--exam-ink)]",
+        )}
+      >
         Hardware & environment check
       </h2>
-      <p className="mt-1 text-[12px] leading-relaxed text-[var(--exam-ink-muted)]">
+      <p
+        className={cn(
+          "mt-1 text-[12px] leading-relaxed",
+          isDark ? "text-white/70" : "text-[var(--exam-ink-muted)]",
+        )}
+      >
         Confirm each item below. You cannot begin until every box is checked.
       </p>
 
       <ul className="mt-4 space-y-2.5">
         {CHECKLIST_ITEMS.map((item) => (
           <li key={item.id}>
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-transparent px-1 py-1.5 text-[13px] leading-snug text-[var(--exam-ink)] transition-colors hover:border-[var(--exam-border)] hover:bg-white/80">
+            <label
+              className={cn(
+                "flex cursor-pointer items-start gap-3 rounded-lg border border-transparent px-1 py-1.5 text-[13px] leading-snug transition-colors",
+                isDark
+                  ? "text-white/90 hover:bg-white/5"
+                  : "text-[var(--exam-ink)] hover:border-[var(--exam-border)] hover:bg-white/80",
+              )}
+            >
               <input
                 type="checkbox"
                 checked={checked[item.id]}
@@ -94,7 +118,12 @@ export function Test1ReadinessChecklist({
       </ul>
 
       {!allChecked ? (
-        <p className="mt-3 text-[11px] font-medium text-[var(--exam-ink-muted)]">
+        <p
+          className={cn(
+            "mt-3 text-[11px] font-medium",
+            isDark ? "text-white/60" : "text-[var(--exam-ink-muted)]",
+          )}
+        >
           {CHECKLIST_ITEMS.filter((item) => !checked[item.id]).length} item
           {CHECKLIST_ITEMS.filter((item) => !checked[item.id]).length === 1
             ? ""

@@ -10,16 +10,21 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Google sign-up is active for now. Email/password and OTP onboarding are temporarily disabled."
+      subtitle="Google sign-up is active. After sign-up you can complete a quick onboarding."
     >
-      <GoogleSignInButton next="/dashboard" />
-      <p className="mt-4 text-body text-ink/70">
+      <GoogleSignInButton next="/onboarding" />
+      <p className="mt-4 text-body text-muted">
         Continue with Google and we will create your account automatically.
       </p>
-      <p className="mt-4 text-center text-meta text-ink/55">
+      <p className="mt-4 text-center text-meta text-muted-light">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-teal">
-          Continue with Google
+        <Link href="/login" className="font-semibold text-cyan">
+          Sign in
+        </Link>
+      </p>
+      <p className="mt-2 text-center text-meta text-muted-light">
+        <Link href="/onboarding" className="font-semibold text-cyan">
+          Preview onboarding
         </Link>
       </p>
     </AuthShell>

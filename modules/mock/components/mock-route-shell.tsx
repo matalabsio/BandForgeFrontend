@@ -21,6 +21,7 @@ function MockRouteInner({ children }: { children: React.ReactNode }) {
       layout={isExam ? "exam" : "hub"}
       moduleLabel="Mock Test"
       hubTitle="Mock tests"
+      hubVariant="library"
     >
       {children}
     </IeltsExamShell>

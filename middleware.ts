@@ -11,12 +11,20 @@ const PROTECTED_PREFIXES = [
   "/profile",
   "/mock",
   "/test",
+  "/admin",
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!isAuthEnabled()) {
+    const response = NextResponse.next();
+    response.headers.set("x-pathname", pathname);
+    return response;
+  }
+
+  // Admin login uses email/password on this page — no session cookie required yet.
+  if (pathname === "/admin/login") {
     const response = NextResponse.next();
     response.headers.set("x-pathname", pathname);
     return response;
@@ -37,8 +45,21 @@ export async function middleware(request: NextRequest) {
 
   if (!hasCookie) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/bootstrap";
-    url.searchParams.set("next", bootstrapNextPath(pathname, request.nextUrl.search));
+    const isAdminPanel =
+      pathname === "/admin" || pathname.startsWith("/admin/");
+    if (isAdminPanel) {
+      url.pathname = "/admin/login";
+      url.searchParams.set(
+        "next",
+        bootstrapNextPath(pathname, request.nextUrl.search),
+      );
+    } else {
+      url.pathname = "/auth/bootstrap";
+      url.searchParams.set(
+        "next",
+        bootstrapNextPath(pathname, request.nextUrl.search),
+      );
+    }
     return NextResponse.redirect(url);
   }
 
@@ -65,5 +86,7 @@ export const config = {
     "/mock/:path*",
     "/test",
     "/test/:path*",
+    "/admin",
+    "/admin/:path*",
   ],
 };

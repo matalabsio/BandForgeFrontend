@@ -54,7 +54,7 @@ export function DashboardStatRow({
       value: target.toFixed(1),
       hint: "Keep aiming high!",
       Icon: TargetIcon,
-      iconClass: "bg-[#06B6D4]/10 text-[#06B6D4]",
+      iconClass: "bg-cyan/10 text-cyan",
     },
     {
       label: "Estimated Band",
@@ -87,11 +87,11 @@ export function DashboardStatRow({
       {cards.map((c, i) => (
         <article
           key={c.label}
-          className="rounded-2xl border border-[#0F172A]/8 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)]"
+          className="rounded-2xl border border-ink/8 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)]"
           style={{ animationDelay: `${i * 40}ms` }}
         >
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[11px] font-semibold text-[#0F172A]/45">
+            <p className="text-[11px] font-semibold text-ink/45">
               {c.label}
             </p>
             <span
@@ -103,22 +103,22 @@ export function DashboardStatRow({
               <c.Icon className="size-4" />
             </span>
           </div>
-          <p className="mt-2 font-display text-2xl font-bold tabular-nums text-[#0F172A] sm:text-[26px]">
+          <p className="mt-2 font-display text-2xl font-bold tabular-nums text-ink sm:text-[26px]">
             {c.value}
           </p>
-          <p className="mt-1 text-[11px] text-[#0F172A]/45">{c.hint}</p>
+          <p className="mt-1 text-[11px] text-ink/45">{c.hint}</p>
           {c.label === "Estimated Band" && predicted !== null ? (
             <div className="mt-3 flex h-6 items-end gap-0.5 opacity-60">
               {[3, 5, 4, 6, 7].map((h, j) => (
                 <span
                   key={j}
-                  className="w-1.5 rounded-sm bg-[#06B6D4]"
+                  className="w-1.5 rounded-sm bg-cyan"
                   style={{ height: `${h * 3}px` }}
                 />
               ))}
             </div>
           ) : c.label === "Target Band" ? (
-            <ChartIcon className="mt-2 size-4 text-[#0F172A]/15" aria-hidden />
+            <ChartIcon className="mt-2 size-4 text-ink/15" aria-hidden />
           ) : null}
         </article>
       ))}

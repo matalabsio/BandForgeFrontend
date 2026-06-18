@@ -59,7 +59,7 @@ export function ScoresInsightsPanel({
         title="What to work on"
         subtitle="Based on your completed mocks"
         action={
-          <span className="rounded-full border border-[#0F172A]/10 bg-[#0F172A]/[0.02] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0F172A]/40">
+          <span className="rounded-full border border-ink/10 bg-ink/[0.02] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink/40">
             Rule-based
           </span>
         }
@@ -68,18 +68,18 @@ export function ScoresInsightsPanel({
         {items.slice(0, 3).map((item) => (
           <li
             key={item.title}
-            className="flex flex-col gap-2 rounded-xl border border-[#0F172A]/8 bg-[#F8FAFC] p-4 sm:flex-row sm:items-start sm:justify-between"
+            className="flex flex-col gap-2 rounded-xl border border-ink/8 bg-surface p-4 sm:flex-row sm:items-start sm:justify-between"
           >
             <div className="min-w-0">
-              <p className="flex items-center gap-2 text-[13px] font-bold text-[#0F172A]">
+              <p className="flex items-center gap-2 text-[13px] font-bold text-ink">
                 {item.tag === "Tip" ? (
-                  <LightbulbIcon className="size-4 shrink-0 text-[#06B6D4]" />
+                  <LightbulbIcon className="size-4 shrink-0 text-cyan" />
                 ) : (
-                  <SparkleIcon className="size-4 shrink-0 text-[#06B6D4]" />
+                  <SparkleIcon className="size-4 shrink-0 text-cyan" />
                 )}
                 {item.title}
               </p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-[#0F172A]/65">
+              <p className="mt-1.5 text-[13px] leading-relaxed text-ink/65">
                 {item.body}
               </p>
             </div>
@@ -89,7 +89,7 @@ export function ScoresInsightsPanel({
                   ? "bg-amber-500/12 text-amber-700"
                   : item.tag === "Strength"
                     ? "bg-emerald-500/12 text-emerald-700"
-                    : "bg-[#06B6D4]/10 text-[#0891B2]"
+                    : "bg-cyan/10 text-teal"
               }`}
             >
               {item.tag}
@@ -97,7 +97,7 @@ export function ScoresInsightsPanel({
           </li>
         ))}
       </ul>
-      <p className="border-t border-[#0F172A]/6 px-5 py-3 text-[11px] text-[#0F172A]/40">
+      <p className="border-t border-ink/6 px-5 py-3 text-[11px] text-ink/40">
         AI Coach insights: coming in a few days.
       </p>
     </DashboardCard>

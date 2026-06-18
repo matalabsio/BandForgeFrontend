@@ -74,7 +74,7 @@ export function ReadingIntroOverlay({
           type="button"
           disabled={busy || !agreed}
           onClick={onStart}
-          className="mt-8 w-full cursor-pointer rounded-lg bg-[var(--reading-accent)] px-5 py-3.5 text-[14px] font-bold text-white transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-8 w-full cursor-pointer rounded-lg bg-[var(--reading-accent)] px-5 py-3.5 text-[14px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "Starting…" : "Start reading section"}
         </button>
