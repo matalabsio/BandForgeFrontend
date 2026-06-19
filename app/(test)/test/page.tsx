@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { authBootstrapPath } from "@/lib/auth";
+import { ProductionAuthConfigError } from "@/components/auth/production-auth-config-error";
+import {
+  isProductionAuthMisconfigured,
+  redirectIfUnauthenticated,
+} from "@/lib/auth-guard-server";
 import {
   buildCatalogPanel,
   defaultCatalogTestNumber,
@@ -24,6 +28,10 @@ type Props = {
 };
 
 export default async function MockTestsIndexPage({ searchParams }: Props) {
+  if (isProductionAuthMisconfigured()) {
+    return <ProductionAuthConfigError />;
+  }
+
   const pageStart = performance.now();
   const sp = await searchParams;
 
@@ -43,9 +51,7 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
     test: sp.test ?? null,
   });
 
-  if (!user) {
-    redirect(authBootstrapPath(mockTestsIndexPath()));
-  }
+  redirectIfUnauthenticated(user, mockTestsIndexPath());
 
   t0 = performance.now();
   const catalog = await fetchMockCatalogServer(cookieHeader);

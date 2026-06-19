@@ -1,8 +1,12 @@
-import { redirect } from "next/navigation";
+import { ProductionAuthConfigError } from "@/components/auth/production-auth-config-error";
 import { DashboardData } from "@/components/bandforge/dashboard/dashboard-data";
 import { DashboardDataRetry } from "@/components/bandforge/dashboard/dashboard-data-retry";
 import { DashboardProfileSync } from "@/components/bandforge/dashboard/dashboard-profile-sync";
-import { authGuardRedirectPath } from "@/lib/auth";
+import {
+  isProductionAuthMisconfigured,
+  redirectIfUnauthenticated,
+  resolveSessionUser,
+} from "@/lib/auth-guard-server";
 import { isAuthEnabled } from "@/lib/flags";
 import { shouldFetchDashboardApi } from "@/lib/dashboard-server";
 import { M01_MOCK_TEST_ID, M02_MOCK_TEST_ID } from "@/lib/mock-catalog";
@@ -25,6 +29,10 @@ export const metadata = {
 };
 
 async function DashboardPageContent() {
+  if (isProductionAuthMisconfigured()) {
+    return <ProductionAuthConfigError />;
+  }
+
   const cookieHeader = await getCachedCookieHeader();
   const [user, payloadResult, initialM01Progress, initialM02Progress, catalog] =
     await Promise.all([
@@ -34,9 +42,8 @@ async function DashboardPageContent() {
       fetchMockSessionServer(cookieHeader, M02_MOCK_TEST_ID),
       fetchMockCatalogServer(cookieHeader),
     ]);
-  if (!user) {
-    redirect(authGuardRedirectPath("/dashboard"));
-  }
+  redirectIfUnauthenticated(user, "/dashboard");
+  const sessionUser = resolveSessionUser(user);
 
   const { mockTests, mockTestsFromApi, summary } = payloadResult;
   const catalogSlots = buildCatalogPanel(catalog);
@@ -48,16 +55,16 @@ async function DashboardPageContent() {
   return (
     <DashboardDataRetry needsRetry={needsRetry}>
       <DashboardData
-        firstName={getUserFirstName(user)}
-        displayName={formatUserDisplayName(user)}
-        email={user.email}
-        avatarUrl={user.avatar_display_url}
+        firstName={getUserFirstName(sessionUser)}
+        displayName={formatUserDisplayName(sessionUser)}
+        email={sessionUser.email}
+        avatarUrl={sessionUser.avatar_display_url}
         mockTests={mockTests}
         catalogSlots={catalogSlots}
         summary={summary}
         profileTargetBand={
-          user.target_band !== null && user.target_band !== undefined
-            ? user.target_band
+          sessionUser.target_band !== null && sessionUser.target_band !== undefined
+            ? sessionUser.target_band
             : null
         }
         initialMockProgressById={{

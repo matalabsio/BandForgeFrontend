@@ -31,7 +31,14 @@ async function fetchBackendJson<T>(
       ok: res.ok,
       status: res.status,
     });
-    if (!res.ok) return fallback;
+    if (!res.ok) {
+      if (path === "/api/mock-attempts/catalog") {
+        console.warn(
+          `[bandforge-web] mock catalog fetch failed: ${res.status} ${backendBase()}${path}`,
+        );
+      }
+      return fallback;
+    }
     return (await res.json()) as T;
   } catch {
     perfLog("server-fetch", {
