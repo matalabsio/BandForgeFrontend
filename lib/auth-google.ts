@@ -5,6 +5,26 @@ import {
   type ApiErrorBody,
 } from "@/lib/api";
 import { collectSetCookieHeaders } from "@/lib/auth-cookies";
+import { fetchWithTimeout } from "@/lib/fetch-server";
+
+function formatBackendFetchError(e: unknown): string {
+  if (!(e instanceof Error)) return "Google sign-in failed.";
+  const cause = e.cause as NodeJS.ErrnoException | undefined;
+  const code = cause?.code ?? "";
+  const api = getApiUrl();
+  if (code === "ENOTFOUND" || e.message === "fetch failed") {
+    return (
+      `Cannot reach the API at ${api}. On Vercel set NEXT_PUBLIC_API_URL to your Railway URL and redeploy.`
+    );
+  }
+  if (code === "ECONNREFUSED" || code === "ECONNRESET") {
+    return `API refused connection (${api}). Check Railway deploy logs and API_PORT=\${{PORT}}.`;
+  }
+  if (e.name === "AbortError") {
+    return `API timed out (${api}). Railway may be cold-starting — try again.`;
+  }
+  return e.message || "Google sign-in failed.";
+}
 
 export type GoogleAuthResult = {
   user?: {
@@ -24,12 +44,18 @@ export async function exchangeGoogleCode(
   code: string,
   state: string,
 ): Promise<{ data: GoogleAuthResult; setCookies: string[] }> {
-  const res = await fetch(`${getApiUrl()}/auth/google/callback`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, state }),
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(`${getApiUrl()}/auth/google/callback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, state }),
+      cache: "no-store",
+      timeoutMs: 15_000,
+    });
+  } catch (e) {
+    throw new Error(formatBackendFetchError(e));
+  }
   const data = await parseJsonResponse<GoogleAuthResult & ApiErrorBody>(res);
   if (!res.ok) {
     throw new Error(parseApiError(data, res.status));
@@ -43,10 +69,15 @@ export async function exchangeGoogleCode(
 export async function fetchGoogleAuthorizationUrl(
   next: string,
 ): Promise<string> {
-  const res = await fetch(
-    `${getApiUrl()}/auth/google/authorize?next=${encodeURIComponent(next)}`,
-    { cache: "no-store" },
-  );
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      `${getApiUrl()}/auth/google/authorize?next=${encodeURIComponent(next)}`,
+      { cache: "no-store", timeoutMs: 15_000 },
+    );
+  } catch (e) {
+    throw new Error(formatBackendFetchError(e));
+  }
   const body = await parseJsonResponse<{
     authorization_url?: string;
   } & ApiErrorBody>(res);
