@@ -13,7 +13,7 @@ export function BandForgePricing() {
           <BfSectionEyebrow className="mb-3">Pricing</BfSectionEyebrow>
           <BfSectionHeading>Start free, upgrade when ready</BfSectionHeading>
         </div>
-        <div className="flex flex-col gap-3.5 lg:grid lg:grid-cols-3 lg:items-start lg:gap-[22px]">
+        <div className="flex flex-col gap-3.5 md:grid md:grid-cols-2 lg:grid-cols-3 lg:items-start lg:gap-[22px]">
           {BRAND_PRICING_TIERS.map((tier) => (
             <BfPricingCard
               key={tier.id}

@@ -14,7 +14,8 @@
     "test:listening-inline-blank": "node modules/listening/lib/inline-blank.test.mjs",
     "test:jwt-expiry": "node lib/jwt-expiry.test.mjs",
     "test:exam-session": "node lib/exam-session.test.mjs",
-    "test:exam-timer": "node modules/shared/hooks/exam-timer.test.mjs"
+    "test:exam-timer": "node modules/shared/hooks/exam-timer.test.mjs",
+    "test:diagnostic-scoring": "node lib/diagnostic-scoring.test.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

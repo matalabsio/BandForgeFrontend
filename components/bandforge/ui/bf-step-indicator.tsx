@@ -60,7 +60,7 @@ export function BfStepIndicator({
         className="absolute top-[18px] right-[8%] left-[8%] hidden h-0.5 bg-border-muted lg:block"
         aria-hidden
       />
-      <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-6 lg:gap-5">
+      <ol className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 lg:gap-5">
         {steps.map((step) => {
           const isLast = step.n === steps.length;
           return (

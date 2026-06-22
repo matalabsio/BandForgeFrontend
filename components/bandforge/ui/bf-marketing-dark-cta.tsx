@@ -27,12 +27,12 @@ export function BfMarketingDarkCta({
         className,
       )}
     >
-      <div className="bf-container px-7 py-[3.25rem] text-center lg:px-10 lg:py-[5.25rem]">
-        <div className="mb-6 flex h-7 items-end justify-center gap-1.5 lg:mb-[26px] lg:h-10 lg:gap-[9px]">
+      <div className="bf-container py-10 text-center sm:py-12 lg:py-[5.25rem]">
+        <div className="mb-5 flex h-7 items-end justify-center gap-1.5 sm:mb-6 lg:mb-[26px] lg:h-10 lg:gap-[9px]">
           <BfBrandBars size="sm" className="h-7 lg:hidden" />
           <BfBrandBars size="md" className="hidden h-10 lg:flex" />
         </div>
-        <h2 className="font-display mx-auto mb-7 max-w-[20ch] text-[1.625rem] leading-[1.15] font-bold tracking-[-0.025em] text-balance text-white lg:mb-8 lg:text-[2.625rem] lg:leading-[1.1] lg:tracking-[-0.035em]">
+        <h2 className="font-display mx-auto mb-6 max-w-[22ch] text-[1.5rem] leading-[1.15] font-bold tracking-[-0.025em] text-balance text-white sm:mb-7 sm:max-w-[24ch] sm:text-[1.625rem] lg:mb-8 lg:max-w-[28ch] lg:text-[2.625rem] lg:leading-[1.1] lg:tracking-[-0.035em]">
           {headline}
         </h2>
         {children}

@@ -12,7 +12,7 @@ export function BandForgeModules() {
           <BfSectionEyebrow className="mb-3">Four modules</BfSectionEyebrow>
           <BfSectionHeading>Every section, measured</BfSectionHeading>
         </div>
-        <div className="flex flex-col gap-3.5 lg:grid lg:grid-cols-4 lg:gap-5">
+        <div className="flex flex-col gap-3.5 md:grid md:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {BRAND_MODULES.map((mod) => (
             <BfModuleCard
               key={mod.key}

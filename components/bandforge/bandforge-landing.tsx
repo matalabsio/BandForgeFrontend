@@ -43,7 +43,7 @@ const BandForgeFinalCta = dynamic(
 /** Marketing home — BandForge IELTS landing at `/`. */
 export function BandForgeLanding() {
   return (
-    <div className="min-h-dvh bg-white text-black">
+    <div className="min-h-dvh overflow-x-hidden bg-white text-black">
       <BandForgeHeaderMarketing />
       <main>
         <BandForgeHero />

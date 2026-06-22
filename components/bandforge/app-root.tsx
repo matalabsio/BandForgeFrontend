@@ -12,6 +12,7 @@ const APP_ROUTE_PREFIXES = [
   "/profile",
   "/mock",
   "/test",
+  "/diagnostic",
   "/admin",
   "/auth",
 ] as const;

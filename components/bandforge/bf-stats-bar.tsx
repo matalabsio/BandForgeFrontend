@@ -18,8 +18,8 @@ export function BandForgeStatsBar() {
             {i > 0 ? (
               <span className="w-px shrink-0 bg-border-muted" aria-hidden />
             ) : null}
-            <div className="flex flex-1 flex-col items-center justify-center px-2 py-[18px] text-center lg:flex-row lg:gap-[11px] lg:px-0 lg:py-0">
-              <p className="font-display text-[0.9375rem] leading-tight font-bold text-navy lg:text-[1.1875rem]">
+            <div className="flex flex-1 flex-col items-center justify-center px-1 py-[14px] text-center sm:flex-row sm:gap-[11px] sm:px-2 sm:py-[18px] sm:text-left lg:flex-row lg:gap-[11px] lg:px-0 lg:py-0">
+              <p className="font-display text-[0.8125rem] leading-tight font-bold text-navy sm:text-[0.9375rem] lg:text-[1.1875rem]">
                 <span className="lg:hidden">{stat.valueMobile}</span>
                 <span className="hidden lg:inline">{stat.valueDesktop}</span>
               </p>

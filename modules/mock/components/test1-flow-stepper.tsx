@@ -6,6 +6,7 @@ import {
   mockModulePath,
   mockResultsPath,
 } from "@/lib/mock-catalog";
+import { prepareExamModuleNavigation } from "@/lib/mock-exam-nav";
 import type { ModuleProgress } from "@/modules/mock/services/mock-api";
 import { cn } from "@/lib/utils";
 
@@ -114,8 +115,6 @@ export function Test1FlowStepper({
             part:
               step.key === "listening" || step.key === "writing" ? part : undefined,
             passage: step.key === "reading" ? part : undefined,
-            mockAttemptId,
-            auto: status === "in_progress",
           });
         }
 
@@ -180,7 +179,22 @@ export function Test1FlowStepper({
               <Link
                 href={href}
                 className="block cursor-pointer"
-                onClick={() => onStepClick?.(step.key)}
+                onClick={() => {
+                  if (
+                    mockAttemptId &&
+                    (step.key === "listening" ||
+                      step.key === "reading" ||
+                      step.key === "writing")
+                  ) {
+                    prepareExamModuleNavigation(mockSlug, step.key, {
+                      mockAttemptId,
+                      auto:
+                        status === "in_progress" || status === "available",
+                      sectionStart: status === "available",
+                    });
+                  }
+                  onStepClick?.(step.key);
+                }}
               >
                 {inner}
               </Link>

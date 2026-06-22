@@ -21,7 +21,7 @@ type Props = {
 export function BandForgeHeaderMarketing({ activeHref }: Props) {
   return (
     <header className="sticky top-0 z-30 w-full border-b border-border-soft bg-white/92 backdrop-blur-[10px] lg:bg-white/90 lg:backdrop-blur-[12px]">
-      <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-5 py-3.5 lg:px-10 lg:py-4">
+      <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-3 px-4 py-3.5 sm:px-5 lg:px-10 lg:py-4">
         <BfMarketingWordmark />
 
         <div className="hidden items-center gap-[34px] lg:flex">

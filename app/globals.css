@@ -285,11 +285,11 @@ html {
   }
 
   .bf-section {
-    @apply scroll-mt-20 py-12 sm:py-16 lg:py-[5.625rem] lg:pb-20;
+    @apply scroll-mt-20 py-10 sm:py-14 lg:py-[5.625rem] lg:pb-20;
   }
 
   .bf-container {
-    @apply mx-auto max-w-[1200px] px-6 sm:px-8 lg:px-10;
+    @apply mx-auto w-full max-w-[1200px] px-4 sm:px-6 md:px-8 lg:px-10;
   }
 
   .bf-eyebrow {
@@ -297,7 +297,7 @@ html {
   }
 
   .bf-section-title {
-    @apply font-display text-3xl font-bold text-ink sm:text-4xl lg:text-5xl;
+    @apply font-display text-[1.625rem] font-bold text-balance text-ink sm:text-3xl lg:text-4xl xl:text-5xl;
     letter-spacing: -0.04em;
   }
 
@@ -478,6 +478,28 @@ html {
   }
   50% {
     box-shadow: 0 0 48px rgba(6, 182, 212, 0.55);
+  }
+}
+
+@keyframes bfwave {
+  0%,
+  100% {
+    transform: scaleY(0.18);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes bfpulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 188, 212, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(0, 188, 212, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 188, 212, 0);
   }
 }
 

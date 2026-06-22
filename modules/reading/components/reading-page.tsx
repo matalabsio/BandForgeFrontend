@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import {
   cacheCheckpointSubmit,
@@ -18,7 +18,17 @@ import {
   type MockMeta,
 } from "@/lib/mock-catalog";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
-import { syncExamRoute } from "@/lib/mock-exam-nav";
+import { syncExamRoute, navigateAfterSectionSubmit } from "@/lib/mock-exam-nav";
+import {
+  diagnosticPaths,
+  DIAGNOSTIC_NAV_TEST_NUMBER,
+  isDiagnosticFlow,
+} from "@/lib/diagnostic-catalog";
+import {
+  diagnosticAfterReadingSubmit,
+  navigateAfterDiagnosticSectionSubmit,
+} from "@/lib/diagnostic-exam-nav";
+import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
 import { readingModuleResultsPath } from "@/lib/reading-test";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { testNumberForMockId } from "@/lib/mock-catalog";
@@ -90,6 +100,8 @@ type Props = {
   /** @deprecated Timer and API start are deferred to intro CTA */
   autoStart?: boolean;
   initialBoot?: ReadingBootServer | null;
+  testNumber?: number;
+  flow?: "mock" | "diagnostic";
 };
 
 type SessionStart = Awaited<ReturnType<typeof readingApi.start>>;
@@ -112,11 +124,19 @@ export function ReadingPage({
   mockMeta: mockMetaProp,
   passage,
   initialBoot = null,
+  testNumber: testNumberProp,
+  flow = "mock",
 }: Props) {
+  const isDiagnostic = isDiagnosticFlow(flow, testId);
   const { replace, push } = useRouter();
-  const searchParams = useSearchParams();
   const mockAttemptId = useResolvedMockAttemptId(testId);
-  const sectionStart = searchParams.get("section_start") === "1";
+  const resolvedTestNumber = isDiagnostic
+    ? DIAGNOSTIC_NAV_TEST_NUMBER
+    : (testNumberProp ?? testNumberForMockId(testId));
+  const { sectionStart } = useExamNavFlags({
+    testNumber: resolvedTestNumber,
+    module: "reading",
+  });
   const mockMeta = useMemo(
     () => mockMetaProp ?? getMockMeta(mockSlug),
     [mockMetaProp, mockSlug],
@@ -309,6 +329,18 @@ export function ReadingPage({
       },
     ) => {
       if (mockAttemptId && submit) {
+        if (isDiagnostic) {
+          const dest = submit.mock_reading_complete
+            ? diagnosticAfterReadingSubmit()
+            : diagnosticAfterReadingSubmit();
+          navigateAfterDiagnosticSectionSubmit(
+            { push, replace },
+            mockAttemptId,
+            dest,
+            submit.mock_reading_complete ? "writing" : "reading",
+          );
+          return;
+        }
         const dest = submit.mock_reading_complete
           ? mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
               completedPart: readingPassageCount,
@@ -318,14 +350,20 @@ export function ReadingPage({
               completedPart: passage,
               attemptId: id,
             });
-        replace(dest);
+        navigateAfterSectionSubmit(
+          { push, replace },
+          mockSlug,
+          mockAttemptId,
+          dest,
+          { replace: true },
+        );
         return;
       }
       const testNumber = testNumberForMockId(testId);
       persistModuleResultAttempt(testNumber, "reading", id);
       push(readingModuleResultsPath(testId, id));
     },
-    [replace, push, testId, mockSlug, mockAttemptId, passage],
+    [replace, push, testId, mockSlug, mockAttemptId, passage, isDiagnostic, readingPassageCount],
   );
 
   const flushAutosaves = useCallback(
@@ -661,6 +699,23 @@ export function ReadingPage({
 
   useEffect(() => {
     if (!mockAttemptId) return;
+    if (isDiagnostic) {
+      let cancelled = false;
+      void (async () => {
+        try {
+          const p = await fetchMockProgressDeduped(mockAttemptId);
+          if (cancelled) return;
+          if (p.status === "completed") {
+            replace(diagnosticPaths.results);
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
     if (shouldSkipMockGuard(mockAttemptId, sectionStart)) return;
     let cancelled = false;
     void (async () => {
@@ -685,7 +740,7 @@ export function ReadingPage({
     return () => {
       cancelled = true;
     };
-  }, [mockAttemptId, mockSlug, passage, sectionStart, replace]);
+  }, [mockAttemptId, mockSlug, passage, sectionStart, replace, isDiagnostic]);
 
   useEffect(() => {
     let cancelled = false;

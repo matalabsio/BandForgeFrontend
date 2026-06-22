@@ -22,8 +22,8 @@ export async function middleware(request: NextRequest) {
     response.headers.set("x-pathname", pathname);
     return response;
   }
-
-  // Admin login uses email/password on this page — no session cookie required yet.
+  
+ // Admin login uses email/password on this page — no session cookie required yet. 
   if (pathname === "/admin/login") {
     const response = NextResponse.next();
     response.headers.set("x-pathname", pathname);

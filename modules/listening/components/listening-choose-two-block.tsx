@@ -14,6 +14,7 @@ type Props = {
   currentQuestionId: string | null;
   onAnswer: (questionId: string, value: string) => void;
   onFocus: (questionId: string) => void;
+  variant?: "exam" | "diagnostic";
 };
 
 function qNum(q: ListeningQuestion): number {
@@ -29,6 +30,7 @@ function ListeningChooseTwoBlockBase({
   currentQuestionId,
   onAnswer,
   onFocus,
+  variant = "exam",
 }: Props) {
   const ordered = questions.toSorted((a, b) => qNum(a) - qNum(b));
   const [qLow, qHigh] = ordered;
@@ -57,29 +59,51 @@ function ListeningChooseTwoBlockBase({
   );
 
   const active = questions.some((q) => currentQuestionId === q.id);
+  const isDiagnostic = variant === "diagnostic";
 
   return (
     <article
       className={cn(
-        "rounded-lg border border-[var(--exam-border)] bg-white p-4 sm:p-5",
-        active && "ring-1 ring-[var(--exam-accent)]/30",
+        isDiagnostic
+          ? "rounded-[13px] border-0 bg-transparent p-0"
+          : "rounded-lg border border-[var(--exam-border)] bg-white p-4 sm:p-5",
+        !isDiagnostic && active && "ring-1 ring-[var(--exam-accent)]/30",
       )}
     >
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--exam-accent)]">
+      <p
+        className={cn(
+          "text-[10px] font-bold tracking-[0.14em] uppercase",
+          isDiagnostic ? "font-mono text-[#6E83A0]" : "text-[var(--exam-accent)]",
+        )}
+      >
         {blockQuestionRange(questions)}
       </p>
       {instruction ? (
-        <p className="mt-2 text-[12px] leading-relaxed text-[var(--exam-ink-muted)]">
+        <p
+          className={cn(
+            "mt-2 leading-relaxed",
+            isDiagnostic
+              ? "font-display text-lg font-bold text-navy"
+              : "text-[12px] text-[var(--exam-ink-muted)]",
+          )}
+        >
           {instruction}
         </p>
       ) : null}
-      <p className="mt-3 text-[14px] font-semibold leading-snug text-[var(--exam-ink)]">
+      <p
+        className={cn(
+          "mt-3 leading-snug",
+          isDiagnostic
+            ? "text-sm font-light text-[#5A6B82]"
+            : "text-[14px] font-semibold text-[var(--exam-ink)]",
+        )}
+      >
         {stem}
       </p>
-      <p className="mt-1 text-[11px] text-[var(--exam-ink-muted)]">
+      <p className="mt-1 text-[11px] text-[#6E83A0]">
         Select exactly two options ({selected.length}/2 selected).
       </p>
-      <fieldset className="mt-4 space-y-2">
+      <fieldset className="mt-4 space-y-2.5">
         <legend className="sr-only">{stem}</legend>
         {options.map((o) => {
           const checked = selected.includes(o.label);
@@ -87,21 +111,49 @@ function ListeningChooseTwoBlockBase({
             <label
               key={o.label}
               className={cn(
-                "flex min-h-[44px] cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 text-[13px] transition-colors",
-                checked
-                  ? "border-[var(--exam-accent)] bg-[var(--exam-accent-soft)]"
-                  : "border-[var(--exam-border)] bg-[var(--exam-surface)] hover:border-[var(--exam-ink-muted)]",
+                "flex min-h-[52px] cursor-pointer items-center gap-3 rounded-[13px] border px-4 py-3.5 text-[13px] transition-colors",
+                isDiagnostic
+                  ? checked
+                    ? "border-cyan bg-cyan/10"
+                    : "border-navy/14 bg-white"
+                  : checked
+                    ? "border-[var(--exam-accent)] bg-[var(--exam-accent-soft)]"
+                    : "border-[var(--exam-border)] bg-[var(--exam-surface)] hover:border-[var(--exam-ink-muted)]",
               )}
             >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => handleToggle(o.label)}
-                className="mt-1 size-4 shrink-0 accent-[var(--exam-accent)]"
-              />
-              <span className="text-[var(--exam-ink)]">
-                <span className="font-bold">{o.label}.</span> {o.text}
+              {isDiagnostic ? (
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center rounded-[7px] border-[1.5px]",
+                    checked ? "border-cyan bg-cyan text-[#06222B]" : "border-navy/22",
+                  )}
+                >
+                  {checked ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M5 12l5 5L20 6" />
+                    </svg>
+                  ) : null}
+                </span>
+              ) : (
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => handleToggle(o.label)}
+                  className="mt-1 size-4 shrink-0 accent-[var(--exam-accent)]"
+                />
+              )}
+              <span className="font-mono font-medium text-teal">{o.label}</span>
+              <span className={cn("text-sm", checked ? "font-medium text-navy" : "text-[#3D4D63]")}>
+                {o.text}
               </span>
+              {isDiagnostic ? (
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => handleToggle(o.label)}
+                  className="sr-only"
+                />
+              ) : null}
             </label>
           );
         })}

@@ -13,6 +13,7 @@ import {
   mockResultsPath,
   type MockSlug,
 } from "@/lib/mock-catalog";
+import { prepareExamModuleNavigation } from "@/lib/mock-exam-nav";
 import type { ModuleProgress } from "@/modules/mock/services/mock-api";
 import { cn } from "@/lib/utils";
 
@@ -91,38 +92,26 @@ function moduleHref(
   mockAttemptId: string,
   key: ModuleKey,
   mod: ModuleProgress,
-): string | null {
+): { href: string; nav: { auto?: boolean; sectionStart?: boolean } } | null {
   if (!mod.is_enabled || mod.status === "locked") return null;
 
   const part = mod.part ?? 1;
   const auto = mod.status === "in_progress" || mod.status === "available";
+  const sectionStart = mod.status === "available";
 
   let path: string;
   if (key === "listening") {
-    path = mockModulePath(mockSlug, "listening", {
-      part,
-      mockAttemptId,
-      auto,
-    });
+    path = mockModulePath(mockSlug, "listening", { part });
   } else if (key === "reading") {
-    path = mockModulePath(mockSlug, "reading", {
-      passage: part,
-      mockAttemptId,
-      auto,
-    });
+    path = mockModulePath(mockSlug, "reading", { passage: part });
   } else {
-    path = mockModulePath(mockSlug, "writing", {
-      part,
-      mockAttemptId,
-      auto,
-    });
+    path = mockModulePath(mockSlug, "writing", { part });
   }
 
-  if (mod.status === "available") {
-    const sep = path.includes("?") ? "&" : "?";
-    return `${path}${sep}section_start=1`;
-  }
-  return path;
+  return {
+    href: path,
+    nav: { auto: auto || undefined, sectionStart: sectionStart || undefined },
+  };
 }
 
 function statusLabel(status: ModuleProgress["status"]): string {
@@ -225,10 +214,11 @@ export function Test1ModuleCards({
         {visibleCards.map((card) => {
           const mod = modules.find((m) => m.module === card.key);
           const status = mod?.status ?? "locked";
-          const href =
+          const link =
             mod && mockAttemptId
               ? moduleHref(mockSlug, mockAttemptId, card.key, mod)
               : null;
+          const href = link?.href ?? null;
           const isCurrent = status === "in_progress";
           const isDone = status === "completed";
 
@@ -301,7 +291,18 @@ export function Test1ModuleCards({
           return (
             <li key={card.key}>
               {href ? (
-                <Link href={href} className="block h-full">
+                <Link
+                  href={href}
+                  className="block h-full"
+                  onClick={() => {
+                    if (!link || !mockAttemptId) return;
+                    prepareExamModuleNavigation(mockSlug, card.key, {
+                      mockAttemptId,
+                      auto: link.nav.auto,
+                      sectionStart: link.nav.sectionStart,
+                    });
+                  }}
+                >
                   {inner}
                 </Link>
               ) : (

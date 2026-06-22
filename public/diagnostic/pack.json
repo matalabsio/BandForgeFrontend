@@ -1,0 +1,670 @@
+{
+  "version": 2,
+  "meta": {
+    "title": "BandForge Free Diagnostic",
+    "listeningMinutes": 20,
+    "readingMinutes": 25,
+    "writingMinutes": 25,
+    "speakingMinutes": 15
+  },
+  "listening": {
+    "transcript": "Diagnostic Listening — Placeholder Section\n\nSTAFF: BandForge Learning Centre, good morning.\nCALLER: Hello, I'd like some information about your IELTS preparation courses.\nSTAFF: Certainly. Are you preparing for Academic or General Training?\nCALLER: Academic, please. I need a band score of 7 for my university application.\nSTAFF: We offer a free diagnostic test that shows your current level across listening, reading, and writing.\nCALLER: That sounds helpful. How long does the diagnostic take?\nSTAFF: About forty-five minutes. You can start online without creating an account.\nCALLER: Perfect. I'll try it today. My name is Sarah Chen.\nSTAFF: Thank you, Sarah. Good luck with your preparation.",
+    "questions": [
+      {
+        "id": "L1",
+        "number": 1,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q1: What is the caller's main reason for phoning?",
+        "options": [
+          {
+            "label": "A",
+            "text": "To book a speaking test"
+          },
+          {
+            "label": "B",
+            "text": "To ask about IELTS courses"
+          },
+          {
+            "label": "C",
+            "text": "To cancel a membership"
+          }
+        ],
+        "answer": "B",
+        "skill": "gist"
+      },
+      {
+        "id": "L2",
+        "number": 2,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q2: Which IELTS module does the caller need?",
+        "options": [
+          {
+            "label": "A",
+            "text": "General Training"
+          },
+          {
+            "label": "B",
+            "text": "Academic"
+          },
+          {
+            "label": "C",
+            "text": "Both"
+          }
+        ],
+        "answer": "B",
+        "skill": "detail"
+      },
+      {
+        "id": "L3",
+        "number": 3,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q3: What band score does the caller need?",
+        "options": [
+          {
+            "label": "A",
+            "text": "6.5"
+          },
+          {
+            "label": "B",
+            "text": "7"
+          },
+          {
+            "label": "C",
+            "text": "7.5"
+          }
+        ],
+        "answer": "B",
+        "skill": "detail"
+      },
+      {
+        "id": "L4",
+        "number": 4,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q4: How long does the diagnostic take?",
+        "options": [
+          {
+            "label": "A",
+            "text": "About 30 minutes"
+          },
+          {
+            "label": "B",
+            "text": "About 45 minutes"
+          },
+          {
+            "label": "C",
+            "text": "About 90 minutes"
+          }
+        ],
+        "answer": "B",
+        "skill": "detail"
+      },
+      {
+        "id": "L5",
+        "number": 5,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q5: Can the caller start without an account?",
+        "options": [
+          {
+            "label": "A",
+            "text": "Yes"
+          },
+          {
+            "label": "B",
+            "text": "No"
+          },
+          {
+            "label": "C",
+            "text": "Only with a referral"
+          }
+        ],
+        "answer": "A",
+        "skill": "detail"
+      },
+      {
+        "id": "L6",
+        "number": 6,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q6: Caller surname",
+        "answer": "Chen",
+        "skill": "detail"
+      },
+      {
+        "id": "L7",
+        "number": 7,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q7: Caller first name",
+        "answer": "Sarah",
+        "skill": "detail"
+      },
+      {
+        "id": "L8",
+        "number": 8,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q8: Centre name",
+        "answer": "BandForge",
+        "skill": "detail"
+      },
+      {
+        "id": "L9",
+        "number": 9,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q9: Test type offered free",
+        "answer": "diagnostic",
+        "skill": "detail"
+      },
+      {
+        "id": "L10",
+        "number": 10,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q10: Modules in diagnostic (count)",
+        "answer": "three/3",
+        "skill": "detail"
+      },
+      {
+        "id": "L11",
+        "number": 11,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q11: What is the caller's main reason for phoning?",
+        "options": [
+          {
+            "label": "A",
+            "text": "To book a speaking test"
+          },
+          {
+            "label": "B",
+            "text": "To ask about IELTS courses"
+          },
+          {
+            "label": "C",
+            "text": "To cancel a membership"
+          }
+        ],
+        "answer": "B",
+        "skill": "gist"
+      },
+      {
+        "id": "L12",
+        "number": 12,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q12: Which IELTS module does the caller need?",
+        "options": [
+          {
+            "label": "A",
+            "text": "General Training"
+          },
+          {
+            "label": "B",
+            "text": "Academic"
+          },
+          {
+            "label": "C",
+            "text": "Both"
+          }
+        ],
+        "answer": "B",
+        "skill": "detail"
+      },
+      {
+        "id": "L13",
+        "number": 13,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q13: What band score does the caller need?",
+        "options": [
+          {
+            "label": "A",
+            "text": "6.5"
+          },
+          {
+            "label": "B",
+            "text": "7"
+          },
+          {
+            "label": "C",
+            "text": "7.5"
+          }
+        ],
+        "answer": "B",
+        "skill": "detail"
+      },
+      {
+        "id": "L14",
+        "number": 14,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q14: How long does the diagnostic take?",
+        "options": [
+          {
+            "label": "A",
+            "text": "About 30 minutes"
+          },
+          {
+            "label": "B",
+            "text": "About 45 minutes"
+          },
+          {
+            "label": "C",
+            "text": "About 90 minutes"
+          }
+        ],
+        "answer": "B",
+        "skill": "detail"
+      },
+      {
+        "id": "L15",
+        "number": 15,
+        "type": "multiple_choice",
+        "prompt": "Diagnostic placeholder Q15: Can the caller start without an account?",
+        "options": [
+          {
+            "label": "A",
+            "text": "Yes"
+          },
+          {
+            "label": "B",
+            "text": "No"
+          },
+          {
+            "label": "C",
+            "text": "Only with a referral"
+          }
+        ],
+        "answer": "A",
+        "skill": "detail"
+      },
+      {
+        "id": "L16",
+        "number": 16,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q16: Caller surname",
+        "answer": "Chen",
+        "skill": "detail"
+      },
+      {
+        "id": "L17",
+        "number": 17,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q17: Caller first name",
+        "answer": "Sarah",
+        "skill": "detail"
+      },
+      {
+        "id": "L18",
+        "number": 18,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q18: Centre name",
+        "answer": "BandForge",
+        "skill": "detail"
+      },
+      {
+        "id": "L19",
+        "number": 19,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q19: Test type offered free",
+        "answer": "diagnostic",
+        "skill": "detail"
+      },
+      {
+        "id": "L20",
+        "number": 20,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder Q20: Modules in diagnostic (count)",
+        "answer": "three/3",
+        "skill": "detail"
+      }
+    ],
+    "audioUrl": "/diagnostic/audio/listening.mp3"
+  },
+  "reading": {
+    "passage": "Diagnostic Reading — Placeholder Passage\n\nUrban Community Gardens\n\nA    Across many cities, unused plots of land have been converted into community gardens where residents grow vegetables and flowers together. These projects began as informal neighbourhood efforts but are now often supported by local councils that provide water access and basic tools.\n\nB    Research suggests that participants report lower stress and stronger social ties after joining a garden. Children who help with planting also show more interest in fresh food, though scientists caution that long-term health effects are still being studied.\n\nC    Not every garden succeeds. Sites near busy roads may struggle with pollution, and some groups disband when founding volunteers move away. Even so, the movement continues to spread as cities look for low-cost ways to improve green space.",
+    "questions": [
+      {
+        "id": "R1",
+        "number": 1,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R1: Community gardens are sometimes supported by local councils.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "TRUE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R2",
+        "number": 2,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R2: All community gardens near busy roads fail within one year.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "FALSE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R3",
+        "number": 3,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R3: Every child who joins a garden eats more vegetables at home.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "NOT GIVEN",
+        "skill": "tfng"
+      },
+      {
+        "id": "R4",
+        "number": 4,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R4: Participants often report lower stress after joining.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "TRUE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R5",
+        "number": 5,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R5: Gardens began as informal neighbourhood efforts.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "TRUE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R6",
+        "number": 6,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R6: Councils may provide water access and basic ______.",
+        "answer": "tools",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R7",
+        "number": 7,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R7: Some groups disband when founding ______ move away.",
+        "answer": "volunteers",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R8",
+        "number": 8,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R8: Cities look for low-cost ways to improve green ______.",
+        "answer": "space",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R9",
+        "number": 9,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R9: Children show more interest in fresh ______.",
+        "answer": "food",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R10",
+        "number": 10,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R10: Long-term health effects are still being ______.",
+        "answer": "studied",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R11",
+        "number": 11,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R11: Community gardens are sometimes supported by local councils.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "TRUE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R12",
+        "number": 12,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R12: All community gardens near busy roads fail within one year.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "FALSE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R13",
+        "number": 13,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R13: Every child who joins a garden eats more vegetables at home.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "NOT GIVEN",
+        "skill": "tfng"
+      },
+      {
+        "id": "R14",
+        "number": 14,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R14: Participants often report lower stress after joining.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "TRUE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R15",
+        "number": 15,
+        "type": "tfng",
+        "prompt": "Diagnostic placeholder R15: Gardens began as informal neighbourhood efforts.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "TRUE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R16",
+        "number": 16,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R16: Councils may provide water access and basic ______.",
+        "answer": "tools",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R17",
+        "number": 17,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R17: Some groups disband when founding ______ move away.",
+        "answer": "volunteers",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R18",
+        "number": 18,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R18: Cities look for low-cost ways to improve green ______.",
+        "answer": "space",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R19",
+        "number": 19,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R19: Children show more interest in fresh ______.",
+        "answer": "food",
+        "skill": "sentence_completion"
+      },
+      {
+        "id": "R20",
+        "number": 20,
+        "type": "sentence_completion",
+        "prompt": "Diagnostic placeholder R20: Long-term health effects are still being ______.",
+        "answer": "studied",
+        "skill": "sentence_completion"
+      }
+    ]
+  },
+  "writing": {
+    "tasks": [
+      {
+        "id": "W1",
+        "part": 1,
+        "minWords": 150,
+        "title": "WRITING TASK 1",
+        "prompt": "You should spend about 20 minutes on this task.\n\nThe chart below shows illustrative data for a BandForge diagnostic placeholder.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.\n\nWrite at least 150 words.",
+        "diagramUrl": "/diagnostic/images/writing-task1-chart.svg"
+      },
+      {
+        "id": "W2",
+        "part": 2,
+        "minWords": 250,
+        "title": "WRITING TASK 2",
+        "prompt": "Write about the following topic:\n\nSome people believe that technology has made life more complicated, while others think it has made life easier.\n\nDiscuss both views and give your own opinion.\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.\n\nWrite at least 250 words."
+      }
+    ]
+  },
+  "speaking": {
+    "part1": {
+      "questions": [
+        {
+          "id": "SP1",
+          "prompt": "Do you work or are you a student?",
+          "minSec": 30,
+          "maxSec": 45
+        },
+        {
+          "id": "SP2",
+          "prompt": "What do you like about your hometown?",
+          "minSec": 30,
+          "maxSec": 45
+        },
+        {
+          "id": "SP3",
+          "prompt": "How often do you use English outside of study?",
+          "minSec": 30,
+          "maxSec": 45
+        }
+      ]
+    },
+    "part2": {
+      "cueCard": "Describe a skill you would like to learn.\n\nYou should say:\n- what the skill is\n- why you want to learn it\n- how you would learn it\n\nand explain how it would be useful to you.",
+      "prepSec": 60,
+      "recordSec": 120,
+      "minRecordSec": 90
+    }
+  }
+}

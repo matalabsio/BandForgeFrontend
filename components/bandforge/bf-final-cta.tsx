@@ -1,18 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { BfMarketingDarkCta } from "@/components/bandforge/ui/bf-marketing-dark-cta";
-import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links";
-import { getMarketingSessionUser } from "@/lib/marketing-auth-server";
-import { isAuthEnabled } from "@/lib/flags";
+import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 
-async function FinalCtaButton({ mobile }: { mobile?: boolean }) {
-  const user = await getMarketingSessionUser();
-  const href =
-    !isAuthEnabled() || user ? "/dashboard" : marketingAppHref();
-
+function FinalCtaButton({ mobile }: { mobile?: boolean }) {
   return (
     <Link
-      href={href}
+      href={diagnosticPaths.landing}
       prefetch
       className={
         mobile
@@ -48,7 +42,7 @@ export function BandForgeFinalCta() {
         </div>
       </Suspense>
       <p className="mt-3.5 text-[0.8125rem] text-[#7e93ad] lg:mt-4 lg:text-sm">
-        No account needed to start. Results in 24 hours.
+        No account needed to start. Results in minutes.
       </p>
     </BfMarketingDarkCta>
   );

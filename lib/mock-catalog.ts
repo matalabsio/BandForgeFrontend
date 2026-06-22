@@ -1,4 +1,5 @@
 import type { MockCatalogApiItem } from "@/lib/mock-catalog-api";
+import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { scoresAfterMockCompletePath } from "@/lib/scores-path";
 
 /** Published full IELTS mocks (orchestrated multi-module exams). */
@@ -101,6 +102,60 @@ export function shortModuleResultsPath(
   module: "listening" | "reading" | "writing",
 ): string {
   return `/test/${testNumber}/${module}/results`;
+}
+
+/** Active exam module — `/test/1/listening?part=2` (no transient flags in URL). */
+export function shortModuleExamPath(
+  testNumber: number,
+  module: "listening" | "reading" | "writing",
+  opts?: { part?: number; passage?: number },
+): string {
+  const base = `/test/${testNumber}/${module}`;
+  const params = new URLSearchParams();
+  if (module === "listening") {
+    const part = opts?.part ?? 1;
+    if (part !== 1) params.set("part", String(part));
+  }
+  if (module === "reading") {
+    const passage = opts?.passage ?? opts?.part ?? 1;
+    if (passage !== 1) params.set("passage", String(passage));
+  }
+  if (module === "writing") {
+    const part = opts?.part ?? 1;
+    if (part !== 1) params.set("part", String(part));
+  }
+  const q = params.toString();
+  return q ? `${base}?${q}` : base;
+}
+
+export function isLiveCatalogTestNumber(testNumber: number): boolean {
+  return isLiveCatalogNumber(testNumber);
+}
+
+/** One-hop legacy redirect URL (hydrator strips transient query params). */
+export function legacyModuleExamRedirectPath(
+  testNumber: number,
+  module: "listening" | "reading" | "writing",
+  sp?: {
+    part?: number;
+    passage?: number;
+    auto?: boolean;
+    sectionStart?: boolean;
+    mockAttemptId?: string;
+  },
+): string {
+  const path = shortModuleExamPath(testNumber, module, {
+    part: sp?.part,
+    passage: sp?.passage,
+  });
+  if (!sp) return path;
+  const params = new URLSearchParams();
+  if (sp.auto) params.set("auto", "1");
+  if (sp.sectionStart) params.set("section_start", "1");
+  if (sp.mockAttemptId) params.set("mock_attempt", sp.mockAttemptId);
+  const extra = params.toString();
+  if (!extra) return path;
+  return path.includes("?") ? `${path}&${extra}` : `${path}?${extra}`;
 }
 
 export function mockTestsIndexPath(): string {
@@ -301,6 +356,18 @@ export function mockModulePath(
   module: MockModule,
   opts?: { part?: number; passage?: number; auto?: boolean; mockAttemptId?: string },
 ): string {
+  const id = resolveMockId(slugOrId);
+  const testNumber = testNumberForMockId(id);
+  if (
+    isLiveCatalogNumber(testNumber) &&
+    (module === "listening" || module === "reading" || module === "writing")
+  ) {
+    return shortModuleExamPath(testNumber, module, {
+      part: opts?.part,
+      passage: opts?.passage,
+    });
+  }
+
   const slug = canonicalMockSlug(slugOrId);
   const base = `/mock/${slug}/${module}`;
   const params = new URLSearchParams();
@@ -314,7 +381,6 @@ export function mockModulePath(
   if (module === "writing" && opts?.part) {
     params.set("part", String(opts.part));
   }
-  if (opts?.auto) params.set("auto", "1");
   const q = params.toString();
   return q ? `${base}?${q}` : base;
 }
@@ -353,7 +419,7 @@ export const TEST1_WRITING_TASK_COUNT = 2;
  */
 export function mockAfterSectionSubmitPath(
   slugOrId: string,
-  mockAttemptId: string,
+  _mockAttemptId: string,
   completedModule: "reading" | "listening",
   opts?: {
     nextPart?: number;
@@ -361,49 +427,28 @@ export function mockAfterSectionSubmitPath(
     attemptId?: string;
   },
 ): string {
-  const appendSectionStart = (path: string) => {
-    const sep = path.includes("?") ? "&" : "?";
-    return `${path}${sep}section_start=1`;
-  };
-
   if (completedModule === "listening") {
     const finishedPart = opts?.completedPart ?? TEST1_LISTENING_PART_COUNT;
     if (finishedPart < TEST1_LISTENING_PART_COUNT) {
-      return appendSectionStart(
-        mockModulePath(slugOrId, "listening", {
-          part: finishedPart + 1,
-          mockAttemptId,
-          auto: true,
-        }),
-      );
+      return mockModulePath(slugOrId, "listening", {
+        part: finishedPart + 1,
+      });
     }
-    return appendSectionStart(
-      mockModulePath(slugOrId, "reading", {
-        passage: opts?.nextPart ?? 1,
-        mockAttemptId,
-        auto: true,
-      }),
-    );
+    return mockModulePath(slugOrId, "reading", {
+      passage: opts?.nextPart ?? 1,
+    });
   }
 
   const readingPassageCount = getMockMeta(slugOrId).readingPassageCount;
   const finishedPassage = opts?.completedPart ?? readingPassageCount;
   if (finishedPassage < readingPassageCount) {
-    return appendSectionStart(
-      mockModulePath(slugOrId, "reading", {
-        passage: finishedPassage + 1,
-        mockAttemptId,
-        auto: true,
-      }),
-    );
+    return mockModulePath(slugOrId, "reading", {
+      passage: finishedPassage + 1,
+    });
   }
-  return appendSectionStart(
-    mockModulePath(slugOrId, "writing", {
-      part: 1,
-      mockAttemptId,
-      auto: true,
-    }),
-  );
+  return mockModulePath(slugOrId, "writing", {
+    part: 1,
+  });
 }
 
 /** After a writing task submit inside a full mock. */
@@ -427,13 +472,9 @@ export function mockAfterWritingSubmitPath(
     completedPart === 1 &&
     TEST1_WRITING_TASK_COUNT > 1
   ) {
-    const path = mockModulePath(slugOrId, "writing", {
+    return mockModulePath(slugOrId, "writing", {
       part: 2,
-      mockAttemptId,
-      auto: true,
     });
-    const sep = path.includes("?") ? "&" : "?";
-    return `${path}${sep}section_start=1`;
   }
   const slug = canonicalMockSlug(slugOrId);
   const testNumber = testNumberForMockId(resolveMockId(slug));
@@ -459,17 +500,13 @@ export function mockPathFromProgress(
   }
   const mod = progress.next_module;
   if (mod === "listening" || mod === "reading" || mod === "writing") {
-    const path = mockModulePath(slugOrId, mod, {
+    return mockModulePath(slugOrId, mod, {
       part:
         mod === "listening" || mod === "writing"
           ? (progress.next_part ?? 1)
           : undefined,
       passage: mod === "reading" ? (progress.next_part ?? 1) : undefined,
-      mockAttemptId,
-      auto: true,
     });
-    const sep = path.includes("?") ? "&" : "?";
-    return `${path}${sep}section_start=1`;
   }
   return mockHubPath(slugOrId);
 }
@@ -488,14 +525,10 @@ export function examPathForMockStart(
     raw === "reading" || raw === "writing" || raw === "listening"
       ? raw
       : "listening";
-  const path = mockModulePath(slugOrId, mod, {
+  return mockModulePath(slugOrId, mod, {
     part: mod === "listening" || mod === "writing" ? (res.part ?? 1) : undefined,
     passage: mod === "reading" ? (res.part ?? 1) : undefined,
-    mockAttemptId: res.mock_attempt_id,
-    auto: true,
   });
-  const sep = path.includes("?") ? "&" : "?";
-  return `${path}${sep}section_start=1`;
 }
 
 /** If the user is on the wrong section URL, return the correct exam path. */

@@ -77,6 +77,105 @@ export type AdminUserListItem = {
   is_active: boolean;
   created_at: string;
   mock_attempt_count: number;
+  completed_mock_count: number;
+  last_activity_at: string | null;
+  best_band: number | null;
+};
+
+export type AdminUserDetail = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  phone: string | null;
+  role: string;
+  is_active: boolean;
+  email_verified: boolean;
+  created_at: string;
+  mock_attempt_count: number;
+  completed_mock_count: number;
+};
+
+export type AdminUserActivityStats = {
+  total_attempts: number;
+  completed_attempts: number;
+  in_progress_attempts: number;
+  average_band: number | null;
+  best_band: number | null;
+  last_activity_at: string | null;
+  current_streak: number;
+  longest_streak: number;
+};
+
+export type AdminUserInProgressItem = {
+  id: string;
+  module: string;
+  started_at: string;
+  mock_test_id: string;
+  mock_title: string;
+  catalog_number: number | null;
+};
+
+export type AdminUserModuleAttemptItem = {
+  id: string;
+  module: string;
+  started_at: string;
+  completed_at: string | null;
+  status: string;
+  band: number | null;
+  raw_score: number | null;
+  total_count: number | null;
+  mock_test_id: string;
+  mock_title: string;
+  catalog_number: number | null;
+};
+
+export type AdminUserMockSessionItem = {
+  mock_attempt_id: string;
+  mock_test_id: string;
+  mock_title: string | null;
+  catalog_number: number | null;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  listening_band: number | null;
+  reading_band: number | null;
+  writing_band: number | null;
+  speaking_band: number | null;
+  aggregate_band: number | null;
+};
+
+export type AdminUserDiagnosticItem = {
+  id: string;
+  client_attempt_id: string;
+  status: string;
+  listening_band: number | null;
+  reading_band: number | null;
+  writing_band: number | null;
+  speaking_band: number | null;
+  aggregate_band: number | null;
+  review: Record<string, unknown> | null;
+  pack_version: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+export type AdminUserSpeakingReviewItem = {
+  id: string;
+  attempt_id: string;
+  status: string;
+  human_band: number | null;
+  created_at: string;
+  mock_title: string | null;
+};
+
+export type AdminUserOverview = {
+  profile: AdminUserDetail;
+  stats: AdminUserActivityStats;
+  in_progress: AdminUserInProgressItem[];
+  recent_modules: AdminUserModuleAttemptItem[];
+  mock_sessions: AdminUserMockSessionItem[];
+  diagnostics: AdminUserDiagnosticItem[];
+  speaking_reviews: AdminUserSpeakingReviewItem[];
 };
 
 export type SectionStatus = {
@@ -146,10 +245,11 @@ export const adminApi = {
     return adminCall<DashboardOverview>("/dashboard/overview");
   },
 
-  listUsers(params?: { q?: string; page?: number }) {
+  listUsers(params?: { q?: string; page?: number; page_size?: number }) {
     const q = new URLSearchParams();
     if (params?.q) q.set("q", params.q);
     if (params?.page) q.set("page", String(params.page));
+    if (params?.page_size) q.set("page_size", String(params.page_size));
     const suffix = q.toString() ? `?${q}` : "";
     return adminCall<{
       items: AdminUserListItem[];
@@ -160,11 +260,15 @@ export const adminApi = {
   },
 
   getUser(id: string) {
-    return adminCall<Record<string, unknown>>(`/users/${id}`);
+    return adminCall<AdminUserDetail>(`/users/${id}`);
+  },
+
+  getUserOverview(id: string) {
+    return adminCall<AdminUserOverview>(`/users/${id}/overview`);
   },
 
   getUserAttempts(id: string) {
-    return adminCall<unknown[]>(`/users/${id}/attempts`);
+    return adminCall<AdminUserModuleAttemptItem[]>(`/users/${id}/attempts`);
   },
 
   patchUser(id: string, body: { is_active?: boolean; role?: string }) {

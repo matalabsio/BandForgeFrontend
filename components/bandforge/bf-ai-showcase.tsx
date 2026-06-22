@@ -9,7 +9,7 @@ export function BandForgeAiShowcase() {
           <p className="bf-eyebrow">
             AI evaluation
           </p>
-          <h2 className="font-display mt-3 text-[2rem] leading-[1.08] font-bold tracking-[-0.03em] text-navy sm:text-[2.375rem]">
+          <h2 className="font-display mt-3 text-[1.625rem] leading-[1.1] font-bold tracking-[-0.025em] text-balance text-navy sm:text-[2rem] sm:leading-[1.08] lg:text-[2.375rem]">
             Detailed feedback in seconds, not days.
           </h2>
           <p className="bf-copy mx-auto mt-5 max-w-2xl">
@@ -18,12 +18,12 @@ export function BandForgeAiShowcase() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-2 lg:items-stretch">
+        <div className="mt-8 grid gap-5 sm:mt-12 md:grid-cols-2 lg:items-stretch">
           <div className="bf-min-card flex flex-col p-6 sm:p-8">
             <p className="text-meta font-semibold uppercase tracking-wider text-ink/45">
               Your response · Task 2 (excerpt)
             </p>
-            <div className="mt-4 flex-1 rounded-xl border border-border bg-white p-4 font-mono text-[0.8125rem] leading-relaxed text-ink/80">
+            <div className="mt-4 flex-1 break-words rounded-xl border border-border bg-white p-3.5 font-mono text-[0.75rem] leading-relaxed text-ink/80 sm:p-4 sm:text-[0.8125rem]">
               <p>
                 In my opinion, technology has both advantages and disadvantages
                 for young learners. On one hand, it provides access to resources

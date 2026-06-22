@@ -20,12 +20,12 @@ export function BandForgeComparison() {
           <p className="bf-eyebrow">
             Why BandForge
           </p>
-          <h2 className="font-display mt-3 text-[2rem] leading-[1.08] font-bold tracking-[-0.03em] text-navy sm:text-[2.375rem]">
+          <h2 className="font-display mt-3 text-[1.625rem] leading-[1.1] font-bold tracking-[-0.025em] text-balance text-navy sm:text-[2rem] sm:leading-[1.08] sm:tracking-[-0.03em] lg:text-[2.375rem]">
             Built for students who cannot rely on expensive coaching alone.
           </h2>
         </div>
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-2">
+        <div className="mt-10 grid gap-5 sm:mt-12 sm:grid-cols-2 lg:grid-cols-2">
           <div className="bf-min-card p-6 sm:p-8">
             <h3 className="text-h4 text-ink/50">Traditional coaching</h3>
             <ul className="mt-6 space-y-3">

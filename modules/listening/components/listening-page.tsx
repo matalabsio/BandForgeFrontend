@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { cacheMockNavHint } from "@/lib/mock-nav-cache";
 import type { ListeningBootServer } from "@/lib/mock-server";
@@ -16,7 +16,6 @@ import {
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
-  TEST1_LISTENING_PART_COUNT,
   type MockMeta,
 } from "@/lib/mock-catalog";
 import {
@@ -59,6 +58,17 @@ import {
 } from "@/modules/listening/lib/listening-part-intro";
 import { useListeningMockGuard } from "@/modules/listening/hooks/use-listening-mock-guard";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
+import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
+import { navigateAfterSectionSubmit } from "@/lib/mock-exam-nav";
+import {
+  DIAGNOSTIC_LISTENING_PART_COUNT,
+  DIAGNOSTIC_NAV_TEST_NUMBER,
+  isDiagnosticFlow,
+} from "@/lib/diagnostic-catalog";
+import {
+  diagnosticAfterListeningSubmit,
+  navigateAfterDiagnosticSectionSubmit,
+} from "@/lib/diagnostic-exam-nav";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { testNumberForMockId } from "@/lib/mock-catalog";
@@ -88,6 +98,8 @@ type Props = {
   part?: number;
   variant?: "default" | "exam";
   initialBoot?: ListeningBootServer | null;
+  testNumber?: number;
+  flow?: "mock" | "diagnostic";
 };
 
 export function ListeningPage({
@@ -97,12 +109,19 @@ export function ListeningPage({
   part = 1,
   variant = "default",
   initialBoot = null,
+  testNumber: testNumberProp,
+  flow = "mock",
 }: Props) {
+  const isDiagnostic = isDiagnosticFlow(flow, testId);
   const isExam = variant === "exam";
   const { replace, push } = useRouter();
-  const searchParams = useSearchParams();
-  const autoStart = searchParams.get("auto") === "1";
-  const sectionStart = searchParams.get("section_start") === "1";
+  const resolvedTestNumber = isDiagnostic
+    ? DIAGNOSTIC_NAV_TEST_NUMBER
+    : (testNumberProp ?? testNumberForMockId(testId));
+  const { autoStart, sectionStart } = useExamNavFlags({
+    testNumber: resolvedTestNumber,
+    module: "listening",
+  });
   const mockAttemptId = useResolvedMockAttemptId(testId);
   const bootedRef = useRef(false);
   const hydratedFromServerRef = useRef(false);
@@ -132,7 +151,9 @@ export function ListeningPage({
     () => mockMetaProp ?? getMockMeta(mockSlug),
     [mockMetaProp, mockSlug],
   );
-  const listeningPartCount = mockMeta.listeningPartCount;
+  const listeningPartCount = isDiagnostic
+    ? DIAGNOSTIC_LISTENING_PART_COUNT
+    : mockMeta.listeningPartCount;
 
   const introStorageKey = useMemo(
     () => mockAttemptId ?? `${testId}:listening`,
@@ -164,24 +185,43 @@ export function ListeningPage({
       opts?: { mockListeningComplete?: boolean; mockNextPart?: number | null },
     ) => {
       if (mockAttemptId) {
+        if (isDiagnostic) {
+          const dest =
+            opts?.mockListeningComplete === true
+              ? diagnosticAfterListeningSubmit()
+              : diagnosticAfterListeningSubmit();
+          navigateAfterDiagnosticSectionSubmit(
+            { push, replace },
+            mockAttemptId,
+            dest,
+            opts?.mockListeningComplete ? "reading" : "listening",
+          );
+          return;
+        }
         const dest =
           opts?.mockListeningComplete === true
             ? mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "listening", {
-                completedPart: TEST1_LISTENING_PART_COUNT,
+                completedPart: listeningPartCount,
                 attemptId: _attemptId,
               })
             : mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "listening", {
                 completedPart: part,
                 attemptId: _attemptId,
               });
-        replace(dest);
+        navigateAfterSectionSubmit(
+          { push, replace },
+          mockSlug,
+          mockAttemptId,
+          dest,
+          { replace: true },
+        );
         return;
       }
       const testNumber = testNumberForMockId(testId);
       persistModuleResultAttempt(testNumber, "listening", _attemptId);
       push(listeningModuleResultsPath(testId, _attemptId));
     },
-    [replace, push, testId, mockSlug, mockAttemptId, part],
+    [replace, push, testId, mockSlug, mockAttemptId, part, isDiagnostic, listeningPartCount],
   );
 
   const submitAnswers = useMemo(
@@ -202,7 +242,7 @@ export function ListeningPage({
         flush: flushNow,
         submit: () => listeningApi.submit(state.attemptId!, submitAnswers),
       });
-      const listeningDoneOnClient = part >= TEST1_LISTENING_PART_COUNT;
+      const listeningDoneOnClient = part >= listeningPartCount;
       if (mockAttemptId) {
         cacheCheckpointSubmit(payload.attempt_id, {
           band: payload.band,
@@ -428,7 +468,7 @@ export function ListeningPage({
   }, [isExam, part, mockAttemptId, testId, initialBoot, dispatch]);
 
   useListeningMockGuard({
-    enabled: isExam,
+    enabled: isExam && !isDiagnostic,
     mockAttemptId,
     mockSlug,
     part,

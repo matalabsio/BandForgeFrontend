@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SkillBar } from "@/components/scores/skill-bar";
 import { mockHubPath, mockModulePath } from "@/lib/mock-catalog";
+import { navigateToExamPath } from "@/lib/mock-exam-nav";
 import { scoresAfterMockCompletePath } from "@/lib/scores-path";
 import {
   clearCheckpointSubmit,
@@ -99,13 +100,14 @@ function MockCheckpointBody({ mockSlug, mockAttemptId, attemptId, from }: Props)
     }
     const mod = data.next_module;
     if (!mod || (mod !== "reading" && mod !== "listening")) return;
-    push(
+    navigateToExamPath(
+      { push, replace },
+      mockSlug,
       mockModulePath(mockSlug, mod, {
         part: data.next_part ?? 1,
         passage: data.next_part ?? 1,
-        mockAttemptId,
-        auto: true,
       }),
+      { mockAttemptId, auto: true, sectionStart: true },
     );
   };
 

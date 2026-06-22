@@ -134,7 +134,7 @@ export function BandForgeFeatures() {
       <div className="bf-container">
         <div className="mx-auto max-w-3xl text-center">
           <p className="bf-eyebrow">Content library</p>
-          <h2 className="bf-section-title mt-3">
+          <h2 className="bf-section-title mt-3 text-balance">
             Practice modules for every IELTS skill
           </h2>
           <p className="bf-copy mx-auto mt-5 max-w-2xl">
@@ -143,11 +143,11 @@ export function BandForgeFeatures() {
           </p>
         </div>
 
-        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+        <ul className="mt-8 grid gap-4 sm:mt-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
           {features.map((f) => (
             <li
               key={f.title}
-              className="bf-min-card bf-card-hover flex flex-col border-t-4 border-t-teal p-6 transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:transform-none"
+              className="bf-min-card bf-card-hover flex flex-col border-t-4 border-t-teal p-5 transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:transform-none sm:p-6"
             >
               <h3 className="text-lg font-bold text-black">{f.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">

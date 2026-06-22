@@ -1,14 +1,88 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Check, Lock, MessageCircle, Shield } from "lucide-react";
 import { BfSectionEyebrow, BfSectionHeading } from "@/components/bandforge/ui";
 import {
   BRAND_DIAGNOSTIC_SECTIONS,
   BRAND_PLAN_PAGE_TIERS,
 } from "@/lib/brand-mock-data";
+import {
+  readDiagnosticResults,
+  type DiagnosticResultsSnapshot,
+} from "@/lib/diagnostic-session";
 import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links";
 import { cn } from "@/lib/utils";
 
+function bandLabel(band: number | null | undefined): string {
+  if (band == null || band <= 0) return "—";
+  return band.toFixed(1);
+}
+
+function DiagnosticResultsPanel({
+  results,
+}: {
+  results: DiagnosticResultsSnapshot;
+}) {
+  const rows = [
+    { label: "Overall", score: bandLabel(results.aggregate_band) },
+    { label: "Listening", score: bandLabel(results.listening_band) },
+    { label: "Reading", score: bandLabel(results.reading_band) },
+    { label: "Writing", score: bandLabel(results.writing_band) },
+    { label: "Speaking", score: bandLabel(results.speaking_band) },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-border-soft bg-white p-6">
+      <p className="font-display text-sm font-bold text-navy">
+        Your diagnostic results
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {rows.map((s) => (
+          <div key={s.label} className="text-center">
+            <p className="font-mono text-2xl text-cyan">{s.score}</p>
+            <p className="text-xs text-muted-light">{s.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TeaserResultsPanel() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-border-soft bg-white p-6">
+      <div className="pointer-events-none select-none blur-[6px]">
+        <p className="font-display text-sm font-bold text-navy">
+          Your diagnostic results
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {BRAND_DIAGNOSTIC_SECTIONS.map((s) => (
+            <div key={s.label} className="text-center">
+              <p className="font-mono text-2xl text-cyan">{s.score}</p>
+              <p className="text-xs text-muted-light">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60">
+        <Lock className="size-8 text-navy" strokeWidth={1.75} />
+        <p className="font-display mt-3 text-base font-bold text-navy">
+          Complete the diagnostic to see your scores
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function PlanSelectionExperience() {
+  const [results, setResults] = useState<DiagnosticResultsSnapshot | null>(null);
+
+  useEffect(() => {
+    setResults(readDiagnosticResults());
+  }, []);
+
   return (
     <div className="space-y-8">
       <header>
@@ -22,27 +96,11 @@ export function PlanSelectionExperience() {
         </p>
       </header>
 
-      <div className="relative overflow-hidden rounded-2xl border border-border-soft bg-white p-6">
-        <div className="pointer-events-none select-none blur-[6px]">
-          <p className="font-display text-sm font-bold text-navy">
-            Your diagnostic results
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {BRAND_DIAGNOSTIC_SECTIONS.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="font-mono text-2xl text-cyan">{s.score}</p>
-                <p className="text-xs text-muted-light">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60">
-          <Lock className="size-8 text-navy" strokeWidth={1.75} />
-          <p className="font-display mt-3 text-base font-bold text-navy">
-            Upgrade to see your full report
-          </p>
-        </div>
-      </div>
+      {results ? (
+        <DiagnosticResultsPanel results={results} />
+      ) : (
+        <TeaserResultsPanel />
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3 lg:items-start">
         {BRAND_PLAN_PAGE_TIERS.map((tier) => (

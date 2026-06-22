@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { TrendingUp } from "lucide-react";
-import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links";
+import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { BRAND_DASHBOARD_MODULE_PROGRESS } from "@/lib/brand-mock-data";
 
 type EmptyProps = {
@@ -39,10 +39,10 @@ export function DashboardEmptyHero({ firstName }: EmptyProps) {
             Diagnostic Test
           </h3>
           <p className="mt-2.5 text-[0.8125rem] font-light text-slate">
-            90 minutes · All 4 sections · AI-evaluated
+            ~45 minutes · Listening, Reading & Writing
           </p>
           <Link
-            href={marketingAppHref()}
+            href={diagnosticPaths.landing}
             prefetch
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-cyan px-[26px] py-[13px] text-[0.9375rem] font-semibold text-white shadow-[0_8px_20px_rgb(0_151_167/0.4)] transition-colors hover:bg-brand-sky-hover"
           >

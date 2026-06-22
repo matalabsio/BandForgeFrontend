@@ -1,9 +1,4 @@
-import {
-  ApiError,
-  parseApiError,
-  parseJsonResponse,
-  type ApiErrorBody,
-} from "@/lib/api";
+import { examApiCall } from "@/lib/exam-api-call";
 
 export type ModuleProgressStatus = "locked" | "available" | "in_progress" | "completed";
 
@@ -98,21 +93,8 @@ export type MockAttemptHistoryLiteItem = {
   completed_at: string | null;
 };
 
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
-  const body = await parseJsonResponse<T | ApiErrorBody>(res);
-  if (!res.ok) {
-    throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
-  }
-  return body as T;
+function call<T>(path: string, init?: RequestInit): Promise<T> {
+  return examApiCall<T>(path, init);
 }
 
 export const mockApi = {

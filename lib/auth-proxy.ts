@@ -1,41 +1,14 @@
 import { NextResponse } from "next/server";
 import {
   applyAuthCookiesToResponse,
+  applyAuthTokensToResponse,
   collectSetCookieHeaders,
-  DEFAULT_MAX_AGE,
 } from "@/lib/auth-cookies";
 import type { AuthResponse } from "@/lib/auth";
 import { refreshAuthSession } from "@/lib/auth-server";
 import { getApiUrl, type ApiErrorBody } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
-
-function applyAuthTokensToResponse(
-  res: NextResponse,
-  auth: AuthResponse,
-  setCookieHeaders: string[] = [],
-): void {
-  applyAuthCookiesToResponse(res, setCookieHeaders);
-  const secure = process.env.NODE_ENV === "production";
-  if (auth.access_token) {
-    res.cookies.set(ACCESS_COOKIE, auth.access_token, {
-      httpOnly: true,
-      secure,
-      sameSite: "lax",
-      path: "/",
-      maxAge: DEFAULT_MAX_AGE[ACCESS_COOKIE],
-    });
-  }
-  if (auth.refresh_token) {
-    res.cookies.set(REFRESH_COOKIE, auth.refresh_token, {
-      httpOnly: true,
-      secure,
-      sameSite: "lax",
-      path: "/",
-      maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
-    });
-  }
-}
 
 async function proxyCoalescedRefresh(
   cookieHeader: string,

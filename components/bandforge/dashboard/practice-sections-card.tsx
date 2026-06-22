@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { DEFAULT_MOCK_SLUG, mockModulePath } from "@/lib/mock-catalog";
+import { prepareExamModuleNavigation } from "@/lib/mock-exam-nav";
 import { writingTaskPath } from "@/lib/writing-test";
 import { READING_PASSAGE_STAGES } from "@/modules/reading/reading-test-passages";
 import { WRITING_TASK_STAGES } from "@/modules/writing/writing-test-tasks";
@@ -30,7 +31,6 @@ function buildSections(): SectionItem[] {
       meta: `${p.questionRange} · ${p.durationMinutes} min`,
       href: mockModulePath(DEFAULT_MOCK_SLUG, "reading", {
         passage: p.passage,
-        auto: true,
       }),
       live: p.live,
     }),
@@ -77,6 +77,11 @@ export function PracticeSectionsCard() {
                 "block rounded-xl border border-ink/10 bg-surface p-4 transition-colors",
                 "hover:border-cyan/40 hover:bg-white",
               )}
+              onClick={() => {
+                prepareExamModuleNavigation(DEFAULT_MOCK_SLUG, item.module, {
+                  auto: true,
+                });
+              }}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

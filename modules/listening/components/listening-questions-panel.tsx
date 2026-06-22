@@ -22,6 +22,9 @@ type Props = {
   nextPartLabel?: string;
   submitBusy?: boolean;
   onSubmitPart?: () => void;
+  /** @deprecated Use variant="diagnostic" without embedded */
+  embedded?: boolean;
+  variant?: "exam" | "diagnostic";
 };
 
 function qDisplay(q: ListeningQuestion): number {
@@ -43,6 +46,8 @@ function ListeningQuestionsPanelBase({
   nextPartLabel,
   submitBusy = false,
   onSubmitPart,
+  embedded = false,
+  variant = "exam",
 }: Props) {
   const sorted = useMemo(() => sortedQuestions(part.questions), [part.questions]);
   const blocks = useMemo(() => groupListeningQuestions(part), [part]);
@@ -55,9 +60,20 @@ function ListeningQuestionsPanelBase({
     );
   }
 
+  const isDiagnostic = variant === "diagnostic";
+
   return (
-    <div className="flex h-full flex-col bg-[var(--exam-surface)] lg:max-h-[calc(100dvh-3rem)]">
-      {visible ? (
+    <div
+      className={cn(
+        "flex flex-col",
+        isDiagnostic
+          ? "shrink-0 bg-transparent"
+          : embedded
+            ? "min-h-0 flex-1 bg-[var(--exam-surface)]"
+            : "h-full bg-[var(--exam-surface)] lg:max-h-[calc(100dvh-3rem)]",
+      )}
+    >
+      {visible && !isDiagnostic ? (
         <div className="shrink-0 border-b border-[var(--exam-border)] bg-white px-3 py-3 sm:px-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--exam-accent)]">
@@ -98,8 +114,8 @@ function ListeningQuestionsPanelBase({
 
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-5",
-          visible && nextPartLabel && onSubmitPart && "pb-4",
+          isDiagnostic ? "block" : "flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-5",
+          visible && nextPartLabel && onSubmitPart && !isDiagnostic && "pb-4",
         )}
       >
         {!visible ? (
@@ -146,6 +162,7 @@ function ListeningQuestionsPanelBase({
                     currentQuestionId={currentQuestionId}
                     onAnswer={onAnswer}
                     onFocus={onFocus}
+                    variant={isDiagnostic ? "diagnostic" : "exam"}
                   />
                 );
               }
@@ -180,8 +197,11 @@ function ListeningQuestionsPanelBase({
                 <div
                   key={block.question.id}
                   className={cn(
-                    "rounded-lg border border-[var(--exam-border)] bg-white p-4",
-                    currentQuestionId === block.question.id &&
+                    isDiagnostic
+                      ? "rounded-[13px] border border-navy/14 bg-white p-0"
+                      : "rounded-lg border border-[var(--exam-border)] bg-white p-4",
+                    !isDiagnostic &&
+                      currentQuestionId === block.question.id &&
                       "ring-1 ring-[var(--exam-accent)]/30",
                   )}
                 >
@@ -191,7 +211,7 @@ function ListeningQuestionsPanelBase({
                     onChange={(v) => onAnswer(block.question.id, v)}
                     onFocus={() => onFocus(block.question.id)}
                     isActive={currentQuestionId === block.question.id}
-                    variant="exam"
+                    variant={isDiagnostic ? "diagnostic" : "exam"}
                   />
                 </div>
               );

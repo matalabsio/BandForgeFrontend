@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,18 @@ import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
 import type { WritingBootServer } from "@/lib/mock-server";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
-import { syncExamRoute } from "@/lib/mock-exam-nav";
+import { syncExamRoute, navigateToExamPath } from "@/lib/mock-exam-nav";
+import {
+  DIAGNOSTIC_MOCK_TEST_ID,
+  DIAGNOSTIC_NAV_TEST_NUMBER,
+  diagnosticPaths,
+  isDiagnosticFlow,
+} from "@/lib/diagnostic-catalog";
+import {
+  diagnosticAfterWritingSubmit,
+  navigateAfterDiagnosticSectionSubmit,
+} from "@/lib/diagnostic-exam-nav";
+import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
 import { writingApi } from "@/modules/writing/services/writing-api";
 import type { WritingTask } from "@/modules/writing/types";
 import {
@@ -83,6 +94,8 @@ type Props = {
   mockMeta?: MockMeta;
   autoStart?: boolean;
   initialBoot?: WritingBootServer | null;
+  testNumber?: number;
+  flow?: "mock" | "diagnostic";
 };
 
 export function WritingPage({
@@ -90,13 +103,22 @@ export function WritingPage({
   part,
   mockSlug = DEFAULT_MOCK_SLUG,
   mockMeta: mockMetaProp,
-  autoStart = true,
+  autoStart: autoStartProp = true,
   initialBoot = null,
+  testNumber: testNumberProp,
+  flow = "mock",
 }: Props) {
+  const isDiagnostic = isDiagnosticFlow(flow, mockTestId);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const mockAttemptId = useResolvedMockAttemptId(mockTestId);
-  const sectionStart = searchParams.get("section_start") === "1";
+  const resolvedTestNumber = isDiagnostic
+    ? DIAGNOSTIC_NAV_TEST_NUMBER
+    : (testNumberProp ?? testNumberForMockId(mockTestId));
+  const { autoStart: navAuto, sectionStart } = useExamNavFlags({
+    testNumber: resolvedTestNumber,
+    module: "writing",
+  });
+  const autoStart = navAuto || autoStartProp;
 
   const [phase, setPhase] = useState<"loading" | "intro" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
@@ -267,6 +289,23 @@ export function WritingPage({
   useEffect(() => {
     if (needsConsentGateRef.current) return;
     if (!mockAttemptId) return;
+    if (isDiagnostic) {
+      let cancelled = false;
+      void (async () => {
+        try {
+          const p = await fetchMockProgressDeduped(mockAttemptId);
+          if (cancelled) return;
+          if (p.status === "completed") {
+            router.replace(diagnosticPaths.results);
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
     if (shouldSkipMockGuard(mockAttemptId, sectionStart)) return;
     let cancelled = false;
     void (async () => {
@@ -304,7 +343,7 @@ export function WritingPage({
     return () => {
       cancelled = true;
     };
-  }, [mockAttemptId, mockSlug, part, sectionStart, router]);
+  }, [mockAttemptId, mockSlug, part, sectionStart, router, isDiagnostic, mockTestId]);
 
   useEffect(() => {
     return () => {
@@ -392,6 +431,18 @@ export function WritingPage({
             ? null
             : result.mock_next_part ?? part + 1,
         });
+        if (isDiagnostic) {
+          if (result.mock_writing_complete) {
+            persistMockAttemptId(DIAGNOSTIC_MOCK_TEST_ID, mockAttemptId);
+            navigateAfterDiagnosticSectionSubmit(
+              router,
+              mockAttemptId,
+              diagnosticAfterWritingSubmit(),
+              "writing",
+            );
+            return;
+          }
+        }
         if (
           result.mock_writing_complete ||
           result.mock_next_module === "speaking"
@@ -400,13 +451,17 @@ export function WritingPage({
           router.replace(mockResultsPath(mockSlug));
           return;
         }
-        if (result.next_part === 2 && part === 1 && TEST1_WRITING_TASK_COUNT > 1) {
+        if (result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1) {
           bootedRef.current = false;
-          router.push(
-            mockModulePath(mockSlug, "writing", {
-              part: 2,
+          navigateToExamPath(
+            router,
+            mockSlug,
+            mockModulePath(mockSlug, "writing", { part: 2 }),
+            {
+              mockAttemptId,
               auto: true,
-            }) + "&section_start=1",
+              sectionStart: true,
+            },
           );
           return;
         }
@@ -431,7 +486,7 @@ export function WritingPage({
         return;
       }
 
-      if (result.next_part === 2 && part === 1 && TEST1_WRITING_TASK_COUNT > 1) {
+      if (result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1) {
         router.push(`/test/writing/task/2?auto=1`);
         return;
       }

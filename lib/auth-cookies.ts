@@ -1,4 +1,5 @@
 import type { NextResponse } from "next/server";
+import type { AuthResponse } from "@/lib/auth";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
 /** Default max-age when backend Set-Cookie omits Max-Age (seconds). */
@@ -72,4 +73,32 @@ export function collectSetCookieHeaders(headers: Headers): string[] {
     if (single) out.push(single);
   }
   return out;
+}
+
+/** Mirror auth JSON tokens onto httpOnly cookies (login, restore, guest session). */
+export function applyAuthTokensToResponse(
+  res: NextResponse,
+  auth: AuthResponse,
+  setCookieHeaders: string[] = [],
+): void {
+  applyAuthCookiesToResponse(res, setCookieHeaders);
+  const secure = process.env.NODE_ENV === "production";
+  if (auth.access_token) {
+    res.cookies.set(ACCESS_COOKIE, auth.access_token, {
+      httpOnly: true,
+      secure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: DEFAULT_MAX_AGE[ACCESS_COOKIE],
+    });
+  }
+  if (auth.refresh_token) {
+    res.cookies.set(REFRESH_COOKIE, auth.refresh_token, {
+      httpOnly: true,
+      secure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
+    });
+  }
 }

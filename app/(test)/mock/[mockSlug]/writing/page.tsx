@@ -1,5 +1,12 @@
 import { redirect } from "next/navigation";
-import { mockApiId, mockModulePath } from "@/lib/mock-catalog";
+import {
+  canonicalMockSlug,
+  isLiveCatalogTestNumber,
+  legacyModuleExamRedirectPath,
+  mockApiId,
+  mockModulePath,
+  testNumberForMockId,
+} from "@/lib/mock-catalog";
 import { ensureCanonicalMockSlug } from "@/lib/mock-route-guard";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
@@ -9,7 +16,12 @@ import { WritingPage } from "@/modules/writing/components/writing-page";
 
 type Props = {
   params: Promise<{ mockSlug: string }>;
-  searchParams: Promise<{ part?: string; mock_attempt?: string; auto?: string }>;
+  searchParams: Promise<{
+    part?: string;
+    mock_attempt?: string;
+    auto?: string;
+    section_start?: string;
+  }>;
 };
 
 export default async function MockWritingPage({ params, searchParams }: Props) {
@@ -20,6 +32,23 @@ export default async function MockWritingPage({ params, searchParams }: Props) {
     redirect(mockModulePath(mockSlug, "writing", { part: 1 }));
   }
 
+  const mockTestId = mockApiId(mockSlug);
+  const testNumber = testNumberForMockId(mockTestId);
+  const autoStart =
+    sp.auto === "1" || sp.auto === "true" || Boolean(sp.mock_attempt);
+  const sectionStart = sp.section_start === "1";
+
+  if (isLiveCatalogTestNumber(testNumber)) {
+    redirect(
+      legacyModuleExamRedirectPath(testNumber, "writing", {
+        part,
+        auto: autoStart,
+        sectionStart,
+        mockAttemptId: sp.mock_attempt,
+      }),
+    );
+  }
+
   ensureCanonicalMockSlug(mockSlug, (slug) =>
     mockModulePath(slug, "writing", { part }),
   );
@@ -27,22 +56,18 @@ export default async function MockWritingPage({ params, searchParams }: Props) {
   const cookieHeader = await getCachedCookieHeader();
   await guardMockModulePage(
     cookieHeader,
-    mockModulePath(mockSlug, "writing", {
-      part,
-      mockAttemptId: sp.mock_attempt,
-    }),
+    mockModulePath(mockSlug, "writing", { part }),
   );
-  const mockTestId = mockApiId(mockSlug);
   const mockMeta = await resolveMockMetaServer(cookieHeader, mockSlug);
 
   return (
     <MockLayout>
       <WritingPage
         mockTestId={mockTestId}
-        mockSlug={mockSlug}
+        mockSlug={canonicalMockSlug(mockSlug)}
         mockMeta={mockMeta}
         part={part}
-        autoStart={sp.auto === "1" || sp.auto === "true"}
+        autoStart={autoStart}
       />
     </MockLayout>
   );

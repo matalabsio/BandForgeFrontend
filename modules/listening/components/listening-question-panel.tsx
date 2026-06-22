@@ -23,7 +23,7 @@ type Props = {
   isActive?: boolean;
   audioSlot?: ReactNode;
   hideMeta?: boolean;
-  variant?: "default" | "exam";
+  variant?: "default" | "exam" | "diagnostic";
 };
 
 const TFNG = ["TRUE", "FALSE", "NOT GIVEN"] as const;
@@ -32,11 +32,12 @@ function renderTextAnswer(
   question: ListeningQuestion,
   value: string,
   onChange: (value: string) => void,
-  variant: "default" | "exam",
+  variant: "default" | "exam" | "diagnostic",
   opts: { onFocus?: () => void; isActive?: boolean; hideMeta?: boolean },
 ) {
   const { onFocus, isActive, hideMeta } = opts;
   const ariaLabel = `Question ${question.question_number}: ${question.prompt}`;
+  const inlineVariant = variant === "diagnostic" ? "exam" : variant;
 
   if (shouldUseInlineBlank(question)) {
     const parts = splitPromptBlank(question.prompt);
@@ -49,7 +50,7 @@ function renderTextAnswer(
           onChange={onChange}
           onFocus={onFocus}
           ariaLabel={ariaLabel}
-          variant={variant}
+          variant={inlineVariant}
           isActive={isActive}
           questionNumber={question.question_number}
           showQuestionNumber={!hideMeta}
@@ -65,7 +66,7 @@ function renderTextAnswer(
         onChange={onChange}
         onFocus={onFocus}
         ariaLabel={ariaLabel}
-        variant={variant}
+        variant={inlineVariant}
         isActive={isActive}
         questionNumber={question.question_number}
         showQuestionNumber={!hideMeta}
@@ -81,15 +82,15 @@ function renderTextAnswer(
         value={value}
         onChange={onChange}
         onFocus={onFocus}
-        variant={variant}
+        variant={inlineVariant}
         isActive={isActive}
-        layout={variant === "exam" ? "exam-form" : "legacy"}
+        layout={inlineVariant === "exam" ? "exam-form" : "legacy"}
         prefix={question.question_number === 8 ? "£" : undefined}
       />
     );
   }
 
-  const isExam = variant === "exam";
+  const isExamStyle = variant === "exam" || variant === "diagnostic";
   return (
     <input
       type="text"
@@ -100,7 +101,7 @@ function renderTextAnswer(
       placeholder="Your answer"
       className={cn(
         "w-full outline-none",
-        isExam
+        isExamStyle
           ? "mt-4 rounded-md border border-[var(--exam-border)] bg-white px-3 py-2.5 text-[14px] focus:border-[var(--exam-accent)] focus:ring-2 focus:ring-[var(--exam-accent)]/20"
           : "mt-4 rounded-lg border border-border bg-white px-3 py-2 text-body focus:border-teal focus:ring-2 focus:ring-teal/20",
       )}
@@ -121,7 +122,115 @@ function ListeningQuestionPanelBase({
   const type = question.question_type.toLowerCase();
   const options = question.options ?? null;
   const isExam = variant === "exam";
+  const isDiagnostic = variant === "diagnostic";
   const usesInlineLayout = usesInlineAnswerLayout(question);
+
+  if (isDiagnostic) {
+    return (
+      <div>
+        {!usesInlineLayout && !hideMeta ? (
+          <>
+            <p className="mb-3.5 font-mono text-xs tracking-wide text-[#6E83A0]">
+              Question {question.question_number}
+            </p>
+            <p className="font-display text-lg font-bold tracking-tight text-navy">
+              {question.instructions ?? question.prompt}
+            </p>
+            {question.instructions && question.prompt !== question.instructions ? (
+              <p className="mt-1 text-sm font-light text-[#5A6B82]">{question.prompt}</p>
+            ) : null}
+          </>
+        ) : null}
+        {audioSlot ? <div className="mt-3">{audioSlot}</div> : null}
+        {options && options.length > 0 ? (
+          <fieldset className="mt-4 space-y-2.5">
+            <legend className="sr-only">Options</legend>
+            {options.map((o) => {
+              const selected = value === o.label;
+              return (
+                <label
+                  key={o.label}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-3 rounded-[13px] border px-4 py-3.5 transition-colors",
+                    selected
+                      ? "border-cyan bg-cyan/10"
+                      : "border-navy/14 bg-white hover:border-navy/25",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-[7px] border-[1.5px]",
+                      selected
+                        ? "border-cyan bg-cyan text-[#06222B]"
+                        : "border-navy/22",
+                    )}
+                  >
+                    {selected ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M5 12l5 5L20 6" />
+                      </svg>
+                    ) : null}
+                  </span>
+                  <span className="font-mono text-[13px] font-medium text-teal">{o.label}</span>
+                  <span
+                    className={cn(
+                      "text-sm",
+                      selected ? "font-medium text-navy" : "text-[#3D4D63]",
+                    )}
+                  >
+                    {o.text}
+                  </span>
+                  <input
+                    type="radio"
+                    name={question.id}
+                    value={o.label}
+                    checked={selected}
+                    onChange={() => onChange(o.label)}
+                    className="sr-only"
+                  />
+                </label>
+              );
+            })}
+          </fieldset>
+        ) : type === "tfng" ? (
+          <div className="mt-4 flex flex-col gap-2.5">
+            {TFNG.map((t) => {
+              const selected = value === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => onChange(t)}
+                  className={cn(
+                    "flex min-h-[52px] cursor-pointer items-center gap-3 rounded-[13px] border px-4 py-3.5 text-left text-[15px] transition-colors",
+                    selected
+                      ? "border-cyan bg-cyan/10 font-semibold text-navy"
+                      : "border-navy/14 text-[#3D4D63]",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "size-[22px] shrink-0 rounded-full border-[1.5px]",
+                      selected ? "border-cyan bg-cyan" : "border-navy/22",
+                    )}
+                  />
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={usesInlineLayout ? undefined : "mt-4"}>
+            {renderTextAnswer(question, value, onChange, "exam", {
+              onFocus,
+              isActive,
+              hideMeta,
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (isExam) {
     return (

@@ -31,6 +31,7 @@ import {
   adminLink,
 } from "@/components/admin/admin-ui";
 import { cn } from "@/lib/utils";
+import { isLiveCatalogNumber, MAX_LIVE_CATALOG_NUMBER } from "@/lib/mock-catalog-api";
 
 const CHART_COLORS = {
   sky: "#0097a7",
@@ -89,35 +90,40 @@ export function AdminDashboardClient() {
   const chartData = useMemo(() => {
     if (!overview) return null;
     const metrics = overview.metrics;
-    const published = mocks.filter((m) => m.status === "published").length;
-    const draft = mocks.filter((m) => m.status === "draft").length;
-    const archived = mocks.filter((m) => m.status === "archived").length;
+    const liveMocks = mocks.filter(
+      (m) =>
+        m.status === "published" &&
+        m.catalog_number != null &&
+        isLiveCatalogNumber(m.catalog_number),
+    );
+    const liveCount = liveMocks.length;
+    const comingSoonCount = Math.max(0, MAX_LIVE_CATALOG_NUMBER - liveCount);
 
     return {
       mockStatus: [
-        { label: "Published", value: published, color: CHART_COLORS.success },
-        { label: "Draft", value: draft, color: CHART_COLORS.warning },
-        { label: "Archived", value: archived, color: CHART_COLORS.slate },
+        { label: "Live", value: liveCount, color: CHART_COLORS.success },
+        { label: "Coming soon", value: comingSoonCount, color: CHART_COLORS.warning },
       ],
       moduleBars: [
         {
           label: "Listening",
-          value: sumModuleQuestions(mocks, "listening"),
+          value: sumModuleQuestions(liveMocks, "listening"),
           color: CHART_COLORS.sky,
         },
         {
           label: "Reading",
-          value: sumModuleQuestions(mocks, "reading"),
+          value: sumModuleQuestions(liveMocks, "reading"),
           color: "#0284c7",
         },
         {
           label: "Writing",
-          value: sumModuleQuestions(mocks, "writing"),
+          value: sumModuleQuestions(liveMocks, "writing"),
           color: CHART_COLORS.violet,
         },
       ],
-      published,
-      draft,
+      liveMocks,
+      liveCount,
+      comingSoonCount,
       metrics,
     };
   }, [overview, mocks]);
@@ -138,7 +144,7 @@ export function AdminDashboardClient() {
   }
 
   const { metrics } = chartData;
-  const liveTests = metrics.published_mocks ?? chartData.published;
+  const liveTests = chartData.liveMocks.length;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -170,18 +176,18 @@ export function AdminDashboardClient() {
               />
               <HeroStat
                 label="Mocks"
-                value={metrics.total_mocks ?? mocks.length}
+                value={liveTests}
                 trend={metrics.mocks_trend_pct}
               />
               <HeroStat label="Live" value={liveTests} sub="tests" />
             </div>
           </div>
           <div className="flex flex-wrap gap-2 sm:gap-3">
-            <HeroCta href="/admin/mocks" Icon={Plus} primary>
+            <HeroCtaComingSoon Icon={Plus} primary>
               Create mock
-            </HeroCta>
+            </HeroCtaComingSoon>
             <HeroCta href="/admin/mocks" Icon={Upload}>
-              Upload questions
+              Manage mocks
             </HeroCta>
           </div>
         </div>
@@ -245,7 +251,7 @@ export function AdminDashboardClient() {
 
         <AdminChartCard
           title="Mock catalog"
-          subtitle={`${chartData.published} published · ${chartData.draft} draft`}
+          subtitle={`${chartData.liveCount} live · ${chartData.comingSoonCount} coming soon`}
           className="lg:col-span-2"
         >
           <MockStatusBars segments={chartData.mockStatus} />
@@ -302,11 +308,11 @@ export function AdminDashboardClient() {
               View all
             </Link>
           </div>
-          {mocks.length === 0 ? (
-            <p className="text-sm text-gray-600">No mocks yet.</p>
+          {chartData.liveMocks.length === 0 ? (
+            <p className="text-sm text-gray-600">No live mocks yet.</p>
           ) : (
             <ul className="space-y-1">
-              {mocks.slice(0, 5).map((mock) => (
+              {chartData.liveMocks.map((mock) => (
                 <li key={mock.id}>
                   <Link
                     href={`/admin/mocks/${mock.id}`}
@@ -331,8 +337,8 @@ export function AdminDashboardClient() {
           Quick actions
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          <ActionTile href="/admin/mocks" title="Create mock" Icon={ClipboardList} accent="teal" />
-          <ActionTile href="/admin/mocks" title="Upload" Icon={Upload} accent="violet" />
+          <ActionTileComingSoon title="Create mock" Icon={ClipboardList} accent="teal" />
+          <ActionTile href="/admin/mocks" title="Manage mocks" Icon={Upload} accent="violet" />
           <ActionTile
             href="/admin/speaking"
             title="Review speaking"
@@ -407,6 +413,35 @@ function HeroCta({
   );
 }
 
+function HeroCtaComingSoon({
+  Icon,
+  children,
+  primary = false,
+}: {
+  Icon: LucideIcon;
+  children: ReactNode;
+  primary?: boolean;
+}) {
+  return (
+    <span
+      aria-disabled="true"
+      title="Coming soon"
+      className={cn(
+        "inline-flex cursor-not-allowed items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold opacity-70",
+        primary
+          ? "bg-white/80 text-teal shadow-lg"
+          : "border border-white/30 bg-white/10 text-white",
+      )}
+    >
+      <Icon className="size-4" aria-hidden />
+      {children}
+      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
+        Soon
+      </span>
+    </span>
+  );
+}
+
 function ActionTile({
   href,
   title,
@@ -445,6 +480,41 @@ function ActionTile({
       </div>
       <span className="text-center text-sm font-semibold text-black">{title}</span>
     </Link>
+  );
+}
+
+function ActionTileComingSoon({
+  title,
+  Icon,
+  accent,
+}: {
+  title: string;
+  Icon: LucideIcon;
+  accent: "teal" | "violet" | "warning";
+}) {
+  const accents = {
+    teal: "from-cyan-soft to-surface text-teal border-border",
+    violet: "from-violet-100 to-violet-50 text-violet-700 border-violet-100",
+    warning: "from-amber-100 to-amber-50 text-amber-700 border-amber-100",
+  };
+
+  return (
+    <div
+      aria-disabled="true"
+      title="Coming soon"
+      className={cn(
+        "relative flex min-h-[7.5rem] cursor-not-allowed flex-col items-center justify-center gap-3 rounded-2xl border bg-gradient-to-br p-4 opacity-70 shadow-sm",
+        accents[accent],
+      )}
+    >
+      <span className="absolute right-3 top-3 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
+        Soon
+      </span>
+      <div className="flex size-11 items-center justify-center rounded-xl bg-white shadow-sm">
+        <Icon className="size-5" aria-hidden />
+      </div>
+      <span className="text-center text-sm font-semibold text-black">{title}</span>
+    </div>
   );
 }
 

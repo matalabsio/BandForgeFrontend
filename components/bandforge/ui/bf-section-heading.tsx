@@ -14,7 +14,7 @@ export function BfSectionHeading({
   return (
     <Tag
       className={cn(
-        "font-display text-[1.625rem] leading-[1.1] font-bold tracking-[-0.025em] text-navy lg:text-[2.375rem] lg:leading-[1.08] lg:tracking-[-0.03em]",
+        "font-display text-[1.625rem] leading-[1.1] font-bold tracking-[-0.025em] text-balance text-navy sm:text-[1.75rem] lg:text-[2.375rem] lg:leading-[1.08] lg:tracking-[-0.03em]",
         className,
       )}
     >

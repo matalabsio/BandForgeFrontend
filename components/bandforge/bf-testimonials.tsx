@@ -27,12 +27,12 @@ export function BandForgeTestimonials() {
           <p className="bf-eyebrow">
             Testimonials
           </p>
-          <h2 className="font-display mt-3 text-[2rem] leading-[1.08] font-bold tracking-[-0.03em] text-navy sm:text-[2.375rem]">
+          <h2 className="font-display mt-3 text-[1.625rem] leading-[1.1] font-bold tracking-[-0.025em] text-balance text-navy sm:text-[2rem] sm:leading-[1.08] lg:text-[2.375rem]">
             Confidence grows when practice feels real.
           </h2>
         </div>
 
-        <ul className="mt-12 grid gap-5 lg:grid-cols-3">
+        <ul className="mt-10 grid gap-5 sm:mt-12 sm:grid-cols-2 lg:grid-cols-3">
           {stories.map((s) => (
             <li
               key={s.name}

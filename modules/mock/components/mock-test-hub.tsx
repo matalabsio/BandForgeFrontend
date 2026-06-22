@@ -5,12 +5,14 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClockIcon } from "@/components/bandforge/dashboard/icons";
 import {
-  examPathForMockStart,
   getMockMeta,
   mockResultsPath,
-  mockPathFromProgress,
   type MockSlug,
 } from "@/lib/mock-catalog";
+import {
+  navigateAfterMockStart,
+  navigateFromProgress,
+} from "@/lib/mock-exam-nav";
 import type { MockCatalogSlot } from "@/lib/mock-catalog-api";
 import { MockTestHubShell } from "@/modules/mock/components/mock-test-hub-shell";
 import { clearMockExamLocalData } from "@/lib/mock-client-session";
@@ -122,8 +124,12 @@ export function MockTestHub({
       return;
     }
     if (status === "in_progress" && activeAttemptId) {
-      const url = mockPathFromProgress(mockSlug, activeAttemptId, progress!);
-      replace(url);
+      navigateFromProgress(
+        { push, replace },
+        mockSlug,
+        activeAttemptId,
+        progress!,
+      );
       return;
     }
     try {
@@ -137,7 +143,7 @@ export function MockTestHub({
     try {
       clearMockExamLocalData(mockTestId);
       const res = await start(true);
-      replace(examPathForMockStart(mockSlug, res));
+      navigateAfterMockStart({ push, replace }, mockSlug, res, { replace: true });
     } catch {
       /* error surfaced via hook */
     }

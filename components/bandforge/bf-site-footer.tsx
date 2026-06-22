@@ -78,7 +78,7 @@ export async function BandForgeSiteFooter() {
   return (
     <footer className="border-t border-white/7 bg-navy-deep text-white">
       {/* Mobile footer */}
-      <div className="px-6 py-[34px] pb-10 lg:hidden">
+      <div className="px-5 py-8 sm:px-6 sm:py-[34px] sm:pb-10 lg:hidden">
         <div className="mb-3 flex items-center gap-[9px]">
           <BfBrandBars size="footer" />
           <p className="font-display text-[1.0625rem] font-bold tracking-tight">
@@ -106,7 +106,7 @@ export async function BandForgeSiteFooter() {
       </div>
 
       {/* Desktop footer */}
-      <div className="mx-auto hidden max-w-[1200px] px-10 py-12 lg:block">
+      <div className="mx-auto hidden w-full max-w-[1200px] px-8 py-12 lg:block xl:px-10">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-2.5">
