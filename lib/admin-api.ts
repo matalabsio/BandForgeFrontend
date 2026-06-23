@@ -223,7 +223,41 @@ export type SpeakingReviewListItem = {
   student_email: string | null;
   status: string;
   human_band: number | null;
+  ai_overall_band?: number | null;
   created_at: string;
+};
+
+export type SpeakingSubmissionMeta = {
+  part?: number | null;
+  part_label?: string | null;
+  cue_card?: string | null;
+  prompt_title?: string | null;
+};
+
+export type SpeakingReviewDetail = {
+  id: string;
+  attempt_id: string;
+  status: string;
+  human_band: number | null;
+  human_criteria_scores: {
+    fluency: number;
+    lexical: number;
+    grammar: number;
+    pronunciation: number;
+  } | null;
+  submission_meta: SpeakingSubmissionMeta | null;
+  reviewer_notes: string | null;
+  transcript: string | null;
+  audio_url: string | null;
+  audio_play_url: string | null;
+  ai_scores: Record<string, unknown> | null;
+  student_name: string | null;
+  student_email: string | null;
+  student_target_band: number | null;
+  student_current_band: number | null;
+  queue_pending_count: number;
+  created_at: string;
+  reviewed_at: string | null;
 };
 
 export type AuditLogItem = {
@@ -398,23 +432,57 @@ export const adminApi = {
     });
   },
 
-  listSpeaking(params?: { status?: string; page?: number }) {
+  listSpeaking(params?: { status?: string; page?: number; page_size?: number }) {
     const q = new URLSearchParams();
     if (params?.status) q.set("status", params.status);
     if (params?.page) q.set("page", String(params.page));
+    if (params?.page_size) q.set("page_size", String(params.page_size));
     const suffix = q.toString() ? `?${q}` : "";
     return adminCall<{
       items: SpeakingReviewListItem[];
       total: number;
+      page: number;
+      page_size: number;
+      pending_count: number;
     }>(`/speaking${suffix}`);
   },
 
   getSpeaking(id: string) {
-    return adminCall<Record<string, unknown>>(`/speaking/${id}`);
+    return adminCall<SpeakingReviewDetail>(`/speaking/${id}`);
   },
 
-  approveSpeaking(id: string, body: { human_band: number; reviewer_notes?: string }) {
-    return adminCall(`/speaking/${id}/approve`, {
+  patchSpeaking(
+    id: string,
+    body: {
+      human_criteria_scores?: {
+        fluency: number;
+        lexical: number;
+        grammar: number;
+        pronunciation: number;
+      };
+      reviewer_notes?: string;
+      status?: "in_review";
+    },
+  ) {
+    return adminCall<SpeakingReviewDetail>(`/speaking/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  },
+
+  approveSpeaking(
+    id: string,
+    body: {
+      human_criteria_scores: {
+        fluency: number;
+        lexical: number;
+        grammar: number;
+        pronunciation: number;
+      };
+      reviewer_notes?: string;
+    },
+  ) {
+    return adminCall<SpeakingReviewDetail>(`/speaking/${id}/approve`, {
       method: "PATCH",
       body: JSON.stringify(body),
     });

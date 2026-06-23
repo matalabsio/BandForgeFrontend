@@ -1,13 +1,20 @@
 import type { DashboardRecentAttempt } from "@/components/bandforge/dashboard/types";
 import type { DashboardModule } from "@/components/bandforge/dashboard/types";
 import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
+import {
+  shortModuleSpeakingPendingPath,
+  testNumberForMockId,
+} from "@/lib/mock-catalog";
 
 export type ModuleBand = {
   module: DashboardModule;
   label: string;
   band: number | null;
   live: boolean;
+  reviewState: SpeakingReviewState;
 };
+
+export type SpeakingReviewState = "none" | "under_review" | "scored";
 
 const MODULE_ORDER: DashboardModule[] = [
   "listening",
@@ -19,22 +26,68 @@ const MODULE_ORDER: DashboardModule[] = [
 const LIVE_MODULES: Record<DashboardModule, boolean> = {
   listening: true,
   reading: true,
-  writing: false,
-  speaking: false,
+  writing: true,
+  speaking: true,
 };
+
+function latestAttemptForModule(
+  recent: DashboardRecentAttempt[],
+  module: DashboardModule,
+): DashboardRecentAttempt | undefined {
+  return recent
+    .filter((a) => a.module === module && (a.completed_at || a.status === "completed"))
+    .toSorted(
+      (a, b) =>
+        new Date(b.completed_at ?? b.started_at).getTime() -
+        new Date(a.completed_at ?? a.started_at).getTime(),
+    )[0];
+}
+
+export function speakingReviewState(
+  recent: DashboardRecentAttempt[],
+): SpeakingReviewState {
+  const attempt = latestAttemptForModule(recent, "speaking");
+  if (!attempt) return "none";
+  if (attempt.band != null) return "scored";
+  return "under_review";
+}
+
+export function moduleReviewState(
+  recent: DashboardRecentAttempt[],
+  module: DashboardModule,
+): SpeakingReviewState {
+  if (module !== "speaking") return "none";
+  return speakingReviewState(recent);
+}
+
+export function speakingPendingPath(attempt: DashboardRecentAttempt): string {
+  const testNumber = testNumberForMockId(attempt.mock_test.id);
+  return shortModuleSpeakingPendingPath(testNumber, attempt.id);
+}
+
+export function moduleBandLabel(
+  band: number | null,
+  reviewState: SpeakingReviewState,
+  live: boolean,
+): string {
+  if (band != null) return band.toFixed(1);
+  if (reviewState === "under_review") return "Under review";
+  return live ? "—" : "Soon";
+}
 
 export function latestBandByModule(
   recent: DashboardRecentAttempt[],
 ): ModuleBand[] {
   return MODULE_ORDER.map((module) => {
-    const attempt = recent.find(
-      (a) => a.module === module && a.band !== null,
-    );
+    const latest = latestAttemptForModule(recent, module);
+    const scored = recent.find((a) => a.module === module && a.band !== null);
+    const reviewState = moduleReviewState(recent, module);
     return {
       module,
       label: MODULE_LABELS[module],
-      band: attempt?.band ?? null,
+      band: scored?.band ?? latest?.band ?? null,
       live: LIVE_MODULES[module],
+      reviewState,
     };
   });
 }
@@ -69,4 +122,8 @@ export function bandBadgeClass(band: number | null): string {
   if (band >= 6) return "bg-cyan/12 text-teal";
   if (band >= 5) return "bg-amber-500/12 text-amber-700";
   return "bg-red-500/10 text-red-600";
+}
+
+export function underReviewBadgeClass(): string {
+  return "bg-amber-500/12 text-amber-800";
 }

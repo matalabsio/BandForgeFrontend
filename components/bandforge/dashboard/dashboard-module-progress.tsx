@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   BookIcon,
@@ -5,13 +7,19 @@ import {
   MicIcon,
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
-import { BRAND_DASHBOARD_MODULE_PROGRESS } from "@/lib/brand-mock-data";
-import type { ModuleKey } from "@/lib/brand-mock-data";
+import type { DashboardRecentAttempt } from "@/components/bandforge/dashboard/types";
+import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
+import {
+  latestBandByModule,
+  moduleBandLabel,
+} from "@/components/scores/scores-utils";
+import { DEFAULT_MOCK_SLUG, mockModulePath } from "@/lib/mock-catalog";
 import type { ComponentType, SVGProps } from "react";
 import { cn } from "@/lib/utils";
+import type { DashboardModule } from "@/components/bandforge/dashboard/types";
 
 const moduleIcons: Record<
-  ModuleKey,
+  DashboardModule,
   ComponentType<SVGProps<SVGSVGElement>>
 > = {
   listening: HeadphonesIcon,
@@ -20,26 +28,47 @@ const moduleIcons: Record<
   speaking: MicIcon,
 };
 
-function StatusPill({
-  status,
-}: {
-  status: "ai_feedback_ready" | "under_review";
-}) {
-  if (status === "ai_feedback_ready") {
-    return (
-      <span className="inline-flex items-center gap-1 self-start rounded-full bg-[#fbf1d9] px-2 py-1 text-[0.6875rem] font-semibold text-[#b7791f]">
-        AI Feedback Ready
-      </span>
-    );
+function moduleHref(module: DashboardModule): string {
+  if (module === "listening") {
+    return mockModulePath(DEFAULT_MOCK_SLUG, "listening", { part: 1 });
   }
+  if (module === "reading") {
+    return mockModulePath(DEFAULT_MOCK_SLUG, "reading", { passage: 1 });
+  }
+  if (module === "writing") {
+    return mockModulePath(DEFAULT_MOCK_SLUG, "writing", { part: 1 });
+  }
+  return mockModulePath(DEFAULT_MOCK_SLUG, "speaking");
+}
+
+function completedCount(
+  recent: DashboardRecentAttempt[],
+  module: DashboardModule,
+): number {
+  return recent.filter(
+    (a) =>
+      a.module === module && (a.completed_at || a.status === "completed"),
+  ).length;
+}
+
+function StatusPill({ status }: { status: "under_review" }) {
   return (
     <span className="inline-flex items-center gap-1 self-start rounded-full bg-[#e5eef9] px-2 py-1 text-[0.6875rem] font-semibold text-[#3b6fb0]">
-      Under Review
+      Under review
     </span>
   );
 }
 
-export function DashboardModuleProgress() {
+export function DashboardModuleProgress({
+  recent,
+}: {
+  recent: DashboardRecentAttempt[];
+}) {
+  const bands = latestBandByModule(recent);
+  const testedCount = bands.filter(
+    (b) => b.band !== null || b.reviewState !== "none",
+  ).length;
+
   return (
     <section>
       <div className="mb-3.5 flex items-center justify-between lg:hidden">
@@ -47,51 +76,68 @@ export function DashboardModuleProgress() {
           Your modules
         </span>
         <span className="font-mono text-[0.6875rem] text-muted-light">
-          4 / 4 tested
+          {testedCount} / 4 tested
         </span>
       </div>
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {BRAND_DASHBOARD_MODULE_PROGRESS.map((mod) => {
-          const Icon = moduleIcons[mod.key];
+        {bands.map((mod) => {
+          const Icon = moduleIcons[mod.module];
+          const testsDone = completedCount(recent, mod.module);
+          const progress =
+            mod.band !== null ? Math.min(100, Math.round((mod.band / 9) * 100)) : 0;
+          const displayBand = moduleBandLabel(mod.band, mod.reviewState, mod.live);
+          const hasBand = mod.band !== null;
+
           return (
-            <li key={mod.key}>
+            <li key={mod.module}>
               <article className="flex h-full flex-col rounded-2xl border border-border-soft border-l-[3px] border-l-cyan bg-white p-5">
                 <div className="mb-4 flex items-start justify-between">
                   <div className="flex size-11 items-center justify-center rounded-xl bg-cyan-soft text-cyan">
                     <Icon className="size-[23px]" strokeWidth={2} />
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-2xl leading-none font-medium text-cyan">
-                      {mod.band?.toFixed(1) ?? "—"}
+                    <p
+                      className={cn(
+                        "font-mono text-2xl leading-none font-medium",
+                        hasBand
+                          ? "text-cyan"
+                          : mod.reviewState === "under_review"
+                            ? "text-[#3b6fb0]"
+                            : "text-muted-light",
+                      )}
+                    >
+                      {displayBand}
                     </p>
                     <p className="mt-0.5 text-[0.65625rem] text-muted-light">
-                      band
+                      {hasBand ? "band" : mod.reviewState === "under_review" ? "status" : "band"}
                     </p>
                   </div>
                 </div>
                 <h3 className="font-display text-lg font-bold text-navy">
-                  {mod.title}
+                  {MODULE_LABELS[mod.module]}
                 </h3>
                 <p className="mt-1 text-[0.78125rem] text-muted-light">
-                  {mod.testsCompleted} / {mod.totalTests} tests
+                  {testsDone} {testsDone === 1 ? "attempt" : "attempts"}
                 </p>
-                {mod.status ? <StatusPill status={mod.status} /> : null}
+                {mod.reviewState === "under_review" ? (
+                  <StatusPill status="under_review" />
+                ) : null}
                 <div
                   className={cn(
                     "h-[7px] overflow-hidden rounded bg-[#edf1f6]",
-                    mod.status ? "mt-2.5 mb-4" : "my-3.5",
+                    mod.reviewState === "under_review" ? "mt-2.5 mb-4" : "my-3.5",
                   )}
                 >
                   <div
-                    className="h-full rounded bg-cyan"
-                    style={{ width: `${mod.progress}%` }}
+                    className="h-full rounded bg-cyan transition-all"
+                    style={{ width: `${progress}%` }}
                   />
                 </div>
                 <Link
-                  href={mod.href}
+                  href={moduleHref(mod.module)}
                   className="mt-auto flex w-full items-center justify-center rounded-full bg-cyan py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-sky-hover"
                 >
-                  {mod.nextAction}
+                  {testsDone > 0 ? "Continue" : "Start"}
                 </Link>
               </article>
             </li>

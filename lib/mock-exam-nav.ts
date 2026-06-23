@@ -65,7 +65,7 @@ export function navigateToModuleExam(
 
 
 function moduleFromExamPath(path: string): ResultModule | null {
-  const match = path.match(/^\/test\/\d+\/(listening|reading|writing)/);
+  const match = path.match(/^\/test\/\d+\/(listening|reading|writing|speaking)/);
   return (match?.[1] as ResultModule | undefined) ?? null;
 }
 
@@ -148,7 +148,7 @@ export function syncExamRoute(
   router: Router,
   slug: string,
   mockAttemptId: string,
-  current: { module: "reading" | "listening" | "writing"; part: number },
+  current: { module: "reading" | "listening" | "writing" | "speaking"; part: number },
   progress: Pick<
     MockAttemptProgress,
     "status" | "next_module" | "next_part"

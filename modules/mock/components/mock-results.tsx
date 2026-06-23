@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   BookIcon,
   HeadphonesIcon,
+  MicIcon,
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
 import {
@@ -72,6 +73,13 @@ const MODULE_META = [
     bandKey: "writing_band" as const,
     Icon: PencilIcon,
     accent: "from-amber-500/15 to-amber-600/5 text-amber-800",
+  },
+  {
+    key: "speaking" as const,
+    label: "Speaking",
+    bandKey: "speaking_band" as const,
+    Icon: MicIcon,
+    accent: "from-teal/15 to-emerald-600/5 text-teal",
   },
 ];
 
@@ -207,11 +215,12 @@ function MockResultsBody({
                 {bandLabel(summary.aggregate_band)}
               </p>
               <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-white/75 sm:mx-0">
-                Average of Listening, Reading, and Writing for this attempt.
+                Average of Listening, Reading, Writing, and Speaking for this
+                attempt.
               </p>
             </div>
 
-            <div className="mt-6 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1 snap-x snap-mandatory sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
+            <div className="mt-6 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1 snap-x snap-mandatory sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
               {MODULE_META.map(({ key, label, bandKey, Icon, accent }) => {
                 const band = summary[bandKey];
                 const mod = summary.modules.find((m) => m.module === key);
@@ -223,6 +232,13 @@ function MockResultsBody({
                       : "Not completed";
                 } else if (key === "writing" && band != null) {
                   hint = "Word-count estimate";
+                } else if (key === "speaking" && band == null) {
+                  hint =
+                    mod?.status === "completed"
+                      ? "Under review"
+                      : "Not completed";
+                } else if (key === "speaking" && band != null) {
+                  hint = "Human reviewed";
                 }
                 return (
                   <div key={key} className="snap-start sm:snap-align-none">

@@ -341,7 +341,7 @@ export function AdminDashboardClient() {
           <ActionTile href="/admin/mocks" title="Manage mocks" Icon={Upload} accent="violet" />
           <ActionTile
             href="/admin/speaking"
-            title="Review speaking"
+            title="Evaluator portal"
             Icon={Mic}
             accent="warning"
             badge={

@@ -40,6 +40,7 @@ export type MockAttemptSummary = MockAttemptProgress & {
   reading_band: number | null;
   listening_band: number | null;
   writing_band: number | null;
+  speaking_band: number | null;
 };
 
 export type MockCheckpointResponse = {
@@ -84,6 +85,8 @@ export type MockAttemptHistoryItem = {
   aggregate_band: number | null;
   reading_band: number | null;
   listening_band: number | null;
+  writing_band: number | null;
+  speaking_band: number | null;
 };
 
 export type MockAttemptHistoryLiteItem = {

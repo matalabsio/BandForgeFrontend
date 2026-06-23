@@ -95,6 +95,33 @@ export function MockTestHub({
     [progress?.modules],
   );
 
+  const moduleAbbrev = useMemo(() => {
+    const order = ["listening", "reading", "writing", "speaking"] as const;
+    const labels: Record<(typeof order)[number], string> = {
+      listening: "L",
+      reading: "R",
+      writing: "W",
+      speaking: "S",
+    };
+    const mods = progress?.modules ?? [];
+    const enabled = order.filter((key) =>
+      mods.some((mod) => mod.module === key && mod.is_enabled),
+    );
+    if (enabled.length > 0) {
+      return enabled.map((key) => labels[key]).join(" · ");
+    }
+    return "L · R · W · S";
+  }, [progress?.modules]);
+
+  const displayTotalMinutes = useMemo(() => {
+    const mods = progress?.modules ?? [];
+    const enabled = mods.filter((mod) => mod.is_enabled);
+    if (enabled.length > 0) {
+      return enabled.reduce((sum, mod) => sum + (mod.duration_minutes ?? 0), 0);
+    }
+    return meta.totalMinutes;
+  }, [progress?.modules, meta.totalMinutes]);
+
   const showReadiness = !hasAttempt || status === "completed";
   const showNewAttempt = status === "in_progress" || status === "completed";
 
@@ -246,10 +273,10 @@ export function MockTestHub({
               <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--exam-ink-muted)]">
                 <span className="inline-flex items-center gap-1">
                   <ClockIcon className="size-3.5 text-[var(--exam-accent)]" />
-                  ~{meta.totalMinutes} min
+                  ~{displayTotalMinutes} min
                 </span>
                 <span>·</span>
-                <span>L · R · W</span>
+                <span>{moduleAbbrev}</span>
               </p>
             </div>
             {hasAttempt ? (

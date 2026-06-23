@@ -7,6 +7,7 @@ import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
 import { formatDateShort } from "@/lib/date-format";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { testNumberForMockId } from "@/lib/mock-catalog";
+import { speakingPendingPath } from "@/components/scores/scores-utils";
 import { listeningModuleResultsPath } from "@/lib/listening-test";
 import { readingModuleResultsPath } from "@/lib/reading-test";
 import {
@@ -39,6 +40,13 @@ function reportHref(attempt: DashboardRecentAttempt): string | null {
   }
   if (attempt.module === "reading") {
     return readingModuleResultsPath(attempt.mock_test.id, attempt.id);
+  }
+  if (
+    attempt.module === "speaking" &&
+    attempt.band === null &&
+    (attempt.completed_at || attempt.status === "completed")
+  ) {
+    return speakingPendingPath(attempt);
   }
   return null;
 }
@@ -174,12 +182,30 @@ function TimelineItem({
           {attempt.raw_score !== null && attempt.total_questions !== null
             ? ` · ${attempt.raw_score}/${attempt.total_questions}`
             : ""}
+          {attempt.module === "speaking" && attempt.band !== null
+            ? " · Human reviewed"
+            : attempt.module === "speaking" &&
+                attempt.band === null &&
+                (attempt.completed_at || attempt.status === "completed")
+              ? " · Under review"
+              : ""}
         </p>
       </div>
       <span
-        className={`shrink-0 self-start rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums ${bandStyles(attempt.band)}`}
+        className={`shrink-0 self-start rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums ${
+          attempt.module === "speaking" &&
+          attempt.band === null &&
+          (attempt.completed_at || attempt.status === "completed")
+            ? "bg-amber-500/12 text-amber-800"
+            : bandStyles(attempt.band)
+        }`}
       >
-        {attempt.band !== null ? attempt.band.toFixed(1) : "—"}
+        {attempt.band !== null
+          ? attempt.band.toFixed(1)
+          : attempt.module === "speaking" &&
+              (attempt.completed_at || attempt.status === "completed")
+            ? "Review"
+            : "—"}
       </span>
     </div>
   );

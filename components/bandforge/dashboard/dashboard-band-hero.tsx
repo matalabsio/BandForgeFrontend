@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, TrendingUp } from "lucide-react";
-import { BRAND_DASHBOARD_MODULE_PROGRESS } from "@/lib/brand-mock-data";
+import type { ModuleBand } from "@/components/scores/scores-utils";
+import { moduleBandLabel } from "@/components/scores/scores-utils";
 import { mockTestNumberPath } from "@/lib/mock-catalog";
 
 type EmptyProps = {
@@ -53,16 +54,20 @@ export function DashboardEmptyHero({ firstName }: EmptyProps) {
 }
 
 type BandHeroProps = {
-  overallBand?: number;
+  overallBand?: number | null;
   bandDelta?: number;
   testsCompleted?: number;
+  moduleBands?: ModuleBand[];
 };
 
 export function DashboardBandHero({
-  overallBand = 6.5,
-  bandDelta = 0.5,
-  testsCompleted = 2,
+  overallBand = null,
+  bandDelta = 0,
+  testsCompleted = 0,
+  moduleBands = [],
 }: BandHeroProps) {
+  const displayBand =
+    overallBand != null && overallBand > 0 ? overallBand.toFixed(1) : "—";
   return (
     <section className="rounded-[1.25rem] border border-border-soft bg-white p-6 shadow-[0_8px_22px_rgb(13_31_60/0.05)] sm:px-8 sm:py-[26px]">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -72,7 +77,7 @@ export function DashboardBandHero({
           </p>
           <div className="flex items-end gap-3.5">
             <p className="font-mono text-[3.75rem] leading-[0.9] font-medium text-cyan">
-              {overallBand.toFixed(1)}
+              {displayBand}
             </p>
             {bandDelta > 0 ? (
               <span className="mb-2.5 inline-flex items-center gap-1 rounded-full bg-[#e7f7ee] px-2.5 py-1">
@@ -89,13 +94,13 @@ export function DashboardBandHero({
           </p>
         </div>
         <div className="hidden gap-7 border-l border-border-soft pl-8 lg:flex">
-          {BRAND_DASHBOARD_MODULE_PROGRESS.map((mod) => (
-            <div key={mod.key} className="text-center">
+          {moduleBands.map((mod) => (
+            <div key={mod.module} className="text-center">
               <p className="font-mono text-2xl leading-none font-medium text-navy">
-                {mod.band?.toFixed(1) ?? "—"}
+                {moduleBandLabel(mod.band, mod.reviewState, mod.live)}
               </p>
               <p className="mt-1.5 text-[0.71875rem] text-muted-light">
-                {mod.title}
+                {mod.label}
               </p>
             </div>
           ))}

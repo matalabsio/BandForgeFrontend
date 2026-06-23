@@ -11,7 +11,6 @@ import {
   mockModulePath,
   mockPathFromProgress,
   mockHubPath,
-  mockResultsPath,
   TEST1_WRITING_TASK_COUNT,
   testNumberForMockId,
   type MockMeta,
@@ -426,10 +425,12 @@ export function WritingPage({
       if (mockAttemptId) {
         cacheMockNavHint({
           mock_attempt_id: mockAttemptId,
-          next_module: result.mock_writing_complete ? null : "writing",
-          next_part: result.mock_writing_complete
-            ? null
-            : result.mock_next_part ?? part + 1,
+          next_module:
+            result.mock_next_module ??
+            (result.mock_writing_complete ? null : "writing"),
+          next_part:
+            result.mock_next_part ??
+            (result.mock_writing_complete ? null : part + 1),
         });
         if (isDiagnostic) {
           if (result.mock_writing_complete) {
@@ -442,14 +443,6 @@ export function WritingPage({
             );
             return;
           }
-        }
-        if (
-          result.mock_writing_complete ||
-          result.mock_next_module === "speaking"
-        ) {
-          persistMockAttemptId(mockTestId, mockAttemptId);
-          router.replace(mockResultsPath(mockSlug));
-          return;
         }
         if (result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1) {
           bootedRef.current = false;
@@ -476,7 +469,10 @@ export function WritingPage({
             mockAttemptId,
             part,
             {
-              status: result.mock_writing_complete ? "completed" : undefined,
+              status:
+                result.mock_writing_complete && result.mock_next_module == null
+                  ? "completed"
+                  : undefined,
               next_module: result.mock_next_module,
               next_part: result.mock_next_part,
             },

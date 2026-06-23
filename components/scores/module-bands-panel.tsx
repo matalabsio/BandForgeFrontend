@@ -9,7 +9,7 @@ import {
   DashboardCardHeader,
 } from "@/components/bandforge/dashboard/dashboard-card";
 import type { ModuleBand } from "@/components/scores/scores-utils";
-import { bandBarColor } from "@/components/scores/scores-utils";
+import { bandBarColor, moduleBandLabel, underReviewBadgeClass } from "@/components/scores/scores-utils";
 import { cn } from "@/lib/utils";
 
 const ICONS = {
@@ -24,7 +24,7 @@ export function ModuleBandsPanel({ bands }: { bands: ModuleBand[] }) {
     <DashboardCard className="flex h-full flex-col">
       <DashboardCardHeader
         title="Band by module"
-        subtitle="Latest band per skill (live modules only)"
+        subtitle="Latest band per skill"
       />
       <ul className="space-y-4 p-5 pt-2">
         {bands.map((row) => {
@@ -49,8 +49,17 @@ export function ModuleBandsPanel({ bands }: { bands: ModuleBand[] }) {
                     {row.label}
                   </span>
                 </div>
-                <span className="shrink-0 text-[13px] font-bold tabular-nums text-ink">
-                  {row.band !== null ? row.band.toFixed(1) : row.live ? "—" : "Soon"}
+                <span
+                  className={cn(
+                    "shrink-0 text-[13px] font-bold tabular-nums",
+                    row.band !== null
+                      ? "text-ink"
+                      : row.reviewState === "under_review"
+                        ? underReviewBadgeClass()
+                        : "text-ink/50",
+                  )}
+                >
+                  {moduleBandLabel(row.band, row.reviewState, row.live)}
                 </span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink/8">

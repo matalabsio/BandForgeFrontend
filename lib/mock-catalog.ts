@@ -99,15 +99,23 @@ export function testNumberForMockId(mockTestId: string): number {
 
 export function shortModuleResultsPath(
   testNumber: number,
-  module: "listening" | "reading" | "writing",
+  module: "listening" | "reading" | "writing" | "speaking",
 ): string {
   return `/test/${testNumber}/${module}/results`;
+}
+
+export function shortModuleSpeakingPendingPath(
+  testNumber: number,
+  attemptId: string,
+): string {
+  const params = new URLSearchParams({ attempt: attemptId });
+  return `/test/${testNumber}/speaking/pending?${params.toString()}`;
 }
 
 /** Active exam module — `/test/1/listening?part=2` (no transient flags in URL). */
 export function shortModuleExamPath(
   testNumber: number,
-  module: "listening" | "reading" | "writing",
+  module: "listening" | "reading" | "writing" | "speaking",
   opts?: { part?: number; passage?: number },
 ): string {
   const base = `/test/${testNumber}/${module}`;
@@ -135,7 +143,7 @@ export function isLiveCatalogTestNumber(testNumber: number): boolean {
 /** One-hop legacy redirect URL (hydrator strips transient query params). */
 export function legacyModuleExamRedirectPath(
   testNumber: number,
-  module: "listening" | "reading" | "writing",
+  module: "listening" | "reading" | "writing" | "speaking",
   sp?: {
     part?: number;
     passage?: number;
@@ -191,6 +199,7 @@ const DEFAULT_SECTION_COUNTS = {
   listeningMinutes: 30,
   readingMinutes: 30,
   writingMinutes: 60,
+  speakingMinutes: 0,
 };
 
 type SectionCountOverrides = Partial<typeof DEFAULT_SECTION_COUNTS>;
@@ -210,7 +219,11 @@ function buildMockMeta(
     subtitle,
     flowHint,
     ...c,
-    totalMinutes: c.listeningMinutes + c.readingMinutes + c.writingMinutes,
+    totalMinutes:
+      c.listeningMinutes +
+      c.readingMinutes +
+      c.writingMinutes +
+      (c.speakingMinutes ?? 0),
   };
 }
 
@@ -360,7 +373,10 @@ export function mockModulePath(
   const testNumber = testNumberForMockId(id);
   if (
     isLiveCatalogNumber(testNumber) &&
-    (module === "listening" || module === "reading" || module === "writing")
+    (module === "listening" ||
+      module === "reading" ||
+      module === "writing" ||
+      module === "speaking")
   ) {
     return shortModuleExamPath(testNumber, module, {
       part: opts?.part,
@@ -476,6 +492,9 @@ export function mockAfterWritingSubmitPath(
       part: 2,
     });
   }
+  if (progress.next_module === "speaking") {
+    return mockPathFromProgress(slugOrId, mockAttemptId, progress, attemptId);
+  }
   const slug = canonicalMockSlug(slugOrId);
   const testNumber = testNumberForMockId(resolveMockId(slug));
   return shortModuleResultsPath(testNumber, "writing");
@@ -499,10 +518,15 @@ export function mockPathFromProgress(
     return mockResultsPath(slugOrId, mockAttemptId);
   }
   const mod = progress.next_module;
-  if (mod === "listening" || mod === "reading" || mod === "writing") {
+  if (
+    mod === "listening" ||
+    mod === "reading" ||
+    mod === "writing" ||
+    mod === "speaking"
+  ) {
     return mockModulePath(slugOrId, mod, {
       part:
-        mod === "listening" || mod === "writing"
+        mod === "listening" || mod === "writing" || mod === "speaking"
           ? (progress.next_part ?? 1)
           : undefined,
       passage: mod === "reading" ? (progress.next_part ?? 1) : undefined,
@@ -522,11 +546,17 @@ export function examPathForMockStart(
 ): string {
   const raw = res.current_module;
   const mod: MockModule =
-    raw === "reading" || raw === "writing" || raw === "listening"
+    raw === "reading" ||
+    raw === "writing" ||
+    raw === "listening" ||
+    raw === "speaking"
       ? raw
       : "listening";
   return mockModulePath(slugOrId, mod, {
-    part: mod === "listening" || mod === "writing" ? (res.part ?? 1) : undefined,
+    part:
+      mod === "listening" || mod === "writing" || mod === "speaking"
+        ? (res.part ?? 1)
+        : undefined,
     passage: mod === "reading" ? (res.part ?? 1) : undefined,
   });
 }
@@ -535,7 +565,7 @@ export function examPathForMockStart(
 export function examRedirectIfMismatch(
   slugOrId: string,
   mockAttemptId: string,
-  current: { module: "reading" | "listening" | "writing"; part: number },
+  current: { module: "reading" | "listening" | "writing" | "speaking"; part: number },
   progress: {
     status?: string;
     next_module?: string | null;
@@ -549,7 +579,8 @@ export function examRedirectIfMismatch(
   if (
     expectedMod !== "reading" &&
     expectedMod !== "listening" &&
-    expectedMod !== "writing"
+    expectedMod !== "writing" &&
+    expectedMod !== "speaking"
   ) {
     return null;
   }
@@ -573,9 +604,9 @@ export const DEFAULT_MOCK_TEST_ID = M01_MOCK_TEST_ID;
 /** User-facing label (UI only; routes/API stay mock/m01). */
 export const MOCK_DISPLAY_LABEL = "Test 1";
 export const MOCK_DISPLAY_SUBTITLE =
-  "Test 1 — Listening (Parts 1-4 · 30 min) → Reading (Passages 1-2 · 60 min) → Writing (Tasks 1-2 · 60 min) → Score";
+  "Test 1 — Listening (Parts 1-4 · 30 min) → Reading (Passages 1-2 · 30 min) → Writing (Tasks 1-2 · 60 min) → Speaking Part 1 (24h review) → Score";
 export const MOCK_DISPLAY_FLOW_HINT =
-  "Listening has 4 parts · reading has 2 passages · writing has 2 tasks · submit each section to unlock the next · overall band on results";
+  "Listening has 4 parts · reading has 2 passages · writing has 2 tasks · speaking Part 1 · submit each section to unlock the next";
 
 export const MOCK2_DISPLAY_LABEL = "Test 2";
 export const MOCK2_DISPLAY_SUBTITLE =
@@ -589,6 +620,7 @@ export const MOCK_CATALOG: Record<MockSlug, MockMeta> = {
     MOCK_DISPLAY_LABEL,
     MOCK_DISPLAY_SUBTITLE,
     MOCK_DISPLAY_FLOW_HINT,
+    { speakingMinutes: 14 },
   ),
   m02: buildMockMeta(
     "m02",
@@ -603,5 +635,9 @@ export const MOCK_CATALOG: Record<MockSlug, MockMeta> = {
 export const TEST1_LISTENING_MINUTES = 30;
 export const TEST1_READING_MINUTES = 30;
 export const TEST1_WRITING_MINUTES = 60;
+export const TEST1_SPEAKING_MINUTES = 14;
 export const TEST1_TOTAL_MINUTES =
-  TEST1_LISTENING_MINUTES + TEST1_READING_MINUTES + TEST1_WRITING_MINUTES;
+  TEST1_LISTENING_MINUTES +
+  TEST1_READING_MINUTES +
+  TEST1_WRITING_MINUTES +
+  TEST1_SPEAKING_MINUTES;

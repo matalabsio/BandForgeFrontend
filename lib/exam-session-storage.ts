@@ -1,6 +1,6 @@
 import { mockAttemptStorageKey } from "@/modules/mock/lib/mock-session-storage";
 
-export type ResultModule = "listening" | "reading" | "writing";
+export type ResultModule = "listening" | "reading" | "writing" | "speaking";
 
 export type ExamNavFlags = {
   auto?: boolean;

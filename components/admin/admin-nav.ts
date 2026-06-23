@@ -44,9 +44,9 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       },
       {
         href: "/admin/speaking",
-        label: "Speaking",
+        label: "Evaluator",
         Icon: Mic,
-        description: "Human review queue",
+        description: "Speaking review queue",
       },
     ],
   },

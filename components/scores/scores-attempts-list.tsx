@@ -15,7 +15,10 @@ import {
   DashboardCard,
   DashboardCardHeader,
 } from "@/components/bandforge/dashboard/dashboard-card";
-import { bandBadgeClass } from "@/components/scores/scores-utils";
+import {
+  bandBadgeClass,
+  speakingPendingPath,
+} from "@/components/scores/scores-utils";
 import { formatDateShort } from "@/lib/date-format";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { testNumberForMockId } from "@/lib/mock-catalog";
@@ -49,7 +52,33 @@ function reportHref(attempt: DashboardRecentAttempt): string | null {
   if (attempt.module === "reading") {
     return readingModuleResultsPath(attempt.mock_test.id, attempt.id);
   }
+  if (
+    attempt.module === "speaking" &&
+    attempt.band === null &&
+    (attempt.completed_at || attempt.status === "completed")
+  ) {
+    return speakingPendingPath(attempt);
+  }
   return null;
+}
+
+function attemptSubtext(attempt: DashboardRecentAttempt, label: string): string {
+  const date = formatDateShort(attempt.completed_at ?? attempt.started_at);
+  const score =
+    attempt.raw_score !== null && attempt.total_questions !== null
+      ? ` · ${attempt.raw_score}/${attempt.total_questions} correct`
+      : "";
+  if (attempt.module === "speaking" && attempt.band !== null) {
+    return `${label} · ${date} · Human reviewed`;
+  }
+  if (
+    attempt.module === "speaking" &&
+    attempt.band === null &&
+    (attempt.completed_at || attempt.status === "completed")
+  ) {
+    return `${label} · ${date} · Under review`;
+  }
+  return `${label} · ${date}${score}`;
 }
 
 function primeResultSession(attempt: DashboardRecentAttempt): void {
@@ -179,16 +208,24 @@ function AttemptRow({
           {attempt.mock_test.title}
         </p>
         <p className="mt-0.5 text-[12px] text-ink/45">
-          {label} · {formatDateShort(attempt.completed_at ?? attempt.started_at)}
-          {attempt.raw_score !== null && attempt.total_questions !== null
-            ? ` · ${attempt.raw_score}/${attempt.total_questions} correct`
-            : ""}
+          {attemptSubtext(attempt, label)}
         </p>
       </div>
       <span
-        className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold tabular-nums ${bandBadgeClass(attempt.band)}`}
+        className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold tabular-nums ${
+          attempt.module === "speaking" &&
+          attempt.band === null &&
+          (attempt.completed_at || attempt.status === "completed")
+            ? "bg-amber-500/12 text-amber-800"
+            : bandBadgeClass(attempt.band)
+        }`}
       >
-        {attempt.band !== null ? `Band ${attempt.band.toFixed(1)}` : "—"}
+        {attempt.band !== null
+          ? `Band ${attempt.band.toFixed(1)}`
+          : attempt.module === "speaking" &&
+              (attempt.completed_at || attempt.status === "completed")
+            ? "Under review"
+            : "—"}
       </span>
       {href ? (
         <ArrowRightIcon className="size-4 shrink-0 text-ink/30" />

@@ -1,76 +1,89 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { adminLink, adminTable, adminTableHead } from "@/components/admin/admin-ui";
+import {
+  EvaluatorQueueHeader,
+  EvaluatorQueueList,
+  type SpeakingStatusFilter,
+} from "@/components/admin/evaluator";
 import { adminApi, type SpeakingReviewListItem } from "@/lib/admin-api";
+
+const PAGE_SIZE = 25;
+
+function QueueSkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-24 animate-pulse rounded-2xl border border-border bg-white"
+        />
+      ))}
+    </div>
+  );
+}
 
 export function AdminSpeakingClient() {
   const [items, setItems] = useState<SpeakingReviewListItem[]>([]);
+  const [filter, setFilter] = useState<SpeakingStatusFilter>("all");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await adminApi.listSpeaking();
+      const res = await adminApi.listSpeaking({
+        status: filter === "all" ? undefined : filter,
+        page,
+        page_size: PAGE_SIZE,
+      });
       setItems(res.items ?? []);
+      setTotal(res.total);
+      setPendingCount(res.pending_count ?? 0);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load queue");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filter, page]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  if (loading) return <p className="text-gray-600">Loading speaking queue…</p>;
-  if (error) return <p className="text-red-600">{error}</p>;
+  const onFilterChange = (next: SpeakingStatusFilter) => {
+    setFilter(next);
+    setPage(1);
+  };
 
   return (
-    <div className={adminTable}>
-      <table className="w-full text-left text-sm text-black">
-        <thead className={adminTableHead}>
-          <tr>
-            <th className="px-4 py-3">Student</th>
-            <th className="px-4 py-3">Submitted</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Band</th>
-            <th className="px-4 py-3" />
-          </tr>
-        </thead>
-        <tbody>
-          {items.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="px-4 py-8 text-center text-gray-600">
-                No speaking reviews
-              </td>
-            </tr>
-          ) : (
-            items.map((row) => (
-              <tr key={row.id} className="border-t border-border">
-                <td className="px-4 py-3">{row.student_name ?? row.student_email}</td>
-                <td className="px-4 py-3 text-xs text-gray-600">
-                  {row.created_at ? new Date(row.created_at).toLocaleString() : "—"}
-                </td>
-                <td className="px-4 py-3 capitalize">{row.status}</td>
-                <td className="px-4 py-3">{row.human_band ?? "—"}</td>
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/speaking/${row.id}`}
-                    className={adminLink}
-                  >
-                    Review
-                  </Link>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+    <div className="space-y-6">
+      <EvaluatorQueueHeader pendingCount={pendingCount} />
+
+      {error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {loading ? (
+        <QueueSkeleton />
+      ) : (
+        <EvaluatorQueueList
+          items={items}
+          filter={filter}
+          onFilterChange={onFilterChange}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 }

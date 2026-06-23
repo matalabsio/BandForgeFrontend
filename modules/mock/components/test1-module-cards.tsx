@@ -5,19 +5,23 @@ import { useMemo, useState } from "react";
 import {
   BookIcon,
   HeadphonesIcon,
+  MicIcon,
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
 import {
   getMockMeta,
+  mockApiId,
   mockModulePath,
   mockResultsPath,
+  shortModuleSpeakingPendingPath,
+  testNumberForMockId,
   type MockSlug,
 } from "@/lib/mock-catalog";
 import { prepareExamModuleNavigation } from "@/lib/mock-exam-nav";
 import type { ModuleProgress } from "@/modules/mock/services/mock-api";
 import { cn } from "@/lib/utils";
 
-type ModuleKey = "listening" | "reading" | "writing";
+type ModuleKey = "listening" | "reading" | "writing" | "speaking";
 
 type ModuleMeta = Pick<
   ReturnType<typeof getMockMeta>,
@@ -34,6 +38,7 @@ const MODULE_ICONS = {
   listening: HeadphonesIcon,
   reading: BookIcon,
   writing: PencilIcon,
+  speaking: MicIcon,
 } as const;
 
 function moduleProgress(status: ModuleProgress["status"]): number {
@@ -85,6 +90,21 @@ const MODULE_CARDS: {
       return `${meta.writingMinutes} min · Tasks 1–${meta.writingTaskCount}`;
     },
   },
+  {
+    key: "speaking",
+    order: 4,
+    label: "Speaking",
+    detail: (mod) => {
+      const mins = mod?.duration_minutes ?? 14;
+      if (mod?.status === "completed" && mod.band == null) {
+        return `${mins} min · Part 1 · score within 24h`;
+      }
+      if (mod?.status === "in_progress") {
+        return `${mins} min · Part 1 · record your answer`;
+      }
+      return `${mins} min · Part 1 · human-reviewed`;
+    },
+  },
 ];
 
 function moduleHref(
@@ -104,8 +124,15 @@ function moduleHref(
     path = mockModulePath(mockSlug, "listening", { part });
   } else if (key === "reading") {
     path = mockModulePath(mockSlug, "reading", { passage: part });
-  } else {
+  } else if (key === "writing") {
     path = mockModulePath(mockSlug, "writing", { part });
+  } else {
+    if (mod.status === "completed" && mod.test_attempt_id) {
+      const testNumber = testNumberForMockId(mockApiId(mockSlug));
+      path = shortModuleSpeakingPendingPath(testNumber, mod.test_attempt_id);
+    } else {
+      path = mockModulePath(mockSlug, "speaking");
+    }
   }
 
   return {
@@ -123,12 +150,19 @@ function statusLabel(status: ModuleProgress["status"]): string {
 
 type SectionFilter = "all" | ModuleKey;
 
-const SECTION_FILTERS: { id: SectionFilter; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "listening", label: "Listening" },
-  { id: "reading", label: "Reading" },
-  { id: "writing", label: "Writing" },
-];
+function sectionFiltersForModules(modules: ModuleProgress[]): {
+  id: SectionFilter;
+  label: string;
+}[] {
+  const enabled = MODULE_CARDS.filter((card) => {
+    const mod = modules.find((m) => m.module === card.key);
+    return mod?.is_enabled ?? (card.key === "listening" || card.key === "reading");
+  });
+  return [
+    { id: "all", label: "All" },
+    ...enabled.map((card) => ({ id: card.key, label: card.label })),
+  ];
+}
 
 type Props = {
   mockSlug: MockSlug | string;
@@ -153,18 +187,39 @@ export function Test1ModuleCards({
   const meta = moduleMeta ?? getMockMeta(mockSlug as MockSlug);
   const displayLabel = meta.displayLabel;
   const mockComplete = mockStatus === "completed";
-  const writingDone =
-    modules.find((m) => m.module === "writing")?.status === "completed";
+  const writingMod = modules.find((m) => m.module === "writing");
+  const speakingMod = modules.find((m) => m.module === "speaking");
+  const writingDone = writingMod?.status === "completed";
+  const speakingDone = speakingMod?.status === "completed";
+  const finalModuleDone = speakingMod?.is_enabled
+    ? speakingDone
+    : writingMod?.is_enabled
+      ? writingDone
+      : false;
+
+  const enabledCards = useMemo(
+    () =>
+      MODULE_CARDS.filter((card) => {
+        const mod = modules.find((m) => m.module === card.key);
+        return mod?.is_enabled ?? (card.key === "listening" || card.key === "reading");
+      }),
+    [modules],
+  );
+
+  const sectionFilters = useMemo(
+    () => sectionFiltersForModules(modules),
+    [modules],
+  );
 
   const visibleCards = useMemo(() => {
-    if (sectionFilter === "all") return MODULE_CARDS;
-    return MODULE_CARDS.filter((c) => c.key === sectionFilter);
-  }, [sectionFilter]);
+    if (sectionFilter === "all") return enabledCards;
+    return enabledCards.filter((c) => c.key === sectionFilter);
+  }, [enabledCards, sectionFilter]);
 
   if (!mockAttemptId && !previewWhenLocked) {
     return (
       <p className="rounded-xl border border-dashed border-[var(--exam-border)] bg-[var(--exam-surface)] px-4 py-8 text-center text-[13px] text-[var(--exam-ink-muted)]">
-        Start or resume {displayLabel} above to open Listening, Reading, and Writing.
+        Start or resume {displayLabel} above to open enabled sections.
       </p>
     );
   }
@@ -178,7 +233,7 @@ export function Test1ModuleCards({
           </h3>
           <div className="-mx-1 overflow-x-auto px-1 pb-1">
           <div className="flex min-w-min gap-2" role="tablist" aria-label="Filter sections">
-            {SECTION_FILTERS.map((chip) => {
+            {sectionFilters.map((chip) => {
               const active = sectionFilter === chip.id;
               return (
                 <button
@@ -210,7 +265,14 @@ export function Test1ModuleCards({
         </h3>
       )}
 
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <ul
+        className={cn(
+          "grid gap-3",
+          visibleCards.length >= 4
+            ? "grid-cols-2 sm:grid-cols-4"
+            : "grid-cols-2 sm:grid-cols-3",
+        )}
+      >
         {visibleCards.map((card) => {
           const mod = modules.find((m) => m.module === card.key);
           const status = mod?.status ?? "locked";
@@ -259,6 +321,10 @@ export function Test1ModuleCards({
                 <p className="mt-1 text-[10px] font-semibold text-emerald-700">
                   Band {mod.band.toFixed(1)}
                 </p>
+              ) : mod?.status === "completed" && card.key === "speaking" ? (
+                <p className="mt-1 text-[10px] font-semibold text-amber-700">
+                  Score coming soon · 24h review
+                </p>
               ) : null}
               <div
                 className="mt-2.5 h-1 overflow-hidden rounded-full bg-[var(--exam-border)]"
@@ -282,7 +348,11 @@ export function Test1ModuleCards({
                     ? "Complete Listening first"
                     : card.key === "writing" && status === "locked"
                       ? "Complete Reading first"
-                      : "Locked"}
+                      : card.key === "speaking" && status === "locked"
+                        ? writingMod?.is_enabled
+                          ? "Complete Writing first"
+                          : "Complete Reading first"
+                        : "Locked"}
                 </p>
               )}
             </article>
@@ -313,7 +383,7 @@ export function Test1ModuleCards({
         })}
       </ul>
 
-      {(mockComplete || writingDone) && mockAttemptId ? (
+      {(mockComplete || finalModuleDone) && mockAttemptId ? (
         <Link
           href={mockResultsPath(mockSlug, mockAttemptId)}
           className="flex items-center justify-center gap-2 rounded-xl border border-[var(--exam-border)] bg-white px-4 py-3 text-[13px] font-bold text-[var(--exam-ink)] transition-colors hover:border-[var(--exam-accent)] hover:text-[var(--exam-accent)]"

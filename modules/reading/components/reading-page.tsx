@@ -341,15 +341,26 @@ export function ReadingPage({
           );
           return;
         }
-        const dest = submit.mock_reading_complete
-          ? mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
-              completedPart: readingPassageCount,
-              attemptId: id,
-            })
-          : mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
-              completedPart: passage,
-              attemptId: id,
-            });
+        const dest =
+          submit.mock_reading_complete && submit.mock_next_module
+            ? mockPathFromProgress(
+                mockSlug,
+                mockAttemptId,
+                {
+                  next_module: submit.mock_next_module,
+                  next_part: submit.mock_next_part ?? 1,
+                },
+                id,
+              )
+            : submit.mock_reading_complete
+              ? mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
+                  completedPart: readingPassageCount,
+                  attemptId: id,
+                })
+              : mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
+                  completedPart: passage,
+                  attemptId: id,
+                });
         navigateAfterSectionSubmit(
           { push, replace },
           mockSlug,
@@ -408,9 +419,11 @@ export function ReadingPage({
         });
         cacheMockNavHint({
           mock_attempt_id: mockAttemptId,
-          next_module: result.mock_reading_complete ? "writing" : "reading",
+          next_module: result.mock_reading_complete
+            ? (result.mock_next_module ?? "writing")
+            : "reading",
           next_part: result.mock_reading_complete
-            ? 1
+            ? (result.mock_next_part ?? 1)
             : result.mock_next_part ?? passage + 1,
         });
       }
