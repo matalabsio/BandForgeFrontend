@@ -145,8 +145,8 @@ function ListeningQuestionsPanelBase({
                     onAnswer={onAnswer}
                     onFocus={onFocus}
                     onPartPlayed={() => {}}
-                    variant="exam"
-                    deferAudio
+                    variant={isDiagnostic ? "default" : "exam"}
+                    deferAudio={!isDiagnostic}
                   />
                 );
               }
@@ -198,7 +198,7 @@ function ListeningQuestionsPanelBase({
                   key={block.question.id}
                   className={cn(
                     isDiagnostic
-                      ? "rounded-[13px] border border-navy/14 bg-white p-0"
+                      ? "rounded-[13px] border border-navy/14 bg-white p-4 sm:p-5"
                       : "rounded-lg border border-[var(--exam-border)] bg-white p-4",
                     !isDiagnostic &&
                       currentQuestionId === block.question.id &&

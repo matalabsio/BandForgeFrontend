@@ -1,6 +1,7 @@
 import { collectSetCookieHeaders, parseSetCookieHeader } from "@/lib/auth-cookies";
 import type { AuthResponse } from "@/lib/auth";
 import { coalescedServerRefresh } from "@/lib/auth-refresh-coordinator";
+import { getApiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
 import { serverAuthHeaders } from "@/lib/server-auth-headers";
 import { isAuthEnabled } from "@/lib/flags";
@@ -13,13 +14,6 @@ import {
 } from "@/lib/session";
 
 export { accessTokenExpired };
-
-function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://localhost:8000"
-  );
-}
 
 function mergeAuthCookieHeader(
   existing: string,
@@ -53,7 +47,7 @@ async function refreshAuthSessionOnce(
   setCookieHeaders: string[];
   auth: AuthResponse;
 } | null> {
-  const res = await fetchWithTimeout(`${backendBase()}/auth/refresh`, {
+  const res = await fetchWithTimeout(`${getApiUrl()}/auth/refresh`, {
     method: "POST",
     headers: { cookie: cookieHeader },
     cache: "no-store",
@@ -110,7 +104,7 @@ export async function getServerAuth(
 
   let header = cookieHeader;
   try {
-    const meRes = await fetchWithTimeout(`${backendBase()}/auth/me`, {
+    const meRes = await fetchWithTimeout(`${getApiUrl()}/auth/me`, {
       headers: serverAuthHeaders(header),
       cache: "no-store",
       timeoutMs: 8_000,

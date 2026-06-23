@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { TrendingUp } from "lucide-react";
-import { diagnosticPaths } from "@/lib/diagnostic-catalog";
+import { ArrowRight, TrendingUp } from "lucide-react";
 import { BRAND_DASHBOARD_MODULE_PROGRESS } from "@/lib/brand-mock-data";
+import { mockTestNumberPath } from "@/lib/mock-catalog";
 
 type EmptyProps = {
   firstName: string;
@@ -18,8 +17,8 @@ export function DashboardEmptyHero({ firstName }: EmptyProps) {
           Welcome, {name}.
         </h2>
         <p className="mt-2 max-w-[60ch] text-[0.90625rem] leading-relaxed font-light text-muted lg:text-base">
-          Your IELTS journey starts with one test. Take your diagnostic to see
-          exactly where you stand.
+          Start your first full IELTS mock to get band scores, module feedback,
+          and a personalised study plan on your dashboard.
         </p>
       </div>
 
@@ -31,22 +30,20 @@ export function DashboardEmptyHero({ firstName }: EmptyProps) {
         <div className="relative">
           <div className="mb-3.5 inline-flex items-center gap-1.5 font-mono text-[0.6875rem] tracking-[0.1em] text-cyan uppercase">
             <span className="size-1.5 rounded-full bg-cyan" aria-hidden />
-            Free diagnostic
+            Full mock test
           </div>
           <h3 className="font-display text-[1.4375rem] leading-[1.15] font-bold tracking-[-0.015em] text-white">
-            Take Your Free
-            <br />
-            Diagnostic Test
+            Start Test 1
           </h3>
           <p className="mt-2.5 text-[0.8125rem] font-light text-slate">
-            ~45 minutes · Listening, Reading & Writing
+            ~2 hours · Listening, Reading & Writing with instant scores
           </p>
           <Link
-            href={diagnosticPaths.landing}
+            href={mockTestNumberPath(1)}
             prefetch
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-cyan px-[26px] py-[13px] text-[0.9375rem] font-semibold text-white shadow-[0_8px_20px_rgb(0_151_167/0.4)] transition-colors hover:bg-brand-sky-hover"
           >
-            Start Diagnostic
+            Start Test 1
             <ArrowRight className="size-[17px]" strokeWidth={2.4} />
           </Link>
         </div>

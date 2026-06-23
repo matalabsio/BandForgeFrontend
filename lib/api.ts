@@ -1,10 +1,32 @@
-/** Backend base URL. Server routes prefer API_URL (not exposed to the browser). */
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
+function isLocalhostUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "localhost" || host === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+/** Backend base URL — single resolver for BFF proxies and server fetches. */
 export function getApiUrl(): string {
-  return (
-    process.env.API_URL?.replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://127.0.0.1:8000"
-  );
+  const publicUrl = process.env.NEXT_PUBLIC_API_URL
+    ? stripTrailingSlash(process.env.NEXT_PUBLIC_API_URL)
+    : "";
+  const apiUrl = process.env.API_URL
+    ? stripTrailingSlash(process.env.API_URL)
+    : "";
+
+  if (process.env.VERCEL === "1") {
+    if (publicUrl) return publicUrl;
+    if (apiUrl && !isLocalhostUrl(apiUrl)) return apiUrl;
+    return publicUrl || "http://127.0.0.1:8000";
+  }
+
+  return apiUrl || publicUrl || "http://127.0.0.1:8000";
 }
 
 export type ApiErrorBody = {

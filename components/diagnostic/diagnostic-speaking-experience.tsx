@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mic, Square } from "lucide-react";
 import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
-import { DiagnosticExamShell } from "@/components/diagnostic/diagnostic-exam-shell";
+import { DiagnosticExamShell, DiagnosticExamScroll, DiagnosticExamColumn } from "@/components/diagnostic/diagnostic-exam-shell";
 import { DiagnosticModuleGuard } from "@/components/diagnostic/diagnostic-module-guard";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
@@ -216,13 +216,14 @@ export function DiagnosticSpeakingExperience() {
           }
         >
           {pack ? (
-            <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-6">
+            <DiagnosticExamScroll>
+              <DiagnosticExamColumn>
               {phase === "part1" && part1Question ? (
                 <>
                   <p className="font-mono text-[10.5px] tracking-wider text-teal uppercase">
                     Part 1 · Question {part1Index + 1}
                   </p>
-                  <p className="mt-3 font-display text-lg font-semibold leading-snug text-navy">
+                  <p className="mt-3 break-words font-display text-lg font-semibold leading-snug text-navy">
                     {part1Question.prompt}
                   </p>
                   <RecordingControls
@@ -244,7 +245,7 @@ export function DiagnosticSpeakingExperience() {
                     <button
                       type="button"
                       onClick={() => setPhase("part2-record")}
-                      className="mt-4 mx-auto flex cursor-pointer rounded-full border border-cyan/40 px-5 py-2 text-sm font-semibold text-teal hover:bg-cyan/5"
+                      className="mt-4 mx-auto flex w-full cursor-pointer rounded-full border border-cyan/40 px-5 py-2 text-sm font-semibold text-teal hover:bg-cyan/5 sm:w-auto"
                     >
                       Start recording early
                     </button>
@@ -264,7 +265,8 @@ export function DiagnosticSpeakingExperience() {
                   ) : null}
                 </>
               ) : null}
-            </div>
+              </DiagnosticExamColumn>
+            </DiagnosticExamScroll>
           ) : null}
         </DiagnosticExamShell>
       </DiagnosticChrome>
@@ -278,7 +280,7 @@ function CueCard({ title, bullets }: { title: string; bullets: string[] }) {
       <p className="mb-3.5 font-mono text-[10.5px] tracking-wider text-teal uppercase">
         Part 2 — Cue Card
       </p>
-      <p className="font-display text-[18.5px] leading-snug font-semibold tracking-tight text-navy">
+      <p className="break-words font-display text-[18.5px] leading-snug font-semibold tracking-tight text-navy">
         {title}
       </p>
       {bullets.length > 0 ? (
@@ -290,7 +292,7 @@ function CueCard({ title, bullets }: { title: string; bullets: string[] }) {
             {bullets.map((b) => (
               <li key={b} className="flex items-start gap-2.5">
                 <span className="mt-2 size-[5px] shrink-0 rounded-full bg-cyan" />
-                <span className="text-sm leading-snug text-[#1B2B45]">{b}</span>
+                <span className="min-w-0 flex-1 break-words text-sm leading-snug text-[#1B2B45]">{b}</span>
               </li>
             ))}
           </ul>

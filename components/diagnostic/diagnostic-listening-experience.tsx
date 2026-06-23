@@ -114,7 +114,7 @@ export function DiagnosticListeningExperience() {
                   <summary className="cursor-pointer text-sm font-medium text-[#5A6B82]">
                     Show transcript
                   </summary>
-                  <div className="mt-3 border-t border-navy/8 pt-3">
+                  <div className="mt-3 max-h-48 overflow-y-auto border-t border-navy/8 pt-3">
                     <DiagnosticPassageText text={pack.listening.transcript} />
                   </div>
                 </details>

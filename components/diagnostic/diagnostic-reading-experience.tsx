@@ -78,7 +78,7 @@ function ReadingQuestionRow({
       <p className="mb-2.5 font-mono text-xs text-[#6E83A0]">
         Question {index + 1} of {total}
       </p>
-      <p className="mb-4 text-[15.5px] leading-snug font-medium text-navy">
+      <p className="mb-4 break-words text-[15.5px] leading-snug font-medium text-navy">
         {q.prompt}
       </p>
       <ReadingQuestionInput q={q} value={value} onChange={onChange} />
@@ -92,7 +92,7 @@ function PassageContent({ pack }: { pack: DiagnosticPack }) {
       <p className="mb-2 font-mono text-[11px] tracking-wider text-teal uppercase lg:mb-2.5">
         Passage 1
       </p>
-      <h2 className="mb-4 font-display text-lg font-bold tracking-tight text-navy sm:text-[19px] lg:mb-5 lg:text-[27px] lg:leading-tight">
+      <h2 className="mb-4 break-words font-display text-lg font-bold tracking-tight text-navy sm:text-[19px] lg:mb-5 lg:text-[27px] lg:leading-tight">
         Urban Community Gardens
       </h2>
       <DiagnosticPassageText text={pack.reading.passage} />
@@ -234,10 +234,11 @@ export function DiagnosticReadingExperience() {
                 ))}
               </div>
 
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:contents">
               {/* Passage panel */}
               <div
                 className={cn(
-                  "min-h-0 overflow-y-auto border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[60%] lg:border-r lg:px-11 lg:py-8",
+                  "min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[60%] lg:flex-none lg:border-r lg:px-11 lg:py-8",
                   tab !== "passage" && "hidden lg:block",
                 )}
               >
@@ -247,7 +248,7 @@ export function DiagnosticReadingExperience() {
               {/* Questions panel */}
               <div
                 className={cn(
-                  "min-h-0 flex-1 overflow-y-auto border-t border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[40%] lg:border-t-0 lg:px-8 lg:py-8",
+                  "min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-t border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[40%] lg:flex-none lg:border-t-0 lg:px-8 lg:py-8",
                   tab !== "questions" && "hidden lg:block",
                 )}
               >
@@ -257,6 +258,7 @@ export function DiagnosticReadingExperience() {
                   answers={answers}
                   onAnswer={handleAnswer}
                 />
+              </div>
               </div>
             </div>
           ) : null}

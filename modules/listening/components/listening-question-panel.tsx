@@ -133,11 +133,11 @@ function ListeningQuestionPanelBase({
             <p className="mb-3.5 font-mono text-xs tracking-wide text-[#6E83A0]">
               Question {question.question_number}
             </p>
-            <p className="font-display text-lg font-bold tracking-tight text-navy">
+            <p className="font-display text-lg font-bold tracking-tight text-navy break-words">
               {question.instructions ?? question.prompt}
             </p>
             {question.instructions && question.prompt !== question.instructions ? (
-              <p className="mt-1 text-sm font-light text-[#5A6B82]">{question.prompt}</p>
+              <p className="mt-1 text-sm font-light text-[#5A6B82] break-words">{question.prompt}</p>
             ) : null}
           </>
         ) : null}
@@ -151,7 +151,7 @@ function ListeningQuestionPanelBase({
                 <label
                   key={o.label}
                   className={cn(
-                    "flex cursor-pointer items-center gap-3 rounded-[13px] border px-4 py-3.5 transition-colors",
+                    "flex cursor-pointer items-start gap-3 rounded-[13px] border px-4 py-3.5 transition-colors",
                     selected
                       ? "border-cyan bg-cyan/10"
                       : "border-navy/14 bg-white hover:border-navy/25",
@@ -171,10 +171,10 @@ function ListeningQuestionPanelBase({
                       </svg>
                     ) : null}
                   </span>
-                  <span className="font-mono text-[13px] font-medium text-teal">{o.label}</span>
+                  <span className="mt-0.5 font-mono text-[13px] font-medium text-teal shrink-0">{o.label}</span>
                   <span
                     className={cn(
-                      "text-sm",
+                      "min-w-0 flex-1 break-words text-sm",
                       selected ? "font-medium text-navy" : "text-[#3D4D63]",
                     )}
                   >
@@ -202,7 +202,7 @@ function ListeningQuestionPanelBase({
                   type="button"
                   onClick={() => onChange(t)}
                   className={cn(
-                    "flex min-h-[52px] cursor-pointer items-center gap-3 rounded-[13px] border px-4 py-3.5 text-left text-[15px] transition-colors",
+                    "flex min-h-[52px] cursor-pointer items-start gap-3 rounded-[13px] border px-4 py-3.5 text-left text-[15px] transition-colors break-words",
                     selected
                       ? "border-cyan bg-cyan/10 font-semibold text-navy"
                       : "border-navy/14 text-[#3D4D63]",

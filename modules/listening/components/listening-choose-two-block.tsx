@@ -83,7 +83,7 @@ function ListeningChooseTwoBlockBase({
           className={cn(
             "mt-2 leading-relaxed",
             isDiagnostic
-              ? "font-display text-lg font-bold text-navy"
+              ? "font-display text-lg font-bold text-navy break-words"
               : "text-[12px] text-[var(--exam-ink-muted)]",
           )}
         >
@@ -111,7 +111,7 @@ function ListeningChooseTwoBlockBase({
             <label
               key={o.label}
               className={cn(
-                "flex min-h-[52px] cursor-pointer items-center gap-3 rounded-[13px] border px-4 py-3.5 text-[13px] transition-colors",
+                "flex min-h-[52px] cursor-pointer items-start gap-3 rounded-[13px] border px-4 py-3.5 text-[13px] transition-colors",
                 isDiagnostic
                   ? checked
                     ? "border-cyan bg-cyan/10"
@@ -142,8 +142,8 @@ function ListeningChooseTwoBlockBase({
                   className="mt-1 size-4 shrink-0 accent-[var(--exam-accent)]"
                 />
               )}
-              <span className="font-mono font-medium text-teal">{o.label}</span>
-              <span className={cn("text-sm", checked ? "font-medium text-navy" : "text-[#3D4D63]")}>
+              <span className="mt-0.5 shrink-0 font-mono font-medium text-teal">{o.label}</span>
+              <span className={cn("min-w-0 flex-1 break-words text-sm", checked ? "font-medium text-navy" : "text-[#3D4D63]")}>
                 {o.text}
               </span>
               {isDiagnostic ? (

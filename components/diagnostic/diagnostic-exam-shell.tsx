@@ -9,6 +9,10 @@ import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-modul
 export const DIAGNOSTIC_EXAM_COLUMN_CLASS =
   "mx-auto w-full max-w-[760px] px-6 py-[18px] lg:px-10 lg:py-8";
 
+/** Wrap long option / prompt text inside diagnostic exam cards. */
+export const DIAGNOSTIC_OPTION_TEXT_CLASS =
+  "min-w-0 flex-1 break-words text-sm";
+
 const MODULE_LABELS: Record<DiagnosticModule, string> = {
   listening: "Listening",
   reading: "Reading",
@@ -104,7 +108,7 @@ export function DiagnosticExamScroll({
   className?: string;
 }) {
   return (
-    <div className={cn("min-h-0 flex-1 overflow-y-auto", className)}>
+    <div className={cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain", className)}>
       {children}
     </div>
   );

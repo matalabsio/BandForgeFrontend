@@ -1,3 +1,4 @@
+import { getApiUrl } from "@/lib/api";
 import type {
   DashboardSummary,
   MockTestSummary,
@@ -41,13 +42,6 @@ function setMemCached<T>(key: string, value: T, ttlMs: number): void {
   memCache.set(key, { expiresAt: Date.now() + ttlMs, value });
 }
 
-function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://localhost:8000"
-  );
-}
-
 /** Avoid waiting on 401s when auth is disabled for local UI work. */
 export function shouldFetchDashboardApi(cookieHeader: string): boolean {
   if (!isAuthEnabled()) return false;
@@ -88,7 +82,7 @@ async function getSummary(cookieHeader: string): Promise<DashboardSummary> {
   const cached = getMemCached<DashboardSummary>(key);
   if (cached) return cached;
   const data = await fetchDashboardJson<DashboardSummary>(
-    `${backendBase()}/api/dashboard/summary`,
+    `${getApiUrl()}/api/dashboard/summary`,
     cookieHeader,
     EMPTY_SUMMARY,
   );
@@ -110,7 +104,7 @@ async function getMockTestsRaw(cookieHeader: string): Promise<MockTestSummary[]>
   const cached = getMemCached<MockTestSummary[]>(key);
   if (cached) return cached;
   const data = await fetchDashboardJson<MockTestSummary[]>(
-    `${backendBase()}/api/tests/mock-tests`,
+    `${getApiUrl()}/api/tests/mock-tests`,
     cookieHeader,
     [],
   );

@@ -1,3 +1,4 @@
+import { getApiUrl } from "@/lib/api";
 import type { MockCatalogApiItem } from "@/lib/mock-catalog-api";
 import type { MockMeta } from "@/lib/mock-catalog";
 import { resolveMockMetaFromCatalog } from "@/lib/mock-catalog";
@@ -6,13 +7,6 @@ import { fetchWithTimeout } from "@/lib/fetch-server";
 import { perfLog } from "@/lib/performance";
 import { serverAuthHeaders } from "@/lib/server-auth-headers";
 
-function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://localhost:8000"
-  );
-}
-
 async function fetchBackendJson<T>(
   path: string,
   cookieHeader: string,
@@ -20,7 +14,7 @@ async function fetchBackendJson<T>(
 ): Promise<T> {
   const started = performance.now();
   try {
-    const res = await fetchWithTimeout(`${backendBase()}${path}`, {
+    const res = await fetchWithTimeout(`${getApiUrl()}${path}`, {
       headers: serverAuthHeaders(cookieHeader),
       cache: "no-store",
       timeoutMs: 6_000,
@@ -34,7 +28,7 @@ async function fetchBackendJson<T>(
     if (!res.ok) {
       if (path === "/api/mock-attempts/catalog") {
         console.warn(
-          `[bandforge-web] mock catalog fetch failed: ${res.status} ${backendBase()}${path}`,
+          `[bandforge-web] mock catalog fetch failed: ${res.status} ${getApiUrl()}${path}`,
         );
       }
       return fallback;
@@ -121,7 +115,7 @@ export async function fetchListeningBootServer(
   });
   try {
     const res = await fetchWithTimeout(
-      `${backendBase()}/api/listening/${encodeURIComponent(mockTestId)}/start?${q}`,
+      `${getApiUrl()}/api/listening/${encodeURIComponent(mockTestId)}/start?${q}`,
       {
         method: "POST",
         headers: serverAuthHeaders(cookieHeader),
@@ -161,7 +155,7 @@ export async function fetchReadingBootServer(
   });
   try {
     const res = await fetchWithTimeout(
-      `${backendBase()}/api/reading/${encodeURIComponent(mockTestId)}/start?${q}`,
+      `${getApiUrl()}/api/reading/${encodeURIComponent(mockTestId)}/start?${q}`,
       {
         method: "POST",
         headers: serverAuthHeaders(cookieHeader),
@@ -201,7 +195,7 @@ export async function fetchWritingBootServer(
   });
   try {
     const res = await fetchWithTimeout(
-      `${backendBase()}/api/writing/${encodeURIComponent(mockTestId)}/start?${q}`,
+      `${getApiUrl()}/api/writing/${encodeURIComponent(mockTestId)}/start?${q}`,
       {
         method: "POST",
         headers: serverAuthHeaders(cookieHeader),

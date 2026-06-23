@@ -51,19 +51,19 @@ const DATE_OPTIONS = [
 const SIDEBAR_COPY: Record<number, { title: string; body: string }> = {
   1: {
     title: "Let's set up your study plan.",
-    body: "Four quick questions, then your free diagnostic test.",
+    body: "Four quick questions, then your personalised dashboard.",
   },
   2: {
     title: "Let's set up your study plan.",
-    body: "Four quick questions, then your free diagnostic test.",
+    body: "Four quick questions, then your personalised dashboard.",
   },
   3: {
     title: "Let's set up your study plan.",
-    body: "Four quick questions, then your free diagnostic test.",
+    body: "Four quick questions, then your personalised dashboard.",
   },
   4: {
     title: "Almost there.",
-    body: "One last question — then your dashboard and diagnostic await.",
+    body: "One last question — then your dashboard awaits.",
   },
 };
 
@@ -156,7 +156,7 @@ export function OnboardingExperience() {
               What band score are you aiming for?
             </h2>
             <p className="mt-3.5 max-w-[48ch] text-[1.0625rem] leading-relaxed text-muted">
-              We&apos;ll build your diagnostic and study plan around this target.
+              We&apos;ll build your study plan around this target.
             </p>
             <div className="mt-8 grid max-w-xl grid-cols-4 gap-3">
               {BAND_OPTIONS.map((band) => (

@@ -73,9 +73,10 @@ export function DashboardExperience({
         </>
       )}
 
+      <MockTestsSection catalogSlots={catalogSlots} />
+
       {hasAttempts ? (
         <>
-          <MockTestsSection catalogSlots={catalogSlots} />
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-stretch">
             <div className="min-w-0">
               <PerformanceChartLazy

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
 import { DiagnosticModuleGuard } from "@/components/diagnostic/diagnostic-module-guard";
-import { DiagnosticExamShell } from "@/components/diagnostic/diagnostic-exam-shell";
+import { DiagnosticExamShell, DiagnosticExamScroll, DiagnosticExamColumn } from "@/components/diagnostic/diagnostic-exam-shell";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
 import { DIAGNOSTIC_WRITING_TIMER_SEC } from "@/lib/diagnostic-catalog";
 import {
@@ -118,8 +118,9 @@ export function DiagnosticWritingExperience() {
           }
         >
           {pack && activeTask ? (
-            <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col overflow-hidden px-4 sm:px-6">
-              <div className="flex shrink-0 gap-2 pt-3.5">
+            <DiagnosticExamScroll>
+              <DiagnosticExamColumn className="flex min-h-0 flex-col">
+              <div className="-mx-2 flex shrink-0 gap-2 overflow-x-auto px-2 pt-3.5">
                 {tasks.map((task) => {
                   const panel = taskPanelId(task);
                   return (
@@ -140,13 +141,13 @@ export function DiagnosticWritingExperience() {
                 })}
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto py-4">
-                <div className="mb-3 rounded-[14px] border border-navy/10 bg-navy/[0.04] p-4">
+              <div className="min-h-0 flex-1 py-4">
+                <div className="mb-3 max-w-full rounded-[14px] border border-navy/10 bg-navy/[0.04] p-4">
                   <p className="font-mono text-[10px] tracking-wider text-teal uppercase">
                     Task {activeTask.part} · {activeTask.part === 1 ? "20" : "25"} min ·{" "}
                     {activeTask.minWords}+ words
                   </p>
-                  <p className="mt-2 text-sm leading-relaxed font-light text-[#1B2B45]">
+                  <p className="mt-2 break-words text-sm leading-relaxed font-light text-[#1B2B45]">
                     {activeTask.prompt}
                   </p>
                 </div>
@@ -166,7 +167,7 @@ export function DiagnosticWritingExperience() {
                   id={`diagnostic-writing-${activeTask.id}`}
                   value={essays[activeTask.id] ?? ""}
                   onChange={(e) => handleEssayChange(activeTask.id, e.target.value)}
-                  className="min-h-[280px] w-full resize-y rounded-[14px] border border-navy/10 bg-white p-4 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
+                  className="min-h-[280px] w-full max-w-full resize-y rounded-[14px] border border-navy/10 bg-white p-4 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
                   placeholder="Write your response here…"
                 />
                 <p
@@ -178,7 +179,8 @@ export function DiagnosticWritingExperience() {
                   {words} words
                 </p>
               </div>
-            </div>
+              </DiagnosticExamColumn>
+            </DiagnosticExamScroll>
           ) : null}
         </DiagnosticExamShell>
       </DiagnosticChrome>
