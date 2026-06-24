@@ -9,6 +9,7 @@ export type DiagnosticGoalId =
 export type DiagnosticLead = {
   fullName: string;
   phone: string;
+  email: string;
   goal: DiagnosticGoalId;
   goalLabel: string;
   targetBand: number;
@@ -34,9 +35,14 @@ export function isValidIndiaPhone(phone: string): boolean {
   return digits.length === 10 && /^[6-9]/.test(digits);
 }
 
+export function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
 export function isLeadComplete(lead: Partial<DiagnosticLead> | null): lead is DiagnosticLead {
   if (!lead?.fullName?.trim() || !lead.goal) return false;
-  return isValidIndiaPhone(lead.phone ?? "");
+  if (!isValidIndiaPhone(lead.phone ?? "")) return false;
+  return isValidEmail(lead.email ?? "");
 }
 
 export function readDiagnosticLead(): DiagnosticLead | null {

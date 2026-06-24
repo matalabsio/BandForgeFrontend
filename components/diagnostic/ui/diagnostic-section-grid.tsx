@@ -11,10 +11,10 @@ const SECTIONS: {
   duration: string;
   Icon: LucideIcon;
 }[] = [
-  { label: "Listening", duration: "20 min", Icon: Headphones },
-  { label: "Reading", duration: "25 min", Icon: BookOpen },
-  { label: "Writing", duration: "25 min", Icon: Pencil },
-  { label: "Speaking", duration: "7 min", Icon: Mic },
+  { label: "Listening", duration: "10 min", Icon: Headphones },
+  { label: "Reading", duration: "15 min", Icon: BookOpen },
+  { label: "Writing", duration: "20 min", Icon: Pencil },
+  { label: "Speaking", duration: "2 min", Icon: Mic },
 ];
 
 export function DiagnosticSectionGrid() {

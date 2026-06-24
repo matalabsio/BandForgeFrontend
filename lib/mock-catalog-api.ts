@@ -27,6 +27,7 @@ export type MockCatalogSlot = {
   displayLabel: string;
   examTitle: string;
   available: boolean;
+  modulesEnabled: string[];
   listeningPartCount: number;
   readingPassageCount: number;
   writingTaskCount: number;
@@ -49,6 +50,7 @@ export function catalogItemToSlot(item: MockCatalogApiItem): MockCatalogSlot {
     displayLabel: `Test ${number}`,
     examTitle: item.title,
     available: isLiveCatalogNumber(number),
+    modulesEnabled: item.modules_enabled ?? [],
     listeningPartCount: item.listening_parts || 4,
     readingPassageCount: item.reading_passages || 2,
     writingTaskCount: item.writing_tasks || 2,
@@ -69,6 +71,7 @@ function upcomingCatalogSlot(number: number): MockCatalogSlot {
     displayLabel: `Test ${number}`,
     examTitle: `IELTS Academic Mock ${number}`,
     available: false,
+    modulesEnabled: [],
     listeningPartCount: 0,
     readingPassageCount: 0,
     writingTaskCount: 0,

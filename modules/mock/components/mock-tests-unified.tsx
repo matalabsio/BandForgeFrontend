@@ -1,4 +1,5 @@
 import type { MockCatalogSlot } from "@/lib/mock-catalog-api";
+import { publishedSlugForMockRef } from "@/lib/mock-catalog";
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 import { MockTestHub, type MockHubMeta } from "@/modules/mock/components/mock-test-hub";
 import { MockTestHubShell } from "@/modules/mock/components/mock-test-hub-shell";
@@ -23,6 +24,7 @@ function slotToHubMeta(slot: MockCatalogSlot): MockHubMeta {
     writingMinutes: slot.writingMinutes,
     totalMinutes: slot.totalMinutes,
     flowHint: slot.flowHint,
+    modulesEnabled: slot.modulesEnabled,
   };
 }
 
@@ -33,6 +35,8 @@ export function MockTestsUnified({
   initialProgress = null,
 }: Props) {
   const isAvailable = selectedSlot.available && Boolean(selectedSlot.id);
+  const mockSlug =
+    publishedSlugForMockRef(selectedSlot.id) ?? selectedSlot.id;
 
   return (
     <MockTestHubShell
@@ -42,7 +46,7 @@ export function MockTestsUnified({
     >
       {isAvailable ? (
         <MockTestHub
-          mockSlug={selectedSlot.id}
+          mockSlug={mockSlug}
           mockTestId={selectedSlot.id}
           title={selectedSlot.displayLabel}
           hubMeta={slotToHubMeta(selectedSlot)}

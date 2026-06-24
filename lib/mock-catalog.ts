@@ -1,7 +1,5 @@
 import type { MockCatalogApiItem } from "@/lib/mock-catalog-api";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
-import { scoresAfterMockCompletePath } from "@/lib/scores-path";
-
 /** Published full IELTS mocks (orchestrated multi-module exams). */
 
 /** Academic Mock 1 — valid Postgres UUID (a000 prefix; `m` is not hex). */
@@ -88,10 +86,18 @@ export function mockTestIdForNumber(testNumber: number): string {
   return M01_MOCK_TEST_ID;
 }
 
+/** Resolve m01/m02 slug from a mock UUID or legacy slug ref. */
+export function publishedSlugForMockRef(slugOrId: string): MockSlug | null {
+  const id = resolveMockId(slugOrId);
+  const slug = mockSlugForId(id);
+  if (slug === "m01" || slug === "m02") return slug;
+  return null;
+}
+
 export function testNumberForMockId(mockTestId: string): number {
-  const slug = canonicalMockSlug(mockTestId);
-  if (slug === "m01" || slug === "m02") {
-    const panelSlot = getMockPanelSlotBySlug(slug as MockSlug);
+  const slug = publishedSlugForMockRef(mockTestId);
+  if (slug) {
+    const panelSlot = getMockPanelSlotBySlug(slug);
     if (panelSlot) return panelSlot.number;
   }
   return 1;
@@ -277,9 +283,12 @@ export function testHubPath(
   if (catalogNumber != null && catalogNumber >= 1) {
     return mockTestNumberPath(catalogNumber);
   }
-  const slug = canonicalMockSlug(slugOrId) as MockSlug;
-  const slot = getMockPanelSlotBySlug(slug);
-  return slot ? mockTestNumberPath(slot.number) : mockTestNumberPath(1);
+  const slug = publishedSlugForMockRef(slugOrId);
+  if (slug) {
+    const slot = getMockPanelSlotBySlug(slug);
+    if (slot) return mockTestNumberPath(slot.number);
+  }
+  return mockTestNumberPath(1);
 }
 
 /** Canonical Test 1 hub — section cards (Listening, Reading, Writing). */
@@ -296,11 +305,11 @@ export function mockHubPath(
   slug: string = DEFAULT_MOCK_SLUG,
   _mockAttemptId?: string | null,
 ): string {
-  const canonical = canonicalMockSlug(slug);
-  if (canonical === "m01" || canonical === "m02") {
-    return testHubPath(canonical);
+  const published = publishedSlugForMockRef(slug);
+  if (published) {
+    return testHubPath(published);
   }
-  return `/mock/${canonical}`;
+  return `/mock/${canonicalMockSlug(slug)}`;
 }
 
 function buildFallbackMockMeta(id: string, slug: string): MockMeta {
@@ -356,6 +365,10 @@ export function resolveMockMetaFromCatalog(
 }
 
 export function getMockMeta(slugOrId: string): MockMeta {
+  const published = publishedSlugForMockRef(slugOrId);
+  if (published) {
+    return MOCK_CATALOG[published];
+  }
   const slug = canonicalMockSlug(slugOrId);
   if (slug in MOCK_CATALOG) {
     return MOCK_CATALOG[slug as MockSlug];
@@ -492,12 +505,10 @@ export function mockAfterWritingSubmitPath(
       part: 2,
     });
   }
-  if (progress.next_module === "speaking") {
-    return mockPathFromProgress(slugOrId, mockAttemptId, progress, attemptId);
+  if (progress.next_module) {
+    return mockPathFromProgress(slugOrId, mockAttemptId, progress);
   }
-  const slug = canonicalMockSlug(slugOrId);
-  const testNumber = testNumberForMockId(resolveMockId(slug));
-  return shortModuleResultsPath(testNumber, "writing");
+  return mockHubPath(slugOrId, mockAttemptId);
 }
 
 /** Navigate after submit using orchestrator progress (respects listening → reading order). */
@@ -509,12 +520,9 @@ export function mockPathFromProgress(
     next_module?: string | null;
     next_part?: number | null;
   },
-  attemptId?: string,
+  _attemptId?: string,
 ): string {
   if (progress.status === "completed") {
-    if (attemptId) {
-      return scoresAfterMockCompletePath(attemptId);
-    }
     return mockResultsPath(slugOrId, mockAttemptId);
   }
   const mod = progress.next_module;

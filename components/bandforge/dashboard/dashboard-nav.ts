@@ -12,6 +12,7 @@ import {
   PencilIcon,
   UserIcon,
 } from "@/components/bandforge/dashboard/icons";
+import { shortModuleExamPath } from "@/lib/mock-catalog";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -35,19 +36,25 @@ export const DASHBOARD_NAV: NavGroup[] = [
   {
     title: "Tests",
     items: [
-      { label: "Listening", href: "/test/listening", Icon: HeadphonesIcon },
-      { label: "Reading", href: "/test/reading", Icon: BookIcon },
+      {
+        label: "Listening",
+        href: shortModuleExamPath(1, "listening"),
+        Icon: HeadphonesIcon,
+      },
+      {
+        label: "Reading",
+        href: shortModuleExamPath(1, "reading"),
+        Icon: BookIcon,
+      },
       {
         label: "Writing",
         href: "/test/writing",
         Icon: PencilIcon,
-        disabled: true,
       },
       {
         label: "Speaking",
-        href: "/test/speaking",
+        href: shortModuleExamPath(1, "speaking"),
         Icon: MicIcon,
-        disabled: true,
       },
     ],
   },

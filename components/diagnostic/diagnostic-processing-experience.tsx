@@ -11,9 +11,9 @@ import { readDiagnosticResults } from "@/lib/diagnostic-session";
 import { cn } from "@/lib/utils";
 
 const STATUS_LINES = [
-  "Scoring Listening and Reading…",
-  "Evaluating Writing against IELTS rubric…",
-  "Estimating Speaking band…",
+  "Submitting Listening and Reading answers…",
+  "AI-evaluating your Writing response…",
+  "Queuing Speaking recording for certified examiner review…",
 ];
 
 export function DiagnosticProcessingExperience() {
@@ -51,7 +51,7 @@ export function DiagnosticProcessingExperience() {
       >
         <DiagnosticProcessingLoader />
         <h1 className="text-center font-display text-[26px] font-bold tracking-tight text-navy">
-          Analysing Your Performance.
+          Submitting Your Diagnostic.
         </h1>
 
         <ul className="mt-8 w-full max-w-sm space-y-4">

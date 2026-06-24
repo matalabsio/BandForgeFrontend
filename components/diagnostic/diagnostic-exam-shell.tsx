@@ -27,6 +27,7 @@ type Props = {
   loading?: boolean;
   footerLabel?: string;
   footerBusy?: boolean;
+  footerBusyLabel?: string;
   onFooter?: () => void;
   children: React.ReactNode;
   timer?: React.ReactNode;
@@ -42,6 +43,7 @@ export function DiagnosticExamShell({
   loading = false,
   footerLabel,
   footerBusy = false,
+  footerBusyLabel,
   onFooter,
   children,
   timer,
@@ -81,6 +83,7 @@ export function DiagnosticExamShell({
             <DiagnosticModuleFooter
               label={footerLabel}
               busy={footerBusy}
+              busyLabel={footerBusyLabel}
               onClick={onFooter}
               contentWidth={footerWidth}
             />

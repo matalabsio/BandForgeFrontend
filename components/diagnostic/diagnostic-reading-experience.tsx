@@ -23,6 +23,7 @@ import {
   saveModuleAnswers,
 } from "@/lib/diagnostic-storage";
 import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
+import { DiagnosticReadingMatchingHeadings } from "@/components/diagnostic/diagnostic-reading-matching-headings";
 import { ReadingQuestionInput } from "@/modules/reading/components/reading-question-input";
 import { SentenceInlineBlank } from "@/modules/listening/components/listening-inline-answer";
 import {
@@ -33,6 +34,33 @@ import type { ReadingQuestion } from "@/modules/reading/types";
 import { cn } from "@/lib/utils";
 
 type Tab = "passage" | "questions";
+
+type ReadingQuestionBlock =
+  | { kind: "single"; q: ReadingQuestion; index: number }
+  | { kind: "matching_headings"; questions: ReadingQuestion[] };
+
+function groupReadingBlocks(questions: ReadingQuestion[]): ReadingQuestionBlock[] {
+  const blocks: ReadingQuestionBlock[] = [];
+  let i = 0;
+  while (i < questions.length) {
+    const q = questions[i];
+    if (q.question_type.toLowerCase() === "matching_headings") {
+      const group: ReadingQuestion[] = [];
+      while (
+        i < questions.length &&
+        questions[i].question_type.toLowerCase() === "matching_headings"
+      ) {
+        group.push(questions[i]);
+        i += 1;
+      }
+      blocks.push({ kind: "matching_headings", questions: group });
+    } else {
+      blocks.push({ kind: "single", q, index: i });
+      i += 1;
+    }
+  }
+  return blocks;
+}
 
 function ReadingQuestionRow({
   q,
@@ -93,7 +121,7 @@ function PassageContent({ pack }: { pack: DiagnosticPack }) {
         Passage 1
       </p>
       <h2 className="mb-4 break-words font-display text-lg font-bold tracking-tight text-navy sm:text-[19px] lg:mb-5 lg:text-[27px] lg:leading-tight">
-        Urban Community Gardens
+        {pack.reading.title ?? "Reading Passage"}
       </h2>
       <DiagnosticPassageText text={pack.reading.passage} />
     </>
@@ -118,23 +146,32 @@ function QuestionsContent({
           Questions 1–{questionCount}
         </p>
         <p className="mt-1 text-[13.5px] leading-snug font-light text-[#3D4D63]">
-          Do the following statements agree with the information in the passage?
-          Choose <span className="font-medium text-navy">Yes</span>,{" "}
-          <span className="font-medium text-navy">No</span>, or{" "}
-          <span className="font-medium text-navy">Not Given</span>.
+          Answer all questions based on the passage.
         </p>
       </div>
       <ol className="space-y-6">
-        {questions.map((q, i) => (
-          <ReadingQuestionRow
-            key={q.id}
-            q={q}
-            value={answers[q.id] ?? ""}
-            onChange={(v) => onAnswer(q.id, v)}
-            index={i}
-            total={questions.length}
-          />
-        ))}
+        {groupReadingBlocks(questions).map((block) => {
+          if (block.kind === "matching_headings") {
+            return (
+              <DiagnosticReadingMatchingHeadings
+                key="matching-headings"
+                questions={block.questions}
+                answers={answers}
+                onAnswer={onAnswer}
+              />
+            );
+          }
+          return (
+            <ReadingQuestionRow
+              key={block.q.id}
+              q={block.q}
+              value={answers[block.q.id] ?? ""}
+              onChange={(v) => onAnswer(block.q.id, v)}
+              index={block.index}
+              total={questions.length}
+            />
+          );
+        })}
       </ol>
     </>
   );

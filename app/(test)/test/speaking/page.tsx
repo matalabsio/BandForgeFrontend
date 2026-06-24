@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
-import { TestSpeakingView } from "@/modules/speaking";
+import { redirect } from "next/navigation";
+import { shortModuleExamPath } from "@/lib/mock-catalog";
 
-export const metadata: Metadata = {
-  title: "Speaking — Mock Test",
-  robots: { index: false, follow: false },
-};
-
-export default function SpeakingTestPage() {
-  return <TestSpeakingView />;
+/** Legacy route → canonical Test 1 speaking practice. */
+export default function SpeakingTestRedirectPage() {
+  redirect(shortModuleExamPath(1, "speaking"));
 }

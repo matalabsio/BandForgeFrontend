@@ -5,7 +5,6 @@ import {
   scoreListeningModule,
   scoreReadingModule,
   scoreSpeakingModule,
-  scoreWritingTasks,
 } from "@/lib/diagnostic-scoring";
 import type { DiagnosticModuleScores } from "@/lib/diagnostic-storage";
 import type { DiagnosticProgress } from "@/lib/diagnostic-storage";
@@ -25,20 +24,14 @@ export function computeFinalDiagnosticScores(
     pack.reading.questions,
     progress.answers.reading,
   );
-  const writingScore = scoreWritingTasks(
-    progress.answers.writing,
-    pack.writing.tasks.map((t) => ({
-      id: t.id,
-      part: t.part,
-      minWords: t.minWords,
-    })),
-  );
+  const writingBand = progress.writingEvaluation?.writing_band ?? null;
   const speakingScore = scoreSpeakingModule({
     part1Questions: pack.speaking.part1.questions.map((q) => ({
       id: q.id,
       minSec: q.minSec,
     })),
     part2MinSec: pack.speaking.part2.minRecordSec,
+    part2Enabled: pack.speaking.part2.enabled,
     answers: progress.answers.speaking,
   });
 
@@ -54,12 +47,12 @@ export function computeFinalDiagnosticScores(
   const scores: DiagnosticModuleScores = {
     listening_band: listeningScore.band,
     reading_band: readingScore.band,
-    writing_band: writingScore.band,
+    writing_band: writingBand,
     speaking_band: speakingScore.band,
     aggregate_band: aggregateBand(
       listeningScore.band,
       readingScore.band,
-      writingScore.band,
+      writingBand,
       speakingScore.band,
     ),
   };

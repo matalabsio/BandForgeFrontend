@@ -18,7 +18,7 @@ import { MockTestHubShell } from "@/modules/mock/components/mock-test-hub-shell"
 import { clearMockExamLocalData } from "@/lib/mock-client-session";
 import { persistMockAttemptId } from "@/lib/exam-session-storage";
 import { useMockSession } from "@/modules/mock/hooks/use-mock-session";
-import { computeMockProgressPercent } from "@/modules/mock/lib/mock-progress";
+import { computeMockProgressPercent, formatModuleAbbrev, resolveEnabledModuleKeys } from "@/modules/mock/lib/mock-progress";
 import { Test1ModuleCards } from "@/modules/mock/components/test1-module-cards";
 import { Test1ReadinessChecklist } from "@/modules/mock/components/test1-readiness-checklist";
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
@@ -48,6 +48,7 @@ export type MockHubMeta = {
   writingMinutes: number;
   totalMinutes: number;
   flowHint: string;
+  modulesEnabled?: string[];
 };
 
 type Props = {
@@ -96,22 +97,13 @@ export function MockTestHub({
   );
 
   const moduleAbbrev = useMemo(() => {
-    const order = ["listening", "reading", "writing", "speaking"] as const;
-    const labels: Record<(typeof order)[number], string> = {
-      listening: "L",
-      reading: "R",
-      writing: "W",
-      speaking: "S",
-    };
     const mods = progress?.modules ?? [];
-    const enabled = order.filter((key) =>
-      mods.some((mod) => mod.module === key && mod.is_enabled),
+    const enabled = resolveEnabledModuleKeys(
+      mods,
+      hubMeta?.modulesEnabled,
     );
-    if (enabled.length > 0) {
-      return enabled.map((key) => labels[key]).join(" · ");
-    }
-    return "L · R · W · S";
-  }, [progress?.modules]);
+    return formatModuleAbbrev(enabled);
+  }, [progress?.modules, hubMeta?.modulesEnabled]);
 
   const displayTotalMinutes = useMemo(() => {
     const mods = progress?.modules ?? [];
@@ -336,6 +328,7 @@ export function MockTestHub({
         mockStatus={status}
         showSectionFilters
         previewWhenLocked={!hasAttempt}
+        catalogModulesEnabled={hubMeta?.modulesEnabled}
       />
 
       {hasAttempt ? (

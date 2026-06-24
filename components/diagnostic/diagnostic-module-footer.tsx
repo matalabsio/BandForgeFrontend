@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 type Props = {
   label: string;
   busy?: boolean;
+  busyLabel?: string;
   disabled?: boolean;
   onClick: () => void;
   className?: string;
@@ -16,6 +17,7 @@ type Props = {
 export function DiagnosticModuleFooter({
   label,
   busy = false,
+  busyLabel = "Saving…",
   disabled = false,
   onClick,
   className,
@@ -46,7 +48,7 @@ export function DiagnosticModuleFooter({
             !narrow && "rounded-full text-sm text-white sm:ml-auto sm:max-w-sm",
           )}
         >
-          <span>{busy ? "Saving…" : label}</span>
+          <span>{busy ? busyLabel : label}</span>
           {!busy ? (
             <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
           ) : null}

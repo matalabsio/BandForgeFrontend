@@ -265,7 +265,8 @@ export function ListeningPage({
       dispatch({ type: "completed", payload });
       clearSnapshot(state.attemptId);
       void goToResults(payload.attempt_id, {
-        mockListeningComplete: listeningDoneOnClient,
+        mockListeningComplete:
+          payload.mock_listening_complete === true || listeningDoneOnClient,
       });
     } catch (e) {
       dispatch({

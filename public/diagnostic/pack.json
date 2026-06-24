@@ -2,325 +2,106 @@
   "version": 2,
   "meta": {
     "title": "BandForge Free Diagnostic",
-    "listeningMinutes": 20,
-    "readingMinutes": 25,
-    "writingMinutes": 25,
-    "speakingMinutes": 15
+    "listeningMinutes": 10,
+    "readingMinutes": 15,
+    "writingMinutes": 20,
+    "speakingMinutes": 2
   },
   "listening": {
-    "transcript": "Diagnostic Listening — Placeholder Section\n\nSTAFF: BandForge Learning Centre, good morning.\nCALLER: Hello, I'd like some information about your IELTS preparation courses.\nSTAFF: Certainly. Are you preparing for Academic or General Training?\nCALLER: Academic, please. I need a band score of 7 for my university application.\nSTAFF: We offer a free diagnostic test that shows your current level across listening, reading, and writing.\nCALLER: That sounds helpful. How long does the diagnostic take?\nSTAFF: About forty-five minutes. You can start online without creating an account.\nCALLER: Perfect. I'll try it today. My name is Sarah Chen.\nSTAFF: Thank you, Sarah. Good luck with your preparation.",
+    "audioUrl": "/diagnostic/audio/listening.mp3",
+    "transcript": "Good morning, Greenfield College, how can I help you? Hello, I'd like to register for an English course please. Certainly. Could I take your first name? Yes, it's Priya. P-R-I-Y-A. Thank you, Priya. And your surname? Mehta. M-E-H-T-A. Mehta, lovely. What is your nationality? Indian. I was based in Dubai but I grew up in Mumbai. And your current occupation? I'm a nurse at the city hospital. Which course level are you interested in? Upper intermediate please. My reading and writing are fairly good. Which day would you prefer for classes? Tuesday suits me best. When would you like to start? The fourteenth of March if possible. The course fee is six hundred and eighty-five pounds. How will you be paying? I'll pay by bank transfer please. Any additional notes for us? Could you provide large print handouts? They're very helpful for me. Noted. Thank you for calling Greenfield College.",
     "questions": [
       {
         "id": "L1",
         "number": 1,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q1: What is the caller's main reason for phoning?",
-        "options": [
-          {
-            "label": "A",
-            "text": "To book a speaking test"
-          },
-          {
-            "label": "B",
-            "text": "To ask about IELTS courses"
-          },
-          {
-            "label": "C",
-            "text": "To cancel a membership"
-          }
-        ],
-        "answer": "B",
-        "skill": "gist"
+        "type": "form_completion",
+        "prompt": "First name",
+        "answer": "Priya",
+        "skill": "detail"
       },
       {
         "id": "L2",
         "number": 2,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q2: Which IELTS module does the caller need?",
-        "options": [
-          {
-            "label": "A",
-            "text": "General Training"
-          },
-          {
-            "label": "B",
-            "text": "Academic"
-          },
-          {
-            "label": "C",
-            "text": "Both"
-          }
-        ],
-        "answer": "B",
+        "type": "form_completion",
+        "prompt": "Surname",
+        "answer": "Mehta",
         "skill": "detail"
       },
       {
         "id": "L3",
         "number": 3,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q3: What band score does the caller need?",
-        "options": [
-          {
-            "label": "A",
-            "text": "6.5"
-          },
-          {
-            "label": "B",
-            "text": "7"
-          },
-          {
-            "label": "C",
-            "text": "7.5"
-          }
-        ],
-        "answer": "B",
+        "type": "form_completion",
+        "prompt": "Nationality",
+        "answer": "Indian",
         "skill": "detail"
       },
       {
         "id": "L4",
         "number": 4,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q4: How long does the diagnostic take?",
-        "options": [
-          {
-            "label": "A",
-            "text": "About 30 minutes"
-          },
-          {
-            "label": "B",
-            "text": "About 45 minutes"
-          },
-          {
-            "label": "C",
-            "text": "About 90 minutes"
-          }
-        ],
-        "answer": "B",
+        "type": "form_completion",
+        "prompt": "Current occupation",
+        "answer": "nurse",
         "skill": "detail"
       },
       {
         "id": "L5",
         "number": 5,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q5: Can the caller start without an account?",
-        "options": [
-          {
-            "label": "A",
-            "text": "Yes"
-          },
-          {
-            "label": "B",
-            "text": "No"
-          },
-          {
-            "label": "C",
-            "text": "Only with a referral"
-          }
-        ],
-        "answer": "A",
+        "type": "form_completion",
+        "prompt": "Course level",
+        "answer": "upper intermediate",
         "skill": "detail"
       },
       {
         "id": "L6",
         "number": 6,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q6: Caller surname",
-        "answer": "Chen",
+        "type": "form_completion",
+        "prompt": "Preferred class day",
+        "answer": "Tuesday",
         "skill": "detail"
       },
       {
         "id": "L7",
         "number": 7,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q7: Caller first name",
-        "answer": "Sarah",
+        "type": "form_completion",
+        "prompt": "Start date",
+        "answer": "14 March / fourteenth of March / 14th March",
         "skill": "detail"
       },
       {
         "id": "L8",
         "number": 8,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q8: Centre name",
-        "answer": "BandForge",
+        "type": "form_completion",
+        "prompt": "Course fee",
+        "answer": "685 / £685 / six hundred eighty-five",
         "skill": "detail"
       },
       {
         "id": "L9",
         "number": 9,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q9: Test type offered free",
-        "answer": "diagnostic",
+        "type": "form_completion",
+        "prompt": "Payment method",
+        "answer": "bank / bank transfer",
         "skill": "detail"
       },
       {
         "id": "L10",
         "number": 10,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q10: Modules in diagnostic (count)",
-        "answer": "three/3",
-        "skill": "detail"
-      },
-      {
-        "id": "L11",
-        "number": 11,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q11: What is the caller's main reason for phoning?",
-        "options": [
-          {
-            "label": "A",
-            "text": "To book a speaking test"
-          },
-          {
-            "label": "B",
-            "text": "To ask about IELTS courses"
-          },
-          {
-            "label": "C",
-            "text": "To cancel a membership"
-          }
-        ],
-        "answer": "B",
-        "skill": "gist"
-      },
-      {
-        "id": "L12",
-        "number": 12,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q12: Which IELTS module does the caller need?",
-        "options": [
-          {
-            "label": "A",
-            "text": "General Training"
-          },
-          {
-            "label": "B",
-            "text": "Academic"
-          },
-          {
-            "label": "C",
-            "text": "Both"
-          }
-        ],
-        "answer": "B",
-        "skill": "detail"
-      },
-      {
-        "id": "L13",
-        "number": 13,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q13: What band score does the caller need?",
-        "options": [
-          {
-            "label": "A",
-            "text": "6.5"
-          },
-          {
-            "label": "B",
-            "text": "7"
-          },
-          {
-            "label": "C",
-            "text": "7.5"
-          }
-        ],
-        "answer": "B",
-        "skill": "detail"
-      },
-      {
-        "id": "L14",
-        "number": 14,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q14: How long does the diagnostic take?",
-        "options": [
-          {
-            "label": "A",
-            "text": "About 30 minutes"
-          },
-          {
-            "label": "B",
-            "text": "About 45 minutes"
-          },
-          {
-            "label": "C",
-            "text": "About 90 minutes"
-          }
-        ],
-        "answer": "B",
-        "skill": "detail"
-      },
-      {
-        "id": "L15",
-        "number": 15,
-        "type": "multiple_choice",
-        "prompt": "Diagnostic placeholder Q15: Can the caller start without an account?",
-        "options": [
-          {
-            "label": "A",
-            "text": "Yes"
-          },
-          {
-            "label": "B",
-            "text": "No"
-          },
-          {
-            "label": "C",
-            "text": "Only with a referral"
-          }
-        ],
-        "answer": "A",
-        "skill": "detail"
-      },
-      {
-        "id": "L16",
-        "number": 16,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q16: Caller surname",
-        "answer": "Chen",
-        "skill": "detail"
-      },
-      {
-        "id": "L17",
-        "number": 17,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q17: Caller first name",
-        "answer": "Sarah",
-        "skill": "detail"
-      },
-      {
-        "id": "L18",
-        "number": 18,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q18: Centre name",
-        "answer": "BandForge",
-        "skill": "detail"
-      },
-      {
-        "id": "L19",
-        "number": 19,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q19: Test type offered free",
-        "answer": "diagnostic",
-        "skill": "detail"
-      },
-      {
-        "id": "L20",
-        "number": 20,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder Q20: Modules in diagnostic (count)",
-        "answer": "three/3",
-        "skill": "detail"
+        "type": "form_completion",
+        "prompt": "Additional note",
+        "answer": "large print handouts / large print",
+        "skill": "inference"
       }
-    ],
-    "audioUrl": "/diagnostic/audio/listening.mp3"
+    ]
   },
   "reading": {
-    "passage": "Diagnostic Reading — Placeholder Passage\n\nUrban Community Gardens\n\nA    Across many cities, unused plots of land have been converted into community gardens where residents grow vegetables and flowers together. These projects began as informal neighbourhood efforts but are now often supported by local councils that provide water access and basic tools.\n\nB    Research suggests that participants report lower stress and stronger social ties after joining a garden. Children who help with planting also show more interest in fresh food, though scientists caution that long-term health effects are still being studied.\n\nC    Not every garden succeeds. Sites near busy roads may struggle with pollution, and some groups disband when founding volunteers move away. Even so, the movement continues to spread as cities look for low-cost ways to improve green space.",
+    "title": "The Hidden Forces Behind Everyday Choices",
+    "passage": "The Hidden Forces Behind Everyday Choices\n\nA    For much of the twentieth century, economic theory rested on a confident assumption: that people behave as rational agents, weighing costs and benefits with cool precision before arriving at the choice that best serves their interests. This figure, often called homo economicus, was a useful simplification for building mathematical models, but it bore little resemblance to the messy reality of human behaviour. The field of behavioural economics emerged to close that gap, drawing on psychology to explain why ordinary consumers so often act in ways that conventional theory cannot predict.\n\nB    The most influential challenge to the rational model came from psychologists Daniel Kahneman and Amos Tversky, whose research in the 1970s and 1980s reshaped the discipline. Their prospect theory demonstrated that people do not evaluate gains and losses symmetrically. Instead, the pain of losing a sum of money is felt roughly twice as intensely as the pleasure of gaining the same amount — a phenomenon known as loss aversion. This asymmetry helps explain a range of puzzling behaviours, from investors who cling to failing shares rather than accept a loss, to shoppers who respond far more strongly to the threat of a price increase than to an equivalent discount.\n\nC    A second well-documented bias is anchoring, the tendency for an initial piece of information to exert a disproportionate influence on subsequent judgements. When a retailer displays a high \"original\" price beside a reduced one, the first figure functions as an anchor, making the discount appear more generous than it might otherwise seem. Anchors operate even when they are plainly arbitrary; experiments have shown that a number generated at random can shift people's estimates of entirely unrelated quantities. For the consumer, this means that the order in which information is presented can quietly determine what feels like a fair price.\n\nD    Perhaps the most counterintuitive finding concerns the effect of abundant choice. Classical economics holds that more options can only make consumers better off, since unwanted alternatives can simply be ignored. Yet a celebrated study by Sheena Iyengar and Mark Lepper suggested otherwise. In a supermarket, the researchers set up a tasting display offering either six varieties of jam or twenty-four. The larger array attracted more passing interest, but it was the smaller selection that produced sales: only three per cent of shoppers who saw the extensive display made a purchase, compared with thirty per cent of those presented with the limited one. Excessive choice, it appeared, could overwhelm rather than empower.\n\nE    Closely related is the power of defaults — the option that applies when a person makes no active decision at all. Because changing a default requires effort and deliberate attention, most people simply accept whatever has been set for them. The clearest demonstration comes from research by Eric Johnson and Daniel Goldstein on organ donation. In countries where citizens are registered as donors unless they opt out, participation rates exceed ninety per cent; in otherwise similar countries where citizens must opt in, rates often fall below twenty per cent. The decision itself has not changed, only the default — yet the outcome is transformed.\n\nF    These insights have given rise to the concept of the \"nudge\", popularised by economist Richard Thaler and legal scholar Cass Sunstein. A nudge is any feature of the environment that steers behaviour in a predictable direction without forbidding alternatives or significantly altering incentives. Placing fruit at eye level in a cafeteria is a nudge; banning chocolate is not. The approach, which its authors term libertarian paternalism, has been adopted by governments and businesses worldwide. It is not without critics, however. Some argue that nudges exploit the very weaknesses they identify, manipulating consumers rather than informing them, and that the line between gentle guidance and covert pressure is uncomfortably thin.\n\nG    What is no longer in dispute is that the rational consumer of classical theory was always a fiction. Decisions are shaped by context, framing, emotion and effort in ways that are systematic and, crucially, predictable. For firms, this knowledge is commercially valuable, and the techniques of behavioural economics are now embedded in everything from website design to supermarket layouts. The asymmetry of knowledge between the designer of a choice and the person making it has become, for some scholars, a question of fairness as much as of economics. For consumers, the lesson is more sobering: the environment in which a choice is made is rarely neutral, and understanding the hidden forces at work may be the first step towards resisting them.",
     "questions": [
       {
         "id": "R1",
         "number": 1,
         "type": "tfng",
-        "prompt": "Diagnostic placeholder R1: Community gardens are sometimes supported by local councils.",
+        "prompt": "Economic models built around homo economicus were valued for their mathematical convenience.",
         "options": [
           {
             "label": "TRUE",
@@ -342,7 +123,7 @@
         "id": "R2",
         "number": 2,
         "type": "tfng",
-        "prompt": "Diagnostic placeholder R2: All community gardens near busy roads fail within one year.",
+        "prompt": "According to prospect theory, losing a sum of money causes roughly twice as much distress as gaining the same sum brings satisfaction.",
         "options": [
           {
             "label": "TRUE",
@@ -357,142 +138,14 @@
             "text": "NOT GIVEN"
           }
         ],
-        "answer": "FALSE",
+        "answer": "TRUE",
         "skill": "tfng"
       },
       {
         "id": "R3",
         "number": 3,
         "type": "tfng",
-        "prompt": "Diagnostic placeholder R3: Every child who joins a garden eats more vegetables at home.",
-        "options": [
-          {
-            "label": "TRUE",
-            "text": "TRUE"
-          },
-          {
-            "label": "FALSE",
-            "text": "FALSE"
-          },
-          {
-            "label": "NOT GIVEN",
-            "text": "NOT GIVEN"
-          }
-        ],
-        "answer": "NOT GIVEN",
-        "skill": "tfng"
-      },
-      {
-        "id": "R4",
-        "number": 4,
-        "type": "tfng",
-        "prompt": "Diagnostic placeholder R4: Participants often report lower stress after joining.",
-        "options": [
-          {
-            "label": "TRUE",
-            "text": "TRUE"
-          },
-          {
-            "label": "FALSE",
-            "text": "FALSE"
-          },
-          {
-            "label": "NOT GIVEN",
-            "text": "NOT GIVEN"
-          }
-        ],
-        "answer": "TRUE",
-        "skill": "tfng"
-      },
-      {
-        "id": "R5",
-        "number": 5,
-        "type": "tfng",
-        "prompt": "Diagnostic placeholder R5: Gardens began as informal neighbourhood efforts.",
-        "options": [
-          {
-            "label": "TRUE",
-            "text": "TRUE"
-          },
-          {
-            "label": "FALSE",
-            "text": "FALSE"
-          },
-          {
-            "label": "NOT GIVEN",
-            "text": "NOT GIVEN"
-          }
-        ],
-        "answer": "TRUE",
-        "skill": "tfng"
-      },
-      {
-        "id": "R6",
-        "number": 6,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R6: Councils may provide water access and basic ______.",
-        "answer": "tools",
-        "skill": "sentence_completion"
-      },
-      {
-        "id": "R7",
-        "number": 7,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R7: Some groups disband when founding ______ move away.",
-        "answer": "volunteers",
-        "skill": "sentence_completion"
-      },
-      {
-        "id": "R8",
-        "number": 8,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R8: Cities look for low-cost ways to improve green ______.",
-        "answer": "space",
-        "skill": "sentence_completion"
-      },
-      {
-        "id": "R9",
-        "number": 9,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R9: Children show more interest in fresh ______.",
-        "answer": "food",
-        "skill": "sentence_completion"
-      },
-      {
-        "id": "R10",
-        "number": 10,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R10: Long-term health effects are still being ______.",
-        "answer": "studied",
-        "skill": "sentence_completion"
-      },
-      {
-        "id": "R11",
-        "number": 11,
-        "type": "tfng",
-        "prompt": "Diagnostic placeholder R11: Community gardens are sometimes supported by local councils.",
-        "options": [
-          {
-            "label": "TRUE",
-            "text": "TRUE"
-          },
-          {
-            "label": "FALSE",
-            "text": "FALSE"
-          },
-          {
-            "label": "NOT GIVEN",
-            "text": "NOT GIVEN"
-          }
-        ],
-        "answer": "TRUE",
-        "skill": "tfng"
-      },
-      {
-        "id": "R12",
-        "number": 12,
-        "type": "tfng",
-        "prompt": "Diagnostic placeholder R12: All community gardens near busy roads fail within one year.",
+        "prompt": "Anchoring affects consumer judgement only when the initial figure is a realistic price.",
         "options": [
           {
             "label": "TRUE",
@@ -511,10 +164,32 @@
         "skill": "tfng"
       },
       {
-        "id": "R13",
-        "number": 13,
+        "id": "R4",
+        "number": 4,
         "type": "tfng",
-        "prompt": "Diagnostic placeholder R13: Every child who joins a garden eats more vegetables at home.",
+        "prompt": "The display of twenty-four jams attracted less interest from passers-by than the display of six.",
+        "options": [
+          {
+            "label": "TRUE",
+            "text": "TRUE"
+          },
+          {
+            "label": "FALSE",
+            "text": "FALSE"
+          },
+          {
+            "label": "NOT GIVEN",
+            "text": "NOT GIVEN"
+          }
+        ],
+        "answer": "FALSE",
+        "skill": "tfng"
+      },
+      {
+        "id": "R5",
+        "number": 5,
+        "type": "tfng",
+        "prompt": "The organ donation research found that opt-out countries also have higher overall life expectancy.",
         "options": [
           {
             "label": "TRUE",
@@ -533,87 +208,187 @@
         "skill": "tfng"
       },
       {
-        "id": "R14",
-        "number": 14,
-        "type": "tfng",
-        "prompt": "Diagnostic placeholder R14: Participants often report lower stress after joining.",
+        "id": "R6",
+        "number": 6,
+        "type": "matching_headings",
+        "prompt": "Paragraph C",
         "options": [
           {
-            "label": "TRUE",
-            "text": "TRUE"
+            "label": "i",
+            "text": "i. The mathematical origins of consumer theory"
           },
           {
-            "label": "FALSE",
-            "text": "FALSE"
+            "label": "ii",
+            "text": "ii. The lasting pull of a first impression"
           },
           {
-            "label": "NOT GIVEN",
-            "text": "NOT GIVEN"
+            "label": "iii",
+            "text": "iii. Why losses outweigh gains"
+          },
+          {
+            "label": "iv",
+            "text": "iv. When greater variety discourages purchasing"
+          },
+          {
+            "label": "v",
+            "text": "v. The influence of the option requiring no action"
+          },
+          {
+            "label": "vi",
+            "text": "vi. Guiding behaviour without removing freedom"
+          },
+          {
+            "label": "vii",
+            "text": "vii. The commercial uses of behavioural research"
           }
         ],
-        "answer": "TRUE",
-        "skill": "tfng"
+        "answer": "ii",
+        "skill": "matching_headings"
       },
       {
-        "id": "R15",
-        "number": 15,
-        "type": "tfng",
-        "prompt": "Diagnostic placeholder R15: Gardens began as informal neighbourhood efforts.",
+        "id": "R7",
+        "number": 7,
+        "type": "matching_headings",
+        "prompt": "Paragraph D",
         "options": [
           {
-            "label": "TRUE",
-            "text": "TRUE"
+            "label": "i",
+            "text": "i. The mathematical origins of consumer theory"
           },
           {
-            "label": "FALSE",
-            "text": "FALSE"
+            "label": "ii",
+            "text": "ii. The lasting pull of a first impression"
           },
           {
-            "label": "NOT GIVEN",
-            "text": "NOT GIVEN"
+            "label": "iii",
+            "text": "iii. Why losses outweigh gains"
+          },
+          {
+            "label": "iv",
+            "text": "iv. When greater variety discourages purchasing"
+          },
+          {
+            "label": "v",
+            "text": "v. The influence of the option requiring no action"
+          },
+          {
+            "label": "vi",
+            "text": "vi. Guiding behaviour without removing freedom"
+          },
+          {
+            "label": "vii",
+            "text": "vii. The commercial uses of behavioural research"
           }
         ],
-        "answer": "TRUE",
-        "skill": "tfng"
+        "answer": "iv",
+        "skill": "matching_headings"
       },
       {
-        "id": "R16",
-        "number": 16,
+        "id": "R8",
+        "number": 8,
+        "type": "matching_headings",
+        "prompt": "Paragraph E",
+        "options": [
+          {
+            "label": "i",
+            "text": "i. The mathematical origins of consumer theory"
+          },
+          {
+            "label": "ii",
+            "text": "ii. The lasting pull of a first impression"
+          },
+          {
+            "label": "iii",
+            "text": "iii. Why losses outweigh gains"
+          },
+          {
+            "label": "iv",
+            "text": "iv. When greater variety discourages purchasing"
+          },
+          {
+            "label": "v",
+            "text": "v. The influence of the option requiring no action"
+          },
+          {
+            "label": "vi",
+            "text": "vi. Guiding behaviour without removing freedom"
+          },
+          {
+            "label": "vii",
+            "text": "vii. The commercial uses of behavioural research"
+          }
+        ],
+        "answer": "v",
+        "skill": "matching_headings"
+      },
+      {
+        "id": "R9",
+        "number": 9,
+        "type": "matching_headings",
+        "prompt": "Paragraph F",
+        "options": [
+          {
+            "label": "i",
+            "text": "i. The mathematical origins of consumer theory"
+          },
+          {
+            "label": "ii",
+            "text": "ii. The lasting pull of a first impression"
+          },
+          {
+            "label": "iii",
+            "text": "iii. Why losses outweigh gains"
+          },
+          {
+            "label": "iv",
+            "text": "iv. When greater variety discourages purchasing"
+          },
+          {
+            "label": "v",
+            "text": "v. The influence of the option requiring no action"
+          },
+          {
+            "label": "vi",
+            "text": "vi. Guiding behaviour without removing freedom"
+          },
+          {
+            "label": "vii",
+            "text": "vii. The commercial uses of behavioural research"
+          }
+        ],
+        "answer": "vi",
+        "skill": "matching_headings"
+      },
+      {
+        "id": "R10",
+        "number": 10,
         "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R16: Councils may provide water access and basic ______.",
-        "answer": "tools",
+        "prompt": "Choosing not to accept a preset option demands both effort and deliberate ______.",
+        "answer": "attention",
         "skill": "sentence_completion"
       },
       {
-        "id": "R17",
-        "number": 17,
+        "id": "R11",
+        "number": 11,
         "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R17: Some groups disband when founding ______ move away.",
-        "answer": "volunteers",
+        "prompt": "Thaler and Sunstein describe the philosophy behind the nudge as ______.",
+        "answer": "libertarian paternalism / libertarian",
         "skill": "sentence_completion"
       },
       {
-        "id": "R18",
-        "number": 18,
+        "id": "R12",
+        "number": 12,
         "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R18: Cities look for low-cost ways to improve green ______.",
-        "answer": "space",
+        "prompt": "Critics suggest that the boundary between gentle guidance and ______ is uncomfortably thin.",
+        "answer": "covert pressure",
         "skill": "sentence_completion"
       },
       {
-        "id": "R19",
-        "number": 19,
+        "id": "R13",
+        "number": 13,
         "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R19: Children show more interest in fresh ______.",
-        "answer": "food",
-        "skill": "sentence_completion"
-      },
-      {
-        "id": "R20",
-        "number": 20,
-        "type": "sentence_completion",
-        "prompt": "Diagnostic placeholder R20: Long-term health effects are still being ______.",
-        "answer": "studied",
+        "prompt": "The techniques of behavioural economics are now used in areas ranging from supermarket layouts to ______.",
+        "answer": "website design",
         "skill": "sentence_completion"
       }
     ]
@@ -624,16 +399,9 @@
         "id": "W1",
         "part": 1,
         "minWords": 150,
-        "title": "WRITING TASK 1",
-        "prompt": "You should spend about 20 minutes on this task.\n\nThe chart below shows illustrative data for a BandForge diagnostic placeholder.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.\n\nWrite at least 150 words.",
+        "title": "Writing Task 1",
+        "prompt": "You should spend about 20 minutes on this task.\n\nThe bar chart below shows the proportion of workers who used four different modes of transport — car, public transport, cycling, and walking — to travel to work in Tokyo, Berlin, São Paulo, and Toronto in 2022.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.\n\nWrite at least 150 words.",
         "diagramUrl": "/diagnostic/images/writing-task1-chart.svg"
-      },
-      {
-        "id": "W2",
-        "part": 2,
-        "minWords": 250,
-        "title": "WRITING TASK 2",
-        "prompt": "Write about the following topic:\n\nSome people believe that technology has made life more complicated, while others think it has made life easier.\n\nDiscuss both views and give your own opinion.\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.\n\nWrite at least 250 words."
       }
     ]
   },
@@ -641,30 +409,19 @@
     "part1": {
       "questions": [
         {
-          "id": "SP1",
-          "prompt": "Do you work or are you a student?",
-          "minSec": 30,
-          "maxSec": 45
-        },
-        {
-          "id": "SP2",
-          "prompt": "What do you like about your hometown?",
-          "minSec": 30,
-          "maxSec": 45
-        },
-        {
-          "id": "SP3",
-          "prompt": "How often do you use English outside of study?",
-          "minSec": 30,
-          "maxSec": 45
+          "id": "S1",
+          "prompt": "Please introduce yourself.",
+          "minSec": 90,
+          "maxSec": 120
         }
       ]
     },
     "part2": {
-      "cueCard": "Describe a skill you would like to learn.\n\nYou should say:\n- what the skill is\n- why you want to learn it\n- how you would learn it\n\nand explain how it would be useful to you.",
-      "prepSec": 60,
-      "recordSec": 120,
-      "minRecordSec": 90
+      "enabled": false,
+      "cueCard": "",
+      "prepSec": 0,
+      "recordSec": 0,
+      "minRecordSec": 0
     }
   }
 }

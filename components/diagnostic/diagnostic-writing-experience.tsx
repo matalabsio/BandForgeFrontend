@@ -13,14 +13,17 @@ import {
   type DiagnosticPack,
   type DiagnosticWritingTask,
 } from "@/lib/diagnostic-pack";
-import { scoreWritingTasks, wordCount } from "@/lib/diagnostic-scoring";
+import { evaluateDiagnosticWriting } from "@/lib/diagnostic-evaluate-writing";
+import { wordCount } from "@/lib/diagnostic-scoring";
 import {
   advanceDiagnosticModule,
   readDiagnosticProgress,
   saveModuleAnswers,
 } from "@/lib/diagnostic-storage";
 import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ApiError } from "@/lib/api";
 
 type WritingPanel = "task1" | "task2";
 
@@ -69,8 +72,8 @@ export function DiagnosticWritingExperience() {
     [essays, persistEssays],
   );
 
-  const handleSubmit = useCallback(() => {
-    if (!pack || submitting) return;
+  const handleSubmit = useCallback(async () => {
+    if (!pack || submitting || !activeTask) return;
     const hasContent = tasks.some((t) => (essays[t.id] ?? "").trim().length > 0);
     if (!hasContent) {
       setError("Please write at least one task response before submitting.");
@@ -79,25 +82,58 @@ export function DiagnosticWritingExperience() {
     setSubmitting(true);
     setError(null);
 
-    const writingScore = scoreWritingTasks(
-      essays,
-      tasks.map((t) => ({ id: t.id, part: t.part, minWords: t.minWords })),
-    );
     const progress = readDiagnosticProgress();
+    if (!progress) {
+      setError("Diagnostic session expired. Please start again.");
+      setSubmitting(false);
+      return;
+    }
 
-    advanceDiagnosticModule("writing", {
-      moduleAnswers: { module: "writing", answers: essays },
-      scores: {
-        listening_band: progress?.scores?.listening_band ?? null,
-        reading_band: progress?.scores?.reading_band ?? null,
-        writing_band: writingScore.band,
-        speaking_band: null,
-        aggregate_band: null,
-      },
-      review: progress?.review,
-    });
-    router.replace(diagnosticTransitionPath("writing-speaking"));
-  }, [pack, essays, submitting, router, tasks]);
+    const primaryTask = tasks[0] ?? activeTask;
+    const essayText = essays[primaryTask.id] ?? "";
+
+    try {
+      const writingEvaluation = await evaluateDiagnosticWriting({
+        client_attempt_id: progress.attemptId,
+        task_part: primaryTask.part,
+        question: primaryTask.prompt,
+        essay: essayText,
+      });
+
+      advanceDiagnosticModule("writing", {
+        moduleAnswers: { module: "writing", answers: essays },
+        scores: {
+          listening_band: progress?.scores?.listening_band ?? null,
+          reading_band: progress?.scores?.reading_band ?? null,
+          writing_band: writingEvaluation.writing_band,
+          speaking_band: null,
+          aggregate_band: null,
+        },
+        review: progress?.review,
+        writingEvaluation,
+      });
+      router.replace(diagnosticTransitionPath("writing-speaking"));
+    } catch (e: unknown) {
+      if (e instanceof ApiError && e.status === 429) {
+        setError("Too many evaluations. Please wait an hour and try again.");
+      } else if (e instanceof ApiError && e.status === 503) {
+        setError("AI evaluation is temporarily unavailable. Please try again in a moment.");
+      } else if (e instanceof ApiError && e.status === 400) {
+        setError(
+          e.message.includes("too short")
+            ? "Response too short for IELTS evaluation. Write at least 30 words of your own answer (150+ recommended)."
+            : e.message,
+        );
+      } else {
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Could not evaluate your essay. Please try again.",
+        );
+      }
+      setSubmitting(false);
+    }
+  }, [pack, essays, submitting, router, tasks, activeTask]);
 
   return (
     <DiagnosticModuleGuard module="writing">
@@ -107,9 +143,11 @@ export function DiagnosticWritingExperience() {
           moduleIcon={Pencil}
           error={error}
           loading={!pack}
-          footerLabel="Submit writing"
+          footerLabel="Continue to speaking"
           footerBusy={submitting}
+          footerBusyLabel="Evaluating your essay…"
           onFooter={handleSubmit}
+          footerWidth="full"
           timer={
             <DiagnosticTimerPill
               durationSeconds={DIAGNOSTIC_WRITING_TIMER_SEC}
@@ -120,6 +158,7 @@ export function DiagnosticWritingExperience() {
           {pack && activeTask ? (
             <DiagnosticExamScroll>
               <DiagnosticExamColumn className="flex min-h-0 flex-col">
+              {tasks.length > 1 ? (
               <div className="-mx-2 flex shrink-0 gap-2 overflow-x-auto px-2 pt-3.5">
                 {tasks.map((task) => {
                   const panel = taskPanelId(task);
@@ -140,6 +179,7 @@ export function DiagnosticWritingExperience() {
                   );
                 })}
               </div>
+              ) : null}
 
               <div className="min-h-0 flex-1 py-4">
                 <div className="mb-3 max-w-full rounded-[14px] border border-navy/10 bg-navy/[0.04] p-4">
@@ -170,14 +210,40 @@ export function DiagnosticWritingExperience() {
                   className="min-h-[280px] w-full max-w-full resize-y rounded-[14px] border border-navy/10 bg-white p-4 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
                   placeholder="Write your response here…"
                 />
-                <p
-                  className={cn(
-                    "mt-2 text-right font-mono text-xs",
-                    words >= activeTask.minWords ? "text-teal" : "text-[#6E83A0]",
-                  )}
+                <div className="mt-3 space-y-2">
+                  <p
+                    className={cn(
+                      "text-right font-mono text-xs",
+                      words >= activeTask.minWords ? "text-teal" : "text-[#6E83A0]",
+                    )}
+                  >
+                    Current words: {words}
+                  </p>
+                  {words < activeTask.minWords ? (
+                    <div
+                      className="rounded-[12px] border border-amber-200/80 bg-[#FEF8EC] px-3.5 py-3 text-[13px] leading-snug font-light text-[#5C4A2E]"
+                      role="status"
+                    >
+                      <p className="font-medium text-[#8A5A00]">
+                        IELTS Task {activeTask.part} requires at least {activeTask.minWords} words.
+                      </p>
+                      <p className="mt-1">
+                        Your score may be significantly reduced. Write an overview, key features,
+                        and comparisons before continuing.
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleSubmit}
+                  className="mt-6 flex min-h-[var(--spacing-touch,48px)] w-full cursor-pointer items-center justify-center gap-2 rounded-[13px] bg-cyan px-6 font-display text-base font-semibold text-[#06222B] shadow-[0_12px_28px_rgba(0,188,212,0.30)] transition-colors hover:bg-brand-sky-hover disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
                 >
-                  {words} words
-                </p>
+                  {submitting ? "Evaluating your essay…" : "Continue to speaking"}
+                  {!submitting ? <ArrowRight className="size-4" aria-hidden /> : null}
+                </button>
               </div>
               </DiagnosticExamColumn>
             </DiagnosticExamScroll>

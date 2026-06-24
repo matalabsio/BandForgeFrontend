@@ -5,6 +5,8 @@ import { parseApiError, parseJsonResponse, type ApiErrorBody } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { mockAttemptStorageKey } from "@/modules/mock/lib/mock-session-storage";
 
+import type { DiagnosticWritingEvaluation } from "@/lib/diagnostic-evaluate-writing";
+
 /** Persist diagnostic band snapshot for /plan upsell. */
 export const DIAGNOSTIC_RESULTS_STORAGE_KEY = "bf-diagnostic-results";
 const DIAGNOSTIC_RESULTS_LOCAL_KEY = "bf-diagnostic-results-local";
@@ -32,10 +34,12 @@ export type DiagnosticResultsSnapshot = {
   writing_band: number | null;
   speaking_band: number | null;
   completed_at?: string | null;
+  review_status?: "instant" | "pending_human";
   review?: {
     listening?: DiagnosticModuleReview;
     reading?: DiagnosticModuleReview;
   };
+  writingEvaluation?: DiagnosticWritingEvaluation;
 };
 
 export function persistDiagnosticAttemptId(mockAttemptId: string): void {

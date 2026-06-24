@@ -314,20 +314,6 @@ export function WritingPage({
         if (redirectIfMockCompleted(p.status, router.replace.bind(router))) {
           return;
         }
-        const writingMod = p.modules.find((m) => m.module === "writing");
-        if (
-          writingMod?.status === "completed" &&
-          writingMod.test_attempt_id
-        ) {
-          const testNumber = testNumberForMockId(mockTestId);
-          persistModuleResultAttempt(
-            testNumber,
-            "writing",
-            writingMod.test_attempt_id,
-          );
-          router.replace(writingResultsPath(testNumber));
-          return;
-        }
         syncExamRoute(
           { replace: router.replace.bind(router) },
           mockSlug,

@@ -55,10 +55,7 @@ function stepStatus(
   mockComplete: boolean,
 ): "locked" | "available" | "in_progress" | "completed" {
   if (key === "results") {
-    if (mockComplete) return "completed";
-    const writing = modules.find((m) => m.module === "writing");
-    if (writing?.status === "completed") return "available";
-    return "locked";
+    return mockComplete ? "completed" : "locked";
   }
   const mod = modules.find((m) => m.module === key);
   if (!mod || !mod.is_enabled) return "locked";
@@ -98,12 +95,6 @@ export function Test1FlowStepper({
 
         let href: string | null = null;
         if (step.key === "results" && mockAttemptId && mockComplete) {
-          href = mockResultsPath(mockSlug, mockAttemptId);
-        } else if (
-          status === "completed" &&
-          mockAttemptId &&
-          step.key !== "results"
-        ) {
           href = mockResultsPath(mockSlug, mockAttemptId);
         } else if (
           canNavigate &&

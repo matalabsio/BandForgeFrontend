@@ -106,8 +106,10 @@ export function DiagnosticSpeakingExperience() {
       persistSpeaking(next);
       if (part1Index < pack.speaking.part1.questions.length - 1) {
         setPart1Index((i) => i + 1);
-      } else {
+      } else if (pack.speaking.part2.enabled) {
         setPhase("part2-prep");
+      } else {
+        setPhase("part2-done");
       }
     } else if (phase === "part2-record") {
       const next: DiagnosticSpeakingAnswers = {
@@ -130,6 +132,15 @@ export function DiagnosticSpeakingExperience() {
       void stopRecording();
     }
   }, [phase, part2RecordRemaining, recording, stopRecording]);
+
+  const part1Question = pack?.speaking.part1.questions[part1Index];
+
+  useEffect(() => {
+    if (phase !== "part1" || !recording || !part1Question) return;
+    if (recordSeconds >= part1Question.maxSec) {
+      void stopRecording();
+    }
+  }, [phase, recording, part1Question, recordSeconds, stopRecording]);
 
   const startRecording = useCallback(async () => {
     setError(null);
@@ -170,6 +181,14 @@ export function DiagnosticSpeakingExperience() {
     const progress = readDiagnosticProgress();
     if (!progress) return;
 
+    if (!progress.writingEvaluation?.evaluation_id) {
+      setError(
+        "Writing must be AI-evaluated before submitting. Return to Writing and submit your essay again.",
+      );
+      setSubmitting(false);
+      return;
+    }
+
     const finalAnswers: DiagnosticSpeakingAnswers = {
       ...speakingAnswers,
       part2: speakingAnswers.part2 ?? {
@@ -189,8 +208,11 @@ export function DiagnosticSpeakingExperience() {
     router.replace(diagnosticPaths.processing);
   }, [pack, submitting, speakingAnswers, router]);
 
-  const part1Question = pack?.speaking.part1.questions[part1Index];
-  const cueCard = pack ? parseCueCard(pack.speaking.part2.cueCard) : null;
+  const part2Enabled = pack?.speaking.part2.enabled ?? true;
+  const cueCard =
+    pack && part2Enabled && pack.speaking.part2.cueCard.trim()
+      ? parseCueCard(pack.speaking.part2.cueCard)
+      : null;
 
   return (
     <DiagnosticModuleGuard module="speaking">
@@ -200,7 +222,7 @@ export function DiagnosticSpeakingExperience() {
           moduleIcon={Mic}
           error={error}
           loading={!pack}
-          footerLabel="Submit speaking"
+          footerLabel="Submit for examiner review"
           footerBusy={submitting}
           onFooter={handleSubmit}
           timer={
@@ -264,6 +286,12 @@ export function DiagnosticSpeakingExperience() {
                     </p>
                   ) : null}
                 </>
+              ) : null}
+
+              {phase === "part2-done" && !part2Enabled ? (
+                <p className="mt-6 text-center text-sm text-teal">
+                  Recording complete. Submit speaking to see your report.
+                </p>
               ) : null}
               </DiagnosticExamColumn>
             </DiagnosticExamScroll>

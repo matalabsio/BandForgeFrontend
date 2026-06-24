@@ -7,6 +7,7 @@ import {
   persistMockAttemptId,
   readMockAttemptId,
 } from "@/lib/exam-session-storage";
+import { mockApi } from "@/modules/mock/services/mock-api";
 import type { MockAttemptSummary } from "@/modules/mock/services/mock-api";
 import { MockResults } from "@/modules/mock/components/mock-results";
 
@@ -47,6 +48,25 @@ function MockResultsGateInner({ mockSlug, initialSummary }: Props) {
       }
     }
   }, [mockAttemptId, urlParam, mockTestId, mockSlug, router]);
+
+  useEffect(() => {
+    if (!mockAttemptId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const progress = await mockApi.progress(mockAttemptId);
+        if (cancelled) return;
+        if (progress.status !== "completed") {
+          router.replace(mockHubPath(mockSlug, mockAttemptId));
+        }
+      } catch {
+        /* allow summary fetch to surface errors */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mockAttemptId, mockSlug, router]);
 
   if (!mockAttemptId) {
     return (

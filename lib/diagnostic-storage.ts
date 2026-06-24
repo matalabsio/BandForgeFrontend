@@ -3,7 +3,10 @@ import {
   type DiagnosticModuleReview,
   type DiagnosticResultsSnapshot,
 } from "@/lib/diagnostic-session";
+import type { DiagnosticWritingEvaluation } from "@/lib/diagnostic-evaluate-writing";
 import { syncDiagnosticToServer } from "@/lib/diagnostic-sync";
+import { readDiagnosticLead } from "@/lib/diagnostic-lead";
+import { submitDiagnosticForReview } from "@/lib/diagnostic-review-submit";
 
 export const DIAGNOSTIC_PROGRESS_KEY = "bf-diagnostic-progress";
 
@@ -53,6 +56,7 @@ export type DiagnosticProgress = {
     listening?: DiagnosticModuleReview;
     reading?: DiagnosticModuleReview;
   };
+  writingEvaluation?: DiagnosticWritingEvaluation;
   completedAt?: string;
 };
 
@@ -170,6 +174,7 @@ export function advanceDiagnosticModule(
       | { module: "listening" | "reading" | "writing"; answers: Record<string, string> }
       | { module: "speaking"; answers: DiagnosticSpeakingAnswers };
     review?: DiagnosticProgress["review"];
+    writingEvaluation?: DiagnosticWritingEvaluation;
   },
 ): DiagnosticProgress | null {
   const progress = readDiagnosticProgress();
@@ -191,6 +196,7 @@ export function advanceDiagnosticModule(
     answers: nextAnswers,
     scores: partial?.scores ?? progress.scores,
     review: partial?.review ?? progress.review,
+    writingEvaluation: partial?.writingEvaluation ?? progress.writingEvaluation,
   };
   saveDiagnosticProgress(next);
   return next;
@@ -222,9 +228,16 @@ export function completeDiagnostic(
     writing_band: scores.writing_band,
     speaking_band: scores.speaking_band,
     completed_at: completedAt,
+    review_status: "pending_human",
     review: review ?? progress.review,
+    writingEvaluation: progress.writingEvaluation,
   };
   persistDiagnosticResults(snapshot);
   syncDiagnosticToServer(snapshot, progress.startedAt);
+
+  const lead = readDiagnosticLead();
+  if (lead) {
+    submitDiagnosticForReview(lead, finalProgress, snapshot);
+  }
   return finalProgress;
 }

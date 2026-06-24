@@ -47,6 +47,7 @@ export type DiagnosticPack = {
     questions: DiagnosticPackQuestion[];
   };
   reading: {
+    title?: string;
     passage: string;
     questions: DiagnosticPackQuestion[];
   };
@@ -58,6 +59,7 @@ export type DiagnosticPack = {
       questions: DiagnosticSpeakingPart1Question[];
     };
     part2: {
+      enabled?: boolean;
       cueCard: string;
       prepSec: number;
       recordSec: number;
@@ -131,11 +133,11 @@ function parseSpeaking(speaking: unknown): DiagnosticPack["speaking"] {
         ],
       },
       part2: {
-        cueCard:
-          "Describe a skill you would like to learn.\nYou should say:\n- what the skill is\n- why you want to learn it\n- how you would learn it\n- and explain how it would be useful to you",
-        prepSec: 60,
-        recordSec: 120,
-        minRecordSec: 90,
+        enabled: false,
+        cueCard: "",
+        prepSec: 0,
+        recordSec: 0,
+        minRecordSec: 0,
       },
     };
   }
@@ -156,6 +158,10 @@ function parseSpeaking(speaking: unknown): DiagnosticPack["speaking"] {
   return {
     part1: { questions },
     part2: {
+      enabled:
+        typeof part2?.enabled === "boolean"
+          ? part2.enabled
+          : Boolean(String(part2?.cueCard ?? "").trim()),
       cueCard: String(part2?.cueCard ?? ""),
       prepSec: Number(part2?.prepSec ?? 60),
       recordSec: Number(part2?.recordSec ?? 120),
@@ -220,6 +226,8 @@ export function parseDiagnosticPack(data: unknown): DiagnosticPack {
       questions: listeningQuestions,
     },
     reading: {
+      title:
+        typeof readingRow.title === "string" ? readingRow.title : undefined,
       passage: String(readingRow.passage ?? ""),
       questions: readingQuestions,
     },

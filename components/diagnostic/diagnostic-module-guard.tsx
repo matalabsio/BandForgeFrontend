@@ -28,6 +28,10 @@ export function DiagnosticModuleGuard({ module, children }: Props) {
       router.replace(diagnosticPaths[progress.currentModule]);
       return;
     }
+    if (module === "speaking" && !progress.writingEvaluation?.evaluation_id) {
+      router.replace(diagnosticPaths.writing);
+      return;
+    }
     setReady(true);
   }, [module, router]);
 

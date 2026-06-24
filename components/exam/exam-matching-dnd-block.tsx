@@ -48,6 +48,8 @@ type Props = {
   poolTitle: string;
   slotPlaceholder: string;
   pendingHint?: string;
+  /** Sticky heading pool — disable inside nested scroll areas (e.g. diagnostic). */
+  poolSticky?: boolean;
 };
 
 function qDisplay(q: MatchingQuestion): number {
@@ -265,15 +267,15 @@ function QuestionSlot({
   return (
     <li
       className={cn(
-        "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-dashed py-3 last:border-b-0",
+        "flex flex-col gap-3 border-b border-dashed py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between",
         theme.border,
         isActive && cn(theme.accentSoft, "rounded-sm"),
       )}
     >
-      <span className={cn("text-[13px]", theme.ink, theme.font)}>
+      <span className={cn("shrink-0 text-[13px]", theme.ink, theme.font)}>
         <strong className="tabular-nums">{num}</strong> {q.prompt}
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:shrink-0">
         {isEmpty ? (
           <button
             type="button"
@@ -337,6 +339,7 @@ function ExamMatchingDnDBlockBase({
   poolTitle,
   slotPlaceholder,
   pendingHint = "Tap an option, then tap an empty row to assign.",
+  poolSticky = true,
 }: Props) {
   const theme = useMatchingTheme(variant);
   const [pendingLabel, setPendingLabel] = useState<string | null>(null);
@@ -461,7 +464,8 @@ function ExamMatchingDnDBlockBase({
 
         <div
           className={cn(
-            "sticky top-0 z-10 rounded-lg border px-4 py-3 shadow-sm",
+            "rounded-lg border px-4 py-3",
+            poolSticky && "sticky top-0 z-10 shadow-sm",
             theme.border,
             variant === "reading" ? theme.surface : theme.paper,
           )}
@@ -497,7 +501,7 @@ function ExamMatchingDnDBlockBase({
           </ul>
         </div>
 
-        <ul className={cn("rounded-lg border px-4", theme.border, theme.paper)}>
+        <ul className={cn("rounded-lg border px-4 py-1", theme.border, theme.paper)}>
           {sortedQuestions.map((q) => {
             const value = normalize(answers[q.id] ?? "");
             const opt = value ? optionByLabel.get(value) : null;

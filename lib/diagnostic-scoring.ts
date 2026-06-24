@@ -211,6 +211,7 @@ export function buildModuleReview(
 export type SpeakingScoreInput = {
   part1Questions: { id: string; minSec: number }[];
   part2MinSec: number;
+  part2Enabled?: boolean;
   answers: DiagnosticSpeakingAnswers;
 };
 
@@ -218,9 +219,9 @@ export function scoreSpeakingModule(input: SpeakingScoreInput): {
   band: number;
   completionRate: number;
 } {
-  const { part1Questions, part2MinSec, answers } = input;
+  const { part1Questions, part2MinSec, part2Enabled = true, answers } = input;
   let earned = 0;
-  let possible = part1Questions.length + 1;
+  let possible = part1Questions.length + (part2Enabled ? 1 : 0);
 
   for (const q of part1Questions) {
     const rec = answers.part1[q.id];
@@ -232,10 +233,12 @@ export function scoreSpeakingModule(input: SpeakingScoreInput): {
   }
 
   const p2 = answers.part2;
-  if (p2?.completed && p2.recordSec >= part2MinSec) {
-    earned += 1;
-  } else if (p2?.completed && p2.recordSec > 0) {
-    earned += 0.5;
+  if (part2Enabled) {
+    if (p2?.completed && p2.recordSec >= part2MinSec) {
+      earned += 1;
+    } else if (p2?.completed && p2.recordSec > 0) {
+      earned += 0.5;
+    }
   }
 
   const completionRate = possible > 0 ? earned / possible : 0;

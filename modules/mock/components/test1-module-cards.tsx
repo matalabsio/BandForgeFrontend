@@ -18,10 +18,14 @@ import {
   type MockSlug,
 } from "@/lib/mock-catalog";
 import { prepareExamModuleNavigation } from "@/lib/mock-exam-nav";
+import {
+  resolveEnabledModuleKeys,
+  type MockModuleKey,
+} from "@/modules/mock/lib/mock-progress";
 import type { ModuleProgress } from "@/modules/mock/services/mock-api";
 import { cn } from "@/lib/utils";
 
-type ModuleKey = "listening" | "reading" | "writing" | "speaking";
+type ModuleKey = MockModuleKey;
 
 type ModuleMeta = Pick<
   ReturnType<typeof getMockMeta>,
@@ -150,14 +154,15 @@ function statusLabel(status: ModuleProgress["status"]): string {
 
 type SectionFilter = "all" | ModuleKey;
 
-function sectionFiltersForModules(modules: ModuleProgress[]): {
+function sectionFiltersForModules(
+  modules: ModuleProgress[],
+  catalogModulesEnabled?: readonly string[],
+): {
   id: SectionFilter;
   label: string;
 }[] {
-  const enabled = MODULE_CARDS.filter((card) => {
-    const mod = modules.find((m) => m.module === card.key);
-    return mod?.is_enabled ?? (card.key === "listening" || card.key === "reading");
-  });
+  const enabledKeys = resolveEnabledModuleKeys(modules, catalogModulesEnabled);
+  const enabled = MODULE_CARDS.filter((card) => enabledKeys.includes(card.key));
   return [
     { id: "all", label: "All" },
     ...enabled.map((card) => ({ id: card.key, label: card.label })),
@@ -172,6 +177,7 @@ type Props = {
   mockStatus?: string;
   showSectionFilters?: boolean;
   previewWhenLocked?: boolean;
+  catalogModulesEnabled?: readonly string[];
 };
 
 export function Test1ModuleCards({
@@ -182,33 +188,26 @@ export function Test1ModuleCards({
   mockStatus,
   showSectionFilters = false,
   previewWhenLocked = false,
+  catalogModulesEnabled,
 }: Props) {
   const [sectionFilter, setSectionFilter] = useState<SectionFilter>("all");
   const meta = moduleMeta ?? getMockMeta(mockSlug as MockSlug);
   const displayLabel = meta.displayLabel;
   const mockComplete = mockStatus === "completed";
-  const writingMod = modules.find((m) => m.module === "writing");
-  const speakingMod = modules.find((m) => m.module === "speaking");
-  const writingDone = writingMod?.status === "completed";
-  const speakingDone = speakingMod?.status === "completed";
-  const finalModuleDone = speakingMod?.is_enabled
-    ? speakingDone
-    : writingMod?.is_enabled
-      ? writingDone
-      : false;
+
+  const enabledModuleKeys = useMemo(
+    () => resolveEnabledModuleKeys(modules, catalogModulesEnabled),
+    [modules, catalogModulesEnabled],
+  );
 
   const enabledCards = useMemo(
-    () =>
-      MODULE_CARDS.filter((card) => {
-        const mod = modules.find((m) => m.module === card.key);
-        return mod?.is_enabled ?? (card.key === "listening" || card.key === "reading");
-      }),
-    [modules],
+    () => MODULE_CARDS.filter((card) => enabledModuleKeys.includes(card.key)),
+    [enabledModuleKeys],
   );
 
   const sectionFilters = useMemo(
-    () => sectionFiltersForModules(modules),
-    [modules],
+    () => sectionFiltersForModules(modules, catalogModulesEnabled),
+    [modules, catalogModulesEnabled],
   );
 
   const visibleCards = useMemo(() => {
@@ -349,7 +348,7 @@ export function Test1ModuleCards({
                     : card.key === "writing" && status === "locked"
                       ? "Complete Reading first"
                       : card.key === "speaking" && status === "locked"
-                        ? writingMod?.is_enabled
+                        ? enabledModuleKeys.includes("writing")
                           ? "Complete Writing first"
                           : "Complete Reading first"
                         : "Locked"}
@@ -383,7 +382,7 @@ export function Test1ModuleCards({
         })}
       </ul>
 
-      {(mockComplete || finalModuleDone) && mockAttemptId ? (
+      {mockComplete && mockAttemptId ? (
         <Link
           href={mockResultsPath(mockSlug, mockAttemptId)}
           className="flex items-center justify-center gap-2 rounded-xl border border-[var(--exam-border)] bg-white px-4 py-3 text-[13px] font-bold text-[var(--exam-ink)] transition-colors hover:border-[var(--exam-accent)] hover:text-[var(--exam-accent)]"

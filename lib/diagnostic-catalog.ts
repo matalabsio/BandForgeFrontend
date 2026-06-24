@@ -11,13 +11,13 @@ export const DIAGNOSTIC_NAV_TEST_NUMBER = 0;
 
 export const DIAGNOSTIC_LISTENING_PART_COUNT = 1;
 export const DIAGNOSTIC_READING_PASSAGE_COUNT = 1;
-export const DIAGNOSTIC_WRITING_TASK_COUNT = 2;
-export const DIAGNOSTIC_SPEAKING_PART_COUNT = 2;
+export const DIAGNOSTIC_WRITING_TASK_COUNT = 1;
+export const DIAGNOSTIC_SPEAKING_PART_COUNT = 1;
 
 /** Journey spec section timers (seconds). */
-export const DIAGNOSTIC_LISTENING_TIMER_SEC = 20 * 60;
-export const DIAGNOSTIC_READING_TIMER_SEC = 25 * 60;
-export const DIAGNOSTIC_WRITING_TIMER_SEC = 25 * 60;
+export const DIAGNOSTIC_LISTENING_TIMER_SEC = 10 * 60;
+export const DIAGNOSTIC_READING_TIMER_SEC = 15 * 60;
+export const DIAGNOSTIC_WRITING_TIMER_SEC = 20 * 60;
 export const DIAGNOSTIC_PROCESSING_SEC = 12;
 
 export const diagnosticPaths = {
@@ -36,14 +36,14 @@ export const DIAGNOSTIC_MOCK_META: MockMeta = {
   id: DIAGNOSTIC_MOCK_TEST_ID,
   displayLabel: "Free Diagnostic",
   subtitle: "Listening · Reading · Writing · Speaking",
-  flowHint: "Full diagnostic (~90 min)",
+  flowHint: "Free snapshot (~47 min)",
   listeningPartCount: DIAGNOSTIC_LISTENING_PART_COUNT,
   readingPassageCount: DIAGNOSTIC_READING_PASSAGE_COUNT,
   writingTaskCount: DIAGNOSTIC_WRITING_TASK_COUNT,
-  listeningMinutes: 20,
-  readingMinutes: 25,
-  writingMinutes: 25,
-  totalMinutes: 90,
+  listeningMinutes: 10,
+  readingMinutes: 15,
+  writingMinutes: 20,
+  totalMinutes: 47,
 };
 
 export function isDiagnosticMockId(mockTestId: string): boolean {

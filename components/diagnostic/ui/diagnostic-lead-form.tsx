@@ -76,6 +76,25 @@ export function DiagnosticLeadForm({ value, onChange, className }: Props) {
 
       <div>
         <label
+          htmlFor="diagnostic-lead-email"
+          className="mb-1.5 block text-xs font-medium text-[#5A6B82]"
+        >
+          Email for your band report
+        </label>
+        <input
+          id="diagnostic-lead-email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={value.email ?? ""}
+          onChange={(e) => setField("email", e.target.value.trim())}
+          placeholder="you@example.com"
+          className="h-[46px] w-full rounded-[11px] border border-[#D9E0E8] bg-white px-3.5 text-sm text-navy outline-none transition-colors placeholder:text-[#9AA7B8] focus:border-cyan focus:ring-2 focus:ring-cyan/20"
+        />
+      </div>
+
+      <div>
+        <label
           htmlFor="diagnostic-lead-goal"
           className="mb-1.5 block text-xs font-medium text-[#5A6B82]"
         >

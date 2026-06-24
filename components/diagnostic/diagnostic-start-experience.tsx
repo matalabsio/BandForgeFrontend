@@ -27,7 +27,7 @@ function WhatsAppNote() {
         <path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-1-.3-1.6-.6-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.3 0 .5l-.4.6c-.2.2-.3.4-.1.6.1.3.7 1.1 1.5 1.7 1 .9 1.8 1.1 2 1.2.2.1.4.1.5-.1l.6-.8c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.1.1.5-.1 1z" />
       </svg>
       <span className="text-[12.5px] font-light text-[#5A6B82]">
-        We&apos;ll send your results to this WhatsApp number.
+        We&apos;ll send your examiner-reviewed band report to your email.
       </span>
     </div>
   );
@@ -90,8 +90,8 @@ export function DiagnosticStartExperience() {
               Find Out Your Real IELTS Band.
             </h1>
             <p className="mt-3.5 text-[15px] leading-relaxed font-light text-[#5A6B82]">
-              A full 4-section diagnostic. Calibrated to Band 9. Results in under
-              90 minutes.
+              A 4-section snapshot using real Test 1 content. Calibrated to Band 9.
+              Results in under 50 minutes.
             </p>
             <div className="mt-6">
               <DiagnosticSectionGrid />
