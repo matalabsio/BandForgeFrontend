@@ -48,7 +48,7 @@ export function speakingReviewState(
 ): SpeakingReviewState {
   const attempt = latestAttemptForModule(recent, "speaking");
   if (!attempt) return "none";
-  if (attempt.band != null) return "scored";
+  if (attempt.band != null && attempt.band > 0) return "scored";
   return "under_review";
 }
 
@@ -70,22 +70,32 @@ export function moduleBandLabel(
   reviewState: SpeakingReviewState,
   live: boolean,
 ): string {
-  if (band != null) return band.toFixed(1);
+  if (band != null && band > 0) return band.toFixed(1);
   if (reviewState === "under_review") return "Under review";
   return live ? "—" : "Soon";
+}
+
+function normalizeBand(band: number | null | undefined): number | null {
+  if (band == null || band <= 0) return null;
+  return band;
 }
 
 export function latestBandByModule(
   recent: DashboardRecentAttempt[],
 ): ModuleBand[] {
   return MODULE_ORDER.map((module) => {
-    const latest = latestAttemptForModule(recent, module);
-    const scored = recent.find((a) => a.module === module && a.band !== null);
+    const scored = recent.find(
+      (a) =>
+        a.module === module &&
+        a.band != null &&
+        a.band > 0 &&
+        (a.completed_at || a.status === "completed"),
+    );
     const reviewState = moduleReviewState(recent, module);
     return {
       module,
       label: MODULE_LABELS[module],
-      band: scored?.band ?? latest?.band ?? null,
+      band: normalizeBand(scored?.band),
       live: LIVE_MODULES[module],
       reviewState,
     };
@@ -93,7 +103,7 @@ export function latestBandByModule(
 }
 
 export function strongestModule(bands: ModuleBand[]): ModuleBand | null {
-  const withBand = bands.filter((b) => b.band !== null);
+  const withBand = bands.filter((b) => b.band != null && b.band > 0);
   if (withBand.length === 0) return null;
   return withBand.reduce((best, cur) =>
     (cur.band ?? 0) > (best.band ?? 0) ? cur : best,
@@ -101,7 +111,7 @@ export function strongestModule(bands: ModuleBand[]): ModuleBand | null {
 }
 
 export function focusModule(bands: ModuleBand[]): ModuleBand | null {
-  const withBand = bands.filter((b) => b.band !== null && b.live);
+  const withBand = bands.filter((b) => b.band != null && b.band > 0 && b.live);
   if (withBand.length === 0) return null;
   return withBand.reduce((low, cur) =>
     (cur.band ?? 9) < (low.band ?? 9) ? cur : low,

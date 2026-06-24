@@ -13,7 +13,7 @@ import {
   latestBandByModule,
   moduleBandLabel,
 } from "@/components/scores/scores-utils";
-import { DEFAULT_MOCK_SLUG, mockModulePath } from "@/lib/mock-catalog";
+import { mockTestNumberPath } from "@/lib/mock-catalog";
 import type { ComponentType, SVGProps } from "react";
 import { cn } from "@/lib/utils";
 import type { DashboardModule } from "@/components/bandforge/dashboard/types";
@@ -27,19 +27,6 @@ const moduleIcons: Record<
   writing: PencilIcon,
   speaking: MicIcon,
 };
-
-function moduleHref(module: DashboardModule): string {
-  if (module === "listening") {
-    return mockModulePath(DEFAULT_MOCK_SLUG, "listening", { part: 1 });
-  }
-  if (module === "reading") {
-    return mockModulePath(DEFAULT_MOCK_SLUG, "reading", { passage: 1 });
-  }
-  if (module === "writing") {
-    return mockModulePath(DEFAULT_MOCK_SLUG, "writing", { part: 1 });
-  }
-  return mockModulePath(DEFAULT_MOCK_SLUG, "speaking");
-}
 
 function completedCount(
   recent: DashboardRecentAttempt[],
@@ -66,7 +53,10 @@ export function DashboardModuleProgress({
 }) {
   const bands = latestBandByModule(recent);
   const testedCount = bands.filter(
-    (b) => b.band !== null || b.reviewState !== "none",
+    (b) =>
+      (b.band != null && b.band > 0) ||
+      b.reviewState !== "none" ||
+      completedCount(recent, b.module) > 0,
   ).length;
 
   return (
@@ -83,10 +73,11 @@ export function DashboardModuleProgress({
         {bands.map((mod) => {
           const Icon = moduleIcons[mod.module];
           const testsDone = completedCount(recent, mod.module);
-          const progress =
-            mod.band !== null ? Math.min(100, Math.round((mod.band / 9) * 100)) : 0;
+          const hasBand = mod.band != null && mod.band > 0;
+          const progress = hasBand
+            ? Math.min(100, Math.round((mod.band! / 9) * 100))
+            : 0;
           const displayBand = moduleBandLabel(mod.band, mod.reviewState, mod.live);
-          const hasBand = mod.band !== null;
 
           return (
             <li key={mod.module}>
@@ -134,7 +125,7 @@ export function DashboardModuleProgress({
                   />
                 </div>
                 <Link
-                  href={moduleHref(mod.module)}
+                  href={mockTestNumberPath(1)}
                   className="mt-auto flex w-full items-center justify-center rounded-full bg-cyan py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-sky-hover"
                 >
                   {testsDone > 0 ? "Continue" : "Start"}
