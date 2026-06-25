@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { Headphones, BookOpen, Eye } from "lucide-react";
 import { AdminMockEditForm } from "@/components/admin/admin-mock-edit-form";
 import {
   adminApi,
@@ -15,6 +16,8 @@ import {
   adminHeading,
   adminLink,
   adminMeta,
+  adminMutedLabel,
+  adminStatusBadgeStyles,
 } from "@/components/admin/admin-ui";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +26,7 @@ type Props = { mockId: string };
 export function AdminMockDetailClient({ mockId }: Props) {
   const [mock, setMock] = useState<AdminMockDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -53,12 +57,50 @@ export function AdminMockDetailClient({ mockId }: Props) {
   const listeningParts = mock.configured_listening_parts ?? 4;
   const readingPassages = mock.configured_reading_passages ?? 3;
   const blockers = mock.publish_blockers ?? [];
+  const canPublish = blockers.length === 0;
+  const testHref = mock.catalog_number ? `/test?test=${mock.catalog_number}` : "/test?test=1";
+
+  const togglePublished = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const nextStatus = mock.status === "published" ? "draft" : "published";
+      await adminApi.patchMockStatus(mock.id, nextStatus);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Status update failed");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/mocks" className={cn("inline-block text-sm", adminLink)}>
-        ← Back to mocks
-      </Link>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <Link href="/admin/mocks" className={cn("inline-block text-sm", adminLink)}>
+            ← Back to mocks
+          </Link>
+          <p className={cn(adminMutedLabel, "mt-3")}>
+            {mock.catalog_number ? `Test ${mock.catalog_number}` : "Mock"}
+          </p>
+          <h1 className={cn(adminHeading, "mt-1 text-2xl sm:text-[2rem]")}>{mock.title}</h1>
+        </div>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Link href={testHref} className={cn(adminBtnSecondary, "w-full sm:w-auto")}>
+            <Eye className="mr-1.5 size-4" />
+            Preview as student
+          </Link>
+          <button
+            type="button"
+            disabled={busy || (!canPublish && mock.status !== "published")}
+            onClick={() => void togglePublished()}
+            className={cn(adminBtnPrimary, "w-full sm:w-auto")}
+          >
+            {mock.status === "published" ? "Unpublish" : "Publish"}
+          </button>
+        </div>
+      </div>
 
       <AdminMockEditForm mock={mock} onSaved={() => void load()} />
 
@@ -82,12 +124,26 @@ export function AdminMockDetailClient({ mockId }: Props) {
         </div>
       ) : null}
 
-      <div className={adminCard}>
-        <p className={adminMeta}>
-          Status: <span className="font-semibold capitalize text-black">{mock.status}</span> ·{" "}
-          {mock.total_questions} questions
-          {mock.catalog_number ? ` · Test ${mock.catalog_number} slot` : ""}
-        </p>
+      <div className={cn(adminCard, "space-y-6")}>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-[#5A6B82]">
+          <span className={adminMeta}>Status</span>
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+              adminStatusBadgeStyles[
+                mock.status === "published"
+                  ? "live"
+                  : mock.status === "draft"
+                    ? "draft"
+                    : "archived"
+              ],
+            )}
+          >
+            {mock.status}
+          </span>
+          <span>· {mock.total_questions} questions</span>
+          {mock.catalog_number ? <span>· Test {mock.catalog_number} slot</span> : null}
+        </div>
 
         <div className="mt-4">
           <h2 className={cn(adminHeading, "text-sm")}>Listening sections</h2>
@@ -102,6 +158,7 @@ export function AdminMockDetailClient({ mockId }: Props) {
                 label={`Listening — Section ${part}`}
                 status={sectionMap.get("listening")?.get(part)}
                 module="listening"
+                icon={<Headphones className="size-4 text-cyan" />}
               />
             ))}
           </div>
@@ -117,18 +174,20 @@ export function AdminMockDetailClient({ mockId }: Props) {
                 label={`Reading — Passage ${part}`}
                 status={sectionMap.get("reading")?.get(part)}
                 module="reading"
+                icon={<BookOpen className="size-4 text-cyan" />}
               />
             ))}
           </div>
         </div>
 
         <div className="space-y-3">
+          <p className={adminMutedLabel}>Module summary</p>
           {mock.modules.map((m) => (
-            <div key={m.module} className="rounded-lg border border-border bg-cyan-soft/30 p-3">
-              <h3 className="text-sm font-semibold capitalize text-black">{m.module}</h3>
-              <p className="text-sm text-gray-700">
-                {m.question_count} questions · {m.duration_minutes} min · parts{" "}
-                {m.parts.join(", ") || "—"}
+            <div key={m.module} className="flex items-center justify-between rounded-xl border border-[#EAEEF3] bg-white px-4 py-3">
+              <h3 className="text-sm font-semibold capitalize text-navy">{m.module}</h3>
+              <p className="text-sm text-[#5A6B82]">
+                {m.question_count} questions · {m.duration_minutes} min ·{" "}
+                <span className="font-mono">{m.parts.join(", ") || "—"}</span>
               </p>
             </div>
           ))}
@@ -152,11 +211,13 @@ function SectionLink({
   label,
   status,
   module,
+  icon,
 }: {
   href: string;
   label: string;
   status?: SectionStatus;
   module: "listening" | "reading";
+  icon: ReactNode;
 }) {
   const ready =
     status &&
@@ -168,7 +229,7 @@ function SectionLink({
     <Link
       href={href}
       className={cn(
-        "flex cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors duration-200",
+        "flex cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition-colors duration-200",
         ready
           ? "border-emerald-200 bg-emerald-50 text-black hover:bg-emerald-100"
           : partial
@@ -176,7 +237,10 @@ function SectionLink({
             : "border-border bg-white text-ink hover:bg-surface",
       )}
     >
-      <span>{label}</span>
+      <span className="inline-flex items-center gap-2">
+        {icon}
+        {label}
+      </span>
       <span
         className={cn(
           "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",

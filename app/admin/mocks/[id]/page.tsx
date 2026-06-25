@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function AdminMockDetailPage({ params }: Props) {
   const { id } = await params;
   return (
-    <AdminShell title="Mock detail">
+    <AdminShell hidePageHeader>
       <AdminMockDetailClient mockId={id} />
     </AdminShell>
   );

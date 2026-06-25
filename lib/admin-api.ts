@@ -41,6 +41,7 @@ export type DashboardMetrics = {
   new_signups_7d: number;
   mock_attempts_7d: number;
   speaking_pending: number;
+  writing_pending?: number;
   total_mocks?: number;
   published_mocks?: number;
   users_trend_pct?: number | null;
@@ -198,6 +199,7 @@ export type AdminMockListItem = {
   catalog_number: number | null;
   created_at: string;
   total_questions: number;
+  attempt_count?: number;
   configured_listening_parts?: number;
   configured_reading_passages?: number;
   configured_writing_tasks?: number;

@@ -80,14 +80,14 @@ export function EvaluatorAudioPlayer({ audioUrl, partLabel }: Props) {
       </div>
 
       <div
-        className="mt-5 flex h-16 items-end justify-center gap-[3px]"
+        className="mt-5 flex h-16 items-end justify-center gap-px overflow-hidden sm:gap-[3px]"
         aria-hidden
       >
         {Array.from({ length: 48 }).map((_, i) => (
           <div
             key={i}
             className={cn(
-              "w-[3px] rounded-full transition-all duration-150",
+              "w-[3px] shrink rounded-full transition-all duration-150",
               playing ? "bg-cyan" : "bg-white/25",
             )}
             style={{

@@ -17,7 +17,6 @@ import {
 import {
   evaluatorCard,
   evaluatorCardPad,
-  evaluatorWorkspace,
 } from "@/components/admin/evaluator/evaluator-ui";
 import { adminLink } from "@/components/admin/admin-ui";
 import { adminApi, type SpeakingReviewDetail } from "@/lib/admin-api";
@@ -122,7 +121,7 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
 
   if (!review && !error) {
     return (
-      <div className={cn(evaluatorWorkspace, "space-y-4 p-4 sm:p-5")} aria-busy>
+      <div className="space-y-4 p-4 sm:p-5" aria-busy>
         <div className="h-8 w-48 animate-pulse rounded-lg bg-white/80" />
         <div className="h-28 animate-pulse rounded-2xl bg-white/80" />
         <div className="h-40 animate-pulse rounded-2xl bg-navy/20" />
@@ -152,7 +151,7 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
   };
 
   return (
-    <div className={cn(evaluatorWorkspace, "overflow-hidden")}>
+    <div className="overflow-hidden">
       <div className="border-b border-[#EAEEF3] bg-white px-4 py-3 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/admin/speaking" className={adminLink}>
@@ -167,10 +166,9 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
           name={studentName}
           email={review.student_email}
           submittedAt={review.created_at}
-          targetBand={review.student_target_band}
         />
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_318px] lg:items-start">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
           <div className="space-y-5">
             <EvaluatorAudioPlayer
               audioUrl={review.audio_play_url}
@@ -232,10 +230,12 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
             ) : null}
           </aside>
         </div>
-      </div>
 
-      <div className="lg:hidden">
-        <EvaluatorReviewActions {...actionProps} sticky variant="full" />
+        {!readOnly ? (
+          <div className={cn(evaluatorCard, evaluatorCardPad, "lg:hidden")}>
+            <EvaluatorReviewActions {...actionProps} variant="full" />
+          </div>
+        ) : null}
       </div>
     </div>
   );

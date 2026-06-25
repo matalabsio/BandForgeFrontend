@@ -15,11 +15,14 @@ export const evaluatorTitle = "font-display text-base font-bold text-navy";
 
 export const evaluatorBody = "text-sm font-light leading-relaxed text-[#5A6B82]";
 
+export const evaluatorAvatar =
+  "mb-2 inline-flex size-10 items-center justify-center rounded-full bg-cyan font-mono text-sm font-semibold text-navy";
+
 export const evaluatorChip =
   "flex min-h-10 min-w-[2.75rem] flex-1 cursor-pointer items-center justify-center rounded-[9px] border border-[#E4E9F0] bg-white px-1 py-2 font-mono text-sm text-[#7A8AA0] transition-all duration-150 hover:border-[#C5D0DE]";
 
 export const evaluatorChipSelected =
-  "border-navy bg-navy font-medium text-white shadow-[0_4px_10px_rgba(13,31,60,0.18)]";
+  "border-cyan bg-cyan font-medium text-navy shadow-[0_4px_10px_rgba(0,188,212,0.24)]";
 
 export const evaluatorBtnPrimary =
   "cursor-pointer rounded-[13px] bg-navy px-4 py-3.5 text-center text-sm font-semibold text-white shadow-[0_6px_16px_rgba(13,31,60,0.22)] transition-colors hover:bg-[#122843] disabled:cursor-not-allowed disabled:opacity-60";

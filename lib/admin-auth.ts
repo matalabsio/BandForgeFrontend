@@ -9,12 +9,13 @@ import { getCachedCookieHeader } from "@/lib/server-cache";
 
 export { adminLoginPath, isAdminRole } from "@/lib/admin-roles";
 
-export async function requireAdminSession(nextPath = "/admin") {
+export async function requireAdminSession(_nextPath = "/admin") {
   const cookieHeader = await getCachedCookieHeader();
   const user = await getServerUser(cookieHeader);
+  const loginNext = "/admin";
 
   if (!user) {
-    redirect(adminLoginPath(nextPath));
+    redirect(adminLoginPath(loginNext));
   }
 
   if (
@@ -22,7 +23,7 @@ export async function requireAdminSession(nextPath = "/admin") {
     !isAdminRole(user.role) ||
     !isAdminEmailAllowed(user.email)
   ) {
-    redirect(adminLoginPath(nextPath, "access_denied"));
+    redirect(adminLoginPath(loginNext, "access_denied"));
   }
 
   return user;

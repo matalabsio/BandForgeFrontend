@@ -50,7 +50,7 @@ export function EvaluatorCriteriaRubric({
                 {CRITERIA_DESCRIPTIONS[key]}
               </p>
             </div>
-            <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] sm:max-w-[420px] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-0 flex-1 flex-wrap gap-1.5 pb-0.5 sm:max-w-[420px] sm:flex-nowrap sm:overflow-x-auto sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden">
               {CHIPS.map((band) => {
                 const selected = scores[key] === band;
                 return (

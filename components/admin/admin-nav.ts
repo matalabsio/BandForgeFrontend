@@ -62,3 +62,20 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     ],
   },
 ];
+
+/** Horizontal top nav (design system). */
+export const ADMIN_TOP_NAV: { href: string; label: string; exact?: boolean }[] = [
+  { href: "/admin", label: "Dashboard", exact: true },
+  { href: "/admin/mocks", label: "Mocks" },
+  { href: "/admin/users", label: "Users" },
+  { href: "/admin/mocks", label: "Content" },
+  { href: "/admin/speaking", label: "Evaluators" },
+];
+
+/** Mobile fixed bottom tab bar. */
+export const ADMIN_BOTTOM_NAV: AdminNavItem[] = [
+  { href: "/admin", label: "Dashboard", Icon: LayoutDashboard, exact: true },
+  { href: "/admin/mocks", label: "Mocks", Icon: ClipboardList },
+  { href: "/admin/users", label: "Users", Icon: Users },
+  { href: "/admin/speaking", label: "Evaluator", Icon: Mic },
+];

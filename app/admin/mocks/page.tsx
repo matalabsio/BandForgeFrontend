@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AdminMocksPage() {
   return (
-    <AdminShell title="Mock tests">
+    <AdminShell hidePageHeader>
       <AdminMocksClient />
     </AdminShell>
   );

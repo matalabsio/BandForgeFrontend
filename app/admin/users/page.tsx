@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AdminUsersPage() {
   return (
-    <AdminShell title="Students">
+    <AdminShell hidePageHeader>
       <AdminUsersClient />
     </AdminShell>
   );

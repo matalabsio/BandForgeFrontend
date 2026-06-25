@@ -1,12 +1,12 @@
 "use client";
 
 import {
+  evaluatorAvatar,
   evaluatorBody,
   evaluatorCard,
   evaluatorCardPad,
   evaluatorMeta,
   evaluatorQueueBadge,
-  evaluatorTargetPill,
 } from "@/components/admin/evaluator/evaluator-ui";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +14,6 @@ type Props = {
   name: string;
   email?: string | null;
   submittedAt: string;
-  targetBand?: number | null;
 };
 
 function formatSubmitted(iso: string) {
@@ -51,7 +50,6 @@ export function EvaluatorStudentHeader({
   name,
   email,
   submittedAt,
-  targetBand,
 }: Props) {
   const relative = formatRelative(submittedAt);
 
@@ -59,6 +57,9 @@ export function EvaluatorStudentHeader({
     <section className={cn(evaluatorCard, evaluatorCardPad)}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
+          <span className={evaluatorAvatar}>
+            {(name.slice(0, 2) || "ST").toUpperCase()}
+          </span>
           <p className={evaluatorMeta}>Student</p>
           <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-navy sm:text-[1.65rem]">
             {name}
@@ -66,13 +67,6 @@ export function EvaluatorStudentHeader({
           {email ? (
             <p className={cn(evaluatorBody, "mt-1")}>{email}</p>
           ) : null}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {targetBand != null ? (
-              <span className={evaluatorTargetPill}>
-                Target band {targetBand.toFixed(1)}
-              </span>
-            ) : null}
-          </div>
         </div>
         <div className="shrink-0 text-left sm:text-right">
           <p className={evaluatorMeta}>Submitted</p>

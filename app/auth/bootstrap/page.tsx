@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ensureSession, loginPathWithNext, logout } from "@/lib/auth";
+import { adminLoginPath } from "@/lib/admin-roles";
 import { isAuthEnabled } from "@/lib/flags";
 import { ACCESS_COOKIE, getRefreshToken, REFRESH_COOKIE } from "@/lib/session";
 
@@ -22,6 +23,13 @@ function hadPriorSession(): boolean {
       return name === ACCESS_COOKIE || name === REFRESH_COOKIE;
     });
   return hasCookie || Boolean(getRefreshToken());
+}
+
+function loginRedirectPath(next: string, sessionExpired: boolean): string {
+  if (next === "/admin" || next.startsWith("/admin/")) {
+    return adminLoginPath("/admin", sessionExpired ? "session_expired" : undefined);
+  }
+  return loginPathWithNext(next, sessionExpired);
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
@@ -67,7 +75,7 @@ function AuthBootstrapInner() {
       await logout();
       if (cancelled) return;
       // Only show "session expired" when old cookies/tokens existed but could not refresh.
-      replace(loginPathWithNext(next, staleSession));
+      replace(loginRedirectPath(next, staleSession));
     }
 
     void run();

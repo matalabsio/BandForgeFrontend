@@ -7,7 +7,9 @@ import {
   adminCard,
   adminHeading,
   adminInput,
+  adminMutedLabel,
 } from "@/components/admin/admin-ui";
+import { cn } from "@/lib/utils";
 
 type Props = {
   mock: AdminMockListItem;
@@ -52,25 +54,25 @@ export function AdminMockEditForm({ mock, onSaved }: Props) {
 
   return (
     <div className={adminCard}>
-      <h2 className={adminHeading}>Edit mock</h2>
+      <h2 className={cn(adminHeading, "text-xl")}>Edit mock</h2>
 
       <label className="mt-4 block text-sm font-medium text-black">
-        Title
+        <span className={adminMutedLabel}>Title</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} className={adminInput} />
       </label>
 
       <label className="mt-3 block text-sm font-medium text-black">
-        Description
+        <span className={adminMutedLabel}>Description</span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          className={adminInput}
+          className={cn(adminInput, "min-h-20")}
         />
       </label>
 
       <label className="mt-3 block text-sm font-medium text-black">
-        Catalog slot (Test number)
+        <span className={adminMutedLabel}>Catalog slot (Test number)</span>
         <input
           type="number"
           min={1}
@@ -84,7 +86,7 @@ export function AdminMockEditForm({ mock, onSaved }: Props) {
 
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <label className="text-sm font-medium text-black">
-          Listening parts
+          <span className={adminMutedLabel}>Listening parts</span>
           <input
             type="number"
             min={1}
@@ -95,7 +97,7 @@ export function AdminMockEditForm({ mock, onSaved }: Props) {
           />
         </label>
         <label className="text-sm font-medium text-black">
-          Reading passages
+          <span className={adminMutedLabel}>Reading passages</span>
           <input
             type="number"
             min={1}
@@ -106,7 +108,7 @@ export function AdminMockEditForm({ mock, onSaved }: Props) {
           />
         </label>
         <label className="text-sm font-medium text-black">
-          Writing tasks
+          <span className={adminMutedLabel}>Writing tasks</span>
           <input
             type="number"
             min={1}

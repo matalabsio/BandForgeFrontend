@@ -9,10 +9,7 @@ export const metadata: Metadata = {
 
 export default function AdminPage() {
   return (
-    <AdminShell
-      title="Dashboard"
-      description="Analytics, catalog health, and quick actions"
-    >
+    <AdminShell hidePageHeader>
       <AdminDashboardClient />
     </AdminShell>
   );

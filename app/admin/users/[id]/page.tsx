@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default async function AdminUserDetailPage({ params }: Props) {
   const { id } = await params;
   return (
-    <AdminShell title="User profile">
+    <AdminShell hidePageHeader>
       <Link href="/admin/users" className={`mb-4 inline-block text-sm ${adminLink}`}>
         ← Back to users
       </Link>

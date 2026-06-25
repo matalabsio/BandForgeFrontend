@@ -6,11 +6,14 @@ import {
   adminBtnPrimary,
   adminBtnSecondary,
   adminCard,
+  adminHeading,
   adminInput,
   adminLink,
+  adminMutedLabel,
   adminSubtext,
 } from "@/components/admin/admin-ui";
 import { adminApi, defaultListeningAudioKey } from "@/lib/admin-api";
+import { cn } from "@/lib/utils";
 
 type Props = { mockId: string };
 
@@ -169,10 +172,20 @@ function IngestForm({ mockId }: Props) {
   };
 
   const listeningReady = module !== "listening" || audioPlayable === true;
+  const checks = [
+    { label: "Valid JSON parsed", ok: Boolean(jsonText.trim()) },
+    { label: "Part selected", ok: part > 0 },
+    { label: "Listening audio ready", ok: listeningReady },
+    { label: "Preview generated", ok: Boolean(preview) },
+  ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-3">
+    <div className="space-y-6">
+      <div className={cn(adminCard, "space-y-4")}>
+        <p className={adminMutedLabel}>Step 1 · Choose section</p>
+        <h2 className={cn(adminHeading, "text-xl")}>Content ingest</h2>
+        <p className={adminSubtext}>Pick the module and section you want to ingest.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex items-center gap-2 text-sm font-medium text-black">
           Module
           <select
@@ -195,19 +208,22 @@ function IngestForm({ mockId }: Props) {
             className="w-16 rounded-lg border border-border bg-white px-2 py-1 text-ink"
           />
         </label>
+        </div>
       </div>
 
       {module === "listening" ? (
-        <div className={adminCard}>
+        <div className={cn(adminCard, "space-y-3")}>
+          <p className={adminMutedLabel}>Step 2 · Upload audio</p>
           <p className="text-sm font-semibold text-black">Listening audio (R2)</p>
           <p className={adminSubtext}>
             Step 1: choose the part MP3. Step 2: click Upload to R2. The same key is written to
             every question in this part when you publish.
           </p>
 
-          <label className="mt-3 block text-sm font-medium text-black">
+          <label className="block text-sm font-medium text-black">
             MP3 file
-            <input
+            <div className="mt-2 rounded-xl border border-dashed border-[#CDE3EA] bg-[#F8FCFD] p-4">
+              <input
               ref={fileInputRef}
               type="file"
               accept="audio/mpeg,.mp3,audio/*"
@@ -216,8 +232,12 @@ function IngestForm({ mockId }: Props) {
                 setAudioFile(file);
                 setAudioUploaded(false);
               }}
-              className="mt-1 block w-full text-sm text-ink/70 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-soft file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-teal"
-            />
+                className="block w-full text-sm text-ink/70 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-soft file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-teal"
+              />
+              <p className="mt-2 text-xs text-[#94A3B8]">
+                Drag and drop is supported by your browser file picker.
+              </p>
+            </div>
           </label>
           {audioFile ? (
             <p className="mt-1 text-xs text-gray-600">
@@ -283,8 +303,9 @@ function IngestForm({ mockId }: Props) {
         </div>
       ) : null}
 
-      <label className="block text-sm font-medium text-black">
-        Interface JSON
+      <label className={cn(adminCard, "block text-sm font-medium text-black")}>
+        <span className={adminMutedLabel}>Step 3 · Paste interface JSON</span>
+        <p className="mt-2 text-sm font-semibold text-navy">Interface JSON</p>
         <textarea
           value={jsonText}
           onChange={(e) => setJsonText(e.target.value)}
@@ -294,7 +315,9 @@ function IngestForm({ mockId }: Props) {
         />
       </label>
 
-      <div className="flex gap-2">
+      <div className={cn(adminCard, "space-y-3")}>
+        <p className={adminMutedLabel}>Step 4 · Validate and publish</p>
+        <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={busy || !jsonText || !listeningReady}
@@ -311,6 +334,20 @@ function IngestForm({ mockId }: Props) {
         >
           Publish
         </button>
+        </div>
+        <ul className="space-y-2 text-sm">
+          {checks.map((check) => (
+            <li key={check.label} className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  check.ok ? "bg-[#15935B]" : "bg-[#B7791F]",
+                )}
+              />
+              <span className={check.ok ? "text-navy" : "text-[#5A6B82]"}>{check.label}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {module === "listening" && !listeningReady ? (

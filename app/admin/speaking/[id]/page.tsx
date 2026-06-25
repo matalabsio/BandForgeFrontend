@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function AdminSpeakingDetailPage({ params }: Props) {
   const { id } = await params;
   return (
-    <AdminShell title="Evaluator review" description="Speaking submission">
+    <AdminShell hidePageHeader>
       <AdminSpeakingDetailClient reviewId={id} />
     </AdminShell>
   );

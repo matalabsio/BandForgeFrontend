@@ -5,10 +5,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminKpiCard } from "@/components/admin/admin-kpi-card";
 import {
   adminBtnPrimary,
+  adminAvatar,
   adminCard,
+  adminFilterPill,
+  adminFilterPillActive,
   adminHeading,
   adminLink,
   adminMeta,
+  adminMutedLabel,
+  adminStatusBadgeStyles,
   adminSubtext,
   adminTable,
   adminTableHead,
@@ -71,6 +76,7 @@ export function AdminUserDetailClient({ userId }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedDiagId, setExpandedDiagId] = useState<string | null>(null);
+  const [submissionTab, setSubmissionTab] = useState<"mock" | "writing" | "speaking">("mock");
 
   const load = useCallback(async () => {
     setError(null);
@@ -124,6 +130,7 @@ export function AdminUserDetailClient({ userId }: Props) {
   }
 
   const { profile, stats } = overview;
+  const writingRows = overview.recent_modules.filter((m) => m.module === "writing");
 
   return (
     <div className="space-y-6">
@@ -133,81 +140,135 @@ export function AdminUserDetailClient({ userId }: Props) {
         </p>
       ) : null}
 
-      <section className={cn(adminCard, "space-y-4")}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className={adminMeta}>Student profile</p>
-            <h2 className={cn(adminHeading, "text-2xl")}>
-              {profile.full_name ?? profile.email ?? "Unnamed user"}
-            </h2>
-            <p className={cn(adminSubtext, "mt-1")}>{profile.email ?? "No email"}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {profile.is_active ? (
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase text-emerald-800">
-                Active
-              </span>
+      <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <div className="space-y-4">
+          <section className={cn(adminCard, "space-y-4")}>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className={cn(adminAvatar, "size-14 text-lg")}>
+                  {(profile.full_name?.slice(0, 2) || profile.email?.slice(0, 2) || "ST").toUpperCase()}
+                </span>
+                <div>
+                  <p className={adminMutedLabel}>Student profile</p>
+                  <h2 className={cn(adminHeading, "text-2xl")}>
+                    {profile.full_name ?? profile.email ?? "Unnamed user"}
+                  </h2>
+                  <p className={cn(adminSubtext, "mt-1")}>{profile.email ?? "No email"}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-bold uppercase",
+                    profile.is_active
+                      ? adminStatusBadgeStyles.completed
+                      : adminStatusBadgeStyles.inactive,
+                  )}
+                >
+                  {profile.is_active ? "Active" : "Inactive"}
+                </span>
+                {profile.email_verified ? (
+                  <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase text-sky-800">
+                    Verified
+                  </span>
+                ) : null}
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase text-slate-700">
+                  {profile.role}
+                </span>
+              </div>
+            </div>
+
+            <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <dt className={adminMeta}>Phone</dt>
+                <dd className="font-medium text-black">{profile.phone ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className={adminMeta}>Joined</dt>
+                <dd className="font-medium text-black">{formatDateTime(profile.created_at)}</dd>
+              </div>
+              <div>
+                <dt className={adminMeta}>Mock attempts</dt>
+                <dd className="font-medium text-black">{profile.mock_attempt_count}</dd>
+              </div>
+              <div>
+                <dt className={adminMeta}>Completed mocks</dt>
+                <dd className="font-medium text-black">{profile.completed_mock_count}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className={adminCard}>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className={cn(adminHeading, "text-lg")}>Submissions</h3>
+              <div className="flex gap-2">
+                {[
+                  { id: "mock", label: "Mock attempts" },
+                  { id: "writing", label: "Writing" },
+                  { id: "speaking", label: "Speaking" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setSubmissionTab(tab.id as typeof submissionTab)}
+                    className={cn(
+                      adminFilterPill,
+                      submissionTab === tab.id && adminFilterPillActive,
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {submissionTab === "mock" ? (
+              mockSessions.length === 0 ? (
+                <p className={adminSubtext}>No live mock sessions yet.</p>
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {mockSessions.map((session) => (
+                    <article key={session.mock_attempt_id} className="rounded-xl border border-[#EAEEF3] bg-white p-4">
+                      <p className={cn(adminMeta, "font-bold text-teal")}>
+                        {session.catalog_number ? `Test ${session.catalog_number}` : "Mock test"}
+                      </p>
+                      <p className="font-semibold text-black">{session.mock_title ?? "Untitled"}</p>
+                      <p className={cn(adminMeta, "mt-2")}>Started {formatDateTime(session.started_at)}</p>
+                    </article>
+                  ))}
+                </div>
+              )
+            ) : submissionTab === "writing" ? (
+              writingRows.length === 0 ? (
+                <p className={adminSubtext}>No writing submissions yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {writingRows.map((row) => (
+                    <li key={row.id} className="rounded-xl border border-[#EAEEF3] p-3 text-sm">
+                      {row.mock_title} · Band {bandLabel(row.band)}
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : overview.speaking_reviews.length === 0 ? (
+              <p className={adminSubtext}>No speaking submissions.</p>
             ) : (
-              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold uppercase text-red-700">
-                Inactive
-              </span>
+              <ul className="space-y-2">
+                {overview.speaking_reviews.map((row) => (
+                  <li key={row.id} className="rounded-xl border border-[#EAEEF3] p-3 text-sm">
+                    <Link href={`/admin/speaking/${row.id}`} className={adminLink}>
+                      {row.mock_title ?? "Speaking submission"} · {row.status}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             )}
-            {profile.email_verified ? (
-              <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase text-sky-800">
-                Verified
-              </span>
-            ) : null}
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase text-slate-700">
-              {profile.role}
-            </span>
-          </div>
+          </section>
         </div>
 
-        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <dt className={adminMeta}>Phone</dt>
-            <dd className="font-medium text-black">{profile.phone ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className={adminMeta}>Joined</dt>
-            <dd className="font-medium text-black">{formatDateTime(profile.created_at)}</dd>
-          </div>
-          <div>
-            <dt className={adminMeta}>Mock attempts</dt>
-            <dd className="font-medium text-black">{profile.mock_attempt_count}</dd>
-          </div>
-          <div>
-            <dt className={adminMeta}>Completed mocks</dt>
-            <dd className="font-medium text-black">{profile.completed_mock_count}</dd>
-          </div>
-        </dl>
-
-        <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-          {profile.is_active ? (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void deactivate()}
-              className="cursor-pointer rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700"
-            >
-              Deactivate user
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void reactivate()}
-              className={adminBtnPrimary}
-            >
-              Reactivate user
-            </button>
-          )}
-        </div>
-      </section>
-
-      <section>
-        <h3 className={cn(adminHeading, "mb-3")}>Activity summary</h3>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+        <aside className="space-y-4">
+          <section className={adminCard}>
+            <h3 className={cn(adminHeading, "mb-3 text-lg")}>Progress summary</h3>
+            <div className="grid grid-cols-2 gap-3">
           <AdminKpiCard
             label="Module attempts"
             value={stats.total_attempts}
@@ -245,11 +306,48 @@ export function AdminUserDetailClient({ userId }: Props) {
             Icon={User}
             accent="teal"
           />
-        </div>
-        <p className={cn(adminMeta, "mt-2")}>
-          Last active: {formatDateTime(stats.last_activity_at)}
-        </p>
-      </section>
+            </div>
+            <p className={cn(adminMeta, "mt-3")}>Last active: {formatDateTime(stats.last_activity_at)}</p>
+          </section>
+
+          <section className={cn(adminCard, "space-y-2")}>
+            <h3 className={cn(adminHeading, "text-lg")}>Quick actions</h3>
+            {profile.phone ? (
+              <a
+                href={`https://wa.me/${profile.phone.replace(/\D/g, "")}`}
+                className={adminLink}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Send WhatsApp message
+              </a>
+            ) : (
+              <p className={adminSubtext}>No phone number available.</p>
+            )}
+            <div className="pt-2">
+              {profile.is_active ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void deactivate()}
+                  className="cursor-pointer rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700"
+                >
+                  Deactivate user
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void reactivate()}
+                  className={adminBtnPrimary}
+                >
+                  Reactivate user
+                </button>
+              )}
+            </div>
+          </section>
+        </aside>
+      </div>
 
       <section>
         <h3 className={cn(adminHeading, "mb-3")}>Mock test history</h3>

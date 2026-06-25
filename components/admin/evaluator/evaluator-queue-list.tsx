@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { adminCard, adminLink, adminMeta, adminTable, adminTableHead } from "@/components/admin/admin-ui";
+import { adminAvatar, adminCard, adminFilterPill, adminFilterPillActive, adminLink, adminMeta, adminStatusBadgeStyles, adminTable, adminTableHead } from "@/components/admin/admin-ui";
 import type { SpeakingReviewListItem } from "@/lib/admin-api";
 import { cn } from "@/lib/utils";
 
@@ -41,16 +41,12 @@ function bandCell(row: SpeakingReviewListItem): string {
   return pendingBandLabel(row.status);
 }
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-800",
-    in_review: "bg-sky-100 text-sky-800",
-    completed: "bg-emerald-100 text-emerald-800",
-  };
+  const tone = status === "pending" ? "pending" : status === "in_review" ? "in_review" : "completed";
   return (
     <span
       className={cn(
         "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-        styles[status] ?? "bg-slate-100 text-slate-700",
+        adminStatusBadgeStyles[tone],
       )}
     >
       {status.replace("_", " ")}
@@ -86,10 +82,8 @@ export function EvaluatorQueueList({
             aria-selected={filter === f.id}
             onClick={() => onFilterChange(f.id)}
             className={cn(
-              "cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
-              filter === f.id
-                ? "bg-teal text-white"
-                : "border border-border bg-white text-ink hover:bg-cyan-soft/40",
+              adminFilterPill,
+              filter === f.id ? adminFilterPillActive : "hover:bg-cyan-soft/40",
             )}
           >
             {f.label}
@@ -145,7 +139,12 @@ export function EvaluatorQueueList({
                 {items.map((row) => (
                   <tr key={row.id} className="border-t border-border">
                     <td className="px-4 py-3 font-medium">
-                      {row.student_name ?? row.student_email ?? "—"}
+                      <div className="flex items-center gap-2">
+                        <span className={cn(adminAvatar, "size-8 text-xs")}>
+                          {(row.student_name?.slice(0, 2) || row.student_email?.slice(0, 2) || "ST").toUpperCase()}
+                        </span>
+                        {row.student_name ?? row.student_email ?? "—"}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-ink/70">
                       {formatSubmitted(row.created_at)}

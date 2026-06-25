@@ -9,10 +9,7 @@ export const metadata: Metadata = {
 
 export default function AdminSpeakingPage() {
   return (
-    <AdminShell
-      title="Evaluator portal"
-      description="Human speaking review queue"
-    >
+    <AdminShell hidePageHeader>
       <AdminSpeakingClient />
     </AdminShell>
   );

@@ -9,9 +9,11 @@ import { AuthInput } from "@/components/auth/auth-form-fields";
 import { useAuthSession } from "@/components/auth/auth-session-provider";
 import { isAdminRole } from "@/lib/admin-roles";
 import { ApiError } from "@/lib/api";
-import { authBootstrapPath, login, logout } from "@/lib/auth";
+import { login, logout } from "@/lib/auth";
 import { adminBtnPrimary, adminBtnSecondary, adminLink } from "@/components/admin/admin-ui";
 import { loginSchema, type LoginInput } from "@/lib/validators";
+
+const ADMIN_DASHBOARD_PATH = "/admin";
 
 const ERROR_MESSAGES: Record<string, string> = {
   access_denied:
@@ -21,10 +23,15 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 function safeNextPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/admin";
-  if (!raw.startsWith("/admin")) return "/admin";
-  if (raw.startsWith("/admin/login")) return "/admin";
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return ADMIN_DASHBOARD_PATH;
+  if (!raw.startsWith("/admin")) return ADMIN_DASHBOARD_PATH;
+  if (raw.startsWith("/admin/login")) return ADMIN_DASHBOARD_PATH;
   return raw;
+}
+
+function redirectToAdminDashboard() {
+  // Fresh login sets cookies on the API response — go straight to the dashboard.
+  window.location.replace(ADMIN_DASHBOARD_PATH);
 }
 
 function AdminLoginForm() {
@@ -49,9 +56,9 @@ function AdminLoginForm() {
   useEffect(() => {
     if (loading || !isAuthenticated || !user) return;
     if (isAdminRole(user.role) && user.is_active !== false) {
-      window.location.replace(authBootstrapPath(next));
+      redirectToAdminDashboard();
     }
-  }, [loading, isAuthenticated, user, next]);
+  }, [loading, isAuthenticated, user]);
 
   const onSubmit = handleSubmit(async (data) => {
     setFormError(null);
@@ -62,7 +69,7 @@ function AdminLoginForm() {
         setFormError(ERROR_MESSAGES.access_denied);
         return;
       }
-      window.location.replace(authBootstrapPath(next));
+      redirectToAdminDashboard();
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {
         setFormError(
@@ -108,7 +115,7 @@ function AdminLoginForm() {
   }
 
   if (!loading && isAuthenticated && user && isAdminRole(user.role)) {
-    return <p className="text-sm text-gray-700">Redirecting to admin…</p>;
+    return <p className="text-sm text-gray-700">Redirecting to admin dashboard…</p>;
   }
 
   return (

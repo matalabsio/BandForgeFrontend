@@ -49,10 +49,7 @@ export async function middleware(request: NextRequest) {
       pathname === "/admin" || pathname.startsWith("/admin/");
     if (isAdminPanel) {
       url.pathname = "/admin/login";
-      url.searchParams.set(
-        "next",
-        bootstrapNextPath(pathname, request.nextUrl.search),
-      );
+      url.searchParams.set("next", "/admin");
     } else {
       url.pathname = "/auth/bootstrap";
       url.searchParams.set(
