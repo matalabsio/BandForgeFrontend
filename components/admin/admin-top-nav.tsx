@@ -7,9 +7,40 @@ import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
 import { ADMIN_BOTTOM_NAV, ADMIN_TOP_NAV } from "@/components/admin/admin-nav";
 import { cn } from "@/lib/utils";
 
-function isActive(pathname: string, href: string, exact?: boolean): boolean {
-  if (exact) return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
+type ActiveMatchable = {
+  href: string;
+  exact?: boolean;
+  match?: string[];
+};
+
+function matchLength(pathname: string, item: ActiveMatchable): number {
+  const prefixes = item.exact ? [item.href] : [item.href, ...(item.match ?? [])];
+  let best = -1;
+  for (const prefix of prefixes) {
+    const hit = item.exact
+      ? pathname === prefix
+      : pathname === prefix || pathname.startsWith(`${prefix}/`);
+    if (hit) best = Math.max(best, prefix.length);
+  }
+  return best;
+}
+
+/**
+ * Returns the index of the single nav item that should be active.
+ * The most specific (longest) matching prefix wins; ties resolve to the
+ * first item, so duplicate destinations never highlight more than one tab.
+ */
+function activeNavIndex(pathname: string, items: ActiveMatchable[]): number {
+  let activeIndex = -1;
+  let activeLen = -1;
+  items.forEach((item, index) => {
+    const len = matchLength(pathname, item);
+    if (len > activeLen) {
+      activeLen = len;
+      activeIndex = index;
+    }
+  });
+  return activeIndex;
 }
 
 function AdminWordmark() {
@@ -35,10 +66,12 @@ function AdminWordmark() {
 export function AdminTopNav() {
   const pathname = usePathname();
 
+  const topActiveIndex = activeNavIndex(pathname, ADMIN_TOP_NAV);
+
   const navLinks = (
     <nav className="flex items-center gap-[26px] text-sm" aria-label="Admin">
       {ADMIN_TOP_NAV.map((item, index) => {
-        const active = isActive(pathname, item.href, item.exact);
+        const active = index === topActiveIndex;
         return (
           <Link
             key={`${item.href}-${item.label}-${index}`}
@@ -97,6 +130,7 @@ export function AdminTopNav() {
 }
 
 function AdminBottomNav({ pathname }: { pathname: string }) {
+  const activeIndex = activeNavIndex(pathname, ADMIN_BOTTOM_NAV);
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-navy/95 backdrop-blur-md lg:hidden"
@@ -104,8 +138,8 @@ function AdminBottomNav({ pathname }: { pathname: string }) {
       aria-label="Admin"
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around">
-        {ADMIN_BOTTOM_NAV.map((item) => {
-          const active = isActive(pathname, item.href, item.exact);
+        {ADMIN_BOTTOM_NAV.map((item, index) => {
+          const active = index === activeIndex;
           const Icon = item.Icon;
           return (
             <li key={item.href} className="flex-1">

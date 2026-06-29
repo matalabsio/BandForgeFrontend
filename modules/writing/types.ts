@@ -82,6 +82,15 @@ export type WritingReview = {
   saved_for_review: boolean;
 };
 
+export type WritingPendingPayload = {
+  attempt_id: string;
+  status: string;
+  review_status: string;
+  human_band: number | null;
+  submitted_at: string | null;
+  message: string;
+};
+
 export type WritingCriterionKey =
   | "task_achievement"
   | "coherence_cohesion"

@@ -118,6 +118,14 @@ export function shortModuleSpeakingPendingPath(
   return `/test/${testNumber}/speaking/pending?${params.toString()}`;
 }
 
+export function shortModuleWritingPendingPath(
+  testNumber: number,
+  attemptId: string,
+): string {
+  const params = new URLSearchParams({ attempt: attemptId });
+  return `/test/${testNumber}/writing/pending?${params.toString()}`;
+}
+
 /** Active exam module — `/test/1/listening?part=2` (no transient flags in URL). */
 export function shortModuleExamPath(
   testNumber: number,

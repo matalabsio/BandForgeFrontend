@@ -13,35 +13,65 @@ import {
   CRITERIA_KEYS,
   CRITERIA_LABELS,
 } from "@/lib/speaking-band";
+import {
+  computeWritingOverallBand,
+  WRITING_CRITERIA_KEYS,
+  WRITING_CRITERIA_LABELS,
+} from "@/lib/writing-band";
 import { cn } from "@/lib/utils";
 
 type Props = {
   aiScores: Record<string, unknown> | null;
+  variant?: "speaking" | "writing";
 };
 
 function barWidth(band: number) {
   return `${Math.min(100, Math.max(0, (band / 9) * 100))}%`;
 }
 
-export function EvaluatorAiPrescore({ aiScores }: Props) {
+export function EvaluatorAiPrescore({ aiScores, variant = "speaking" }: Props) {
   const [shown, setShown] = useState(true);
 
-  const criteria = CRITERIA_KEYS.map((key) => ({
+  const isWriting = variant === "writing";
+  const criteriaKeys = isWriting ? WRITING_CRITERIA_KEYS : CRITERIA_KEYS;
+  const criteriaLabels = isWriting ? WRITING_CRITERIA_LABELS : CRITERIA_LABELS;
+
+  const criteria = criteriaKeys.map((key) => ({
     key,
-    label: CRITERIA_LABELS[key],
+    label: criteriaLabels[key as keyof typeof criteriaLabels],
     value:
-      aiScores?.[key] != null ? Number(aiScores[key]) : null,
+      aiScores?.[key] != null
+        ? Number(aiScores[key])
+        : isWriting &&
+            aiScores?.criteria_scores &&
+            typeof aiScores.criteria_scores === "object" &&
+            (aiScores.criteria_scores as Record<string, unknown>)[key] != null
+          ? Number((aiScores.criteria_scores as Record<string, unknown>)[key])
+          : null,
   }));
 
-  const overall = computeOverallBand(
-    Object.fromEntries(
-      criteria
-        .filter((c) => c.value != null)
-        .map((c) => [c.key, c.value as number]),
-    ) as Record<string, number>,
-  );
+  const overall = isWriting
+    ? computeWritingOverallBand(
+        Object.fromEntries(
+          criteria
+            .filter((c) => c.value != null)
+            .map((c) => [c.key, c.value as number]),
+        ) as Record<string, number>,
+      )
+    : computeOverallBand(
+        Object.fromEntries(
+          criteria
+            .filter((c) => c.value != null)
+            .map((c) => [c.key, c.value as number]),
+        ) as Record<string, number>,
+      );
 
-  const hasData = criteria.some((c) => c.value != null);
+  const estimateOnly =
+    !criteria.some((c) => c.value != null) &&
+    aiScores?.word_count_estimate != null;
+  const estimateValue = estimateOnly ? Number(aiScores?.word_count_estimate) : null;
+
+  const hasData = criteria.some((c) => c.value != null) || estimateOnly;
 
   return (
     <section className={cn(evaluatorCard, "overflow-hidden")}>
@@ -79,6 +109,17 @@ export function EvaluatorAiPrescore({ aiScores }: Props) {
           <p className="text-sm font-light text-[#5A6B82]">
             No AI scores available.
           </p>
+        ) : estimateOnly ? (
+          <>
+            <div className="mb-4 flex items-center gap-3.5">
+              <p className="font-mono text-[2.375rem] font-medium leading-[0.85] text-[#1E63B8]">
+                {estimateValue != null ? estimateValue.toFixed(1) : "—"}
+              </p>
+              <p className="text-[12.5px] font-light leading-snug text-[#5A6B82]">
+                Word-count estimate (admin reference only)
+              </p>
+            </div>
+          </>
         ) : (
           <>
             <div className="mb-4 flex items-center gap-3.5">
@@ -86,7 +127,9 @@ export function EvaluatorAiPrescore({ aiScores }: Props) {
                 {overall != null ? overall.toFixed(1) : "—"}
               </p>
               <p className="text-[12.5px] font-light leading-snug text-[#5A6B82]">
-                Estimated overall from acoustic &amp; transcript analysis
+                {isWriting
+                  ? "Estimated overall from AI writing evaluation"
+                  : "Estimated overall from acoustic & transcript analysis"}
               </p>
             </div>
             <div className="flex flex-col gap-2.5">

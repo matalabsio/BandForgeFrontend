@@ -228,10 +228,10 @@ function MockResultsBody({
                 if (key === "writing" && band == null) {
                   hint =
                     mod?.status === "completed"
-                      ? "Submitted"
+                      ? "Under review"
                       : "Not completed";
                 } else if (key === "writing" && band != null) {
-                  hint = "Word-count estimate";
+                  hint = "Human reviewed";
                 } else if (key === "speaking" && band == null) {
                   hint =
                     mod?.status === "completed"

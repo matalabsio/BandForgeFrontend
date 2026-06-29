@@ -2,6 +2,7 @@ import { examApiCall } from "@/lib/exam-api-call";
 import type {
   StartWritingPayload,
   SubmitWritingPayload,
+  WritingPendingPayload,
   WritingReview,
 } from "@/modules/writing/types";
 
@@ -59,6 +60,12 @@ export const writingApi = {
   review(attemptId: string): Promise<WritingReview> {
     return examApiCall<WritingReview>(
       `/api/writing/attempts/${encodeURIComponent(attemptId)}/review`,
+    );
+  },
+
+  pending(attemptId: string): Promise<WritingPendingPayload> {
+    return examApiCall<WritingPendingPayload>(
+      `/api/writing/attempts/${encodeURIComponent(attemptId)}/pending`,
     );
   },
 };

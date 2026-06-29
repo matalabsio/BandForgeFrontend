@@ -13,6 +13,8 @@ export type AdminNavItem = {
   Icon: LucideIcon;
   exact?: boolean;
   description?: string;
+  /** Extra path prefixes that should also mark this item active. */
+  match?: string[];
 };
 
 export type AdminNavGroup = {
@@ -63,13 +65,24 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   },
 ];
 
+export type AdminTopNavItem = {
+  href: string;
+  label: string;
+  exact?: boolean;
+  /** Extra path prefixes that should also mark this item active. */
+  match?: string[];
+};
+
 /** Horizontal top nav (design system). */
-export const ADMIN_TOP_NAV: { href: string; label: string; exact?: boolean }[] = [
+export const ADMIN_TOP_NAV: AdminTopNavItem[] = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/mocks", label: "Mocks" },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/mocks", label: "Content" },
-  { href: "/admin/speaking", label: "Evaluators" },
+  {
+    href: "/admin/speaking",
+    label: "Evaluators",
+    match: ["/admin/writing"],
+  },
 ];
 
 /** Mobile fixed bottom tab bar. */
@@ -77,5 +90,5 @@ export const ADMIN_BOTTOM_NAV: AdminNavItem[] = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard, exact: true },
   { href: "/admin/mocks", label: "Mocks", Icon: ClipboardList },
   { href: "/admin/users", label: "Users", Icon: Users },
-  { href: "/admin/speaking", label: "Evaluator", Icon: Mic },
+  { href: "/admin/speaking", label: "Evaluator", Icon: Mic, match: ["/admin/writing"] },
 ];

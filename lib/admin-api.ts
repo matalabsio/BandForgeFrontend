@@ -94,6 +94,7 @@ export type AdminUserDetail = {
   created_at: string;
   mock_attempt_count: number;
   completed_mock_count: number;
+  target_band: number | null;
 };
 
 export type AdminUserActivityStats = {
@@ -257,6 +258,48 @@ export type SpeakingReviewDetail = {
   student_email: string | null;
   student_target_band: number | null;
   student_current_band: number | null;
+  queue_pending_count: number;
+  created_at: string;
+  reviewed_at: string | null;
+};
+
+export type WritingReviewListItem = {
+  id: string;
+  source: "mock" | "diagnostic";
+  student_name: string | null;
+  student_email: string | null;
+  status: string;
+  human_band: number | null;
+  ai_overall_band?: number | null;
+  task_label?: string | null;
+  created_at: string;
+};
+
+export type WritingReviewDetail = {
+  id: string;
+  source: "mock" | "diagnostic";
+  attempt_id: string | null;
+  client_attempt_id: string | null;
+  status: string;
+  human_band: number | null;
+  human_criteria_scores: {
+    task_achievement: number;
+    coherence: number;
+    lexical_resource: number;
+    grammar: number;
+  } | null;
+  essay: string | null;
+  question: string | null;
+  word_count: number | null;
+  reviewer_notes: string | null;
+  ai_scores: Record<string, unknown> | null;
+  ai_feedback: Record<string, unknown> | null;
+  student_name: string | null;
+  student_email: string | null;
+  student_target_band: number | null;
+  student_current_band: number | null;
+  task_label: string | null;
+  mock_title: string | null;
   queue_pending_count: number;
   created_at: string;
   reviewed_at: string | null;
@@ -488,6 +531,72 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(body),
     });
+  },
+
+  listWriting(params?: { status?: string; page?: number; page_size?: number }) {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.page_size) q.set("page_size", String(params.page_size));
+    const suffix = q.toString() ? `?${q}` : "";
+    return adminCall<{
+      items: WritingReviewListItem[];
+      total: number;
+      page: number;
+      page_size: number;
+      pending_count: number;
+    }>(`/writing${suffix}`);
+  },
+
+  getWriting(id: string, source: "mock" | "diagnostic") {
+    return adminCall<WritingReviewDetail>(
+      `/writing/${id}?source=${encodeURIComponent(source)}`,
+    );
+  },
+
+  patchWriting(
+    id: string,
+    source: "mock" | "diagnostic",
+    body: {
+      human_criteria_scores?: {
+        task_achievement: number;
+        coherence: number;
+        lexical_resource: number;
+        grammar: number;
+      };
+      reviewer_notes?: string;
+      status?: "in_review";
+    },
+  ) {
+    return adminCall<WritingReviewDetail>(
+      `/writing/${id}?source=${encodeURIComponent(source)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      },
+    );
+  },
+
+  approveWriting(
+    id: string,
+    source: "mock" | "diagnostic",
+    body: {
+      human_criteria_scores: {
+        task_achievement: number;
+        coherence: number;
+        lexical_resource: number;
+        grammar: number;
+      };
+      reviewer_notes?: string;
+    },
+  ) {
+    return adminCall<WritingReviewDetail>(
+      `/writing/${id}/approve?source=${encodeURIComponent(source)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      },
+    );
   },
 
   listAuditLogs(page = 1) {

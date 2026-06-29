@@ -11,6 +11,7 @@ import {
   mockModulePath,
   mockPathFromProgress,
   mockHubPath,
+  shortModuleWritingPendingPath,
   TEST1_WRITING_TASK_COUNT,
   testNumberForMockId,
   type MockMeta,
@@ -444,6 +445,14 @@ export function WritingPage({
           );
           return;
         }
+        const testNum = testNumberForMockId(mockTestId);
+        const goPending =
+          result.saved_for_review &&
+          !(result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1);
+        if (goPending && testNum) {
+          router.push(shortModuleWritingPendingPath(testNum, result.attempt_id));
+          return;
+        }
         persistModuleResultAttempt(
           testNumberForMockId(mockTestId),
           "writing",
@@ -470,6 +479,12 @@ export function WritingPage({
 
       if (result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1) {
         router.push(`/test/writing/task/2?auto=1`);
+        return;
+      }
+
+      const testNum = testNumberForMockId(mockTestId);
+      if (result.saved_for_review && testNum) {
+        router.push(shortModuleWritingPendingPath(testNum, result.attempt_id));
         return;
       }
 

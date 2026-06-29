@@ -14,6 +14,7 @@ import {
   mockModulePath,
   mockResultsPath,
   shortModuleSpeakingPendingPath,
+  shortModuleWritingPendingPath,
   testNumberForMockId,
   type MockSlug,
 } from "@/lib/mock-catalog";
@@ -129,7 +130,12 @@ function moduleHref(
   } else if (key === "reading") {
     path = mockModulePath(mockSlug, "reading", { passage: part });
   } else if (key === "writing") {
-    path = mockModulePath(mockSlug, "writing", { part });
+    if (mod.status === "completed" && mod.test_attempt_id && mod.band == null) {
+      const testNumber = testNumberForMockId(mockApiId(mockSlug));
+      path = shortModuleWritingPendingPath(testNumber, mod.test_attempt_id);
+    } else {
+      path = mockModulePath(mockSlug, "writing", { part });
+    }
   } else {
     if (mod.status === "completed" && mod.test_attempt_id) {
       const testNumber = testNumberForMockId(mockApiId(mockSlug));

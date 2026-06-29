@@ -69,6 +69,8 @@ function sumModuleQuestions(mocks: AdminMockListItem[], module: string): number 
 }
 
 const CATALOG_MODULES = ["listening", "reading", "writing", "speaking"] as const;
+const RECENT_ACTIVITY_INITIAL = 5;
+const RECENT_ACTIVITY_PAGE = 5;
 
 function mockIsLive(mock: AdminMockListItem): boolean {
   return mock.is_published && mock.catalog_number != null;
@@ -202,6 +204,7 @@ export function AdminDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createSoonOpen, setCreateSoonOpen] = useState(false);
+  const [recentActivityVisible, setRecentActivityVisible] = useState(RECENT_ACTIVITY_INITIAL);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,6 +217,7 @@ export function AdminDashboardClient() {
         if (!cancelled) {
           setOverview(ov);
           setMocks(mockList);
+          setRecentActivityVisible(RECENT_ACTIVITY_INITIAL);
         }
       } catch (e) {
         if (!cancelled) {
@@ -306,6 +310,9 @@ export function AdminDashboardClient() {
   }
 
   const { metrics, weekly_activity, recent_activity } = overview;
+  const visibleRecentActivity = recent_activity.slice(0, recentActivityVisible);
+  const hasMoreRecentActivity = recent_activity.length > recentActivityVisible;
+  const remainingRecentActivity = recent_activity.length - recentActivityVisible;
   const speakingPending = metrics.speaking_pending ?? 0;
   const writingPending = metrics.writing_pending ?? 0;
 
@@ -450,6 +457,7 @@ export function AdminDashboardClient() {
           Icon={FileText}
           accent="amber"
           badge={writingPending > 0 ? "Pending" : undefined}
+          href="/admin/writing"
         />
       </section>
 
@@ -513,25 +521,46 @@ export function AdminDashboardClient() {
           {recent_activity.length === 0 ? (
             <p className="py-8 text-center text-sm text-[#94A3B8]">No recent activity yet.</p>
           ) : (
-            <ul className="space-y-0 divide-y divide-[#F1F4F8]">
-              {recent_activity.map((item) => (
-                <li key={item.id} className="flex gap-3 py-3.5 first:pt-0 last:pb-0">
-                  <span
-                    className={cn(
-                      "mt-1.5 size-2 shrink-0 rounded-full",
-                      activityDotClass(item.kind),
-                    )}
-                    aria-hidden
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13.5px] leading-snug text-navy">{item.message}</p>
-                    <p className="mt-0.5 font-mono text-[11px] text-[#94A3B8]">
-                      {formatRelativeTime(item.created_at)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="space-y-0 divide-y divide-[#F1F4F8]">
+                {visibleRecentActivity.map((item) => (
+                  <li key={item.id} className="flex gap-3 py-3.5 first:pt-0 last:pb-0">
+                    <span
+                      className={cn(
+                        "mt-1.5 size-2 shrink-0 rounded-full",
+                        activityDotClass(item.kind),
+                      )}
+                      aria-hidden
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13.5px] leading-snug text-navy">{item.message}</p>
+                      <p className="mt-0.5 font-mono text-[11px] text-[#94A3B8]">
+                        {formatRelativeTime(item.created_at)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {hasMoreRecentActivity ? (
+                <div className="mt-1 border-t border-[#F1F4F8] pt-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRecentActivityVisible((count) =>
+                        Math.min(count + RECENT_ACTIVITY_PAGE, recent_activity.length),
+                      )
+                    }
+                    className="w-full cursor-pointer rounded-[11px] border border-[#EAEEF3] bg-white py-2.5 text-[13px] font-semibold text-teal transition-colors hover:bg-cyan-soft/40"
+                  >
+                    View more
+                    <span className="font-medium text-[#94A3B8]">
+                      {" "}
+                      · {remainingRecentActivity} remaining
+                    </span>
+                  </button>
+                </div>
+              ) : null}
+            </>
           )}
         </div>
       </section>

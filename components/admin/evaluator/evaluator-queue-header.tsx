@@ -1,30 +1,58 @@
 "use client";
 
-import { adminFilterPill, adminFilterPillActive, adminMeta, adminHeading } from "@/components/admin/admin-ui";
+import Link from "next/link";
+import {
+  adminFilterPill,
+  adminFilterPillActive,
+  adminMeta,
+  adminHeading,
+} from "@/components/admin/admin-ui";
 import { cn } from "@/lib/utils";
+
+type EvaluatorModule = "speaking" | "writing";
 
 type Props = {
   pendingCount: number;
+  activeModule: EvaluatorModule;
   title?: string;
+  subtitle?: string;
 };
 
 export function EvaluatorQueueHeader({
   pendingCount,
+  activeModule,
   title = "Evaluator portal",
+  subtitle,
 }: Props) {
+  const moduleSubtitle =
+    subtitle ??
+    (activeModule === "speaking" ? "Speaking review" : "Writing review");
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        <button type="button" className={cn(adminFilterPill, adminFilterPillActive)}>
+        <Link
+          href="/admin/speaking"
+          className={cn(
+            adminFilterPill,
+            activeModule === "speaking" && adminFilterPillActive,
+          )}
+        >
           Speaking
-        </button>
-        <button type="button" className={adminFilterPill} disabled>
-          Writing (soon)
-        </button>
+        </Link>
+        <Link
+          href="/admin/writing"
+          className={cn(
+            adminFilterPill,
+            activeModule === "writing" && adminFilterPillActive,
+          )}
+        >
+          Writing
+        </Link>
       </div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className={adminMeta}>Speaking review</p>
+          <p className={adminMeta}>{moduleSubtitle}</p>
           <h2 className={cn(adminHeading, "text-2xl")}>{title}</h2>
         </div>
         {pendingCount > 0 ? (
