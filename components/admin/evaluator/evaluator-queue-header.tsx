@@ -9,7 +9,7 @@ import {
 } from "@/components/admin/admin-ui";
 import { cn } from "@/lib/utils";
 
-type EvaluatorModule = "speaking" | "writing";
+type EvaluatorModule = "speaking" | "writing" | "diagnostics";
 
 type Props = {
   pendingCount: number;
@@ -26,7 +26,11 @@ export function EvaluatorQueueHeader({
 }: Props) {
   const moduleSubtitle =
     subtitle ??
-    (activeModule === "speaking" ? "Speaking review" : "Writing review");
+    (activeModule === "speaking"
+      ? "Speaking review"
+      : activeModule === "writing"
+        ? "Writing review"
+        : "Diagnostic test review");
 
   return (
     <div className="space-y-3">
@@ -48,6 +52,15 @@ export function EvaluatorQueueHeader({
           )}
         >
           Writing
+        </Link>
+        <Link
+          href="/admin/diagnostics"
+          className={cn(
+            adminFilterPill,
+            activeModule === "diagnostics" && adminFilterPillActive,
+          )}
+        >
+          Diagnostics
         </Link>
       </div>
       <div className="flex flex-wrap items-start justify-between gap-3">

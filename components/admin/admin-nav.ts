@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ClipboardList,
+  CreditCard,
   LayoutDashboard,
   Mic,
   ScrollText,
@@ -48,7 +49,15 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: "/admin/speaking",
         label: "Evaluator",
         Icon: Mic,
-        description: "Speaking review queue",
+        description: "Speaking, writing, and diagnostic reviews",
+        match: ["/admin/writing", "/admin/diagnostics"],
+      },
+      {
+        href: "/admin/payments",
+        label: "Payments",
+        Icon: CreditCard,
+        description: "Revenue and subscriptions",
+        match: ["/admin/subscriptions"],
       },
     ],
   },
@@ -81,7 +90,12 @@ export const ADMIN_TOP_NAV: AdminTopNavItem[] = [
   {
     href: "/admin/speaking",
     label: "Evaluators",
-    match: ["/admin/writing"],
+    match: ["/admin/writing", "/admin/diagnostics"],
+  },
+  {
+    href: "/admin/payments",
+    label: "Payments",
+    match: ["/admin/subscriptions"],
   },
 ];
 
@@ -90,5 +104,11 @@ export const ADMIN_BOTTOM_NAV: AdminNavItem[] = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard, exact: true },
   { href: "/admin/mocks", label: "Mocks", Icon: ClipboardList },
   { href: "/admin/users", label: "Users", Icon: Users },
-  { href: "/admin/speaking", label: "Evaluator", Icon: Mic, match: ["/admin/writing"] },
+  { href: "/admin/speaking", label: "Evaluator", Icon: Mic, match: ["/admin/writing", "/admin/diagnostics"] },
+  {
+    href: "/admin/payments",
+    label: "Payments",
+    Icon: CreditCard,
+    match: ["/admin/subscriptions"],
+  },
 ];

@@ -33,7 +33,7 @@ export function DiagnosticChrome({
       className={cn(
         "flex flex-col",
         fillViewport ? "h-dvh overflow-hidden" : "min-h-dvh",
-        resolved === "marketing" ? "bg-[#F5F7FA]" : "bg-white",
+        resolved === "marketing" ? "bg-[#F5F7FA]" : "bg-[#F8FAFC]",
       )}
     >
       <header
@@ -52,9 +52,10 @@ export function DiagnosticChrome({
         >
           <BfMarketingWordmark href="/" />
           {resolved === "report" ? (
-            <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5A6B82]">
-              <Check className="size-3.5 text-cyan" strokeWidth={2.4} />
-              Diagnostic complete
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#C9F0DC] bg-[#ECFBF3] px-2.5 py-1 text-[11px] font-semibold text-[#0E8F5B] sm:px-3.5 sm:py-1.5 sm:text-[13px]">
+              <Check className="size-3 text-[#10B981] sm:size-3.5" strokeWidth={2.6} />
+              <span className="sm:hidden">Complete</span>
+              <span className="hidden sm:inline">Diagnostic complete</span>
             </span>
           ) : resolved === "marketing" ? null : (
             <nav

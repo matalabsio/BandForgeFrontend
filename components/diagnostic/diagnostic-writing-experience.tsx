@@ -27,6 +27,10 @@ import { ApiError } from "@/lib/api";
 
 type WritingPanel = "task1" | "task2";
 
+/** Below this word count the backend can't produce a meaningful AI band, so we
+ * skip evaluation and let the candidate submit with writing left unscored. */
+const WRITING_MIN_WORDS_FOR_AI = 30;
+
 function taskPanelId(task: DiagnosticWritingTask): WritingPanel {
   return task.part === 1 ? "task1" : "task2";
 }
@@ -74,11 +78,6 @@ export function DiagnosticWritingExperience() {
 
   const handleSubmit = useCallback(async () => {
     if (!pack || submitting || !activeTask) return;
-    const hasContent = tasks.some((t) => (essays[t.id] ?? "").trim().length > 0);
-    if (!hasContent) {
-      setError("Please write at least one task response before submitting.");
-      return;
-    }
     setSubmitting(true);
     setError(null);
 
@@ -91,6 +90,24 @@ export function DiagnosticWritingExperience() {
 
     const primaryTask = tasks[0] ?? activeTask;
     const essayText = essays[primaryTask.id] ?? "";
+
+    // No word limit to proceed: a too-short/empty response skips AI evaluation
+    // and advances with writing left unscored (band stays null).
+    if (wordCount(essayText) < WRITING_MIN_WORDS_FOR_AI) {
+      advanceDiagnosticModule("writing", {
+        moduleAnswers: { module: "writing", answers: essays },
+        scores: {
+          listening_band: progress?.scores?.listening_band ?? null,
+          reading_band: progress?.scores?.reading_band ?? null,
+          writing_band: null,
+          speaking_band: null,
+          aggregate_band: null,
+        },
+        review: progress?.review,
+      });
+      router.replace(diagnosticTransitionPath("writing-speaking"));
+      return;
+    }
 
     try {
       const writingEvaluation = await evaluateDiagnosticWriting({

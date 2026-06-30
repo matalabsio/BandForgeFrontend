@@ -305,6 +305,71 @@ export type WritingReviewDetail = {
   reviewed_at: string | null;
 };
 
+export type DiagnosticQueueItem = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string;
+  goal_label: string | null;
+  target_band: number | null;
+  listening_band: number | null;
+  reading_band: number | null;
+  writing_band: number | null;
+  speaking_band: number | null;
+  speaking_human_band: number | null;
+  aggregate_band: number | null;
+  status: string;
+  report_email_sent_at: string | null;
+  created_at: string;
+};
+
+export type DiagnosticSpeakingSummary = {
+  part1: { question_id: string; duration_sec: number; completed: boolean }[];
+  part2_prep_sec: number | null;
+  part2_record_sec: number | null;
+  part2_completed: boolean;
+};
+
+export type DiagnosticWritingSummary = {
+  task_part: number | null;
+  overall_band: number | null;
+  essay_preview: string | null;
+  word_count: number | null;
+  ai_feedback: Record<string, unknown> | null;
+};
+
+export type DiagnosticDetail = {
+  id: string;
+  client_attempt_id: string;
+  full_name: string;
+  email: string | null;
+  phone: string;
+  goal_label: string | null;
+  target_band: number | null;
+  listening_band: number | null;
+  reading_band: number | null;
+  writing_band: number | null;
+  writing_human_band: number | null;
+  speaking_band: number | null;
+  speaking_human_band: number | null;
+  aggregate_band: number | null;
+  status: string;
+  speaking_human_criteria_scores: {
+    fluency: number;
+    lexical: number;
+    grammar: number;
+    pronunciation: number;
+  } | null;
+  speaking_reviewer_notes: string | null;
+  speaking_reviewed_at: string | null;
+  report_email_sent_at: string | null;
+  writing_review_id: string | null;
+  writing: DiagnosticWritingSummary | null;
+  speaking: DiagnosticSpeakingSummary | null;
+  created_at: string;
+  reviewed_at: string | null;
+};
+
 export type AuditLogItem = {
   id: string;
   admin_id: string;
@@ -313,6 +378,36 @@ export type AuditLogItem = {
   resource_type: string;
   resource_id: string | null;
   created_at: string;
+};
+
+export type AdminPaymentItem = {
+  id: string;
+  student_name: string | null;
+  student_email: string | null;
+  plan_name: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  razorpay_order_id: string | null;
+  razorpay_payment_id: string | null;
+  created_at: string;
+};
+
+export type AdminSubscriptionItem = {
+  id: string;
+  student_name: string | null;
+  student_email: string | null;
+  plan_name: string | null;
+  status: string;
+  starts_at: string | null;
+  expires_at: string | null;
+};
+
+export type AdminPaymentMetrics = {
+  revenue_total: number;
+  revenue_30d: number;
+  paid_count: number;
+  active_subscriptions: number;
 };
 
 export const adminApi = {
@@ -597,6 +692,88 @@ export const adminApi = {
         body: JSON.stringify(body),
       },
     );
+  },
+
+  listDiagnostics(params?: {
+    status?: string;
+    q?: string;
+    page?: number;
+    page_size?: number;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.q) q.set("q", params.q);
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.page_size) q.set("page_size", String(params.page_size));
+    const suffix = q.toString() ? `?${q}` : "";
+    return adminCall<{
+      items: DiagnosticQueueItem[];
+      total: number;
+      page: number;
+      page_size: number;
+      pending_count: number;
+    }>(`/diagnostics${suffix}`);
+  },
+
+  getDiagnostic(id: string) {
+    return adminCall<DiagnosticDetail>(`/diagnostics/${id}`);
+  },
+
+  patchDiagnosticSpeaking(
+    id: string,
+    body: {
+      human_criteria_scores: {
+        fluency: number;
+        lexical: number;
+        grammar: number;
+        pronunciation: number;
+      };
+      reviewer_notes?: string;
+    },
+  ) {
+    return adminCall<DiagnosticDetail>(`/diagnostics/${id}/speaking`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  },
+
+  sendDiagnosticReport(id: string) {
+    return adminCall<{ ok: boolean; sent_at: string; recipient: string }>(
+      `/diagnostics/${id}/send-report`,
+      { method: "POST" },
+    );
+  },
+
+  listPayments(params?: { status?: string; page?: number; page_size?: number }) {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.page_size) q.set("page_size", String(params.page_size));
+    const suffix = q.toString() ? `?${q}` : "";
+    return adminCall<{
+      items: AdminPaymentItem[];
+      total: number;
+      page: number;
+      page_size: number;
+    }>(`/payments${suffix}`);
+  },
+
+  paymentMetrics() {
+    return adminCall<AdminPaymentMetrics>("/payments/metrics");
+  },
+
+  listSubscriptions(params?: { status?: string; page?: number; page_size?: number }) {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.page_size) q.set("page_size", String(params.page_size));
+    const suffix = q.toString() ? `?${q}` : "";
+    return adminCall<{
+      items: AdminSubscriptionItem[];
+      total: number;
+      page: number;
+      page_size: number;
+    }>(`/subscriptions${suffix}`);
   },
 
   listAuditLogs(page = 1) {

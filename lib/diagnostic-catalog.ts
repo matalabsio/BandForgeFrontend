@@ -29,6 +29,7 @@ export const diagnosticPaths = {
   processing: "/diagnostic/processing",
   transition: "/diagnostic/transition",
   results: "/diagnostic/results",
+  planReveal: "/diagnostic/plan",
 } as const;
 
 export const DIAGNOSTIC_MOCK_META: MockMeta = {

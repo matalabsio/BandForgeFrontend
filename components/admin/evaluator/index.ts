@@ -4,6 +4,10 @@ export {
   EvaluatorWritingQueueList,
   type WritingStatusFilter,
 } from "./evaluator-writing-queue-list";
+export {
+  EvaluatorDiagnosticsQueueList,
+  type DiagnosticStatusFilter,
+} from "./evaluator-diagnostics-queue-list";
 export { EvaluatorStudentHeader, EvaluatorQueueBadge } from "./evaluator-student-header";
 export { EvaluatorAudioPlayer } from "./evaluator-audio-player";
 export { EvaluatorPartTabs, EvaluatorCueCard } from "./evaluator-part-tabs";

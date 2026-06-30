@@ -38,8 +38,8 @@ const settingsGroups = [
         value: BRAND_PROFILE_STATS.planName,
         href: "/plan",
       },
-      { label: "Upgrade Plan", icon: ChevronRight, href: "/plan" },
-      { label: "Billing History", icon: CreditCard, href: "#" },
+      { label: "Upgrade Plan", icon: ChevronRight, href: "/pricing" },
+      { label: "Billing History", icon: CreditCard, href: "/profile/billing" },
     ],
   },
   {
