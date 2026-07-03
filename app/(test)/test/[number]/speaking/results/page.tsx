@@ -2,16 +2,16 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { authBootstrapPath, getServerUser } from "@/lib/auth";
 import { shortModuleResultsPath } from "@/lib/module-results-path";
-import { WritingResultsClient } from "@/modules/results/components/writing-results-client";
+import { SpeakingResultsClient } from "@/modules/results/components/speaking-results-client";
 
-export const metadata = { title: "Writing Feedback · BandForge" };
+export const metadata = { title: "Speaking Feedback · BandForge" };
 
 type PageProps = {
   params: Promise<{ number: string }>;
   searchParams: Promise<{ attempt?: string }>;
 };
 
-export default async function WritingResultsPage({ params, searchParams }: PageProps) {
+export default async function SpeakingResultsPage({ params, searchParams }: PageProps) {
   const { number: numberRaw } = await params;
   const sp = await searchParams;
   const testNumber = Number.parseInt(numberRaw, 10);
@@ -26,11 +26,11 @@ export default async function WritingResultsPage({ params, searchParams }: PageP
     .join("; ");
   const user = await getServerUser(cookieHeader);
   if (!user) {
-    redirect(authBootstrapPath(shortModuleResultsPath(testNumber, "writing")));
+    redirect(authBootstrapPath(shortModuleResultsPath(testNumber, "speaking")));
   }
 
   return (
-    <WritingResultsClient
+    <SpeakingResultsClient
       testNumber={testNumber}
       attemptFromQuery={sp.attempt}
     />

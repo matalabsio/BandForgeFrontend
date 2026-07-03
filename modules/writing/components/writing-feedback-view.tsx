@@ -15,6 +15,7 @@ import {
 } from "@/lib/writing-test";
 import { mockHubPath } from "@/lib/mock-catalog";
 import { cn } from "@/lib/utils";
+import { WritingFeedbackPrompt } from "@/modules/writing/components/writing-feedback-prompt";
 
 type Props = {
   review: WritingReview;
@@ -153,7 +154,7 @@ export function WritingFeedbackView({
           </button>
 
           <h1 className="font-display truncate text-center text-base font-bold tracking-tight text-navy sm:text-[1.0625rem]">
-            AI Writing Feedback
+            Writing Feedback
           </h1>
 
           <button
@@ -193,6 +194,12 @@ export function WritingFeedbackView({
                     {feedback.evaluated_label}
                   </p>
                 </div>
+              </div>
+
+              <div className="mt-4 rounded-lg border border-cyan/25 bg-cyan-soft/40 px-3.5 py-2.5">
+                <p className="text-[12.5px] font-medium text-[#0D1F3C]">
+                  {feedback.criterion_gap_label}
+                </p>
               </div>
             </section>
 
@@ -251,6 +258,15 @@ export function WritingFeedbackView({
               </div>
             </section>
 
+            <section className="rounded-2xl border border-cyan/20 bg-cyan-soft/30 p-5 shadow-sm sm:p-6">
+              <h3 className="font-display text-[18px] font-bold text-[#0D1F3C]">
+                Next Band Advice
+              </h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-[#334155]">
+                {feedback.next_band_advice}
+              </p>
+            </section>
+
             <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm sm:p-6">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
                 Vocabulary highlights
@@ -307,8 +323,19 @@ export function WritingFeedbackView({
             </section>
           </div>
 
-          {/* Right: essay + actions */}
+          {/* Right: task question, essay + actions */}
           <aside className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[4.5rem] lg:max-h-[calc(100dvh-5.5rem)]">
+            <section className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm">
+              <div className="border-b border-[#E2E8F0] px-4 py-3 sm:px-5">
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
+                  Task question
+                </h2>
+              </div>
+              <div className="max-h-[min(42vh,420px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+                <WritingFeedbackPrompt review={review} />
+              </div>
+            </section>
+
             <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm">
               <div className="border-b border-[#E2E8F0] px-4 py-3 sm:px-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -332,6 +359,14 @@ export function WritingFeedbackView({
                   text={review.user_answer}
                   highlights={feedback.highlights}
                 />
+              </div>
+              <div className="border-t border-[#E2E8F0] px-4 py-2.5 sm:px-5">
+                <p className="text-[11px] text-[#64748B]">
+                  {feedback.highlights.filter((h) => h.type === "strong").length} strong spans
+                  {" · "}
+                  {feedback.highlights.filter((h) => h.type === "improve").length} to improve
+                  {" — tap underlined text for details."}
+                </p>
               </div>
             </section>
 

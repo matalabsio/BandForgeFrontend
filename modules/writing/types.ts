@@ -65,6 +65,13 @@ export type SubmitWritingPayload = {
   mock_writing_complete: boolean;
 };
 
+export type WritingSessionTask = {
+  attempt_id: string;
+  part: number;
+  human_band: number | null;
+  review_status: string;
+};
+
 export type WritingReview = {
   attempt_id: string;
   status: string;
@@ -80,6 +87,7 @@ export type WritingReview = {
   min_words: number;
   submitted_at: string | null;
   saved_for_review: boolean;
+  session_tasks?: WritingSessionTask[];
 };
 
 export type WritingPendingPayload = {
@@ -89,6 +97,7 @@ export type WritingPendingPayload = {
   human_band: number | null;
   submitted_at: string | null;
   message: string;
+  session_tasks?: WritingSessionTask[];
 };
 
 export type WritingCriterionKey =
@@ -118,6 +127,9 @@ export type WritingFeedback = {
   criteria: WritingCriterionScore[];
   strengths: string[];
   improvements: string[];
+  next_band_advice: string;
+  target_band: number;
+  criterion_gap_label: string;
   strong_words: string[];
   weak_words: WritingVocabTag[];
   highlights: WritingEssayHighlight[];

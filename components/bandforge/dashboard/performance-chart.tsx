@@ -63,6 +63,8 @@ function pointLabel(
   const date = formatDateShort(attempt.completed_at ?? attempt.started_at);
   if (!showModule) return date;
   const mod = attempt.module as DashboardModule;
+  if (mod === "writing" && attempt.part === 1) return `W1 · ${date}`;
+  if (mod === "writing" && attempt.part === 2) return `W2 · ${date}`;
   const short = MODULE_SHORT[mod] ?? mod.slice(0, 1).toUpperCase();
   return `${short} · ${date}`;
 }

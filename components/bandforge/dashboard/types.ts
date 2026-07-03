@@ -37,6 +37,7 @@ export type DashboardRecentAttempt = {
   band: number | null;
   raw_score: number | null;
   total_questions: number | null;
+  part?: number | null;
   mock_test: DashboardMockRef;
 };
 

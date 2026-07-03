@@ -8,12 +8,13 @@ import {
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
 import type { DashboardRecentAttempt } from "@/components/bandforge/dashboard/types";
-import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
 import {
   latestBandByModule,
   moduleBandLabel,
 } from "@/components/scores/scores-utils";
 import { mockTestNumberPath } from "@/lib/mock-catalog";
+import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import type { ResultModule } from "@/lib/exam-session-storage";
 import type { ComponentType, SVGProps } from "react";
 import { cn } from "@/lib/utils";
 import type { DashboardModule } from "@/components/bandforge/dashboard/types";
@@ -31,10 +32,13 @@ const moduleIcons: Record<
 function completedCount(
   recent: DashboardRecentAttempt[],
   module: DashboardModule,
+  part?: number,
 ): number {
   return recent.filter(
     (a) =>
-      a.module === module && (a.completed_at || a.status === "completed"),
+      a.module === module &&
+      (part == null || a.part === part) &&
+      (a.completed_at || a.status === "completed"),
   ).length;
 }
 
@@ -56,7 +60,7 @@ export function DashboardModuleProgress({
     (b) =>
       (b.band != null && b.band > 0) ||
       b.reviewState !== "none" ||
-      completedCount(recent, b.module) > 0,
+      completedCount(recent, b.module, b.part) > 0,
   ).length;
 
   return (
@@ -72,7 +76,7 @@ export function DashboardModuleProgress({
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {bands.map((mod) => {
           const Icon = moduleIcons[mod.module];
-          const testsDone = completedCount(recent, mod.module);
+          const testsDone = completedCount(recent, mod.module, mod.part);
           const hasBand = mod.band != null && mod.band > 0;
           const progress = hasBand
             ? Math.min(100, Math.round((mod.band! / 9) * 100))
@@ -80,7 +84,7 @@ export function DashboardModuleProgress({
           const displayBand = moduleBandLabel(mod.band, mod.reviewState, mod.live);
 
           return (
-            <li key={mod.module}>
+            <li key={mod.key}>
               <article className="flex h-full flex-col rounded-2xl border border-border-soft border-l-[3px] border-l-cyan bg-white p-5">
                 <div className="mb-4 flex items-start justify-between">
                   <div className="flex size-11 items-center justify-center rounded-xl bg-cyan-soft text-cyan">
@@ -105,7 +109,7 @@ export function DashboardModuleProgress({
                   </div>
                 </div>
                 <h3 className="font-display text-lg font-bold text-navy">
-                  {MODULE_LABELS[mod.module]}
+                  {mod.label}
                 </h3>
                 <p className="mt-1 text-[0.78125rem] text-muted-light">
                   {testsDone} {testsDone === 1 ? "attempt" : "attempts"}
@@ -125,10 +129,19 @@ export function DashboardModuleProgress({
                   />
                 </div>
                 <Link
-                  href={mockTestNumberPath(1)}
+                  href={mod.href ?? mockTestNumberPath(1)}
+                  onClick={() => {
+                    if (mod.attemptId && mod.testNumber != null && mod.href) {
+                      persistModuleResultAttempt(
+                        mod.testNumber,
+                        mod.module as ResultModule,
+                        mod.attemptId,
+                      );
+                    }
+                  }}
                   className="mt-auto flex w-full items-center justify-center rounded-full bg-cyan py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-sky-hover"
                 >
-                  {testsDone > 0 ? "Continue" : "Start"}
+                  {testsDone > 0 ? (mod.href ? "View results" : "Continue") : "Start"}
                 </Link>
               </article>
             </li>

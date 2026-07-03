@@ -1,4 +1,5 @@
 import { BfHeroStartCta } from "@/components/bandforge/bf-hero-start-cta";
+import { InstallPromptButton } from "@/components/pwa/install-prompt";
 
 const startClassName =
   "flex w-full items-center justify-center gap-2 rounded-full bg-cyan px-6 py-[17px] font-display text-[1.0625rem] font-semibold text-white no-underline shadow-[0_8px_20px_rgb(0_151_167/0.26)] transition-colors hover:bg-brand-sky-hover lg:inline-flex lg:w-auto lg:px-[30px] lg:py-[18px] lg:shadow-[0_10px_26px_rgb(0_151_167/0.26)]";
@@ -8,6 +9,7 @@ export function BfHeroActions() {
   return (
     <div className="mt-[30px] lg:mt-9 lg:flex lg:flex-wrap lg:items-center lg:gap-[18px]">
       <BfHeroStartCta className={startClassName} />
+      <InstallPromptButton variant="compact" className="w-full lg:w-auto" />
       <p className="mt-3.5 text-[0.8125rem] text-muted-light lg:mt-0 lg:max-w-[18ch] lg:text-sm">
         No account needed to start. Results in minutes.
       </p>

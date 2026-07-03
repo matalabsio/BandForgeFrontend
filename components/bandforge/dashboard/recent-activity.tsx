@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { DashboardRecentAttempt } from "@/components/bandforge/dashboard/types";
 import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
 import { formatDateShort } from "@/lib/date-format";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
-import { testNumberForMockId } from "@/lib/mock-catalog";
-import { speakingPendingPath } from "@/components/scores/scores-utils";
-import { listeningModuleResultsPath } from "@/lib/listening-test";
-import { readingModuleResultsPath } from "@/lib/reading-test";
+import {
+  testNumberForMockId,
+  writingModuleLabel,
+} from "@/lib/mock-catalog";
+import {
+  attemptReportHref,
+  isSpeakingUnderReview,
+  isWritingUnderReview,
+} from "@/components/scores/scores-utils";
 import {
   BookIcon,
   HeadphonesIcon,
@@ -19,41 +24,32 @@ import {
 
 const PAGE_SIZE = 5;
 
-function moduleIcon(module: string) {
+function ModuleIconGlyph({ module }: { module: string }) {
   switch (module) {
-    case "listening":
-      return HeadphonesIcon;
     case "reading":
-      return BookIcon;
+      return <BookIcon className="size-4" />;
     case "writing":
-      return PencilIcon;
+      return <PencilIcon className="size-4" />;
     case "speaking":
-      return MicIcon;
+      return <MicIcon className="size-4" />;
+    case "listening":
     default:
-      return HeadphonesIcon;
+      return <HeadphonesIcon className="size-4" />;
   }
 }
 
 function reportHref(attempt: DashboardRecentAttempt): string | null {
-  if (attempt.module === "listening") {
-    return listeningModuleResultsPath(attempt.mock_test.id, attempt.id);
-  }
-  if (attempt.module === "reading") {
-    return readingModuleResultsPath(attempt.mock_test.id, attempt.id);
-  }
-  if (
-    attempt.module === "speaking" &&
-    attempt.band === null &&
-    (attempt.completed_at || attempt.status === "completed")
-  ) {
-    return speakingPendingPath(attempt);
-  }
-  return null;
+  return attemptReportHref(attempt);
 }
 
 function primeResultSession(attempt: DashboardRecentAttempt): void {
   const testNumber = testNumberForMockId(attempt.mock_test.id);
-  if (attempt.module === "listening" || attempt.module === "reading") {
+  if (
+    attempt.module === "listening" ||
+    attempt.module === "reading" ||
+    attempt.module === "writing" ||
+    attempt.module === "speaking"
+  ) {
     persistModuleResultAttempt(testNumber, attempt.module, attempt.id);
   }
 }
@@ -84,10 +80,6 @@ export function RecentActivity({
 }) {
   const sorted = useMemo(() => sortRecentNewestFirst(attempts), [attempts]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [attempts]);
 
   const visible = sorted.slice(0, visibleCount);
   const hasMore = visibleCount < sorted.length;
@@ -162,16 +154,17 @@ function TimelineItem({
   attempt: DashboardRecentAttempt;
   isLast: boolean;
 }) {
-  const Icon = moduleIcon(attempt.module);
   const href = reportHref(attempt);
   const label =
-    MODULE_LABELS[attempt.module as keyof typeof MODULE_LABELS] ??
-    attempt.module;
+    attempt.module === "writing"
+      ? writingModuleLabel(attempt.part)
+      : (MODULE_LABELS[attempt.module as keyof typeof MODULE_LABELS] ??
+        attempt.module);
 
   const content = (
     <div className={`relative flex gap-4 pb-5 ${isLast ? "pb-0" : ""}`}>
       <span className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-2xl border-2 border-white bg-cyan/10 text-cyan shadow-sm">
-        <Icon className="size-4" />
+        <ModuleIconGlyph module={attempt.module} />
       </span>
       <div className="min-w-0 flex-1 pt-0.5">
         <p className="truncate text-[13px] font-semibold text-ink">
@@ -184,26 +177,21 @@ function TimelineItem({
             : ""}
           {attempt.module === "speaking" && attempt.band !== null
             ? " · Human reviewed"
-            : attempt.module === "speaking" &&
-                attempt.band === null &&
-                (attempt.completed_at || attempt.status === "completed")
+            : isSpeakingUnderReview(attempt) || isWritingUnderReview(attempt)
               ? " · Under review"
               : ""}
         </p>
       </div>
       <span
         className={`shrink-0 self-start rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums ${
-          attempt.module === "speaking" &&
-          attempt.band === null &&
-          (attempt.completed_at || attempt.status === "completed")
+          isSpeakingUnderReview(attempt) || isWritingUnderReview(attempt)
             ? "bg-amber-500/12 text-amber-800"
             : bandStyles(attempt.band)
         }`}
       >
         {attempt.band !== null
           ? attempt.band.toFixed(1)
-          : attempt.module === "speaking" &&
-              (attempt.completed_at || attempt.status === "completed")
+          : isSpeakingUnderReview(attempt) || isWritingUnderReview(attempt)
             ? "Review"
             : "—"}
       </span>

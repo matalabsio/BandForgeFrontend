@@ -1,3 +1,5 @@
+import { InstallPromptButton } from "@/components/pwa/install-prompt";
+
 export function BandForgeMobile() {
   return (
     <section
@@ -32,6 +34,9 @@ export function BandForgeMobile() {
                 Bands and trends readable on small screens, no squinting.
               </li>
             </ul>
+            <div className="mt-8">
+              <InstallPromptButton />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 lg:justify-end">

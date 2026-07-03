@@ -4,8 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Clock3, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { mockTestNumberPath, testHubPath } from "@/lib/mock-catalog";
+import {
+  mockTestNumberPath,
+  shortModuleWritingResultsPath,
+  testHubPath,
+  writingModuleLabel,
+} from "@/lib/mock-catalog";
 import { writingApi } from "@/modules/writing/services/writing-api";
+import type { WritingSessionTask } from "@/modules/writing/types";
 import { TestShell } from "@/modules/shared";
 
 const POLL_MS = 30_000;
@@ -19,6 +25,7 @@ type Props = {
 export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [humanBand, setHumanBand] = useState<number | null>(null);
+  const [sessionTasks, setSessionTasks] = useState<WritingSessionTask[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +35,7 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
       const data = await writingApi.pending(attemptId);
       setMessage(data.message);
       setHumanBand(data.human_band);
+      setSessionTasks(data.session_tasks ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load submission status.");
     } finally {
@@ -36,7 +44,10 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
   }, [attemptId]);
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   useEffect(() => {
@@ -48,6 +59,8 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
   }, [humanBand, load]);
 
   const scored = humanBand != null;
+  const sortedTasks = [...sessionTasks].toSorted((a, b) => a.part - b.part);
+  const showTaskList = sortedTasks.length > 1;
 
   return (
     <TestShell>
@@ -100,19 +113,65 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
               <p className="mt-4 text-sm font-semibold text-teal">Human reviewed</p>
             )}
 
+            {showTaskList ? (
+              <section className="mt-8 w-full max-w-sm text-left">
+                <h2 className="text-center text-[13px] font-bold uppercase tracking-wide text-ink/50">
+                  Your writing tasks
+                </h2>
+                <ul className="mt-3 space-y-2">
+                  {sortedTasks.map((task) => {
+                    const taskScored = task.human_band != null;
+                    const isCurrent = task.attempt_id === attemptId;
+                    return (
+                      <li
+                        key={task.attempt_id}
+                        className="rounded-xl border border-border bg-surface px-4 py-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[14px] font-semibold text-navy">
+                            {writingModuleLabel(task.part)}
+                          </p>
+                          <span className="text-[12px] font-semibold tabular-nums text-teal">
+                            {taskScored
+                              ? `Band ${task.human_band!.toFixed(1)}`
+                              : "Under review"}
+                          </span>
+                        </div>
+                        <Link
+                          href={shortModuleWritingResultsPath(
+                            testNumber,
+                            task.attempt_id,
+                          )}
+                          className={`mt-2 inline-flex min-h-[40px] w-full cursor-pointer items-center justify-center rounded-lg px-4 py-2 text-[13px] font-semibold ${
+                            isCurrent
+                              ? "bg-teal text-white hover:bg-cyan-light"
+                              : "border border-border bg-white text-ink hover:bg-cyan-soft/40"
+                          }`}
+                        >
+                          {taskScored
+                            ? `View ${writingModuleLabel(task.part).replace("Writing · ", "")} feedback`
+                            : `View AI ${writingModuleLabel(task.part).replace("Writing · ", "")} feedback`}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : null}
+
             <div className="mt-10 flex w-full max-w-xs flex-col gap-2">
-              {scored ? (
+              {!showTaskList ? (
                 <Link
-                  href="/scores"
+                  href={shortModuleWritingResultsPath(testNumber, attemptId)}
                   className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg bg-teal px-5 py-3 text-body font-semibold text-white hover:bg-cyan-light"
                 >
-                  View on Performance
+                  {scored ? "View Writing Feedback" : "View AI Writing Feedback"}
                 </Link>
               ) : null}
               <Link
                 href={testHubPath(mockTestId, null, testNumber)}
                 className={`inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-body font-semibold ${
-                  scored
+                  scored || showTaskList
                     ? "border border-border bg-surface text-ink hover:bg-cyan-soft/40"
                     : "bg-teal text-white hover:bg-cyan-light"
                 }`}

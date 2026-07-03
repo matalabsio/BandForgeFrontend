@@ -4,6 +4,7 @@ import {
   isFullMock,
   mockModulePath,
   shortModuleResultsPath,
+  shortModuleWritingResultsPath,
   test1HubPath,
   testNumberForMockId,
 } from "@/lib/mock-catalog";
@@ -35,18 +36,21 @@ export function writingTaskPath(
   return q ? `${base}?${q}` : base;
 }
 
-/** Short canonical results URL — persist attempt in sessionStorage before navigating. */
-export function writingResultsPath(testNumber = 1): string {
+/** Short canonical results URL — pass attemptId when opening a specific task. */
+export function writingResultsPath(testNumber = 1, attemptId?: string): string {
+  if (attemptId) {
+    return shortModuleWritingResultsPath(testNumber, attemptId);
+  }
   return shortModuleResultsPath(testNumber, "writing");
 }
 
 export function writingModuleResultsPath(
   testId: string,
-  _attemptId: string,
+  attemptId: string,
   mockSlug = DEFAULT_MOCK_SLUG,
 ): string {
   if (isWritingTest(testId)) {
-    return writingResultsPath(testNumberForMockId(testId));
+    return writingResultsPath(testNumberForMockId(testId), attemptId);
   }
   return `/mock/${encodeURIComponent(mockSlug)}/writing/results`;
 }

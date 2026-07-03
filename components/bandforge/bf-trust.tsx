@@ -5,7 +5,7 @@ import { LISTENING_FLAG_IMAGES } from "@/modules/listening/listening-flags";
 const proofItems = [
   { title: "5.5 → 7", sub: "Typical learner trajectory with structured mocks" },
   { title: "AI + human", sub: "Speaking reviewed for nuance, not just scores" },
-  { title: "PWA-ready", sub: "Install on Android — practice offline-first where supported" },
+  { title: "PWA-ready", sub: "Install on Android — faster launches and offline browsing" },
   { title: "Exam-faithful", sub: "Strict timing, authentic navigation, zero gimmicks" },
   { title: "Instant R&L", sub: "Objective scoring the moment you submit" },
   { title: "Telugu-friendly", sub: "Support and copy tuned for Indian test takers" },

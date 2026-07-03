@@ -16,50 +16,34 @@ import {
   DashboardCardHeader,
 } from "@/components/bandforge/dashboard/dashboard-card";
 import {
+  attemptReportHref,
   bandBadgeClass,
-  speakingPendingPath,
+  isSpeakingUnderReview,
+  isWritingUnderReview,
 } from "@/components/scores/scores-utils";
 import { formatDateShort } from "@/lib/date-format";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
-import { testNumberForMockId } from "@/lib/mock-catalog";
-import {
-  listeningModuleResultsPath,
-  listeningTestPath,
-} from "@/lib/listening-test";
-import { readingModuleResultsPath } from "@/lib/reading-test";
+import { testNumberForMockId, writingModuleLabel } from "@/lib/mock-catalog";
+import { listeningTestPath } from "@/lib/listening-test";
 
 const PAGE_SIZE = 5;
 
-function moduleIcon(module: string) {
+function ModuleIconGlyph({ module }: { module: string }) {
   switch (module) {
-    case "listening":
-      return HeadphonesIcon;
     case "reading":
-      return BookIcon;
+      return <BookIcon className="size-5" />;
     case "writing":
-      return PencilIcon;
+      return <PencilIcon className="size-5" />;
     case "speaking":
-      return MicIcon;
+      return <MicIcon className="size-5" />;
+    case "listening":
     default:
-      return HeadphonesIcon;
+      return <HeadphonesIcon className="size-5" />;
   }
 }
 
 function reportHref(attempt: DashboardRecentAttempt): string | null {
-  if (attempt.module === "listening") {
-    return listeningModuleResultsPath(attempt.mock_test.id, attempt.id);
-  }
-  if (attempt.module === "reading") {
-    return readingModuleResultsPath(attempt.mock_test.id, attempt.id);
-  }
-  if (
-    attempt.module === "speaking" &&
-    attempt.band === null &&
-    (attempt.completed_at || attempt.status === "completed")
-  ) {
-    return speakingPendingPath(attempt);
-  }
-  return null;
+  return attemptReportHref(attempt);
 }
 
 function attemptSubtext(attempt: DashboardRecentAttempt, label: string): string {
@@ -71,11 +55,10 @@ function attemptSubtext(attempt: DashboardRecentAttempt, label: string): string 
   if (attempt.module === "speaking" && attempt.band !== null) {
     return `${label} · ${date} · Human reviewed`;
   }
-  if (
-    attempt.module === "speaking" &&
-    attempt.band === null &&
-    (attempt.completed_at || attempt.status === "completed")
-  ) {
+  if (isSpeakingUnderReview(attempt)) {
+    return `${label} · ${date} · Under review`;
+  }
+  if (isWritingUnderReview(attempt)) {
     return `${label} · ${date} · Under review`;
   }
   return `${label} · ${date}${score}`;
@@ -83,7 +66,12 @@ function attemptSubtext(attempt: DashboardRecentAttempt, label: string): string 
 
 function primeResultSession(attempt: DashboardRecentAttempt): void {
   const testNumber = testNumberForMockId(attempt.mock_test.id);
-  if (attempt.module === "listening" || attempt.module === "reading") {
+  if (
+    attempt.module === "listening" ||
+    attempt.module === "reading" ||
+    attempt.module === "writing" ||
+    attempt.module === "speaking"
+  ) {
     persistModuleResultAttempt(testNumber, attempt.module, attempt.id);
   }
 }
@@ -187,11 +175,12 @@ function AttemptRow({
   attempt: DashboardRecentAttempt;
   highlighted?: boolean;
 }) {
-  const Icon = moduleIcon(attempt.module);
   const href = reportHref(attempt);
   const label =
-    MODULE_LABELS[attempt.module as keyof typeof MODULE_LABELS] ??
-    attempt.module;
+    attempt.module === "writing"
+      ? writingModuleLabel(attempt.part)
+      : (MODULE_LABELS[attempt.module as keyof typeof MODULE_LABELS] ??
+        attempt.module);
 
   const row = (
     <div
@@ -201,7 +190,7 @@ function AttemptRow({
       }`}
     >
       <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-cyan/10 text-cyan">
-        <Icon className="size-5" />
+        <ModuleIconGlyph module={attempt.module} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14px] font-semibold text-ink">
@@ -213,17 +202,14 @@ function AttemptRow({
       </div>
       <span
         className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold tabular-nums ${
-          attempt.module === "speaking" &&
-          attempt.band === null &&
-          (attempt.completed_at || attempt.status === "completed")
+          isSpeakingUnderReview(attempt) || isWritingUnderReview(attempt)
             ? "bg-amber-500/12 text-amber-800"
             : bandBadgeClass(attempt.band)
         }`}
       >
         {attempt.band !== null
           ? `Band ${attempt.band.toFixed(1)}`
-          : attempt.module === "speaking" &&
-              (attempt.completed_at || attempt.status === "completed")
+          : isSpeakingUnderReview(attempt) || isWritingUnderReview(attempt)
             ? "Under review"
             : "—"}
       </span>

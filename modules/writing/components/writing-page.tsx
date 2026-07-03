@@ -493,7 +493,9 @@ export function WritingPage({
         "writing",
         result.attempt_id,
       );
-      router.push(writingResultsPath(testNumberForMockId(mockTestId)));
+      router.push(
+        writingResultsPath(testNumberForMockId(mockTestId), result.attempt_id),
+      );
     } catch (e) {
       autosaveBlockedRef.current = false;
       setError(formatExamSubmitError(e));

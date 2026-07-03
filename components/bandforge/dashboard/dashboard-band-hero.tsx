@@ -95,7 +95,7 @@ export function DashboardBandHero({
         </div>
         <div className="hidden gap-7 border-l border-border-soft pl-8 lg:flex">
           {moduleBands.map((mod) => (
-            <div key={mod.module} className="text-center">
+            <div key={mod.key} className="text-center">
               <p className="font-mono text-2xl leading-none font-medium text-navy">
                 {moduleBandLabel(mod.band, mod.reviewState, mod.live)}
               </p>

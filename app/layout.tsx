@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, DM_Mono, DM_Sans } from "next/font/google";
 import { AppRoot } from "@/components/bandforge/app-root";
+import { PwaRoot } from "@/components/pwa/pwa-root";
 import { GOOGLE_FONTS_STYLESHEET_HREF } from "@/lib/google-fonts";
 import "./globals.css";
 
@@ -27,6 +28,8 @@ const dmMono = DM_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://matalabs.io"),
+  applicationName: "BandForge",
+  manifest: "/manifest.webmanifest",
   title: {
     default: "BandForge | AI-first IELTS preparation",
     template: "%s | BandForge",
@@ -35,6 +38,11 @@ export const metadata: Metadata = {
     "Real IELTS-style mocks, AI writing evaluation, speaking insights, and instant Reading & Listening scores — built for Telugu-speaking students targeting Band 7+.",
   alternates: {
     canonical: "/",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "BandForge",
   },
   openGraph: {
     title: "BandForge | AI-first IELTS preparation",
@@ -49,9 +57,17 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png", sizes: "32x32" }],
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
     apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d1f3c",
 };
 
 export default function RootLayout({
@@ -76,7 +92,9 @@ export default function RootLayout({
         <link href={GOOGLE_FONTS_STYLESHEET_HREF} rel="stylesheet" />
       </head>
       <body className="min-h-dvh font-sans" suppressHydrationWarning>
-        <AppRoot>{children}</AppRoot>
+        <PwaRoot>
+          <AppRoot>{children}</AppRoot>
+        </PwaRoot>
       </body>
     </html>
   );

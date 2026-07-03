@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSerwist } from "@serwist/turbopack";
 
 if (process.env.VERCEL === "1" && process.env.NEXT_PUBLIC_AUTH_ENABLED !== "true") {
   console.warn(
@@ -24,4 +25,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

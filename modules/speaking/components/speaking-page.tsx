@@ -11,6 +11,7 @@ import {
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
+import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { parseSpeakingPrompt } from "@/modules/speaking/lib/parse-speaking-prompt";
 import { speakingApi } from "@/modules/speaking/services/speaking-api";
@@ -182,6 +183,7 @@ export function SpeakingPage({
     setError(null);
     try {
       const result = await speakingApi.submit(attemptId, audioBlob, recordSeconds);
+      persistModuleResultAttempt(testNumber, "speaking", result.attempt_id);
       router.replace(shortModuleSpeakingPendingPath(testNumber, result.attempt_id));
     } catch (e) {
       setError(formatExamSubmitError(e));

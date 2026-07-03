@@ -35,12 +35,14 @@ type Props = {
   task: WritingTask;
   minutes?: number;
   minWords?: number;
+  showChecklist?: boolean;
 };
 
 export function WritingTask2Prompt({
   task,
   minutes = 40,
   minWords = 250,
+  showChecklist = true,
 }: Props) {
   const parsed = parseTask2Prompt(task.prompt);
 
@@ -74,6 +76,7 @@ export function WritingTask2Prompt({
         <p className="text-[14px] leading-relaxed text-[#475569]">{parsed.requirements}</p>
       ) : null}
 
+      {showChecklist ? (
       <aside className="rounded-xl border border-[#E2E8F0] bg-surface p-4">
         <p className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
           Essay checklist
@@ -101,6 +104,7 @@ export function WritingTask2Prompt({
           </li>
         </ul>
       </aside>
+      ) : null}
     </div>
   );
 }

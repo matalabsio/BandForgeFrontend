@@ -3,15 +3,25 @@ import type { DashboardModule } from "@/components/bandforge/dashboard/types";
 import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
 import {
   shortModuleSpeakingPendingPath,
+  shortModuleWritingResultsPath,
   testNumberForMockId,
+  writingModuleLabel,
 } from "@/lib/mock-catalog";
+import { listeningModuleResultsPath } from "@/lib/listening-test";
+import { readingModuleResultsPath } from "@/lib/reading-test";
+import { shortModuleResultsPath } from "@/lib/module-results-path";
 
 export type ModuleBand = {
+  key: string;
   module: DashboardModule;
   label: string;
   band: number | null;
   live: boolean;
   reviewState: SpeakingReviewState;
+  part?: number;
+  attemptId?: string | null;
+  href?: string | null;
+  testNumber?: number | null;
 };
 
 export type SpeakingReviewState = "none" | "under_review" | "scored";
@@ -30,17 +40,82 @@ const LIVE_MODULES: Record<DashboardModule, boolean> = {
   speaking: true,
 };
 
+function isCompletedAttempt(attempt: DashboardRecentAttempt): boolean {
+  return Boolean(attempt.completed_at || attempt.status === "completed");
+}
+
 function latestAttemptForModule(
   recent: DashboardRecentAttempt[],
   module: DashboardModule,
 ): DashboardRecentAttempt | undefined {
   return recent
-    .filter((a) => a.module === module && (a.completed_at || a.status === "completed"))
+    .filter((a) => a.module === module && isCompletedAttempt(a))
     .toSorted(
       (a, b) =>
         new Date(b.completed_at ?? b.started_at).getTime() -
         new Date(a.completed_at ?? a.started_at).getTime(),
     )[0];
+}
+
+function writingPart(attempt: DashboardRecentAttempt): number | null {
+  if (attempt.part === 1 || attempt.part === 2) return attempt.part;
+  return null;
+}
+
+function latestWritingAttemptForPart(
+  recent: DashboardRecentAttempt[],
+  part: number,
+): DashboardRecentAttempt | undefined {
+  return recent
+    .filter((a) => {
+      if (a.module !== "writing" || !isCompletedAttempt(a)) return false;
+      const attemptPart = writingPart(a);
+      if (attemptPart === part) return true;
+      // Legacy rows without part: treat newest unattributed as Task 1 only.
+      return part === 1 && attemptPart === null;
+    })
+    .toSorted(
+      (a, b) =>
+        new Date(b.completed_at ?? b.started_at).getTime() -
+        new Date(a.completed_at ?? a.started_at).getTime(),
+    )[0];
+}
+
+export function attemptReportHref(
+  attempt: DashboardRecentAttempt,
+): string | null {
+  if (attempt.module === "listening") {
+    return listeningModuleResultsPath(attempt.mock_test.id, attempt.id);
+  }
+  if (attempt.module === "reading") {
+    return readingModuleResultsPath(attempt.mock_test.id, attempt.id);
+  }
+  if (attempt.module === "writing" && isCompletedAttempt(attempt)) {
+    const testNumber = testNumberForMockId(attempt.mock_test.id);
+    return shortModuleWritingResultsPath(testNumber, attempt.id);
+  }
+  if (
+    attempt.module === "speaking" &&
+    attempt.band !== null &&
+    isCompletedAttempt(attempt)
+  ) {
+    const testNumber = testNumberForMockId(attempt.mock_test.id);
+    return shortModuleResultsPath(testNumber, "speaking");
+  }
+  if (attempt.module === "speaking" && isCompletedAttempt(attempt)) {
+    return speakingPendingPath(attempt);
+  }
+  return null;
+}
+
+function writingReviewStateForPart(
+  recent: DashboardRecentAttempt[],
+  part: number,
+): SpeakingReviewState {
+  const attempt = latestWritingAttemptForPart(recent, part);
+  if (!attempt) return "none";
+  if (attempt.band != null && attempt.band > 0) return "scored";
+  return "under_review";
 }
 
 export function speakingReviewState(
@@ -83,23 +158,56 @@ function normalizeBand(band: number | null | undefined): number | null {
 export function latestBandByModule(
   recent: DashboardRecentAttempt[],
 ): ModuleBand[] {
-  return MODULE_ORDER.map((module) => {
+  const rows: ModuleBand[] = [];
+
+  for (const module of MODULE_ORDER) {
+    if (module === "writing") {
+      for (const part of [1, 2] as const) {
+        const attempt = latestWritingAttemptForPart(recent, part);
+        if (!attempt) continue;
+        rows.push({
+          key: `writing-${part}`,
+          module: "writing",
+          part,
+          label: writingModuleLabel(part),
+          band: normalizeBand(attempt.band),
+          live: LIVE_MODULES.writing,
+          reviewState: writingReviewStateForPart(recent, part),
+          attemptId: attempt.id,
+          href: attemptReportHref(attempt),
+          testNumber: testNumberForMockId(attempt.mock_test.id),
+        });
+      }
+      continue;
+    }
+
     const scored = recent.find(
       (a) =>
         a.module === module &&
         a.band != null &&
         a.band > 0 &&
-        (a.completed_at || a.status === "completed"),
+        isCompletedAttempt(a),
     );
+    const latest = latestAttemptForModule(recent, module);
     const reviewState = moduleReviewState(recent, module);
-    return {
+    const band =
+      normalizeBand(scored?.band) ??
+      (module === "speaking" ? normalizeBand(latest?.band) : null);
+
+    rows.push({
+      key: module,
       module,
       label: MODULE_LABELS[module],
-      band: normalizeBand(scored?.band),
+      band,
       live: LIVE_MODULES[module],
       reviewState,
-    };
-  });
+      attemptId: latest?.id ?? null,
+      href: latest ? attemptReportHref(latest) : null,
+      testNumber: latest ? testNumberForMockId(latest.mock_test.id) : null,
+    });
+  }
+
+  return rows;
 }
 
 export function strongestModule(bands: ModuleBand[]): ModuleBand | null {
@@ -136,4 +244,20 @@ export function bandBadgeClass(band: number | null): string {
 
 export function underReviewBadgeClass(): string {
   return "bg-amber-500/12 text-amber-800";
+}
+
+export function isWritingUnderReview(attempt: DashboardRecentAttempt): boolean {
+  return (
+    attempt.module === "writing" &&
+    attempt.band === null &&
+    isCompletedAttempt(attempt)
+  );
+}
+
+export function isSpeakingUnderReview(attempt: DashboardRecentAttempt): boolean {
+  return (
+    attempt.module === "speaking" &&
+    attempt.band === null &&
+    isCompletedAttempt(attempt)
+  );
 }

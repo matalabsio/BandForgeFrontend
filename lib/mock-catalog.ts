@@ -110,6 +110,20 @@ export function shortModuleResultsPath(
   return `/test/${testNumber}/${module}/results`;
 }
 
+export function shortModuleWritingResultsPath(
+  testNumber: number,
+  attemptId: string,
+): string {
+  const params = new URLSearchParams({ attempt: attemptId });
+  return `/test/${testNumber}/writing/results?${params.toString()}`;
+}
+
+export function writingModuleLabel(part?: number | null): string {
+  if (part === 1) return "Writing · Task 1";
+  if (part === 2) return "Writing · Task 2";
+  return "Writing";
+}
+
 export function shortModuleSpeakingPendingPath(
   testNumber: number,
   attemptId: string,

@@ -38,7 +38,10 @@ export function SpeakingPendingPage({ attemptId, testNumber, mockTestId }: Props
   }, [attemptId]);
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   useEffect(() => {
@@ -112,10 +115,10 @@ export function SpeakingPendingPage({ attemptId, testNumber, mockTestId }: Props
             <div className="mt-10 flex w-full max-w-xs flex-col gap-2">
               {scored ? (
                 <Link
-                  href="/scores"
+                  href={`/test/${testNumber}/speaking/results?attempt=${encodeURIComponent(attemptId)}`}
                   className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg bg-teal px-5 py-3 text-body font-semibold text-white hover:bg-cyan-light"
                 >
-                  View on Performance
+                  View Speaking Feedback
                 </Link>
               ) : null}
               <Link

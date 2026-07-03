@@ -246,17 +246,52 @@ function buildImprovements(review: WritingReview, overall: number): string[] {
   return items.slice(0, 4);
 }
 
+const DEFAULT_TARGET_BAND = 7.5;
+
+function criterionGapLabel(
+  criteria: WritingCriterionScore[],
+  targetBand: number,
+): string {
+  const lowest = criteria.toSorted((a, b) => a.band - b.band)[0];
+  if (!lowest) return "Close the remaining gap to your target band.";
+  const gap = Math.max(0, Math.round((targetBand - lowest.band) * 2) / 2);
+  if (gap <= 0) return "You are at or above your current target band.";
+  return `You need +${gap.toFixed(1)} in ${lowest.label} to reach your target of Band ${targetBand.toFixed(1)}.`;
+}
+
+function buildNextBandAdvice(
+  review: WritingReview,
+  overall: number,
+  criterionGap: string,
+): string {
+  const intro =
+    overall >= 7
+      ? "You are close to the next band."
+      : "Your next band is achievable with more controlled development.";
+  const lengthHint =
+    review.word_count < review.min_words
+      ? ` Prioritize meeting the ${review.min_words}-word minimum in your next attempt.`
+      : "";
+  return `${intro} ${criterionGap.replace("You need ", "").replace(" to reach", " — aim")}${lengthHint}`;
+}
+
 /** Build UI feedback from review data until AI evaluation is wired. */
 export function buildWritingFeedback(review: WritingReview): WritingFeedback {
   const overall = overallBand(review);
+  const target_band = DEFAULT_TARGET_BAND;
+  const criteria = buildCriteria(overall);
+  const criterion_gap_label = criterionGapLabel(criteria, target_band);
   const strong_words = findStrongWords(review.user_answer);
   const weak_words = findWeakWords(review.user_answer);
 
   return {
     overall_band: overall,
-    criteria: buildCriteria(overall),
+    criteria,
     strengths: buildStrengths(review, overall),
     improvements: buildImprovements(review, overall),
+    next_band_advice: buildNextBandAdvice(review, overall, criterion_gap_label),
+    target_band,
+    criterion_gap_label,
     strong_words,
     weak_words,
     highlights: buildHighlights(review.user_answer, strong_words, weak_words),
