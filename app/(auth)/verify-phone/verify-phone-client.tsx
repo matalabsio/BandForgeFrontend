@@ -7,7 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { OtpInputRow } from "@/components/bandforge/auth/otp-input-row";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { authBootstrapPath, sendOtp, verifyOtp } from "@/lib/auth";
+import { sendOtp, verifyOtp } from "@/lib/auth";
+import { clientPostAuthDestination } from "@/components/bandforge/bf-marketing-auth-links";
 import { normalizeIndiaMobile } from "@/lib/india-mobile";
 import { phoneSchema, type PhoneInput } from "@/lib/validators";
 import { ApiError } from "@/lib/api";
@@ -55,7 +56,7 @@ export default function VerifyPhoneClient() {
     setLoading(true);
     try {
       await verifyOtp({ phone: digits, code: otp });
-      window.location.replace(authBootstrapPath("/dashboard"));
+      window.location.replace(clientPostAuthDestination("/dashboard"));
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : "Verification failed.");
     } finally {

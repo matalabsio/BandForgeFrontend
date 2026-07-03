@@ -5,7 +5,7 @@ import {
   type ApiErrorBody,
 } from "@/lib/api";
 import { coalescedClientRefresh } from "@/lib/auth-refresh-coordinator";
-import { getServerAuth } from "@/lib/auth-server";
+import { getServerAuth, getServerSession as resolveServerSession } from "@/lib/auth-server";
 import { isAuthEnabled } from "@/lib/flags";
 import { accessTokenExpired } from "@/lib/jwt-expiry";
 import {
@@ -17,6 +17,7 @@ import {
   persistAuthTokens,
   REFRESH_COOKIE,
   type AuthUser,
+  type SessionUser,
 } from "@/lib/session";
 
 export { GUEST_USER };
@@ -210,9 +211,22 @@ export async function ensureSession(): Promise<AuthResponse | null> {
   }
 }
 
-/** Server pages: send users to bootstrap (never straight to login) to try localStorage restore. */
-export function authGuardRedirectPath(nextPath: string): string {
-  return authBootstrapPath(nextPath);
+/** Server: cookies present → bootstrap; no cookies → login (client may escalate to bootstrap). */
+export function resolveAuthRedirectPath(
+  nextPath: string,
+  cookieHeader: string,
+): string {
+  return hasAuthCookies(cookieHeader)
+    ? authBootstrapPath(nextPath)
+    : loginPathWithNext(nextPath);
+}
+
+/** Server pages: cookie-aware redirect when session cannot be resolved. */
+export function authGuardRedirectPath(
+  nextPath: string,
+  cookieHeader = "",
+): string {
+  return resolveAuthRedirectPath(nextPath, cookieHeader);
 }
 
 /** True if cookie header may contain stale BandForge session cookies. */
@@ -270,5 +284,12 @@ export function authBootstrapPath(nextPath: string): string {
 
 export async function getServerUser(cookieHeader: string): Promise<AuthUser | null> {
   const { user } = await getServerAuth(cookieHeader);
+  return user;
+}
+
+export async function getServerSession(
+  cookieHeader: string,
+): Promise<SessionUser | null> {
+  const { user } = await resolveServerSession(cookieHeader);
   return user;
 }

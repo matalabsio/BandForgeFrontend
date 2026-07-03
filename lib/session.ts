@@ -84,6 +84,16 @@ export type AuthUser = {
   is_active?: boolean;
 };
 
+/** Minimal authenticated user for shell rendering (layout, auth guards). */
+export type SessionUser = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string;
+  avatar_display_url: string | null;
+  is_active: boolean;
+};
+
 /** Used when NEXT_PUBLIC_AUTH_ENABLED is false (local UI / mock dev). */
 export const GUEST_USER: AuthUser = {
   id: "00000000-0000-0000-0000-000000000000",
@@ -92,4 +102,13 @@ export const GUEST_USER: AuthUser = {
   phone: null,
   email_verified: false,
   phone_verified: false,
+};
+
+export const GUEST_SESSION: SessionUser = {
+  id: GUEST_USER.id,
+  full_name: GUEST_USER.full_name,
+  email: GUEST_USER.email,
+  role: "student",
+  avatar_display_url: null,
+  is_active: true,
 };

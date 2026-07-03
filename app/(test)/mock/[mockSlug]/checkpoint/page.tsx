@@ -5,10 +5,10 @@ export const metadata: Metadata = {
   title: "Section results · BandForge",
   robots: { index: false, follow: false },
 };
-import { authBootstrapPath } from "@/lib/auth";
+import { resolveAuthRedirectPath } from "@/lib/auth";
 import { mockHubPath } from "@/lib/mock-catalog";
 import { ensureCanonicalMockHub } from "@/lib/mock-route-guard";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { MockCheckpoint } from "@/modules/mock/components/mock-checkpoint";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 
@@ -30,9 +30,9 @@ export default async function MockCheckpointPage({ params, searchParams }: Props
   const attemptId = sp.attempt;
 
   const cookieHeader = await getCachedCookieHeader();
-  const user = await getCachedServerUser(cookieHeader);
+  const user = await getCachedServerSession(cookieHeader);
   if (!user) {
-    redirect(authBootstrapPath(mockHubPath(mockSlug)));
+    redirect(resolveAuthRedirectPath(mockHubPath(mockSlug), cookieHeader));
   }
 
   if (!mockAttemptId || !attemptId) {

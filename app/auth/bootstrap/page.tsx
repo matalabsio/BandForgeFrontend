@@ -1,18 +1,28 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ensureSession, loginPathWithNext, logout } from "@/lib/auth";
+import { DashboardAppShellSkeleton } from "@/components/bandforge/dashboard/dashboard-shell-skeleton";
+import {
+  ensureSession,
+  loginPathWithNext,
+  logout,
+} from "@/lib/auth";
 import { adminLoginPath } from "@/lib/admin-roles";
 import { isAuthEnabled } from "@/lib/flags";
-import { ACCESS_COOKIE, getRefreshToken, REFRESH_COOKIE } from "@/lib/session";
+import {
+  ACCESS_COOKIE,
+  getRefreshToken,
+  hasLikelyClientSession,
+  REFRESH_COOKIE,
+} from "@/lib/session";
 
 function safeNextPath(raw: string | null): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
   return raw;
 }
 
-const SESSION_RESTORE_TIMEOUT_MS = 12_000;
+const SESSION_RESTORE_TIMEOUT_MS = 5_000;
 
 function hadPriorSession(): boolean {
   if (typeof document === "undefined") return false;
@@ -45,11 +55,15 @@ function AuthBootstrapInner() {
   const { replace } = useRouter();
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get("next"));
-  const [message, setMessage] = useState("Restoring your session…");
 
   useEffect(() => {
     if (!isAuthEnabled()) {
       replace(next);
+      return;
+    }
+
+    if (!hasLikelyClientSession()) {
+      replace(loginRedirectPath(next, false));
       return;
     }
 
@@ -67,14 +81,10 @@ function AuthBootstrapInner() {
         return;
       }
 
-      setMessage(
-        staleSession
-          ? "Session expired. Redirecting to sign in…"
-          : "Redirecting to sign in…",
-      );
-      await logout();
+      if (staleSession) {
+        await logout();
+      }
       if (cancelled) return;
-      // Only show "session expired" when old cookies/tokens existed but could not refresh.
       replace(loginRedirectPath(next, staleSession));
     }
 
@@ -84,22 +94,12 @@ function AuthBootstrapInner() {
     };
   }, [next, replace]);
 
-  return (
-    <main className="flex min-h-dvh items-center justify-center bg-surface px-4">
-      <p className="text-meta font-medium text-ink/70">{message}</p>
-    </main>
-  );
+  return <DashboardAppShellSkeleton />;
 }
 
 export default function AuthBootstrapPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="flex min-h-dvh items-center justify-center bg-surface px-4">
-          <p className="text-meta font-medium text-ink/70">Loading…</p>
-        </main>
-      }
-    >
+    <Suspense fallback={<DashboardAppShellSkeleton />}>
       <AuthBootstrapInner />
     </Suspense>
   );

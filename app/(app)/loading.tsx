@@ -1,4 +1,5 @@
-/** Avoid full-shell flash on soft nav; page-level loading.tsx handles content. */
+import { DashboardAppShellSkeleton } from "@/components/bandforge/dashboard/dashboard-shell-skeleton";
+
 export default function BandforgeAppLoading() {
-  return null;
+  return <DashboardAppShellSkeleton />;
 }

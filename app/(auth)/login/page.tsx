@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { useAuthSession } from "@/components/auth/auth-session-provider";
@@ -15,6 +15,7 @@ import { isPhoneOtpEnabled } from "@/lib/flags";
 import {
   ACCESS_COOKIE,
   clearAuthStorage,
+  getRefreshToken,
   REFRESH_COOKIE,
 } from "@/lib/session";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
@@ -67,6 +68,7 @@ function CheckIcon({ className }: { className?: string }) {
 }
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
   const stayOnPreview = searchParams.get("stay") === "1";
@@ -79,6 +81,7 @@ function LoginForm() {
       : null);
   const cleared = useRef(false);
   const redirectedToProd = useRef(false);
+  const escalatedToBootstrap = useRef(false);
 
   const onDeployPreview =
     typeof window !== "undefined" &&
@@ -104,11 +107,22 @@ function LoginForm() {
   const { isAuthenticated, loading } = useAuthSession();
 
   useEffect(() => {
-    if (!loading && isAuthenticated && hasAuthCookies()) {
-      const dest = next.startsWith("/") ? next : "/dashboard";
-      window.location.replace(authBootstrapPath(dest));
+    if (loading || onDeployPreview) return;
+
+    const dest = next.startsWith("/") ? next : "/dashboard";
+
+    if (getRefreshToken() && !hasAuthCookies()) {
+      if (!escalatedToBootstrap.current) {
+        escalatedToBootstrap.current = true;
+        router.replace(authBootstrapPath(dest));
+      }
+      return;
     }
-  }, [loading, isAuthenticated, next]);
+
+    if (isAuthenticated && hasAuthCookies()) {
+      window.location.replace(dest);
+    }
+  }, [loading, isAuthenticated, next, onDeployPreview, router]);
 
   if (onDeployPreview && !stayOnPreview) {
     return (

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { authBootstrapPath, getServerUser } from "@/lib/auth";
+import { getServerUser, resolveAuthRedirectPath } from "@/lib/auth";
 import { shortModuleResultsPath } from "@/lib/module-results-path";
 import { ModuleScoreResultsClient } from "@/modules/results/components/module-score-results-client";
 
@@ -22,7 +22,12 @@ export default async function ReadingResultsPage({ params }: PageProps) {
     .join("; ");
   const user = await getServerUser(cookieHeader);
   if (!user) {
-    redirect(authBootstrapPath(shortModuleResultsPath(testNumber, "reading")));
+    redirect(
+      resolveAuthRedirectPath(
+        shortModuleResultsPath(testNumber, "reading"),
+        cookieHeader,
+      ),
+    );
   }
 
   return (

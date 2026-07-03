@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { authBootstrapPath, verifyEmail } from "@/lib/auth";
+import { verifyEmail } from "@/lib/auth";
+import { clientPostAuthDestination } from "@/components/bandforge/bf-marketing-auth-links";
 import { ApiError } from "@/lib/api";
 
 function VerifyEmailContent() {
@@ -28,7 +29,7 @@ function VerifyEmailContent() {
         if (cancelled) return;
         setStatus("ok");
         setMessage("Email verified. Redirecting to your dashboard…");
-        window.location.replace(authBootstrapPath("/dashboard"));
+        window.location.replace(clientPostAuthDestination("/dashboard"));
       })
       .catch((e) => {
         if (cancelled) return;

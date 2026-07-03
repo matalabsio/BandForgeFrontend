@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { authBootstrapPath, getServerUser } from "@/lib/auth";
+import { getServerUser, resolveAuthRedirectPath } from "@/lib/auth";
 import { shortModuleResultsPath } from "@/lib/module-results-path";
 import { WritingResultsClient } from "@/modules/results/components/writing-results-client";
 
@@ -26,7 +26,12 @@ export default async function WritingResultsPage({ params, searchParams }: PageP
     .join("; ");
   const user = await getServerUser(cookieHeader);
   if (!user) {
-    redirect(authBootstrapPath(shortModuleResultsPath(testNumber, "writing")));
+    redirect(
+      resolveAuthRedirectPath(
+        shortModuleResultsPath(testNumber, "writing"),
+        cookieHeader,
+      ),
+    );
   }
 
   return (

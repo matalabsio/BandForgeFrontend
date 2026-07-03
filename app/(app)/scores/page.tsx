@@ -29,7 +29,7 @@ async function ScoresPageContent({ searchParams }: PageProps) {
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerUser(cookieHeader);
   if (!user) {
-    redirect(authGuardRedirectPath("/scores"));
+    redirect(authGuardRedirectPath("/scores", cookieHeader));
   }
 
   const sp = await searchParams;

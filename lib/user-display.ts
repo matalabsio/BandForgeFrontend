@@ -1,7 +1,13 @@
 import type { AuthUser } from "@/lib/session";
 import { formatIndiaDisplay, normalizeIndiaMobile } from "@/lib/india-mobile";
 
-export function formatUserDisplayName(user: AuthUser | null | undefined): string {
+export type DisplayUser = {
+  email?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+};
+
+export function formatUserDisplayName(user: DisplayUser | null | undefined): string {
   if (!user) return "Account";
   let display = user.email ?? user.full_name ?? "your account";
   if (user.phone) {
@@ -12,7 +18,7 @@ export function formatUserDisplayName(user: AuthUser | null | undefined): string
   return display;
 }
 
-export function getUserFirstName(user: AuthUser | null | undefined): string {
+export function getUserFirstName(user: DisplayUser | null | undefined): string {
   if (!user) return "there";
   return (
     user.full_name?.trim().split(/\s+/)[0] ??

@@ -16,7 +16,7 @@ import type {
   DashboardSummary,
   MockTestSummary,
 } from "@/components/bandforge/dashboard/types";
-import { latestBandByModule } from "@/components/scores/scores-utils";
+import { countTestedModuleBands, latestBandByModule } from "@/components/scores/scores-utils";
 import type { MockCatalogSlot } from "@/lib/mock-catalog-api";
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 
@@ -48,6 +48,7 @@ export function DashboardExperience({
   const overallBand = summary.stats.average_band;
   const testsCompleted = summary.recent.length;
   const moduleBands = latestBandByModule(summary.recent);
+  const testedModuleCount = countTestedModuleBands(moduleBands, summary.recent);
 
   return (
     <div className="space-y-6">
@@ -66,7 +67,12 @@ export function DashboardExperience({
             testsCompleted={testsCompleted}
             moduleBands={moduleBands}
           />
-          <DashboardModuleProgress recent={summary.recent} />
+          <DashboardModuleProgress
+            recent={summary.recent}
+            bands={moduleBands}
+            testedCount={testedModuleCount}
+            moduleCount={moduleBands.length}
+          />
           <DashboardTodaysPlan />
         </>
       ) : (

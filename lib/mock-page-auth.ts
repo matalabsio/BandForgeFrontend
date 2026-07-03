@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
-import { authBootstrapPath, hasAuthCookies } from "@/lib/auth";
-import { getServerAuth } from "@/lib/auth-server";
-import type { AuthUser } from "@/lib/session";
+import {
+  hasAuthCookies,
+  loginPathWithNext,
+} from "@/lib/auth";
+import { getServerSession } from "@/lib/auth-server";
+import type { SessionUser } from "@/lib/session";
 
 /**
  * Mock module RSC guard.
@@ -11,12 +14,12 @@ import type { AuthUser } from "@/lib/session";
 export async function guardMockModulePage(
   cookieHeader: string,
   returnPath: string,
-): Promise<{ user: AuthUser | null; cookieHeader: string }> {
-  const auth = await getServerAuth(cookieHeader);
+): Promise<{ user: SessionUser | null; cookieHeader: string }> {
+  const auth = await getServerSession(cookieHeader);
   if (auth.user) return auth;
 
   if (!hasAuthCookies(cookieHeader)) {
-    redirect(authBootstrapPath(returnPath));
+    redirect(loginPathWithNext(returnPath));
   }
 
   return auth;

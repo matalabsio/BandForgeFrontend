@@ -7,7 +7,7 @@ import {
   getBandforgePathname,
 } from "@/lib/bandforge-pathname";
 import { authGuardRedirectPath } from "@/lib/auth";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { formatUserDisplayName } from "@/lib/user-display";
 
 export const dynamic = "force-dynamic";
@@ -22,9 +22,9 @@ export default async function BandforgeAppLayout({
     getBandforgePathname(),
   ]);
 
-  const user = await getCachedServerUser(cookieHeader);
+  const user = await getCachedServerSession(cookieHeader);
   if (!user) {
-    redirect(authGuardRedirectPath(pathname));
+    redirect(authGuardRedirectPath(pathname, cookieHeader));
   }
 
   const hideHeader = bandforgeHideShellHeader(pathname);

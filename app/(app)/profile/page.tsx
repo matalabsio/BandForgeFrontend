@@ -13,7 +13,7 @@ export default async function ProfilePage() {
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerUser(cookieHeader);
   if (!user) {
-    redirect(authGuardRedirectPath("/profile"));
+    redirect(authGuardRedirectPath("/profile", cookieHeader));
   }
 
   const displayName = user.full_name?.trim() || user.email || "Student";

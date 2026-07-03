@@ -94,10 +94,45 @@ async function main() {
   const ttlSec = exp ? exp - Math.floor(Date.now() / 1000) : null;
   console.log(`   Access token TTL ~${ttlSec ?? "?"}s (expect ~60 with ACCESS_TOKEN_EXPIRE_MINUTES=1)`);
 
+  const cookies = cookieHeader(jar);
+  console.log("1b. Backend /auth/session (expect 200, lightweight payload)…");
+  const sessionRes = await fetch(`${API}/auth/session`, {
+    headers: { cookie: cookies },
+  });
+  if (!sessionRes.ok) {
+    console.error("Session failed:", sessionRes.status, await sessionRes.text());
+    process.exit(1);
+  }
+  const sessionBody = await sessionRes.json();
+  const meRes = await fetch(`${API}/auth/me`, { headers: { cookie: cookies } });
+  if (!meRes.ok) {
+    console.error("Me failed:", meRes.status, await meRes.text());
+    process.exit(1);
+  }
+  const meBody = await meRes.json();
+  const sessionKeys = Object.keys(sessionBody).sort();
+  const meKeys = Object.keys(meBody).sort();
+  if (!sessionBody.id || !sessionBody.role) {
+    console.error("Session missing id/role:", sessionBody);
+    process.exit(1);
+  }
+  if ("target_band" in sessionBody || "phone" in sessionBody) {
+    console.error("Session should not include profile fields:", sessionKeys);
+    process.exit(1);
+  }
+  if (sessionKeys.length >= meKeys.length) {
+    console.error(
+      `Session should be smaller than /auth/me (${sessionKeys.length} vs ${meKeys.length} keys)`,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `   session keys=${sessionKeys.join(",")} (${sessionKeys.length} < me ${meKeys.length})`,
+  );
+
   console.log(`2. Wait ${WAIT_MS / 1000}s for access expiry…`);
   await sleep(WAIT_MS);
 
-  const cookies = cookieHeader(jar);
   console.log("3. Backend /auth/me (expect 401)…");
   const meBackend = await fetch(`${API}/auth/me`, {
     headers: { cookie: cookies },
@@ -128,6 +163,16 @@ async function main() {
   const newExp = newAccess ? jwtExp(newAccess) : null;
   if (newExp && exp && newExp > exp) {
     console.log("   bf_access rotated (new exp later than old)");
+  }
+
+  console.log("5. Backend /auth/session after refresh (expect 200)…");
+  const sessionAfter = await fetch(`${API}/auth/session`, {
+    headers: { cookie: cookieHeader(jar) },
+  });
+  console.log(`   status=${sessionAfter.status}`);
+  if (!sessionAfter.ok) {
+    console.error(await sessionAfter.text());
+    process.exit(1);
   }
 
   console.log("\n✅ Proxy request succeeded after access expiry.");

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { authGuardRedirectPath } from "@/lib/auth";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { Test1QaPanel } from "@/app/dev/test1/test1-qa-panel";
 
 export const metadata = {
@@ -14,9 +14,9 @@ export default async function DevTest1Page() {
   }
 
   const cookieHeader = await getCachedCookieHeader();
-  const user = await getCachedServerUser(cookieHeader);
+  const user = await getCachedServerSession(cookieHeader);
   if (!user) {
-    redirect(authGuardRedirectPath("/dev/test1"));
+    redirect(authGuardRedirectPath("/dev/test1", cookieHeader));
   }
 
   return <Test1QaPanel />;

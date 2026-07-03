@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { getServerUser } from "@/lib/auth";
+import { getServerSession, getServerUser } from "@/lib/auth";
 import { getCookieHeader } from "@/lib/cookies-server";
 import {
   fetchDashboardPayload,
@@ -10,6 +10,10 @@ export const getCachedCookieHeader = cache(getCookieHeader);
 
 export const getCachedServerUser = cache((cookieHeader: string) =>
   getServerUser(cookieHeader),
+);
+
+export const getCachedServerSession = cache((cookieHeader: string) =>
+  getServerSession(cookieHeader),
 );
 
 export const getCachedDashboardPayload = cache((cookieHeader: string) =>

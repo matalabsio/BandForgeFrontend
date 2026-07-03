@@ -210,6 +210,31 @@ export function latestBandByModule(
   return rows;
 }
 
+export function countCompletedForModule(
+  recent: DashboardRecentAttempt[],
+  module: DashboardModule,
+  part?: number,
+): number {
+  return recent.filter(
+    (a) =>
+      a.module === module &&
+      (part == null || a.part === part) &&
+      (a.completed_at || a.status === "completed"),
+  ).length;
+}
+
+export function countTestedModuleBands(
+  bands: ModuleBand[],
+  recent: DashboardRecentAttempt[],
+): number {
+  return bands.filter(
+    (b) =>
+      (b.band != null && b.band > 0) ||
+      b.reviewState !== "none" ||
+      countCompletedForModule(recent, b.module, b.part) > 0,
+  ).length;
+}
+
 export function strongestModule(bands: ModuleBand[]): ModuleBand | null {
   const withBand = bands.filter((b) => b.band != null && b.band > 0);
   if (withBand.length === 0) return null;

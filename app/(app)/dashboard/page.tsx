@@ -1,21 +1,17 @@
+import { Suspense } from "react";
 import { ProductionAuthConfigError } from "@/components/auth/production-auth-config-error";
-import { DashboardData } from "@/components/bandforge/dashboard/dashboard-data";
-import { DashboardDataRetry } from "@/components/bandforge/dashboard/dashboard-data-retry";
 import { DashboardProfileSync } from "@/components/bandforge/dashboard/dashboard-profile-sync";
+import { DashboardContentSkeleton } from "@/components/bandforge/dashboard/dashboard-shell-skeleton";
+import { DashboardMocksActivitySection } from "@/components/bandforge/dashboard/sections/dashboard-mocks-activity-section";
+import { DashboardStatsSection } from "@/components/bandforge/dashboard/sections/dashboard-stats-section";
 import {
   isProductionAuthMisconfigured,
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
-import { isAuthEnabled } from "@/lib/flags";
-import { shouldFetchDashboardApi } from "@/lib/dashboard-server";
-import { M01_MOCK_TEST_ID, M02_MOCK_TEST_ID } from "@/lib/mock-catalog";
-import { buildCatalogPanel } from "@/lib/mock-catalog-api";
-import { fetchMockCatalogServer, fetchMockSessionServer } from "@/lib/mock-server";
 import {
   getCachedCookieHeader,
-  getCachedDashboardPayload,
-  getCachedServerUser,
+  getCachedServerSession,
 } from "@/lib/server-cache";
 import {
   formatUserDisplayName,
@@ -28,59 +24,43 @@ export const metadata = {
   title: "Dashboard · BandForge",
 };
 
-async function DashboardPageContent() {
+function DashboardHeaderSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-14 animate-pulse rounded-2xl bg-ink/[0.06]" />
+      <div className="h-40 animate-pulse rounded-[20px] bg-ink/[0.06]" />
+    </div>
+  );
+}
+
+export default async function DashboardPage() {
   if (isProductionAuthMisconfigured()) {
     return <ProductionAuthConfigError />;
   }
 
   const cookieHeader = await getCachedCookieHeader();
-  const [user, payloadResult, initialM01Progress, initialM02Progress, catalog] =
-    await Promise.all([
-      getCachedServerUser(cookieHeader),
-      getCachedDashboardPayload(cookieHeader),
-      fetchMockSessionServer(cookieHeader, M01_MOCK_TEST_ID),
-      fetchMockSessionServer(cookieHeader, M02_MOCK_TEST_ID),
-      fetchMockCatalogServer(cookieHeader),
-    ]);
-  redirectIfUnauthenticated(user, "/dashboard");
+  const user = await getCachedServerSession(cookieHeader);
+  redirectIfUnauthenticated(user, "/dashboard", cookieHeader);
   const sessionUser = resolveSessionUser(user);
 
-  const { mockTests, mockTestsFromApi, summary } = payloadResult;
-  const catalogSlots = buildCatalogPanel(catalog);
-  const needsRetry =
-    isAuthEnabled() &&
-    shouldFetchDashboardApi(cookieHeader) &&
-    !mockTestsFromApi;
+  const userProps = {
+    firstName: getUserFirstName(sessionUser),
+    displayName: formatUserDisplayName(sessionUser),
+    email: sessionUser.email,
+    avatarUrl: sessionUser.avatar_display_url ?? null,
+  };
 
-  return (
-    <DashboardDataRetry needsRetry={needsRetry}>
-      <DashboardData
-        firstName={getUserFirstName(sessionUser)}
-        displayName={formatUserDisplayName(sessionUser)}
-        email={sessionUser.email}
-        avatarUrl={sessionUser.avatar_display_url}
-        mockTests={mockTests}
-        catalogSlots={catalogSlots}
-        summary={summary}
-        profileTargetBand={
-          sessionUser.target_band !== null && sessionUser.target_band !== undefined
-            ? sessionUser.target_band
-            : null
-        }
-        initialMockProgressById={{
-          [M01_MOCK_TEST_ID]: initialM01Progress,
-          [M02_MOCK_TEST_ID]: initialM02Progress,
-        }}
-      />
-    </DashboardDataRetry>
-  );
-}
-
-export default function DashboardPage() {
   return (
     <>
       <DashboardProfileSync />
-      <DashboardPageContent />
+      <div className="space-y-6">
+        <Suspense fallback={<DashboardHeaderSkeleton />}>
+          <DashboardStatsSection cookieHeader={cookieHeader} user={userProps} />
+        </Suspense>
+        <Suspense fallback={<DashboardContentSkeleton />}>
+          <DashboardMocksActivitySection cookieHeader={cookieHeader} />
+        </Suspense>
+      </div>
     </>
   );
 }

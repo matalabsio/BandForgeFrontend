@@ -12,22 +12,13 @@ export function InstallPromptButton({
   variant = "primary",
   className,
 }: InstallPromptButtonProps) {
-  const { canInstall, isInstalled, isIos, promptInstall } = useInstallPrompt();
+  const { canInstall, isInstalled, isIos, openModal } = useInstallPrompt();
 
-  if (isInstalled || (!canInstall && !isIos)) {
+  if (isInstalled) {
     return null;
   }
 
-  if (isIos && !isInstalled) {
-    if (variant !== "primary") return null;
-    return (
-      <p className={cn("text-sm text-ink/60", className)}>
-        On iPhone: tap Share, then &quot;Add to Home Screen&quot;.
-      </p>
-    );
-  }
-
-  if (!canInstall) {
+  if (!canInstall && !(isIos && variant === "primary")) {
     return null;
   }
 
@@ -39,7 +30,7 @@ export function InstallPromptButton({
   return (
     <button
       type="button"
-      onClick={() => void promptInstall()}
+      onClick={openModal}
       className={cn(baseClass, className)}
     >
       Install BandForge

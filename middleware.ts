@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { loginPathWithNext } from "@/lib/auth";
 import { middlewareRefreshAuth } from "@/lib/auth-middleware-refresh";
 import { bootstrapNextPath } from "@/lib/bootstrap-next-path";
 import { isAuthEnabled } from "@/lib/flags";
@@ -51,10 +52,9 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/admin/login";
       url.searchParams.set("next", "/admin");
     } else {
-      url.pathname = "/auth/bootstrap";
-      url.searchParams.set(
-        "next",
-        bootstrapNextPath(pathname, request.nextUrl.search),
+      const next = bootstrapNextPath(pathname, request.nextUrl.search);
+      return NextResponse.redirect(
+        new URL(loginPathWithNext(next), request.url),
       );
     }
     return NextResponse.redirect(url);

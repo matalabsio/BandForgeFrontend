@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { authBootstrapPath, getServerUser } from "@/lib/auth";
+import { getServerUser, resolveAuthRedirectPath } from "@/lib/auth";
 import { shortModuleResultsPath } from "@/lib/module-results-path";
 import { SpeakingResultsClient } from "@/modules/results/components/speaking-results-client";
 
@@ -26,7 +26,12 @@ export default async function SpeakingResultsPage({ params, searchParams }: Page
     .join("; ");
   const user = await getServerUser(cookieHeader);
   if (!user) {
-    redirect(authBootstrapPath(shortModuleResultsPath(testNumber, "speaking")));
+    redirect(
+      resolveAuthRedirectPath(
+        shortModuleResultsPath(testNumber, "speaking"),
+        cookieHeader,
+      ),
+    );
   }
 
   return (

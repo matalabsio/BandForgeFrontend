@@ -1,17 +1,16 @@
 import { redirect } from "next/navigation";
-import { getServerUser } from "@/lib/auth";
 import {
   adminLoginPath,
   isAdminEmailAllowed,
   isAdminRole,
 } from "@/lib/admin-roles";
-import { getCachedCookieHeader } from "@/lib/server-cache";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 
 export { adminLoginPath, isAdminRole } from "@/lib/admin-roles";
 
 export async function requireAdminSession(_nextPath = "/admin") {
   const cookieHeader = await getCachedCookieHeader();
-  const user = await getServerUser(cookieHeader);
+  const user = await getCachedServerSession(cookieHeader);
   const loginNext = "/admin";
 
   if (!user) {

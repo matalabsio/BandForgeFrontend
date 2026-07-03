@@ -13,7 +13,7 @@ import {
 import { mockTestNumberPath, mockTestsIndexPath } from "@/lib/mock-catalog";
 import { fetchMockCatalogServer, fetchMockSessionServer } from "@/lib/mock-server";
 import { perfLog } from "@/lib/performance";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { MockTestsUnified } from "@/modules/mock/components/mock-tests-unified";
 
@@ -44,14 +44,14 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
   });
 
   t0 = performance.now();
-  const user = await getCachedServerUser(cookieHeader);
+  const user = await getCachedServerSession(cookieHeader);
   perfLog("test-page-ssr", {
     step: "user-fetch",
     duration_ms: Math.round(performance.now() - t0),
     test: sp.test ?? null,
   });
 
-  redirectIfUnauthenticated(user, mockTestsIndexPath());
+  redirectIfUnauthenticated(user, mockTestsIndexPath(), cookieHeader);
 
   t0 = performance.now();
   const catalog = await fetchMockCatalogServer(cookieHeader);

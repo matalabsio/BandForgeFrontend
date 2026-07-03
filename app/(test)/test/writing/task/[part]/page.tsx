@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { authBootstrapPath } from "@/lib/auth";
+import { resolveAuthRedirectPath } from "@/lib/auth";
 import { M01_MOCK_TEST_ID } from "@/lib/mock-catalog";
 import { writingTestHubPath } from "@/lib/writing-test";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { WritingPage } from "@/modules/writing/components/writing-page";
 
 type Props = {
@@ -19,11 +19,12 @@ export default async function WritingTaskPage({ params, searchParams }: Props) {
   }
 
   const cookieHeader = await getCachedCookieHeader();
-  const user = await getCachedServerUser(cookieHeader);
+  const user = await getCachedServerSession(cookieHeader);
   if (!user) {
     redirect(
-      authBootstrapPath(
+      resolveAuthRedirectPath(
         `/test/writing/task/${part}${sp.mock_attempt ? `?mock_attempt=${sp.mock_attempt}` : ""}`,
+        cookieHeader,
       ),
     );
   }

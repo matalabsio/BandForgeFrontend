@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { authBootstrapPath } from "@/lib/auth";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { resolveAuthRedirectPath } from "@/lib/auth";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { WritingTestHub } from "@/modules/writing/components/writing-test-hub";
 
 export const metadata = {
@@ -15,9 +15,9 @@ type Props = {
 export default async function WritingTestPage({ searchParams }: Props) {
   const sp = await searchParams;
   const cookieHeader = await getCachedCookieHeader();
-  const user = await getCachedServerUser(cookieHeader);
+  const user = await getCachedServerSession(cookieHeader);
   if (!user) {
-    redirect(authBootstrapPath("/test/writing"));
+    redirect(resolveAuthRedirectPath("/test/writing", cookieHeader));
   }
 
   return (

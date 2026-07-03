@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { authBootstrapPath } from "@/lib/auth";
+import { resolveAuthRedirectPath } from "@/lib/auth";
 import { mockHubPath } from "@/lib/mock-catalog";
 import { ensureCanonicalMockHub } from "@/lib/mock-route-guard";
-import { getCachedCookieHeader, getCachedServerUser } from "@/lib/server-cache";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { MockResultsGate } from "@/modules/mock/components/mock-results-gate";
 
@@ -21,9 +21,9 @@ export default async function MockResultsPage({ params }: Props) {
   ensureCanonicalMockHub(mockSlug);
 
   const cookieHeader = await getCachedCookieHeader();
-  const user = await getCachedServerUser(cookieHeader);
+  const user = await getCachedServerSession(cookieHeader);
   if (!user) {
-    redirect(authBootstrapPath(mockHubPath(mockSlug)));
+    redirect(resolveAuthRedirectPath(mockHubPath(mockSlug), cookieHeader));
   }
 
   return (
