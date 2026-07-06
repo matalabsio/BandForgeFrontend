@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { cacheMockNavHint } from "@/lib/mock-nav-cache";
 import { mockAttemptStorageKey } from "@/modules/mock/lib/mock-session-storage";
 import { fetchMockSessionDeduped } from "@/modules/mock/lib/mock-session-fetch";
-import { formatMockStartError } from "@/lib/api";
+import { ApiError, formatMockStartError } from "@/lib/api";
 import {
   mockApi,
   type MockAttemptProgress,
@@ -39,6 +40,7 @@ export function useMockSession(
   mockTestId: string,
   options?: Options,
 ): UseMockSessionResult {
+  const router = useRouter();
   const storageKey = mockAttemptStorageKey(mockTestId);
   const initial = options?.initialProgress;
   const [mockAttemptId, setMockAttemptId] = useState<string | null>(
@@ -56,7 +58,7 @@ export function useMockSession(
       if (session) {
         setProgress(session);
         setMockAttemptId(session.mock_attempt_id);
-        if (session.status === "in_progress") {
+        if (session.status === "in_progress" || session.status === "completed") {
           sessionStorage.setItem(storageKey, session.mock_attempt_id);
         } else {
           sessionStorage.removeItem(storageKey);
@@ -128,6 +130,10 @@ export function useMockSession(
         }
         return res;
       } catch (e) {
+        if (e instanceof ApiError && e.status === 402) {
+          router.push("/pricing");
+          throw e;
+        }
         const raw =
           e instanceof Error ? e.message : "Could not start mock.";
         const msg = formatMockStartError(raw);
@@ -137,7 +143,7 @@ export function useMockSession(
         setBusy(false);
       }
     },
-    [mockTestId, storageKey, applySession],
+    [mockTestId, storageKey, applySession, router],
   );
 
   const resume = useCallback(async (): Promise<StartMockResponse> => {

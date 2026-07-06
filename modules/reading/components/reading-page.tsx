@@ -9,7 +9,7 @@ import {
 } from "@/lib/mock-checkpoint-cache";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
-import type { ReadingBootServer } from "@/lib/mock-server";
+import type { ReadingBootServer } from "@/lib/mock-boot-types";
 import {
   getMockMeta,
   mockAfterSectionSubmitPath,
@@ -17,6 +17,9 @@ import {
   mockPathFromProgress,
   type MockMeta,
 } from "@/lib/mock-catalog";
+import { readingModuleReviewPath } from "@/lib/module-review-paths";
+import { cacheModuleReview } from "@/lib/module-review-cache";
+import { mockApi } from "@/modules/mock/services/mock-api";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { syncExamRoute, navigateAfterSectionSubmit } from "@/lib/mock-exam-nav";
 import {
@@ -377,6 +380,18 @@ export function ReadingPage({
     [replace, push, testId, mockSlug, mockAttemptId, passage, isDiagnostic, readingPassageCount],
   );
 
+  /** After the final reading passage in a mock: show the module-complete review. */
+  const goToReadingReview = useCallback(async () => {
+    if (!mockAttemptId) return;
+    try {
+      const review = await mockApi.readingModuleReview(mockAttemptId);
+      cacheModuleReview(mockAttemptId, "reading", review);
+    } catch {
+      /* review page will refetch on load */
+    }
+    replace(readingModuleReviewPath(resolvedTestNumber, mockAttemptId));
+  }, [mockAttemptId, resolvedTestNumber, replace]);
+
   const flushAutosaves = useCallback(
     async (id: string, snapshot: Record<string, string>) => {
       clearAutosaveTimers();
@@ -417,12 +432,13 @@ export function ReadingPage({
           raw_score: result.raw_score,
           total_questions: result.total_questions,
         });
+        const readingDoneOnClient = passage >= readingPassageCount;
         cacheMockNavHint({
           mock_attempt_id: mockAttemptId,
-          next_module: result.mock_reading_complete
+          next_module: readingDoneOnClient
             ? (result.mock_next_module ?? "writing")
             : "reading",
-          next_part: result.mock_reading_complete
+          next_part: readingDoneOnClient
             ? (result.mock_next_part ?? 1)
             : result.mock_next_part ?? passage + 1,
         });
@@ -433,7 +449,16 @@ export function ReadingPage({
       } catch {
         /* ignore */
       }
-      goToResults(result.attempt_id, result);
+      const readingComplete =
+        result.mock_reading_complete === true || passage >= readingPassageCount;
+      if (mockAttemptId && !isDiagnostic && readingComplete) {
+        void goToReadingReview();
+        return;
+      }
+      goToResults(result.attempt_id, {
+        ...result,
+        mock_reading_complete: readingComplete,
+      });
       return;
     } catch (e) {
       if (e instanceof ApiError && e.status === 409 && mockAttemptId) {
@@ -460,9 +485,12 @@ export function ReadingPage({
     questions,
     answers,
     goToResults,
+    goToReadingReview,
+    isDiagnostic,
     mockAttemptId,
     testId,
     passage,
+    readingPassageCount,
     busy,
     flushAutosaves,
     mockSlug,

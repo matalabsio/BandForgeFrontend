@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ApiError } from "@/lib/api";
+import { ensureSession, loginPathWithNext } from "@/lib/auth";
 import {
   type Plan,
   type Subscription,
@@ -13,30 +15,57 @@ import {
   verifyPayment,
 } from "@/lib/payments";
 import { PlanCard } from "@/components/pricing/plan-card";
+import { PRICING_FAQ } from "@/components/pricing/pricing-faq";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
 
-const FAQ: { q: string; a: string }[] = [
-  {
-    q: "Is my payment secure?",
-    a: "Yes. Razorpay processes the payment. BandForge does not store card or UPI details.",
-  },
-  {
-    q: "When is my plan activated?",
-    a: "Immediately after your payment is verified.",
-  },
-  {
-    q: "What if payment fails?",
-    a: "No plan is activated. You can try again from this page.",
-  },
-  {
-    q: "Where can I see receipts?",
-    a: "In your dashboard under Plan & billing.",
-  },
-];
-
 type OverlayState = null | "creating" | "verifying";
-type StatusModal = null | "cancelled" | "verify_failed";
+type StatusModal =
+  | null
+  | "cancelled"
+  | "verify_failed"
+  | "payments_disabled"
+  | "checkout_unavailable"
+  | "provider_misconfigured"
+  | "session_expired"
+  | "payment_failed"
+  | "verify_failed";
+
+function verifyFailureDetail(error: unknown): string | null {
+  if (error instanceof ApiError) {
+    if (error.status === 400 && /signature/i.test(error.message)) {
+      return "Payment signature could not be verified. If Razorpay showed success, wait a moment and try again, or contact support with your payment ID.";
+    }
+    if (error.status >= 500 || error.status === 0) {
+      return "Could not reach the payment server. Restart the frontend dev server (npm run dev) and try again.";
+    }
+    return error.message;
+  }
+  return "Could not verify payment. Restart the dev server if you recently cleared .next cache.";
+}
+
+function isRazorpayAuthMisconfig(error: ApiError): boolean {
+  return (
+    error.status === 503 &&
+    /authentication failed|razorpay api authentication/i.test(error.message)
+  );
+}
+
+/** Map Razorpay payment.failed descriptions to actionable checkout hints. */
+function paymentFailureDetail(message: string): string | null {
+  const m = message.trim();
+  if (!m) return null;
+  if (
+    /international_transaction_not_allowed|international card/i.test(m)
+  ) {
+    return (
+      "This merchant accepts Indian cards only. In test mode use domestic card " +
+      "4111 1111 1111 1111 (or 5267 3181 8797 5449). Do not use international " +
+      "test cards (5555...) or a real foreign card. Choose Add new card and turn off browser autofill."
+    );
+  }
+  return m;
+}
 
 export function PricingClient() {
   const router = useRouter();
@@ -47,17 +76,33 @@ export function PricingClient() {
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<OverlayState>(null);
   const [statusModal, setStatusModal] = useState<StatusModal>(null);
+  const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(
+    null,
+  );
+
+  const [paymentsEnabled, setPaymentsEnabled] = useState(true);
+  const [checkoutTestMode, setCheckoutTestMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [isMobileCheckout, setIsMobileCheckout] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setIsMobileCheckout(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
+  }, []);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const [{ plans: list }, sub] = await Promise.all([
+        const [{ plans: list, payments_enabled: enabled, checkout_test_mode: testMode }, sub] =
+          await Promise.all([
           getPlans(),
           getSubscription().catch(() => null),
         ]);
         if (!active) return;
         setPlans(list);
+        setPaymentsEnabled(enabled);
+        setCheckoutTestMode(testMode);
         setSubscription(sub);
       } catch {
         if (active) setLoadError("We couldn't load plans. Please refresh and try again.");
@@ -70,29 +115,56 @@ export function PricingClient() {
     };
   }, []);
 
-  const paymentsDisabled = !loadingPlans && plans.length === 0 && !loadError;
+  const hasPlans = !loadingPlans && plans.length > 0 && !loadError;
+  const checkoutAvailable = paymentsEnabled;
+
+  function redirectSessionExpired() {
+    router.push(loginPathWithNext("/pricing", true));
+  }
 
   async function handleBuy(slug: string) {
     if (busySlug) return;
     setBusySlug(slug);
     setOverlay("creating");
     try {
+      const session = await ensureSession();
+      if (!session) {
+        setOverlay(null);
+        setBusySlug(null);
+        setStatusModal("session_expired");
+        return;
+      }
+
       const order = await createOrder(slug);
       const opened = await openRazorpayCheckout({
         order,
         onSuccess: async (response) => {
           setOverlay("verifying");
           try {
+            const refreshed = await ensureSession();
+            if (!refreshed) {
+              setOverlay(null);
+              redirectSessionExpired();
+              return;
+            }
             const result = await verifyPayment(response);
             if (result.subscription.is_active) {
               router.push("/checkout/success");
               return;
             }
             setOverlay(null);
+            setPaymentFailureMessage(
+              "Payment was received but the subscription was not activated. Contact support with your payment reference.",
+            );
             setStatusModal("verify_failed");
-          } catch {
+          } catch (e) {
             setOverlay(null);
-            setStatusModal("verify_failed");
+            if (e instanceof ApiError && e.status === 401) {
+              redirectSessionExpired();
+            } else {
+              setPaymentFailureMessage(verifyFailureDetail(e));
+              setStatusModal("verify_failed");
+            }
           } finally {
             setBusySlug(null);
           }
@@ -100,18 +172,33 @@ export function PricingClient() {
         onDismiss: () => {
           setOverlay(null);
           setBusySlug(null);
+          setPaymentFailureMessage(null);
           setStatusModal("cancelled");
+        },
+        onFailed: (message) => {
+          setOverlay(null);
+          setBusySlug(null);
+          setPaymentFailureMessage(paymentFailureDetail(message));
+          setStatusModal("payment_failed");
         },
       });
       if (!opened) {
         setOverlay(null);
         setBusySlug(null);
-        setStatusModal("verify_failed");
+        setStatusModal("checkout_unavailable");
       }
-    } catch {
+    } catch (e) {
       setOverlay(null);
       setBusySlug(null);
-      setStatusModal("verify_failed");
+      if (e instanceof ApiError && e.status === 401) {
+        redirectSessionExpired();
+      } else if (e instanceof ApiError && e.status === 503) {
+        setStatusModal(
+          isRazorpayAuthMisconfig(e) ? "provider_misconfigured" : "payments_disabled",
+        );
+      } else {
+        setStatusModal("verify_failed");
+      }
     }
   }
 
@@ -154,6 +241,53 @@ export function PricingClient() {
         </div>
       ) : null}
 
+      {/* checkout unavailable banner */}
+      {hasPlans && !checkoutAvailable ? (
+        <div
+          className="mx-auto mt-8 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950"
+          role="status"
+        >
+          <p className="font-semibold">Checkout is not available right now</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-amber-900/90">
+            Razorpay API credentials failed validation. Regenerate matching{" "}
+            <span className="font-medium">Test mode</span> keys in Razorpay Dashboard →
+            Settings → API Keys, update <code className="text-xs">backend/.env</code>,
+            then restart the backend. Plans are shown below for reference.
+          </p>
+        </div>
+      ) : null}
+
+      {mounted && hasPlans && checkoutAvailable && checkoutTestMode ? (
+        <div
+          className="mx-auto mt-8 max-w-3xl rounded-2xl border border-cyan/30 bg-cyan-soft/40 px-5 py-4 text-sm text-navy"
+          role="note"
+        >
+          <p className="font-semibold">Test checkout (Razorpay sandbox)</p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-[13px] leading-relaxed text-muted">
+            <li>
+              {isMobileCheckout
+                ? "UPI: choose Pay with UPI → pick your UPI app (PhonePe, GPay, etc.)"
+                : "UPI: choose Pay with UPI → scan the QR with PhonePe, GPay, or Paytm"}
+            </li>
+            <li>
+              Cards: use <strong>Add new card</strong> with domestic test numbers only —{" "}
+              <span className="font-mono text-navy">4111 1111 1111 1111</span> or{" "}
+              <span className="font-mono text-navy">5267 3181 8797 5449</span>
+            </li>
+            <li>Not supported: international test cards (5555...) or real foreign cards</li>
+            <li>
+              <strong>Uncheck</strong> &quot;Save this card&quot; before Pay — avoid saved/autofill cards
+            </li>
+            <li>
+              If you see <strong>&quot;Securely saving your card&quot;</strong>, click{" "}
+              <strong>Skip OTP</strong> — that OTP is a real SMS, not a test code
+            </li>
+            <li>Payment OTP (after Pay): any 4-10 digits</li>
+            <li>Netbanking → Success is the fastest test path</li>
+          </ul>
+        </div>
+      ) : null}
+
       {/* plans grid */}
       <div className="mt-10">
         {loadingPlans ? (
@@ -167,8 +301,12 @@ export function PricingClient() {
           </div>
         ) : loadError ? (
           <p className="text-center text-sm text-danger">{loadError}</p>
-        ) : paymentsDisabled ? (
-          <p className="text-center text-sm text-muted">Payments coming soon.</p>
+        ) : !hasPlans ? (
+          <p className="text-center text-sm text-muted">
+            {paymentsEnabled
+              ? "Payments coming soon."
+              : "Payments are temporarily unavailable. Please try again later."}
+          </p>
         ) : (
           <div className="grid items-stretch gap-6 md:grid-cols-2 lg:grid-cols-3">
             {plans.map((plan) => (
@@ -176,9 +314,10 @@ export function PricingClient() {
                 key={plan.id}
                 plan={plan}
                 isCurrent={subscription?.plan_slug === plan.slug}
-                disabled={Boolean(busySlug)}
+                disabled={Boolean(busySlug) || !checkoutAvailable}
                 loading={busySlug === plan.slug}
                 onBuy={handleBuy}
+                checkoutUnavailable={!checkoutAvailable}
               />
             ))}
           </div>
@@ -205,7 +344,7 @@ export function PricingClient() {
           Frequently asked questions
         </h2>
         <dl className="mt-4 divide-y divide-border-soft">
-          {FAQ.map((item) => (
+          {PRICING_FAQ.map((item) => (
             <div key={item.q} className="py-4">
               <dt className="text-sm font-semibold text-navy">{item.q}</dt>
               <dd className="mt-1 text-[13px] text-muted">{item.a}</dd>
@@ -218,8 +357,19 @@ export function PricingClient() {
       {statusModal ? (
         <PaymentStatusModal
           variant={statusModal}
-          onRetry={() => setStatusModal(null)}
-          onClose={() => setStatusModal(null)}
+          detail={
+            statusModal === "payment_failed" || statusModal === "verify_failed"
+              ? paymentFailureMessage
+              : null
+          }
+          onRetry={() => {
+            setPaymentFailureMessage(null);
+            setStatusModal(null);
+          }}
+          onClose={() => {
+            setPaymentFailureMessage(null);
+            setStatusModal(null);
+          }}
         />
       ) : null}
     </div>

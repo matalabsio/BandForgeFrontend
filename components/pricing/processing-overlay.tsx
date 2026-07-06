@@ -3,7 +3,7 @@
 const COPY = {
   creating: {
     title: "Preparing secure checkout",
-    subtitle: "Please wait a moment.",
+    subtitle: "Opening Razorpay… Uncheck Save card on the card form.",
   },
   verifying: {
     title: "Verifying your payment",

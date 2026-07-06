@@ -18,7 +18,7 @@ export function BandForgePricing() {
             <BfPricingCard
               key={tier.id}
               {...tier}
-              href={tier.id === "free" ? marketingAppHref() : "/plan"}
+              href={tier.id === "free" ? marketingAppHref() : "/pricing"}
             />
           ))}
         </div>

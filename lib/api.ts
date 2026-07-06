@@ -69,6 +69,9 @@ export function formatMockStartError(message: string): string {
   if (message.includes("complete") && message.toLowerCase().includes("retake")) {
     return "This test run is finished. Use “New attempt” on the dashboard to take it again.";
   }
+  if (message.toLowerCase().includes("subscription")) {
+    return message;
+  }
   return message;
 }
 

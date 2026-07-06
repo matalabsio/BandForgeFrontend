@@ -24,6 +24,11 @@ export type ListeningQuestionBlock =
       questions: ListeningQuestion[];
       instruction: string | null;
     }
+  | {
+      kind: "note_completion";
+      questions: ListeningQuestion[];
+      instruction: string | null;
+    }
   | { kind: "mcq_single"; question: ListeningQuestion };
 
 function qNum(q: ListeningQuestion): number {
@@ -66,8 +71,13 @@ function isGapFillType(type: string): boolean {
 
 function canJoinSentenceGroup(q: ListeningQuestion): boolean {
   const t = q.question_type.toLowerCase();
+  if (t === "note_completion") return false;
   if (!isGapFillType(t)) return false;
-  return hasInlineBlank(q.prompt) || t === "sentence_completion" || t === "note_completion";
+  return hasInlineBlank(q.prompt) || t === "sentence_completion";
+}
+
+function canJoinNoteGroup(q: ListeningQuestion): boolean {
+  return q.question_type.toLowerCase() === "note_completion";
 }
 
 function blockInstruction(questions: ListeningQuestion[]): string | null {
@@ -91,7 +101,11 @@ function instructionFromBlocks(part: ListeningPart): string | null {
       const instr = blockInstruction(block.questions);
       if (instr) return instr;
     }
-    if (block.kind === "matching" || block.kind === "sentence_completion") {
+    if (
+      block.kind === "matching" ||
+      block.kind === "sentence_completion" ||
+      block.kind === "note_completion"
+    ) {
       if (block.instruction) return block.instruction;
     }
     if (block.kind === "mcq_single") {
@@ -156,6 +170,22 @@ export function groupListeningQuestions(part: ListeningPart): ListeningQuestionB
         questions: group,
         instruction: blockInstruction(group),
         options: matchingOptions(group),
+      });
+      i = j;
+      continue;
+    }
+
+    if (canJoinNoteGroup(q)) {
+      const group: ListeningQuestion[] = [q];
+      let j = i + 1;
+      while (j < sorted.length && canJoinNoteGroup(sorted[j])) {
+        group.push(sorted[j]);
+        j++;
+      }
+      blocks.push({
+        kind: "note_completion",
+        questions: group,
+        instruction: blockInstruction(group),
       });
       i = j;
       continue;

@@ -1,24 +1,29 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { IeltsExamShell } from "@/components/exam/ielts-exam-shell";
 import { IeltsHubSkeleton } from "@/components/exam/ielts-exam-skeleton";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
 
 function MockRouteInner({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isReview = pathname.includes("/review");
   const isExam =
-    searchParams.has("part") ||
-    searchParams.has("passage") ||
-    searchParams.has("auto");
+    !isReview &&
+    (searchParams.has("part") ||
+      searchParams.has("passage") ||
+      searchParams.has("auto"));
   const mockAttemptActive = searchParams.has("mock_attempt");
 
-  useExamSessionGuard(isExam || mockAttemptActive);
+  useExamSessionGuard(isExam || mockAttemptActive || isReview);
+
+  const layout = isReview ? "review" : isExam ? "exam" : "hub";
 
   return (
     <IeltsExamShell
-      layout={isExam ? "exam" : "hub"}
+      layout={layout}
       moduleLabel="Mock Test"
       hubTitle="Mock tests"
       hubVariant="library"

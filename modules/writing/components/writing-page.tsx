@@ -16,11 +16,12 @@ import {
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
+import { writingModuleReviewPath } from "@/lib/module-review-paths";
 import { persistMockAttemptId, persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
-import type { WritingBootServer } from "@/lib/mock-server";
+import type { WritingBootServer } from "@/lib/mock-boot-types";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { syncExamRoute, navigateToExamPath } from "@/lib/mock-exam-nav";
 import {
@@ -446,6 +447,15 @@ export function WritingPage({
           return;
         }
         const testNum = testNumberForMockId(mockTestId);
+        const writingTaskCount = mockMeta.writingTaskCount;
+        if (
+          !isDiagnostic &&
+          part >= writingTaskCount &&
+          (result.mock_writing_complete === true || result.next_part == null)
+        ) {
+          router.replace(writingModuleReviewPath(testNum, mockAttemptId));
+          return;
+        }
         const goPending =
           result.saved_for_review &&
           !(result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1);
@@ -512,6 +522,7 @@ export function WritingPage({
     mockAttemptId,
     mockSlug,
     router,
+    mockMeta.writingTaskCount,
   ]);
 
   const timerActive = phase === "ready" && Boolean(attemptId);

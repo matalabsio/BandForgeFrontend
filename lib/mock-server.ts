@@ -2,6 +2,11 @@ import { getApiUrl } from "@/lib/api";
 import type { MockCatalogApiItem } from "@/lib/mock-catalog-api";
 import type { MockMeta } from "@/lib/mock-catalog";
 import { resolveMockMetaFromCatalog } from "@/lib/mock-catalog";
+import type {
+  ListeningBootServer,
+  ReadingBootServer,
+  WritingBootServer,
+} from "@/lib/mock-boot-types";
 import type { MockAttemptProgress, MockAttemptSummary } from "@/modules/mock/services/mock-api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
 import { perfLog } from "@/lib/performance";
@@ -85,22 +90,11 @@ export async function fetchMockSummaryServer(
   );
 }
 
-export type ListeningBootServer = {
-  attempt_id: string;
-  started_at: string;
-  server_time: string;
-  status: string;
-  duration_seconds: number;
-  resumed: boolean;
-  test?: { id: string; title: string; description?: string | null };
-  parts?: Array<{
-    part: number;
-    title: string;
-    context: string;
-    common_question_type: string;
-    questions: unknown[];
-  }>;
-};
+export type {
+  ListeningBootServer,
+  ReadingBootServer,
+  WritingBootServer,
+} from "@/lib/mock-boot-types";
 
 export async function fetchListeningBootServer(
   cookieHeader: string,
@@ -130,18 +124,6 @@ export async function fetchListeningBootServer(
   }
 }
 
-export type ReadingBootServer = {
-  attempt_id: string;
-  started_at: string;
-  server_time: string;
-  status: string;
-  duration_seconds: number;
-  resumed: boolean;
-  passage_text?: string | null;
-  questions?: unknown[];
-  test?: { id: string; title: string; description?: string | null };
-};
-
 export async function fetchReadingBootServer(
   cookieHeader: string,
   mockTestId: string,
@@ -169,19 +151,6 @@ export async function fetchReadingBootServer(
     return null;
   }
 }
-
-export type WritingBootServer = {
-  attempt_id: string;
-  started_at: string;
-  server_time: string;
-  status: string;
-  part: number;
-  duration_seconds: number;
-  resumed: boolean;
-  task?: unknown;
-  saved_answer?: string | null;
-  test?: { id: string; title: string; description?: string | null };
-};
 
 export async function fetchWritingBootServer(
   cookieHeader: string,

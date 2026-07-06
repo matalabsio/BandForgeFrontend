@@ -25,6 +25,7 @@ import {
   readDiagnosticResults,
   type DiagnosticResultsSnapshot,
 } from "@/lib/diagnostic-session";
+import { getSubscription } from "@/lib/payments";
 import { aggregateBand } from "@/lib/diagnostic-scoring";
 
 function PlanRevealSkeleton() {
@@ -164,6 +165,7 @@ function DiagnosticPlanRecommendationChip({
 export function DiagnosticPlanRevealExperience() {
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<DiagnosticResultsSnapshot | null>(null);
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
   const targetBand = lead?.targetBand ?? 7.0;
@@ -226,6 +228,9 @@ export function DiagnosticPlanRevealExperience() {
     if (cached) {
       setSnapshot(cached);
     }
+    getSubscription()
+      .then((sub) => setHasSubscription(Boolean(sub.is_active)))
+      .catch(() => setHasSubscription(false));
     setLoading(false);
   }, []);
 
@@ -269,7 +274,10 @@ export function DiagnosticPlanRevealExperience() {
               gap={gap}
             />
 
-            <DiagnosticStudyPlanLocked weeks={DIAGNOSTIC_STUDY_PLAN_WEEKS} />
+            <DiagnosticStudyPlanLocked
+              weeks={DIAGNOSTIC_STUDY_PLAN_WEEKS}
+              unlocked={hasSubscription}
+            />
 
             {recommendedBundle ? (
               <DiagnosticPlanRecommendationChip

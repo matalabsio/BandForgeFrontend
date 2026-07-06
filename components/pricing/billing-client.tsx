@@ -136,6 +136,7 @@ export function BillingClient() {
                   <th className="pb-2 font-medium">Date</th>
                   <th className="pb-2 font-medium">Plan</th>
                   <th className="pb-2 font-medium">Amount</th>
+                  <th className="pb-2 font-medium">Reference</th>
                   <th className="pb-2 font-medium">Status</th>
                 </tr>
               </thead>
@@ -147,6 +148,9 @@ export function BillingClient() {
                     </td>
                     <td className="py-3 text-navy">{item.plan_name ?? "—"}</td>
                     <td className="py-3 font-mono text-navy">{formatInr(item.amount)}</td>
+                    <td className="py-3 font-mono text-[11px] text-muted">
+                      {item.razorpay_payment_id ?? "—"}
+                    </td>
                     <td className="py-3">
                       <StatusPill status={item.status} />
                     </td>
@@ -154,6 +158,9 @@ export function BillingClient() {
                 ))}
               </tbody>
             </table>
+            <p className="mt-4 text-xs text-muted-light">
+              Payment references are your Razorpay payment IDs for support inquiries.
+            </p>
           </div>
         )}
       </section>

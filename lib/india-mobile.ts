@@ -14,6 +14,10 @@ export function isValidIndiaMobile10(digits: string): boolean {
   return /^[6-9]\d{9}$/.test(digits);
 }
 
+export function toIndiaE164(digits10: string): string {
+  return `+91${digits10}`;
+}
+
 export function formatIndiaDisplay(digits10: string): string {
   if (digits10.length !== 10) return digits10;
   return `+91 ${digits10.slice(0, 5)} ${digits10.slice(5)}`;

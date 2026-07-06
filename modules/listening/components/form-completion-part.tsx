@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, type ReactNode } from "react";
+import { memo } from "react";
 import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
 import { LabelInlineBlank } from "@/modules/listening/components/listening-inline-answer";
 import { QuestionAudio } from "@/modules/listening/components/question-audio";
@@ -21,7 +21,28 @@ type Props = {
 };
 
 function sortedQuestions(questions: ListeningQuestion[]): ListeningQuestion[] {
-  return questions.toSorted((a, b) => a.question_number - b.question_number);
+  return questions.toSorted(
+    (a, b) =>
+      (a.display_number ?? a.question_number) -
+      (b.display_number ?? b.question_number),
+  );
+}
+
+function qDisplay(q: ListeningQuestion): number {
+  return q.display_number ?? q.question_number;
+}
+
+/** Currency prefix when the field label indicates a fee (e.g. Greenfield course fee). */
+function fieldPrefix(prompt: string): string | undefined {
+  return /\bfee\b/i.test(prompt) ? "£" : undefined;
+}
+
+function formTitleLines(title: string): { org: string | null; form: string } {
+  const parts = title.split(/\s+[–—-]\s+/);
+  if (parts.length >= 2) {
+    return { org: parts[0]?.trim() || null, form: parts.slice(1).join(" – ").trim() };
+  }
+  return { org: null, form: title };
 }
 
 function FormCompletionPartBase({
@@ -42,9 +63,13 @@ function FormCompletionPartBase({
   const instructions =
     sanitizeInstructionText(first?.instructions) ??
     "Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer.";
+  const formTitle =
+    part.form_title?.trim() ||
+    "Registration Form";
+  const { org, form } = formTitleLines(formTitle);
   const isExam = variant === "exam";
-  const qStart = questions[0]?.question_number ?? 1;
-  const qEnd = questions[questions.length - 1]?.question_number ?? 10;
+  const qStart = questions[0] ? qDisplay(questions[0]) : 1;
+  const qEnd = questions.length > 0 ? qDisplay(questions[questions.length - 1]) : 10;
 
   if (isExam) {
     return (
@@ -65,7 +90,7 @@ function FormCompletionPartBase({
                 Questions {qStart}–{qEnd}
               </p>
               <p className="mt-1 text-[12px] text-[var(--exam-ink-muted)]">
-                Complete the notes below.
+                Complete the form below.
               </p>
             </header>
             <p className="mt-4 text-[12px] italic text-[var(--exam-ink-muted)]">
@@ -94,63 +119,37 @@ function FormCompletionPartBase({
 
         <article className="mt-4 border border-[var(--exam-border)] bg-white shadow-sm">
           <div className="border-b border-[var(--exam-border)] px-5 py-4 text-center sm:px-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--exam-ink-muted)]">
-              Greenfield College
-            </p>
-            <p className="mt-1 text-[14px] font-semibold text-[var(--exam-ink)]">
-              Course Registration Form
+            {org ? (
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--exam-ink-muted)]">
+                {org}
+              </p>
+            ) : null}
+            <p
+              className={
+                org
+                  ? "mt-1 text-[14px] font-semibold text-[var(--exam-ink)]"
+                  : "text-[14px] font-semibold text-[var(--exam-ink)]"
+              }
+            >
+              {form}
             </p>
           </div>
 
-          <div className="space-y-6 px-5 py-6 sm:px-8">
-            <FormSection title="Personal details">
-              {questions.slice(0, 4).map((q) => (
-                <LabelInlineBlank
-                  key={q.id}
-                  questionNumber={q.question_number}
-                  label={q.prompt}
-                  value={answers[q.id] ?? ""}
-                  isActive={currentQuestionId === q.id}
-                  onChange={(v) => onAnswer(q.id, v)}
-                  onFocus={() => onFocus(q.id)}
-                  variant="exam"
-                  layout="exam-form"
-                />
-              ))}
-            </FormSection>
-
-            <FormSection title="Course details">
-              {questions.slice(4, 7).map((q) => (
-                <LabelInlineBlank
-                  key={q.id}
-                  questionNumber={q.question_number}
-                  label={q.prompt}
-                  value={answers[q.id] ?? ""}
-                  isActive={currentQuestionId === q.id}
-                  onChange={(v) => onAnswer(q.id, v)}
-                  onFocus={() => onFocus(q.id)}
-                  variant="exam"
-                  layout="exam-form"
-                />
-              ))}
-            </FormSection>
-
-            <FormSection title="Payment & additional information">
-              {questions.slice(7).map((q) => (
-                <LabelInlineBlank
-                  key={q.id}
-                  questionNumber={q.question_number}
-                  label={q.prompt}
-                  value={answers[q.id] ?? ""}
-                  isActive={currentQuestionId === q.id}
-                  onChange={(v) => onAnswer(q.id, v)}
-                  onFocus={() => onFocus(q.id)}
-                  variant="exam"
-                  layout="exam-form"
-                  prefix={q.question_number === 8 ? "£" : undefined}
-                />
-              ))}
-            </FormSection>
+          <div className="space-y-4 px-5 py-6 sm:px-8">
+            {questions.map((q) => (
+              <LabelInlineBlank
+                key={q.id}
+                questionNumber={qDisplay(q)}
+                label={q.prompt}
+                value={answers[q.id] ?? ""}
+                isActive={currentQuestionId === q.id}
+                onChange={(v) => onAnswer(q.id, v)}
+                onFocus={() => onFocus(q.id)}
+                variant="exam"
+                layout="exam-form"
+                prefix={fieldPrefix(q.prompt)}
+              />
+            ))}
           </div>
         </article>
       </section>
@@ -191,16 +190,13 @@ function FormCompletionPartBase({
 
       <div className="mt-6 overflow-x-auto rounded-xl border-2 border-ink/20 bg-white p-4 shadow-sm sm:p-6">
         <p className="text-center text-[11px] font-bold uppercase tracking-widest text-navy">
-          Greenfield College – Course Registration Form
+          {formTitle}
         </p>
         <div className="mt-4 space-y-4 border-t border-border pt-4">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-navy/70">
-            Personal details
-          </p>
-          {questions.slice(0, 4).map((q) => (
+          {questions.map((q) => (
             <LabelInlineBlank
               key={q.id}
-              questionNumber={q.question_number}
+              questionNumber={qDisplay(q)}
               label={q.prompt}
               value={answers[q.id] ?? ""}
               isActive={currentQuestionId === q.id}
@@ -208,61 +204,12 @@ function FormCompletionPartBase({
               onFocus={() => onFocus(q.id)}
               variant="default"
               layout="legacy"
-            />
-          ))}
-          <p className="pt-2 text-[11px] font-bold uppercase tracking-wider text-navy/70">
-            Course details
-          </p>
-          {questions.slice(4, 7).map((q) => (
-            <LabelInlineBlank
-              key={q.id}
-              questionNumber={q.question_number}
-              label={q.prompt}
-              value={answers[q.id] ?? ""}
-              isActive={currentQuestionId === q.id}
-              onChange={(v) => onAnswer(q.id, v)}
-              onFocus={() => onFocus(q.id)}
-              variant="default"
-              layout="legacy"
-            />
-          ))}
-          <p className="pt-2 text-[11px] font-bold uppercase tracking-wider text-navy/70">
-            Payment &amp; additional information
-          </p>
-          {questions.slice(7).map((q) => (
-            <LabelInlineBlank
-              key={q.id}
-              questionNumber={q.question_number}
-              label={q.prompt}
-              value={answers[q.id] ?? ""}
-              isActive={currentQuestionId === q.id}
-              onChange={(v) => onAnswer(q.id, v)}
-              onFocus={() => onFocus(q.id)}
-              variant="default"
-              layout="legacy"
-              prefix={q.question_number === 8 ? "£" : undefined}
+              prefix={fieldPrefix(q.prompt)}
             />
           ))}
         </div>
       </div>
     </section>
-  );
-}
-
-function FormSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#71717a]">
-        {title}
-      </h3>
-      <div className="space-y-4">{children}</div>
-    </div>
   );
 }
 

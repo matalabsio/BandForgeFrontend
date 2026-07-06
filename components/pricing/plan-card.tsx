@@ -65,10 +65,18 @@ type PlanCardProps = {
   isCurrent: boolean;
   disabled: boolean;
   loading: boolean;
+  checkoutUnavailable?: boolean;
   onBuy: (slug: string) => void;
 };
 
-export function PlanCard({ plan, isCurrent, disabled, loading, onBuy }: PlanCardProps) {
+export function PlanCard({
+  plan,
+  isCurrent,
+  disabled,
+  loading,
+  checkoutUnavailable = false,
+  onBuy,
+}: PlanCardProps) {
   const copy = PLAN_COPY[plan.slug] ?? {
     tagline: plan.description ?? "",
     features: [],
@@ -139,7 +147,9 @@ export function PlanCard({ plan, isCurrent, disabled, loading, onBuy }: PlanCard
           ? "Current plan"
           : loading
             ? "Opening secure checkout…"
-            : copy.cta}
+            : checkoutUnavailable
+              ? "Checkout unavailable"
+              : copy.cta}
       </button>
 
       <p className="mt-2 text-center font-mono text-[10px] text-muted-light">

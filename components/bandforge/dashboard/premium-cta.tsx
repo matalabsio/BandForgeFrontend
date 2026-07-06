@@ -16,7 +16,7 @@ export function PremiumCta() {
         </div>
       </div>
       <Link
-        href="/features"
+        href="/pricing"
         className="mt-3 inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-ink px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#1e293b]"
       >
         Upgrade Now

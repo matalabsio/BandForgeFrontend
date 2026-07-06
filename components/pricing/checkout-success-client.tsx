@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { type Subscription, getSubscription } from "@/lib/payments";
 
@@ -15,6 +16,7 @@ function formatDate(iso: string | null): string {
 }
 
 export function CheckoutSuccessClient() {
+  const router = useRouter();
   // Read-only: subscription was granted by POST /verify before navigation here.
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,16 +25,22 @@ export function CheckoutSuccessClient() {
     let active = true;
     getSubscription()
       .then((sub) => {
-        if (active) setSubscription(sub);
+        if (!active) return;
+        setSubscription(sub);
+        if (!sub.is_active) {
+          router.replace("/pricing");
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (active) router.replace("/pricing");
+      })
       .finally(() => {
         if (active) setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [router]);
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 text-center">

@@ -1,4 +1,9 @@
 import { examApiCall } from "@/lib/exam-api-call";
+import type {
+  ModuleReviewPayload,
+  SpeakingModuleReviewPayload,
+  WritingModuleReviewPayload,
+} from "@/lib/module-review-types";
 
 export type ModuleProgressStatus = "locked" | "available" | "in_progress" | "completed";
 
@@ -156,6 +161,30 @@ export const mockApi = {
     return call<StartMockResponse>(
       `/api/mock-attempts/${encodeURIComponent(mockAttemptId)}/resume`,
       { method: "POST" },
+    );
+  },
+
+  listeningModuleReview(mockAttemptId: string) {
+    return call<ModuleReviewPayload>(
+      `/api/mock-attempts/${encodeURIComponent(mockAttemptId)}/listening/module-review`,
+    );
+  },
+
+  readingModuleReview(mockAttemptId: string) {
+    return call<ModuleReviewPayload>(
+      `/api/mock-attempts/${encodeURIComponent(mockAttemptId)}/reading/module-review`,
+    );
+  },
+
+  writingModuleReview(mockAttemptId: string) {
+    return call<WritingModuleReviewPayload>(
+      `/api/mock-attempts/${encodeURIComponent(mockAttemptId)}/writing/module-review`,
+    );
+  },
+
+  speakingModuleReview(mockAttemptId: string) {
+    return call<SpeakingModuleReviewPayload>(
+      `/api/mock-attempts/${encodeURIComponent(mockAttemptId)}/speaking/module-review`,
     );
   },
 };

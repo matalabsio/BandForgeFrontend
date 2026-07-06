@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ClockIcon } from "@/components/bandforge/dashboard/icons";
 import {
   getMockMeta,
@@ -17,6 +18,7 @@ import type { MockCatalogSlot } from "@/lib/mock-catalog-api";
 import { MockTestHubShell } from "@/modules/mock/components/mock-test-hub-shell";
 import { clearMockExamLocalData } from "@/lib/mock-client-session";
 import { persistMockAttemptId } from "@/lib/exam-session-storage";
+import { getSubscription } from "@/lib/payments";
 import { useMockSession } from "@/modules/mock/hooks/use-mock-session";
 import { computeMockProgressPercent, formatModuleAbbrev, resolveEnabledModuleKeys } from "@/modules/mock/lib/mock-progress";
 import { Test1ModuleCards } from "@/modules/mock/components/test1-module-cards";
@@ -62,6 +64,7 @@ type Props = {
   initialProgress?: MockAttemptProgress | null;
   /** `embedded` omits the outer shell (used on unified `/test`). */
   variant?: "page" | "embedded";
+  requiresSubscription?: boolean;
 };
 
 export function MockTestHub({
@@ -73,6 +76,7 @@ export function MockTestHub({
   catalogSlots,
   initialProgress = null,
   variant = "embedded",
+  requiresSubscription = false,
 }: Props) {
   const legacyMeta = hubMeta ? null : getMockMeta(mockSlug as MockSlug);
   const meta = hubMeta ?? legacyMeta!;
@@ -84,9 +88,19 @@ export function MockTestHub({
     { initialProgress },
   );
   const [readinessReady, setReadinessReady] = useState(false);
+  const [hasSubscription, setHasSubscription] = useState(!requiresSubscription);
   const onReadinessChange = useCallback((ready: boolean) => {
     setReadinessReady(ready);
   }, []);
+
+  useEffect(() => {
+    if (!requiresSubscription) return;
+    getSubscription()
+      .then((sub) => setHasSubscription(Boolean(sub.is_active)))
+      .catch(() => setHasSubscription(false));
+  }, [requiresSubscription]);
+
+  const subscriptionLocked = requiresSubscription && !hasSubscription;
 
   const status = progress?.status;
   const hasAttempt = Boolean(progress?.mock_attempt_id ?? mockAttemptId);
@@ -139,7 +153,7 @@ export function MockTestHub({
   const handlePrimary = async () => {
     if (status === "completed" && activeAttemptId) {
       persistMockAttemptId(mockTestId, activeAttemptId);
-      push(mockResultsPath(mockSlug));
+      push(mockResultsPath(mockSlug, activeAttemptId));
       return;
     }
     if (status === "in_progress" && activeAttemptId) {
@@ -170,8 +184,9 @@ export function MockTestHub({
 
   const primaryNeedsReadiness =
     showReadiness && status !== "completed" && status !== "in_progress";
-  const primaryDisabled = busy || (primaryNeedsReadiness && !readinessReady);
-  const newAttemptDisabled = busy || !readinessReady;
+  const primaryDisabled =
+    busy || subscriptionLocked || (primaryNeedsReadiness && !readinessReady);
+  const newAttemptDisabled = busy || subscriptionLocked || !readinessReady;
 
   const flowDescription =
     meta.flowHint ||
@@ -179,6 +194,17 @@ export function MockTestHub({
 
   const content = (
     <>
+      {subscriptionLocked ? (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">Premium mock test</p>
+          <p className="mt-1 text-[13px]">
+            An active subscription is required for Test 2.{" "}
+            <Link href="/pricing" className="font-semibold text-cyan underline">
+              View plans
+            </Link>
+          </p>
+        </div>
+      ) : null}
       <article className="relative overflow-hidden rounded-2xl bg-ink p-5 text-white shadow-lg sm:p-6 md:hidden">
         <div
           className="pointer-events-none absolute -right-2 top-4 size-24 rounded-full border-2 border-[var(--exam-accent)]/25"

@@ -49,7 +49,7 @@ export function FullMockCard({
   const handlePrimary = async () => {
     if (progress?.status === "completed" && progress.mock_attempt_id) {
       persistMockAttemptId(meta.id, progress.mock_attempt_id);
-      push(mockResultsPath(mockSlug));
+      push(mockResultsPath(mockSlug, progress.mock_attempt_id));
       return;
     }
 

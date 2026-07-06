@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   children: ReactNode;
-  layout?: "hub" | "exam";
+  layout?: "hub" | "exam" | "review";
   moduleLabel: string;
   hubTitle?: string;
   hubVariant?: "default" | "library";
@@ -20,7 +20,19 @@ export function IeltsExamShell({
   hubVariant = "default",
 }: Props) {
   const isExam = layout === "exam";
-  const isLibraryHub = !isExam && hubVariant === "library";
+  const isReview = layout === "review";
+  const isLibraryHub = !isExam && !isReview && hubVariant === "library";
+
+  if (isReview) {
+    return (
+      <div
+        className="ielts-exam-theme flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#F4F7FB] text-[var(--exam-ink)]"
+        style={IELTS_EXAM_VARS}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div

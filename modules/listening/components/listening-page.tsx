@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { cacheMockNavHint } from "@/lib/mock-nav-cache";
-import type { ListeningBootServer } from "@/lib/mock-server";
+import type { ListeningBootServer } from "@/lib/mock-boot-types";
 import {
   cacheCheckpointSubmit,
   cacheSectionAdvance,
@@ -16,8 +16,12 @@ import {
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
+  testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
+import { listeningModuleReviewPath } from "@/lib/module-review-paths";
+import { cacheModuleReview } from "@/lib/module-review-cache";
+import { mockApi } from "@/modules/mock/services/mock-api";
 import {
   isListeningTest,
   listeningModuleResultsPath,
@@ -71,7 +75,6 @@ import {
 } from "@/lib/diagnostic-exam-nav";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
-import { testNumberForMockId } from "@/lib/mock-catalog";
 
 function readConsent(moduleKey: string, attemptScope: string): boolean {
   if (typeof window === "undefined") return false;
@@ -224,6 +227,18 @@ export function ListeningPage({
     [replace, push, testId, mockSlug, mockAttemptId, part, isDiagnostic, listeningPartCount],
   );
 
+  /** After the final listening part in a mock: show the module-complete review. */
+  const goToListeningReview = useCallback(async () => {
+    if (!mockAttemptId) return;
+    try {
+      const review = await mockApi.listeningModuleReview(mockAttemptId);
+      cacheModuleReview(mockAttemptId, "listening", review);
+    } catch {
+      /* review page will refetch on load */
+    }
+    replace(listeningModuleReviewPath(resolvedTestNumber, mockAttemptId));
+  }, [mockAttemptId, resolvedTestNumber, replace]);
+
   const submitAnswers = useMemo(
     () =>
       allQuestions.map((q) => ({
@@ -264,9 +279,14 @@ export function ListeningPage({
       }
       dispatch({ type: "completed", payload });
       clearSnapshot(state.attemptId);
+      const listeningComplete =
+        payload.mock_listening_complete === true || listeningDoneOnClient;
+      if (mockAttemptId && !isDiagnostic && listeningComplete) {
+        void goToListeningReview();
+        return;
+      }
       void goToResults(payload.attempt_id, {
-        mockListeningComplete:
-          payload.mock_listening_complete === true || listeningDoneOnClient,
+        mockListeningComplete: listeningComplete,
       });
     } catch (e) {
       dispatch({
@@ -281,6 +301,8 @@ export function ListeningPage({
     submitAnswers,
     dispatch,
     goToResults,
+    goToListeningReview,
+    isDiagnostic,
     mockAttemptId,
     part,
     flushNow,
@@ -834,8 +856,15 @@ export function ListeningPage({
           onSubmitted={(payload) => {
             dispatch({ type: "completed", payload });
             if (state.attemptId) clearSnapshot(state.attemptId);
+            const listeningComplete =
+              payload.mock_listening_complete === true ||
+              part >= listeningPartCount;
+            if (mockAttemptId && !isDiagnostic && listeningComplete) {
+              void goToListeningReview();
+              return;
+            }
             void goToResults(payload.attempt_id, {
-              mockListeningComplete: payload.mock_listening_complete === true,
+              mockListeningComplete: listeningComplete,
             });
           }}
           onError={(msg) => dispatch({ type: "error", message: msg })}

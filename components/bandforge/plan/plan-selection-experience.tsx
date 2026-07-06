@@ -171,7 +171,7 @@ export function PlanSelectionExperience() {
               ))}
             </ul>
             <Link
-              href={tier.id === "free" ? marketingAppHref() : "#"}
+              href={tier.id === "free" ? marketingAppHref() : "/pricing"}
               prefetch
               className={cn(
                 "mt-6 flex w-full items-center justify-center rounded-full py-3 font-display text-sm font-semibold transition-colors",

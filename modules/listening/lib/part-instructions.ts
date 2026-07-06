@@ -2,14 +2,23 @@ import type { ListeningPart } from "@/modules/listening/types";
 
 const BOX_CHARS = /[╔╠╚║═╗╝╣╦╩┌┐└┘│─]/;
 
-/** Strip ASCII form templates; keep IELTS instruction lines only. */
+/** Strip ASCII form templates and notes/form meta markers; keep IELTS instruction lines only. */
 export function sanitizeInstructionText(text: string | null | undefined): string | null {
   if (!text?.trim()) return null;
   const lines: string[] = [];
   for (const raw of text.split("\n")) {
     if (BOX_CHARS.test(raw)) break;
     const line = raw.trim();
-    if (line) lines.push(line);
+    if (!line) continue;
+    if (line.startsWith("@@notes_") || line.startsWith("@@form_title@@")) break;
+    if (
+      lines.length === 0 &&
+      line.toUpperCase().includes("FORM") &&
+      !/^(complete|write|questions|choose)/i.test(line)
+    ) {
+      continue;
+    }
+    lines.push(line);
   }
   return lines.length > 0 ? lines.join("\n") : null;
 }

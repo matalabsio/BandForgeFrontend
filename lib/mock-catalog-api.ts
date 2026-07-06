@@ -1,13 +1,12 @@
 /** Live full-mock catalog from the API (admin-created tests included). */
 
-import { mockApiId } from "@/lib/mock-catalog";
+import { mockApiId } from "@/lib/mock-ids";
+import {
+  isLiveCatalogNumber,
+  MAX_LIVE_CATALOG_NUMBER,
+} from "@/lib/mock-catalog-live";
 
-/** Candidate-facing catalog: only Tests 1–2 are live; 3+ are upcoming placeholders. */
-export const MAX_LIVE_CATALOG_NUMBER = 2;
-
-export function isLiveCatalogNumber(catalogNumber: number): boolean {
-  return catalogNumber >= 1 && catalogNumber <= MAX_LIVE_CATALOG_NUMBER;
-}
+export { isLiveCatalogNumber, MAX_LIVE_CATALOG_NUMBER };
 
 export type MockCatalogApiItem = {
   id: string;
@@ -36,6 +35,8 @@ export type MockCatalogSlot = {
   writingMinutes: number;
   totalMinutes: number;
   flowHint: string;
+  /** Test 2+ requires an active subscription. */
+  requiresSubscription?: boolean;
 };
 
 export function catalogItemToSlot(item: MockCatalogApiItem): MockCatalogSlot {
@@ -59,6 +60,7 @@ export function catalogItemToSlot(item: MockCatalogApiItem): MockCatalogSlot {
     writingMinutes,
     totalMinutes: listeningMinutes + readingMinutes + writingMinutes,
     flowHint: `Listening has ${item.listening_parts || 4} parts · reading has ${item.reading_passages || 2} passages · writing has ${item.writing_tasks || 2} tasks`,
+    requiresSubscription: number >= 2,
   };
 }
 
@@ -80,6 +82,7 @@ function upcomingCatalogSlot(number: number): MockCatalogSlot {
     writingMinutes: 0,
     totalMinutes: 0,
     flowHint: "",
+    requiresSubscription: false,
   };
 }
 

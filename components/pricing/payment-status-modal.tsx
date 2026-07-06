@@ -15,24 +15,77 @@ const COPY = {
     primary: "Try again",
     secondary: "Contact support",
   },
+  payments_disabled: {
+    title: "Payments unavailable",
+    body: "Checkout is temporarily disabled. Please try again later or contact support.",
+    primary: "Close",
+    secondary: "Contact support",
+  },
+  checkout_unavailable: {
+    title: "Checkout could not open",
+    body: "We couldn't load the Razorpay payment window. Check your connection and try again.",
+    primary: "Try again",
+    secondary: "Back to plans",
+  },
+  provider_misconfigured: {
+    title: "Payments temporarily unavailable",
+    body: "Our payment provider is misconfigured. Please contact support or try again later.",
+    primary: "Contact support",
+    secondary: "Back to plans",
+  },
+  session_expired: {
+    title: "Session expired",
+    body: "Please sign in again to continue checkout. If you already paid, contact support with your payment reference.",
+    primary: "Sign in",
+    secondary: "Contact support",
+  },
+  payment_failed: {
+    title: "Payment failed",
+    body: "Your card or UPI payment was declined. No charge was made. You can try again.",
+    primary: "Try again",
+    secondary: "Back to plans",
+  },
 } as const;
 
 type Props = {
-  variant: "cancelled" | "verify_failed";
+  variant: keyof typeof COPY;
+  detail?: string | null;
   onRetry: () => void;
   onClose: () => void;
 };
 
-export function PaymentStatusModal({ variant, onRetry, onClose }: Props) {
+export function PaymentStatusModal({ variant, detail, onRetry, onClose }: Props) {
   const router = useRouter();
   const copy = COPY[variant];
+  const body = detail?.trim() || copy.body;
 
   function handleSecondary() {
-    if (variant === "verify_failed") {
+    if (
+      variant === "verify_failed" ||
+      variant === "payments_disabled" ||
+      variant === "provider_misconfigured" ||
+      variant === "session_expired"
+    ) {
       router.push("/contact");
       return;
     }
     onClose();
+  }
+
+  function handlePrimary() {
+    if (variant === "payments_disabled") {
+      onClose();
+      return;
+    }
+    if (variant === "provider_misconfigured") {
+      router.push("/contact");
+      return;
+    }
+    if (variant === "session_expired") {
+      router.push("/login?next=%2Fpricing&session=expired");
+      return;
+    }
+    onRetry();
   }
 
   return (
@@ -65,12 +118,12 @@ export function PaymentStatusModal({ variant, onRetry, onClose }: Props) {
         >
           {copy.title}
         </h2>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{copy.body}</p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{body}</p>
 
         <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
           <button
             type="button"
-            onClick={onRetry}
+            onClick={handlePrimary}
             className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep"
           >
             {copy.primary}

@@ -4,7 +4,7 @@ import type { PlanBundle } from "@/lib/diagnostic-plan-content";
 
 type Props = {
   bundle: PlanBundle;
-  /** Static UI: link to /pricing until Razorpay bundles are wired. */
+  /** Links to /pricing for subscription checkout. */
   href?: string;
 };
 

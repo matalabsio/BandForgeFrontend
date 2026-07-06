@@ -1,26 +1,30 @@
 import type { MockCatalogApiItem } from "@/lib/mock-catalog-api";
-import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
-/** Published full IELTS mocks (orchestrated multi-module exams). */
-
-/** Academic Mock 1 — valid Postgres UUID (a000 prefix; `m` is not hex). */
-export const M01_MOCK_TEST_ID = "a0000000-0000-4000-8000-000000000001";
-
-/** Academic Mock 2 — valid Postgres UUID (a000 prefix). */
-export const M02_MOCK_TEST_ID = "a0000000-0000-4000-8000-000000000002";
-
-const PUBLISHED_FULL_MOCK_IDS: readonly string[] = [
+import { isLiveCatalogNumber } from "@/lib/mock-catalog-live";
+import { mockResultsPathForTest } from "@/lib/module-review-paths";
+import {
+  DEFAULT_MOCK_SLUG,
+  DEFAULT_MOCK_TEST_ID,
   M01_MOCK_TEST_ID,
   M02_MOCK_TEST_ID,
-];
+  MOCK_SLUGS,
+  PUBLISHED_FULL_MOCK_IDS,
+  isUuid,
+  mockApiId,
+  resolveMockId,
+  type MockSlug,
+} from "@/lib/mock-ids";
 
-const MOCK_SLUGS = {
-  m01: M01_MOCK_TEST_ID,
-  m02: M02_MOCK_TEST_ID,
-} as const;
+export {
+  DEFAULT_MOCK_SLUG,
+  DEFAULT_MOCK_TEST_ID,
+  M01_MOCK_TEST_ID,
+  M02_MOCK_TEST_ID,
+  isUuid,
+  mockApiId,
+  type MockSlug,
+};
 
-export type MockSlug = keyof typeof MOCK_SLUGS;
-
-export const DEFAULT_MOCK_SLUG: MockSlug = "m01";
+/** Published full IELTS mocks (orchestrated multi-module exams). */
 
 /** Slugs shown on the dashboard (in order). */
 export const PUBLISHED_MOCK_SLUGS: readonly MockSlug[] = ["m01", "m02"];
@@ -168,6 +172,13 @@ export function isLiveCatalogTestNumber(testNumber: number): boolean {
   return isLiveCatalogNumber(testNumber);
 }
 
+export {
+  listeningModuleReviewPath,
+  readingModuleReviewPath,
+  speakingModuleReviewPath,
+  writingModuleReviewPath,
+} from "@/lib/module-review-paths";
+
 /** One-hop legacy redirect URL (hydrator strips transient query params). */
 export function legacyModuleExamRedirectPath(
   testNumber: number,
@@ -255,25 +266,9 @@ function buildMockMeta(
   };
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 const LEGACY_INVALID_M01_ID = "m0000000-0000-4000-8000-000000000001";
 
 export type MockModule = "reading" | "listening" | "writing" | "speaking";
-
-export function isUuid(value: string): boolean {
-  return UUID_RE.test(value);
-}
-
-function resolveMockId(slugOrId: string): string {
-  if (slugOrId === LEGACY_INVALID_M01_ID) return M01_MOCK_TEST_ID;
-  if (slugOrId in MOCK_SLUGS) {
-    return MOCK_SLUGS[slugOrId as MockSlug];
-  }
-  if (isUuid(slugOrId)) return slugOrId;
-  return M01_MOCK_TEST_ID;
-}
 
 function mockSlugForId(id: string): MockSlug | string {
   if (id === LEGACY_INVALID_M01_ID) return DEFAULT_MOCK_SLUG;
@@ -449,9 +444,19 @@ export function mockCheckpointPath(
   return `/mock/${slug}/checkpoint?${params.toString()}`;
 }
 
-export function mockResultsPath(slugOrId: string, _mockAttemptId?: string): string {
+export function mockResultsPath(
+  slugOrId: string,
+  mockAttemptId?: string | null,
+): string {
+  const id = resolveMockId(slugOrId);
+  const testNumber = testNumberForMockId(id);
+  if (isLiveCatalogNumber(testNumber)) {
+    return mockResultsPathForTest(testNumber, mockAttemptId);
+  }
   const slug = canonicalMockSlug(slugOrId);
-  return `/mock/${slug}/results`;
+  const base = `/mock/${slug}/results`;
+  if (!mockAttemptId) return base;
+  return `${base}?${new URLSearchParams({ mock_attempt: mockAttemptId }).toString()}`;
 }
 
 /** Listening parts included in Test 1 flow. */
@@ -623,13 +628,6 @@ export function examRedirectIfMismatch(
     next_part: expectedPart,
   });
 }
-
-/** Resolved UUID for API calls from route slug or id. */
-export function mockApiId(slugOrId: string): string {
-  return resolveMockId(slugOrId);
-}
-
-export const DEFAULT_MOCK_TEST_ID = M01_MOCK_TEST_ID;
 
 /** User-facing label (UI only; routes/API stay mock/m01). */
 export const MOCK_DISPLAY_LABEL = "Test 1";

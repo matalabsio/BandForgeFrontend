@@ -23,8 +23,12 @@ type Props = {
   onBeginSection: () => void;
 };
 
+function qDisplay(q: ListeningPart["questions"][number]): number {
+  return q.display_number ?? q.question_number;
+}
+
 function sortedQuestions(questions: ListeningPart["questions"]) {
-  return questions.toSorted((a, b) => a.question_number - b.question_number);
+  return questions.toSorted((a, b) => qDisplay(a) - qDisplay(b));
 }
 
 /** IELTS Part 1 style: one MP3 covers every question in the section. */
@@ -54,8 +58,8 @@ function ListeningAudioPanelBase({
   onBeginSection,
 }: Props) {
   const ordered = sortedQuestions(part.questions);
-  const qStart = ordered[0]?.question_number ?? 1;
-  const qEnd = ordered[ordered.length - 1]?.question_number ?? 10;
+  const qStart = ordered[0] ? qDisplay(ordered[0]) : 1;
+  const qEnd = ordered.length > 0 ? qDisplay(ordered[ordered.length - 1]) : 10;
   const partPlayed = Boolean(playedParts[part.part]);
   const sharedUrl = partLevelAudioUrl(part);
   const awaitingStart = phase === "awaiting_start";

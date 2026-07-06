@@ -6,6 +6,7 @@ import { ListeningChooseTwoBlock } from "@/modules/listening/components/listenin
 import { ListeningMatchingBlock } from "@/modules/listening/components/listening-matching-block";
 import { ListeningPartFooter } from "@/modules/listening/components/listening-part-footer";
 import { ListeningQuestionPanel } from "@/modules/listening/components/listening-question-panel";
+import { ListeningNoteCompletionBlock } from "@/modules/listening/components/listening-note-completion-block";
 import { ListeningSentenceCompletionBlock } from "@/modules/listening/components/listening-sentence-completion-block";
 import { groupListeningQuestions } from "@/modules/listening/lib/listening-question-groups";
 import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
@@ -173,6 +174,21 @@ function ListeningQuestionsPanelBase({
                     questions={block.questions}
                     instruction={block.instruction}
                     options={block.options}
+                    answers={answers}
+                    currentQuestionId={currentQuestionId}
+                    onAnswer={onAnswer}
+                    onFocus={onFocus}
+                  />
+                );
+              }
+              if (block.kind === "note_completion") {
+                return (
+                  <ListeningNoteCompletionBlock
+                    key={`notes-${block.questions[0].id}`}
+                    questions={block.questions}
+                    instruction={block.instruction}
+                    notesTitle={part.notes_title}
+                    notesSections={part.notes_sections}
                     answers={answers}
                     currentQuestionId={currentQuestionId}
                     onAnswer={onAnswer}

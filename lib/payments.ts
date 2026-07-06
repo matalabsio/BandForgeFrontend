@@ -1,4 +1,5 @@
 import { ApiError, parseApiError, parseJsonResponse, type ApiErrorBody } from "@/lib/api";
+import { isValidIndiaMobile10, normalizeIndiaMobile, toIndiaE164 } from "@/lib/india-mobile";
 
 export type Plan = {
   id: string;
@@ -24,6 +25,7 @@ export type CreateOrderResult = {
   currency: string;
   plan_name: string;
   checkout_contact: CheckoutContact;
+  checkout_config_id?: string | null;
 };
 
 export type Subscription = {
@@ -42,6 +44,7 @@ export type PaymentHistoryItem = {
   currency: string;
   status: string;
   created_at: string;
+  razorpay_payment_id: string | null;
 };
 
 export type RazorpayHandlerResponse = {
@@ -67,8 +70,16 @@ async function paymentsCall<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export function getPlans(): Promise<{ plans: Plan[] }> {
-  return paymentsCall<{ plans: Plan[] }>("/plans");
+export function getPlans(): Promise<{
+  plans: Plan[];
+  payments_enabled: boolean;
+  checkout_test_mode: boolean;
+}> {
+  return paymentsCall<{
+    plans: Plan[];
+    payments_enabled: boolean;
+    checkout_test_mode: boolean;
+  }>("/plans");
 }
 
 export function createOrder(planSlug: string): Promise<CreateOrderResult> {
@@ -107,6 +118,27 @@ export function formatInr(paise: number): string {
 
 // --- Razorpay checkout script + popup -------------------------------------
 
+type RazorpayInstrument = { method: string };
+
+type RazorpayDisplayConfig = {
+  display: {
+    blocks?: Record<string, { name: string; instruments: RazorpayInstrument[] }>;
+    hide?: RazorpayInstrument[];
+    sequence: string[];
+    preferences?: { show_default_blocks?: boolean };
+  };
+};
+
+type RazorpayMethodOption =
+  | {
+      upi?: boolean;
+      card?: boolean;
+      netbanking?: boolean;
+      wallet?: boolean;
+      paylater?: boolean;
+    }
+  | "upi";
+
 type RazorpayOptions = {
   key: string;
   amount: number;
@@ -117,10 +149,20 @@ type RazorpayOptions = {
   handler: (response: RazorpayHandlerResponse) => void;
   prefill: { name?: string; email?: string; contact?: string };
   theme?: { color?: string };
-  modal?: { ondismiss?: () => void };
+  modal?: { ondismiss?: () => void; confirm_close?: boolean };
+  checkout_config_id?: string;
+  config?: RazorpayDisplayConfig;
+  method?: RazorpayMethodOption;
+  readonly?: { email?: boolean; contact?: boolean; name?: boolean };
+  remember_customer?: boolean;
+  send_sms_hash?: boolean;
+  retry?: { enabled: boolean; max_count: number };
 };
 
-type RazorpayInstance = { open: () => void };
+type RazorpayInstance = {
+  open: () => void;
+  on: (event: string, handler: (response: { error?: { description?: string } }) => void) => void;
+};
 
 declare global {
   interface Window {
@@ -129,6 +171,35 @@ declare global {
 }
 
 const RAZORPAY_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
+
+/** Razorpay card OTP is SMS'd to prefill.contact — E.164 +91… per Razorpay docs. */
+function razorpayContactPrefill(raw: string | null | undefined): {
+  contact?: string;
+  contactEditable: boolean;
+} {
+  if (!raw?.trim()) {
+    return { contactEditable: true };
+  }
+  const digits = normalizeIndiaMobile(raw);
+  if (isValidIndiaMobile10(digits)) {
+    return { contact: toIndiaE164(digits), contactEditable: true };
+  }
+  return { contactEditable: true };
+}
+
+/** Fallback when Dashboard Payment Configuration ID is not set (local dev). */
+const RAZORPAY_FALLBACK_CHECKOUT_CONFIG: RazorpayDisplayConfig = {
+  display: {
+    sequence: ["upi", "card", "netbanking", "wallet"],
+    hide: [{ method: "paylater" }],
+    preferences: { show_default_blocks: true },
+  },
+};
+
+function isMobileUserAgent(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
 
 export function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -158,20 +229,23 @@ export function loadRazorpayScript(): Promise<boolean> {
 }
 
 /**
- * Open the hosted Razorpay checkout. Only minimal data (amount, currency,
- * order id, key, and name/email/phone prefill) is passed — no learning,
- * diagnostic, or behavioural data.
+ * Razorpay Standard Checkout options for BandForge one-time subscription pay.
+ * Exported for diagnostics — do not add user_id, plan_slug, or learning data.
  */
-export async function openRazorpayCheckout(opts: {
+export function buildRazorpayCheckoutOptions(opts: {
   order: CreateOrderResult;
   onSuccess: (response: RazorpayHandlerResponse) => void;
   onDismiss: () => void;
-}): Promise<boolean> {
-  const ok = await loadRazorpayScript();
-  if (!ok || !window.Razorpay) return false;
-
+}): RazorpayOptions {
   const { order } = opts;
-  const rzp = new window.Razorpay({
+  const { contact } = razorpayContactPrefill(order.checkout_contact.contact);
+  const configId = order.checkout_config_id?.trim();
+  const mobileUpiPreferred =
+    isMobileUserAgent() &&
+    Boolean(order.checkout_contact.email) &&
+    Boolean(contact);
+
+  const options: RazorpayOptions = {
     key: order.key_id,
     amount: order.amount,
     currency: order.currency,
@@ -182,10 +256,69 @@ export async function openRazorpayCheckout(opts: {
     prefill: {
       name: order.checkout_contact.name ?? undefined,
       email: order.checkout_contact.email ?? undefined,
-      contact: order.checkout_contact.contact ?? undefined,
+      contact,
     },
     theme: { color: "#0d1f3c" },
-    modal: { ondismiss: opts.onDismiss },
+    modal: { ondismiss: opts.onDismiss, confirm_close: true },
+    method: mobileUpiPreferred
+      ? "upi"
+      : {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true,
+          paylater: false,
+        },
+    // One-time pay — no saved cards / Flash tokenization OTP (real SMS in test mode).
+    remember_customer: false,
+    send_sms_hash: false,
+    readonly: {
+      email: Boolean(order.checkout_contact.email),
+      name: Boolean(order.checkout_contact.name),
+      contact: false,
+    },
+    retry: { enabled: true, max_count: 3 },
+  };
+
+  if (configId) {
+    // Dashboard Payment Configuration controls UPI QR, Intent, cards, etc.
+    options.checkout_config_id = configId;
+  } else {
+    options.config = RAZORPAY_FALLBACK_CHECKOUT_CONFIG;
+  }
+
+  return options;
+}
+
+/**
+ * Open the hosted Razorpay checkout. Only minimal data (amount, currency,
+ * order id, key, and name/email/phone prefill) is passed — no learning,
+ * diagnostic, or behavioural data.
+ */
+export async function openRazorpayCheckout(opts: {
+  order: CreateOrderResult;
+  onSuccess: (response: RazorpayHandlerResponse) => void;
+  onDismiss: () => void;
+  onFailed?: (message: string) => void;
+}): Promise<boolean> {
+  const ok = await loadRazorpayScript();
+  if (!ok || !window.Razorpay) return false;
+
+  const options = buildRazorpayCheckoutOptions(opts);
+  if (process.env.NODE_ENV === "development") {
+    console.info("[bandforge/razorpay-checkout]", {
+      remember_customer: options.remember_customer,
+      contact: options.prefill.contact,
+      order_id: options.order_id,
+      checkout_config_id: options.checkout_config_id ?? null,
+      fallback_config: Boolean(options.config),
+    });
+  }
+  const rzp = new window.Razorpay(options);
+  rzp.on("payment.failed", (response) => {
+    const message =
+      response.error?.description ?? "Payment failed. Please try again.";
+    opts.onFailed?.(message);
   });
   rzp.open();
   return true;

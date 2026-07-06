@@ -52,6 +52,7 @@ export function MockTestsUnified({
           hubMeta={slotToHubMeta(selectedSlot)}
           initialProgress={initialProgress}
           variant="embedded"
+          requiresSubscription={selectedSlot.requiresSubscription}
         />
       ) : (
         <MockTestComingSoon

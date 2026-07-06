@@ -68,8 +68,9 @@ const serwist = new Serwist({
     },
     {
       matcher: ({ url }) => url.pathname.startsWith("/_next/static/"),
-      handler: new CacheFirst({
+      handler: new NetworkFirst({
         cacheName: "next-static",
+        networkTimeoutSeconds: 3,
       }),
     },
     {
@@ -100,13 +101,19 @@ const serwist = new Serwist({
       }),
     },
     {
-      matcher: ({ request }) =>
-        request.destination === "image" ||
-        request.destination === "style" ||
-        request.destination === "script" ||
-        request.destination === "font",
+      matcher: ({ request }) => request.destination === "image",
       handler: new CacheFirst({
+        cacheName: "static-images",
+      }),
+    },
+    {
+      matcher: ({ request }) =>
+        request.destination === "script" ||
+        request.destination === "style" ||
+        request.destination === "font",
+      handler: new NetworkFirst({
         cacheName: "static-assets",
+        networkTimeoutSeconds: 3,
       }),
     },
   ],

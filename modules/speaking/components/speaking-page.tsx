@@ -7,10 +7,10 @@ import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   DEFAULT_MOCK_SLUG,
-  shortModuleSpeakingPendingPath,
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
+import { speakingModuleReviewPath } from "@/lib/module-review-paths";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { parseSpeakingPrompt } from "@/modules/speaking/lib/parse-speaking-prompt";
@@ -184,13 +184,17 @@ export function SpeakingPage({
     try {
       const result = await speakingApi.submit(attemptId, audioBlob, recordSeconds);
       persistModuleResultAttempt(testNumber, "speaking", result.attempt_id);
-      router.replace(shortModuleSpeakingPendingPath(testNumber, result.attempt_id));
+      if (mockAttemptId) {
+        router.replace(speakingModuleReviewPath(testNumber, mockAttemptId));
+        return;
+      }
+      router.replace(speakingModuleReviewPath(testNumber));
     } catch (e) {
       setError(formatExamSubmitError(e));
     } finally {
       setBusy(false);
     }
-  }, [attemptId, audioBlob, busy, recordSeconds, router, testNumber]);
+  }, [attemptId, audioBlob, busy, recordSeconds, router, testNumber, mockAttemptId]);
 
   if (showInstructions) {
     return (

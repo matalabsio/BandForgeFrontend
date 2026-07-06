@@ -14,12 +14,21 @@ export type ListeningQuestion = {
   audio_duration_seconds?: number | null;
 };
 
+export type NotesSection = {
+  heading: string;
+  start: number;
+  end: number;
+};
+
 export type ListeningPart = {
   part: 1 | 2 | 3 | 4;
   title: string;
   context: string;
   common_question_type: string;
   questions: ListeningQuestion[];
+  form_title?: string | null;
+  notes_title?: string | null;
+  notes_sections?: NotesSection[] | null;
 };
 
 export type ListeningTestSummary = {
