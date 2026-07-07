@@ -16,7 +16,7 @@ import {
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
-import { writingModuleReviewPath } from "@/lib/module-review-paths";
+import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistMockAttemptId, persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
@@ -411,6 +411,7 @@ export function WritingPage({
       }
 
       if (mockAttemptId) {
+        const testNum = testNumberForMockId(mockTestId);
         cacheMockNavHint({
           mock_attempt_id: mockAttemptId,
           next_module:
@@ -432,28 +433,14 @@ export function WritingPage({
             return;
           }
         }
-        if (result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1) {
-          bootedRef.current = false;
-          navigateToExamPath(
-            router,
-            mockSlug,
-            mockModulePath(mockSlug, "writing", { part: 2 }),
-            {
+        if (!isDiagnostic) {
+          router.replace(
+            sectionResultsPathForMockSubmit(mockSlug, "writing", {
+              attempt: result.attempt_id,
+              part,
               mockAttemptId,
-              auto: true,
-              sectionStart: true,
-            },
+            }),
           );
-          return;
-        }
-        const testNum = testNumberForMockId(mockTestId);
-        const writingTaskCount = mockMeta.writingTaskCount;
-        if (
-          !isDiagnostic &&
-          part >= writingTaskCount &&
-          (result.mock_writing_complete === true || result.next_part == null)
-        ) {
-          router.replace(writingModuleReviewPath(testNum, mockAttemptId));
           return;
         }
         const goPending =

@@ -19,9 +19,7 @@ import {
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
-import { listeningModuleReviewPath } from "@/lib/module-review-paths";
-import { cacheModuleReview } from "@/lib/module-review-cache";
-import { mockApi } from "@/modules/mock/services/mock-api";
+import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import {
   isListeningTest,
   listeningModuleResultsPath,
@@ -227,17 +225,22 @@ export function ListeningPage({
     [replace, push, testId, mockSlug, mockAttemptId, part, isDiagnostic, listeningPartCount],
   );
 
-  /** After the final listening part in a mock: show the module-complete review. */
-  const goToListeningReview = useCallback(async () => {
-    if (!mockAttemptId) return;
-    try {
-      const review = await mockApi.listeningModuleReview(mockAttemptId);
-      cacheModuleReview(mockAttemptId, "listening", review);
-    } catch {
-      /* review page will refetch on load */
-    }
-    replace(listeningModuleReviewPath(resolvedTestNumber, mockAttemptId));
-  }, [mockAttemptId, resolvedTestNumber, replace]);
+  /** After each listening part in a mock: per-section results screen. */
+  const goToMockSectionResults = useCallback(
+    (attemptId: string, completedPart: number) => {
+      if (!mockAttemptId) return;
+      const testNumber = testNumberForMockId(testId);
+      persistModuleResultAttempt(testNumber, "listening", attemptId);
+      replace(
+        sectionResultsPathForMockSubmit(mockSlug, "listening", {
+          attempt: attemptId,
+          part: completedPart,
+          mockAttemptId,
+        }),
+      );
+    },
+    [mockAttemptId, mockSlug, replace, testId],
+  );
 
   const submitAnswers = useMemo(
     () =>
@@ -279,12 +282,12 @@ export function ListeningPage({
       }
       dispatch({ type: "completed", payload });
       clearSnapshot(state.attemptId);
-      const listeningComplete =
-        payload.mock_listening_complete === true || listeningDoneOnClient;
-      if (mockAttemptId && !isDiagnostic && listeningComplete) {
-        void goToListeningReview();
+      if (mockAttemptId && !isDiagnostic) {
+        goToMockSectionResults(payload.attempt_id, part);
         return;
       }
+      const listeningComplete =
+        payload.mock_listening_complete === true || listeningDoneOnClient;
       void goToResults(payload.attempt_id, {
         mockListeningComplete: listeningComplete,
       });
@@ -301,7 +304,7 @@ export function ListeningPage({
     submitAnswers,
     dispatch,
     goToResults,
-    goToListeningReview,
+    goToMockSectionResults,
     isDiagnostic,
     mockAttemptId,
     part,
@@ -856,13 +859,13 @@ export function ListeningPage({
           onSubmitted={(payload) => {
             dispatch({ type: "completed", payload });
             if (state.attemptId) clearSnapshot(state.attemptId);
+            if (mockAttemptId && !isDiagnostic) {
+              goToMockSectionResults(payload.attempt_id, part);
+              return;
+            }
             const listeningComplete =
               payload.mock_listening_complete === true ||
               part >= listeningPartCount;
-            if (mockAttemptId && !isDiagnostic && listeningComplete) {
-              void goToListeningReview();
-              return;
-            }
             void goToResults(payload.attempt_id, {
               mockListeningComplete: listeningComplete,
             });

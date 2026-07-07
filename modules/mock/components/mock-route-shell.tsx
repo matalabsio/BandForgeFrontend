@@ -9,7 +9,9 @@ import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-ref
 function MockRouteInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isReview = pathname.includes("/review");
+  const isReview =
+    pathname.includes("/review") ||
+    /\/test\/\d+\/(listening|reading|writing|speaking)\/results/.test(pathname);
   const isExam =
     !isReview &&
     (searchParams.has("part") ||

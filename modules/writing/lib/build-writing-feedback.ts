@@ -113,6 +113,24 @@ function buildCriteria(overall: number): WritingCriterionScore[] {
   }));
 }
 
+function criteriaFromAi(review: WritingReview): WritingCriterionScore[] | null {
+  const raw = review.ai_criteria;
+  if (!raw || typeof raw !== "object") return null;
+  const map: Array<[WritingCriterionScore["key"], string]> = [
+    ["task_achievement", "task_achievement"],
+    ["coherence_cohesion", "coherence"],
+    ["lexical_resource", "lexical_resource"],
+    ["grammar", "grammar"],
+  ];
+  const out: WritingCriterionScore[] = [];
+  for (const [key, source] of map) {
+    const value = raw[source];
+    if (typeof value !== "number") return null;
+    out.push({ key, label: CRITERIA_LABELS[key], band: roundBand(value) });
+  }
+  return out;
+}
+
 function tokenize(text: string): string[] {
   return text
     .toLowerCase()
@@ -279,22 +297,35 @@ function buildNextBandAdvice(
 export function buildWritingFeedback(review: WritingReview): WritingFeedback {
   const overall = overallBand(review);
   const target_band = DEFAULT_TARGET_BAND;
-  const criteria = buildCriteria(overall);
+  const criteria = criteriaFromAi(review) ?? buildCriteria(overall);
   const criterion_gap_label = criterionGapLabel(criteria, target_band);
   const strong_words = findStrongWords(review.user_answer);
   const weak_words = findWeakWords(review.user_answer);
+  const aiStrengths = review.ai_strengths ?? [];
+  const aiImprovements = review.ai_improvements ?? [];
+  const strengths =
+    aiStrengths.length > 0 ? aiStrengths.slice(0, 4) : buildStrengths(review, overall);
+  const improvements =
+    aiImprovements.length > 0
+      ? aiImprovements.slice(0, 4)
+      : buildImprovements(review, overall);
+  const evaluated_label = review.ai_model_name
+    ? `AI evaluated (${review.ai_model_name})`
+    : review.ai_available === false
+      ? "AI unavailable · Using rubric fallback"
+      : "AI evaluated · Band descriptors applied";
 
   return {
     overall_band: overall,
     criteria,
-    strengths: buildStrengths(review, overall),
-    improvements: buildImprovements(review, overall),
+    strengths,
+    improvements,
     next_band_advice: buildNextBandAdvice(review, overall, criterion_gap_label),
     target_band,
     criterion_gap_label,
     strong_words,
     weak_words,
     highlights: buildHighlights(review.user_answer, strong_words, weak_words),
-    evaluated_label: "AI evaluated · Band descriptors applied",
+    evaluated_label,
   };
 }

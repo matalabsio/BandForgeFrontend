@@ -31,6 +31,38 @@ type WritingPanel = "task1" | "task2";
  * skip evaluation and let the candidate submit with writing left unscored. */
 const WRITING_MIN_WORDS_FOR_AI = 30;
 
+type PromptBlocks = {
+  intro: string;
+  description: string;
+  instruction: string;
+  minWordsLine: string;
+};
+
+function splitPromptBlocks(prompt: string): PromptBlocks | null {
+  const text = prompt.replace(/\s+/g, " ").trim();
+  if (!text) return null;
+
+  const introMatch = text.match(/You should spend about .*? on this task\./i);
+  const instructionMatch = text.match(
+    /(Summarise|Summarize) .*? relevant\./i,
+  );
+  const minWordsMatch = text.match(/Write at least \d+\s*\+?\s*words\.?/i);
+
+  const intro = introMatch?.[0]?.trim() ?? "";
+  const instruction = instructionMatch?.[0]?.trim() ?? "";
+  const minWordsLine = minWordsMatch?.[0]?.trim() ?? "";
+
+  if (!intro && !instruction && !minWordsLine) return null;
+
+  let description = text;
+  if (intro) description = description.replace(intro, "").trim();
+  if (instruction) description = description.replace(instruction, "").trim();
+  if (minWordsLine) description = description.replace(minWordsLine, "").trim();
+  description = description.replace(/\s+/g, " ").trim();
+
+  return { intro, description, instruction, minWordsLine };
+}
+
 function taskPanelId(task: DiagnosticWritingTask): WritingPanel {
   return task.part === 1 ? "task1" : "task2";
 }
@@ -62,6 +94,10 @@ export function DiagnosticWritingExperience() {
   const words = useMemo(
     () => (activeTask ? wordCount(essays[activeTask.id] ?? "") : 0),
     [activeTask, essays],
+  );
+  const promptBlocks = useMemo(
+    () => (activeTask ? splitPromptBlocks(activeTask.prompt) : null),
+    [activeTask],
   );
 
   const persistEssays = useCallback((next: Record<string, string>) => {
@@ -204,18 +240,43 @@ export function DiagnosticWritingExperience() {
                     Task {activeTask.part} · {activeTask.part === 1 ? "20" : "25"} min ·{" "}
                     {activeTask.minWords}+ words
                   </p>
-                  <p className="mt-2 break-words text-sm leading-relaxed font-light text-[#1B2B45]">
-                    {activeTask.prompt}
-                  </p>
+                  {promptBlocks ? (
+                    <div className="mt-2.5 space-y-2.5">
+                      {promptBlocks.intro ? (
+                        <p className="text-[13px] font-semibold text-[#1B2B45]">
+                          {promptBlocks.intro}
+                        </p>
+                      ) : null}
+                      {promptBlocks.description ? (
+                        <p className="break-words text-sm leading-relaxed font-light text-[#334155]">
+                          {promptBlocks.description}
+                        </p>
+                      ) : null}
+                      {promptBlocks.instruction ? (
+                        <p className="break-words text-sm leading-relaxed font-medium text-[#1B2B45]">
+                          {promptBlocks.instruction}
+                        </p>
+                      ) : null}
+                      {promptBlocks.minWordsLine ? (
+                        <p className="text-[13px] font-semibold text-teal">
+                          {promptBlocks.minWordsLine}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="mt-2 break-words text-sm leading-relaxed font-light text-[#1B2B45]">
+                      {activeTask.prompt}
+                    </p>
+                  )}
                 </div>
 
                 {activeTask.diagramUrl ? (
-                  <div className="mb-4 overflow-hidden rounded-[14px] border border-dashed border-navy/18 bg-[repeating-linear-gradient(45deg,rgba(13,31,60,0.05)_0_10px,transparent_10px_20px)] p-4">
+                  <div className="mb-4 overflow-hidden rounded-[14px] border border-dashed border-navy/18 bg-[repeating-linear-gradient(45deg,rgba(13,31,60,0.05)_0_10px,transparent_10px_20px)] p-3 md:p-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={activeTask.diagramUrl}
                       alt="Task diagram"
-                      className="mx-auto h-auto max-h-40 w-full max-w-md object-contain"
+                      className="mx-auto h-auto max-h-[420px] w-full max-w-4xl object-contain"
                     />
                   </div>
                 ) : null}

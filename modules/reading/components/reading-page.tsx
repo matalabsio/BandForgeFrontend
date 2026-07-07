@@ -17,9 +17,7 @@ import {
   mockPathFromProgress,
   type MockMeta,
 } from "@/lib/mock-catalog";
-import { readingModuleReviewPath } from "@/lib/module-review-paths";
-import { cacheModuleReview } from "@/lib/module-review-cache";
-import { mockApi } from "@/modules/mock/services/mock-api";
+import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { syncExamRoute, navigateAfterSectionSubmit } from "@/lib/mock-exam-nav";
 import {
@@ -380,17 +378,22 @@ export function ReadingPage({
     [replace, push, testId, mockSlug, mockAttemptId, passage, isDiagnostic, readingPassageCount],
   );
 
-  /** After the final reading passage in a mock: show the module-complete review. */
-  const goToReadingReview = useCallback(async () => {
-    if (!mockAttemptId) return;
-    try {
-      const review = await mockApi.readingModuleReview(mockAttemptId);
-      cacheModuleReview(mockAttemptId, "reading", review);
-    } catch {
-      /* review page will refetch on load */
-    }
-    replace(readingModuleReviewPath(resolvedTestNumber, mockAttemptId));
-  }, [mockAttemptId, resolvedTestNumber, replace]);
+  /** After each reading passage in a mock: per-section results screen. */
+  const goToMockSectionResults = useCallback(
+    (attemptId: string, completedPassage: number) => {
+      if (!mockAttemptId) return;
+      const testNumber = testNumberForMockId(testId);
+      persistModuleResultAttempt(testNumber, "reading", attemptId);
+      replace(
+        sectionResultsPathForMockSubmit(mockSlug, "reading", {
+          attempt: attemptId,
+          part: completedPassage,
+          mockAttemptId,
+        }),
+      );
+    },
+    [mockAttemptId, mockSlug, replace, testId],
+  );
 
   const flushAutosaves = useCallback(
     async (id: string, snapshot: Record<string, string>) => {
@@ -451,8 +454,8 @@ export function ReadingPage({
       }
       const readingComplete =
         result.mock_reading_complete === true || passage >= readingPassageCount;
-      if (mockAttemptId && !isDiagnostic && readingComplete) {
-        void goToReadingReview();
+      if (mockAttemptId && !isDiagnostic) {
+        goToMockSectionResults(result.attempt_id, passage);
         return;
       }
       goToResults(result.attempt_id, {
@@ -485,7 +488,7 @@ export function ReadingPage({
     questions,
     answers,
     goToResults,
-    goToReadingReview,
+    goToMockSectionResults,
     isDiagnostic,
     mockAttemptId,
     testId,

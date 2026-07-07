@@ -4,7 +4,11 @@ import { DashboardModuleProgress } from "@/components/bandforge/dashboard/dashbo
 import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
 import { DashboardTodaysPlan } from "@/components/bandforge/dashboard/dashboard-todays-plan";
 import { fetchDashboardSummary } from "@/lib/dashboard-server";
-import { latestBandByModule, countTestedModuleBands } from "@/components/scores/scores-utils";
+import {
+  countTestedModuleBands,
+  dashboardModuleBands,
+  dashboardOverallBand,
+} from "@/components/scores/scores-utils";
 
 type UserProps = {
   firstName: string;
@@ -22,9 +26,9 @@ export async function DashboardStatsSection({ cookieHeader, user }: Props) {
   const summary = await fetchDashboardSummary(cookieHeader);
   const streak = summary.stats.current_streak ?? 0;
   const hasAttempts = summary.recent.length > 0;
-  const overallBand = summary.stats.average_band;
-  const testsCompleted = summary.recent.length;
-  const moduleBands = latestBandByModule(summary.recent);
+  const overallBand = dashboardOverallBand(summary);
+  const testsCompleted = summary.completed_mock_count ?? 0;
+  const moduleBands = dashboardModuleBands(summary.recent, summary.latest_mock);
   const testedModuleCount = countTestedModuleBands(moduleBands, summary.recent);
 
   return (

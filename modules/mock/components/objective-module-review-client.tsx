@@ -1,24 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { buildModuleCoachMessage, moduleCoachTitle } from "@/lib/module-coach-copy";
-import { canonicalMockSlug, mockHubPath, mockResultsPath, mockTestNumberPath } from "@/lib/mock-catalog";
+import {
+  canonicalMockSlug,
+  mockHubPath,
+  mockResultsPath,
+  mockTestNumberPath,
+} from "@/lib/mock-catalog";
 import { cacheModuleReview, readModuleReview } from "@/lib/module-review-cache";
 import type { ModuleReviewPayload, ObjectiveModule } from "@/lib/module-review-types";
 import { persistMockAttemptId } from "@/lib/exam-session-storage";
 import { navigateFromProgress } from "@/lib/mock-exam-nav";
 import { mockApi } from "@/modules/mock/services/mock-api";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
-import { GroupedQuestionReview } from "@/modules/shared/components/module-review/grouped-question-review";
-import { ModuleReviewPanel } from "@/modules/shared/components/module-review/module-review-panel";
-import { ModuleScoreHero } from "@/modules/shared/components/module-review/module-score-hero";
+import {
+  flattenModuleQuestions,
+  SectionAnswerReview,
+  SectionResultsCtaBar,
+  SectionResultsShell,
+  SectionResultsSummary,
+} from "@/modules/shared/components/section-results";
 
 type Props = {
   testId: string;
   module: ObjectiveModule;
   testNumber: number;
 };
+
+type View = "summary" | "review";
 
 const NEXT_LABEL: Record<string, string> = {
   listening: "Continue to Listening",
@@ -27,14 +37,29 @@ const NEXT_LABEL: Record<string, string> = {
   speaking: "Continue to Speaking",
 };
 
-function ctaLabelFor(nextModule: string | null): string {
+function continueLabel(nextModule: string | null): string {
   if (nextModule && NEXT_LABEL[nextModule]) return NEXT_LABEL[nextModule];
-  return "View your results";
+  return "Finish Test";
 }
 
-const MODULE_PAGE_TITLE: Record<ObjectiveModule, string> = {
-  listening: "Listening review",
-  reading: "Reading review",
+const MODULE_META: Record<
+  ObjectiveModule,
+  { title: string; subtitle: (total: number, groups: number) => string }
+> = {
+  listening: {
+    title: "Listening",
+    subtitle: (total, groups) =>
+      `${total} questions · ${groups} parts completed`,
+  },
+  reading: {
+    title: "Reading",
+    subtitle: (total, groups) => {
+      const passages = new Set(
+        Array.from({ length: groups }, (_, i) => i + 1),
+      ).size;
+      return `${total} questions · ${passages} passage${passages === 1 ? "" : "s"}`;
+    },
+  },
 };
 
 export function ObjectiveModuleReviewClient({ testId, module, testNumber }: Props) {
@@ -44,6 +69,8 @@ export function ObjectiveModuleReviewClient({ testId, module, testNumber }: Prop
 
   const [payload, setPayload] = useState<ModuleReviewPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<View>("summary");
+  const [highlightQuestion, setHighlightQuestion] = useState<number | null>(null);
 
   useEffect(() => {
     if (!mockAttemptId) return;
@@ -73,6 +100,21 @@ export function ObjectiveModuleReviewClient({ testId, module, testNumber }: Prop
     };
   }, [mockAttemptId, module, mockSlug, router]);
 
+  const questions = useMemo(
+    () => (payload ? flattenModuleQuestions(payload.groups) : []),
+    [payload],
+  );
+
+  const passageCount = useMemo(() => {
+    if (!payload) return 0;
+    return new Set(
+      payload.groups.map((g) => {
+        const match = g.label.match(/Passage\s+(\d+)/i);
+        return match ? match[1] : g.label.split(" · ")[0] ?? g.label;
+      }),
+    ).size;
+  }, [payload]);
+
   const handleContinue = useCallback(() => {
     if (!mockAttemptId || !payload) return;
     persistMockAttemptId(testId, mockAttemptId);
@@ -85,44 +127,86 @@ export function ObjectiveModuleReviewClient({ testId, module, testNumber }: Prop
       next_module: payload.next_module,
       next_part: payload.next_part,
     });
-  }, [mockAttemptId, payload, mockSlug, router]);
+  }, [mockAttemptId, payload, mockSlug, router, testId]);
+
+  const openReview = useCallback((questionNumber?: number) => {
+    if (questionNumber != null) {
+      setHighlightQuestion(questionNumber);
+    }
+    setView("review");
+  }, []);
 
   if (!payload) {
     return (
-      <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center px-6 text-center">
+      <SectionResultsShell centered>
         <p className="font-display text-base font-bold text-navy">
           {error ?? "Loading your review…"}
         </p>
         {!error ? (
-          <p className="mt-2 max-w-sm text-sm font-light text-[#64748B]">
-            Gathering your answers and coach feedback.
+          <p className="mt-2 max-w-sm text-center text-sm font-light text-muted">
+            Gathering your answers.
           </p>
         ) : null}
-      </div>
+      </SectionResultsShell>
+    );
+  }
+
+  const meta = MODULE_META[module];
+  const reviewTitle = `${meta.title} · Review`;
+  const summarySubtitle =
+    module === "listening"
+      ? meta.subtitle(payload.total_questions, payload.groups.length)
+      : meta.subtitle(payload.total_questions, passageCount);
+
+  if (view === "review") {
+    return (
+      <SectionResultsShell
+        headerTitle={reviewTitle}
+        onBack={() => {
+          setView("summary");
+          setHighlightQuestion(null);
+        }}
+        card={false}
+        footer={
+          <SectionResultsCtaBar
+            primaryLabel={continueLabel(payload.next_module)}
+            onPrimary={handleContinue}
+          />
+        }
+      >
+        <SectionAnswerReview
+          questions={questions}
+          highlightQuestion={highlightQuestion}
+          onHighlightConsumed={() => setHighlightQuestion(null)}
+        />
+      </SectionResultsShell>
     );
   }
 
   return (
-    <ModuleReviewPanel
-      pageTitle={`${MODULE_PAGE_TITLE[module]} · Test ${testNumber}`}
+    <SectionResultsShell
       backHref={mockTestNumberPath(testNumber)}
-      coachTitle={moduleCoachTitle(module)}
-      coachMessage={buildModuleCoachMessage({
-        module,
-        rawScore: payload.raw_score,
-        total: payload.total_questions,
-        groups: payload.groups,
-      })}
-      hero={
-        <ModuleScoreHero
-          rawScore={payload.raw_score}
-          total={payload.total_questions}
+      showBrandBar
+      logoHref={mockTestNumberPath(testNumber)}
+      footer={
+        <SectionResultsCtaBar
+          layout="split"
+          primaryLabel="Review Answers"
+          onPrimary={() => openReview()}
+          secondaryLabel={continueLabel(payload.next_module)}
+          onSecondary={handleContinue}
         />
       }
-      ctaLabel={ctaLabelFor(payload.next_module)}
-      onContinue={handleContinue}
     >
-      <GroupedQuestionReview groups={payload.groups} />
-    </ModuleReviewPanel>
+      <SectionResultsSummary
+        title={meta.title}
+        subtitle={summarySubtitle}
+        rawScore={payload.raw_score}
+        total={payload.total_questions}
+        questions={questions}
+        allCorrectMessage="Nice work — every question correct."
+        onQuestionClick={(n) => openReview(n)}
+      />
+    </SectionResultsShell>
   );
 }

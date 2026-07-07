@@ -25,6 +25,8 @@ const EMPTY_SUMMARY: DashboardSummary = {
   in_progress: [],
   recent: [],
   activity_days: [],
+  completed_mock_count: 0,
+  latest_mock: null,
 };
 const memCache = new Map<string, { expiresAt: number; value: unknown }>();
 

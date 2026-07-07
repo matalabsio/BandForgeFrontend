@@ -1,16 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock } from "lucide-react";
-import { canonicalMockSlug, mockHubPath, mockResultsPath, mockTestNumberPath } from "@/lib/mock-catalog";
+import {
+  canonicalMockSlug,
+  mockHubPath,
+  mockResultsPath,
+} from "@/lib/mock-catalog";
 import { persistMockAttemptId } from "@/lib/exam-session-storage";
 import type { WritingModuleReviewPayload } from "@/lib/module-review-types";
 import { navigateFromProgress } from "@/lib/mock-exam-nav";
 import { mockApi } from "@/modules/mock/services/mock-api";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
-import { ModuleReviewPanel } from "@/modules/shared/components/module-review/module-review-panel";
-import { WritingTaskReviewCard } from "@/modules/shared/components/module-review/writing-task-review-card";
+import {
+  SectionResultsCtaBar,
+  SectionResultsShell,
+  SectionSubmissionConfirmation,
+} from "@/modules/shared/components/section-results";
 
 type Props = {
   testId: string;
@@ -55,58 +61,70 @@ export function WritingModuleReviewClient({ testId, testNumber }: Props) {
       next_module: payload.next_module,
       next_part: payload.next_part,
     });
-  }, [mockAttemptId, payload, mockSlug, router]);
+  }, [mockAttemptId, payload, mockSlug, router, testId]);
+
+  const subtitle = useMemo(() => {
+    if (!payload?.tasks.length) return "Writing module";
+    if (payload.tasks.length === 1) {
+      const t = payload.tasks[0];
+      const label = t.prompt.trim();
+      const short = label.length > 40 ? `${label.slice(0, 37).trim()}…` : label;
+      return `Writing Task ${t.part}${short ? ` · ${short}` : ""}`;
+    }
+    return `Writing · ${payload.tasks.length} tasks submitted`;
+  }, [payload]);
+
+  const stats = useMemo(() => {
+    if (!payload?.tasks.length) return [];
+    const totalWords = payload.tasks.reduce((sum, t) => sum + t.word_count, 0);
+    const items = [
+      { value: String(totalWords), label: "Words written" },
+    ];
+    if (payload.ai_band != null) {
+      items.push({
+        value: payload.ai_band.toFixed(1),
+        label: "AI estimate",
+      });
+    } else {
+      items.push({ value: String(payload.tasks.length), label: "Tasks submitted" });
+    }
+    return items;
+  }, [payload]);
 
   if (!payload) {
     return (
-      <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center px-6 text-center">
+      <SectionResultsShell centered>
         <p className="font-display text-base font-bold text-navy">
-          {error ?? "Evaluating your essays…"}
+          {error ?? "Saving your essays…"}
         </p>
         {!error ? (
-          <p className="mt-2 max-w-sm text-sm font-light text-[#64748B]">
-            This can take a few seconds.
+          <p className="mt-2 max-w-sm text-center text-sm font-light text-muted">
+            This only takes a moment.
           </p>
         ) : null}
-      </div>
+      </SectionResultsShell>
     );
   }
 
-  const ctaLabel = payload.next_module === "speaking"
-    ? "Continue to Speaking"
-    : payload.next_module
-      ? "Continue"
-      : "View your results";
+  const ctaLabel =
+    payload.next_module === "speaking"
+      ? "Continue to Speaking"
+      : payload.next_module
+        ? "Continue to Next Section"
+        : "Finish Test";
 
   return (
-    <ModuleReviewPanel
-      pageTitle={`Writing review · Test ${testNumber}`}
-      backHref={mockTestNumberPath(testNumber)}
-      coachTitle="MATA Coach · Writing"
-      coachMessage={payload.persona_message}
-      hero={
-        <div className="flex items-center gap-3 rounded-2xl border border-[#F8E6BE] bg-[#FEF8EC] px-4 py-3.5">
-          <Clock className="size-5 shrink-0 text-[#D98309]" aria-hidden />
-          <div>
-            <p className="font-display text-[14px] font-bold text-navy">
-              {payload.ai_band != null
-                ? `AI estimate · Band ${payload.ai_band.toFixed(1)}`
-                : "AI estimate pending"}
-            </p>
-            <p className="font-sans text-[12.5px] font-light text-[#5C4A2E]">
-              A certified examiner sends your official band within 24–48 hours.
-            </p>
-          </div>
-        </div>
+    <SectionResultsShell
+      centered
+      footer={
+        <SectionResultsCtaBar primaryLabel={ctaLabel} onPrimary={handleContinue} />
       }
-      ctaLabel={ctaLabel}
-      onContinue={handleContinue}
     >
-      <div className="space-y-4">
-        {payload.tasks.map((task) => (
-          <WritingTaskReviewCard key={task.attempt_id} task={task} />
-        ))}
-      </div>
-    </ModuleReviewPanel>
+      <SectionSubmissionConfirmation
+        subtitle={subtitle}
+        stats={stats}
+        infoMessage="Your Writing evaluation will be included in your final test results."
+      />
+    </SectionResultsShell>
   );
 }

@@ -38,7 +38,20 @@ export type DashboardRecentAttempt = {
   raw_score: number | null;
   total_questions: number | null;
   part?: number | null;
+  mock_attempt_id?: string | null;
   mock_test: DashboardMockRef;
+};
+
+export type DashboardMockSnapshot = {
+  mock_attempt_id: string;
+  mock_test_id: string;
+  catalog_number: number | null;
+  status: string;
+  listening_band: number | null;
+  reading_band: number | null;
+  writing_band: number | null;
+  speaking_band: number | null;
+  aggregate_band: number | null;
 };
 
 export type DashboardSummary = {
@@ -46,6 +59,8 @@ export type DashboardSummary = {
   in_progress: DashboardInProgressAttempt[];
   recent: DashboardRecentAttempt[];
   activity_days: ActivityDay[];
+  completed_mock_count?: number;
+  latest_mock?: DashboardMockSnapshot | null;
 };
 
 export type MockTestSummary = {

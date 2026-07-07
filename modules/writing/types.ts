@@ -84,6 +84,13 @@ export type WritingReview = {
   user_answer: string;
   word_count: number;
   band: number | null;
+  ai_band?: number | null;
+  ai_available?: boolean;
+  band_source?: string;
+  ai_criteria?: Record<string, number>;
+  ai_strengths?: string[];
+  ai_improvements?: string[];
+  ai_model_name?: string | null;
   min_words: number;
   submitted_at: string | null;
   saved_for_review: boolean;

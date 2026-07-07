@@ -89,7 +89,7 @@ export function DashboardBandHero({
             ) : null}
           </div>
           <p className="mt-2.5 text-sm font-light text-muted">
-            Based on {testsCompleted} test{testsCompleted === 1 ? "" : "s"}{" "}
+            Based on {testsCompleted} mock{testsCompleted === 1 ? "" : "s"}{" "}
             completed
           </p>
         </div>

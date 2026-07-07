@@ -6,7 +6,7 @@ import { ScoresAttemptsList } from "@/components/scores/scores-attempts-list";
 import { ScoresInsightsPanel } from "@/components/scores/scores-insights-panel";
 import { ScoresPageHeader } from "@/components/scores/scores-page-header";
 import { ScoresStatRow } from "@/components/scores/scores-stat-row";
-import { latestBandByModule } from "@/components/scores/scores-utils";
+import { dashboardModuleBands } from "@/components/scores/scores-utils";
 
 import type { MockSlug } from "@/lib/mock-catalog";
 
@@ -25,7 +25,7 @@ export function ScoresExperience({
   highlightAttemptId = null,
   mockSlug = null,
 }: Props) {
-  const moduleBands = latestBandByModule(summary.recent);
+  const moduleBands = dashboardModuleBands(summary.recent, summary.latest_mock);
 
   return (
     <div className="space-y-6">

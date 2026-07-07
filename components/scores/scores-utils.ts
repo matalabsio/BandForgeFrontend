@@ -1,15 +1,20 @@
-import type { DashboardRecentAttempt } from "@/components/bandforge/dashboard/types";
+import type {
+  DashboardMockSnapshot,
+  DashboardRecentAttempt,
+} from "@/components/bandforge/dashboard/types";
 import type { DashboardModule } from "@/components/bandforge/dashboard/types";
 import { MODULE_LABELS } from "@/components/bandforge/dashboard/types";
 import {
   shortModuleSpeakingPendingPath,
   shortModuleWritingResultsPath,
   testNumberForMockId,
-  writingModuleLabel,
 } from "@/lib/mock-catalog";
 import { listeningModuleResultsPath } from "@/lib/listening-test";
 import { readingModuleResultsPath } from "@/lib/reading-test";
 import { shortModuleResultsPath } from "@/lib/module-results-path";
+import { shortSectionResultsPath } from "@/lib/section-results-path";
+
+export type SpeakingReviewState = "none" | "under_review" | "scored";
 
 export type ModuleBand = {
   key: string;
@@ -22,9 +27,8 @@ export type ModuleBand = {
   attemptId?: string | null;
   href?: string | null;
   testNumber?: number | null;
+  mockAttemptId?: string | null;
 };
-
-export type SpeakingReviewState = "none" | "under_review" | "scored";
 
 const MODULE_ORDER: DashboardModule[] = [
   "listening",
@@ -44,6 +48,11 @@ function isCompletedAttempt(attempt: DashboardRecentAttempt): boolean {
   return Boolean(attempt.completed_at || attempt.status === "completed");
 }
 
+function normalizeBand(band: number | null | undefined): number | null {
+  if (band == null || band <= 0) return null;
+  return band;
+}
+
 function latestAttemptForModule(
   recent: DashboardRecentAttempt[],
   module: DashboardModule,
@@ -57,33 +66,54 @@ function latestAttemptForModule(
     )[0];
 }
 
-function writingPart(attempt: DashboardRecentAttempt): number | null {
-  if (attempt.part === 1 || attempt.part === 2) return attempt.part;
-  return null;
-}
-
-function latestWritingAttemptForPart(
-  recent: DashboardRecentAttempt[],
-  part: number,
-): DashboardRecentAttempt | undefined {
-  return recent
-    .filter((a) => {
-      if (a.module !== "writing" || !isCompletedAttempt(a)) return false;
-      const attemptPart = writingPart(a);
-      if (attemptPart === part) return true;
-      // Legacy rows without part: treat newest unattributed as Task 1 only.
-      return part === 1 && attemptPart === null;
-    })
-    .toSorted(
-      (a, b) =>
-        new Date(b.completed_at ?? b.started_at).getTime() -
-        new Date(a.completed_at ?? a.started_at).getTime(),
-    )[0];
+function rollupBandForModule(
+  latestMock: DashboardMockSnapshot | null | undefined,
+  module: DashboardModule,
+): number | null {
+  if (!latestMock) return null;
+  const map: Record<DashboardModule, keyof DashboardMockSnapshot> = {
+    listening: "listening_band",
+    reading: "reading_band",
+    writing: "writing_band",
+    speaking: "speaking_band",
+  };
+  const raw = latestMock[map[module]];
+  return normalizeBand(typeof raw === "number" ? raw : null);
 }
 
 export function attemptReportHref(
   attempt: DashboardRecentAttempt,
 ): string | null {
+  const testNumber = testNumberForMockId(attempt.mock_test.id);
+  const mockAttemptId = attempt.mock_attempt_id?.trim() || null;
+  const part = attempt.part ?? undefined;
+
+  if (
+    mockAttemptId &&
+    (attempt.module === "listening" || attempt.module === "reading")
+  ) {
+    return shortSectionResultsPath(testNumber, attempt.module, {
+      attempt: attempt.id,
+      part,
+      mockAttempt: mockAttemptId,
+    });
+  }
+
+  if (mockAttemptId && attempt.module === "writing" && isCompletedAttempt(attempt)) {
+    return shortSectionResultsPath(testNumber, "writing", {
+      attempt: attempt.id,
+      part,
+      mockAttempt: mockAttemptId,
+    });
+  }
+
+  if (mockAttemptId && attempt.module === "speaking" && isCompletedAttempt(attempt)) {
+    return shortSectionResultsPath(testNumber, "speaking", {
+      attempt: attempt.id,
+      mockAttempt: mockAttemptId,
+    });
+  }
+
   if (attempt.module === "listening") {
     return listeningModuleResultsPath(attempt.mock_test.id, attempt.id);
   }
@@ -91,7 +121,6 @@ export function attemptReportHref(
     return readingModuleResultsPath(attempt.mock_test.id, attempt.id);
   }
   if (attempt.module === "writing" && isCompletedAttempt(attempt)) {
-    const testNumber = testNumberForMockId(attempt.mock_test.id);
     return shortModuleWritingResultsPath(testNumber, attempt.id);
   }
   if (
@@ -99,23 +128,12 @@ export function attemptReportHref(
     attempt.band !== null &&
     isCompletedAttempt(attempt)
   ) {
-    const testNumber = testNumberForMockId(attempt.mock_test.id);
     return shortModuleResultsPath(testNumber, "speaking");
   }
   if (attempt.module === "speaking" && isCompletedAttempt(attempt)) {
     return speakingPendingPath(attempt);
   }
   return null;
-}
-
-function writingReviewStateForPart(
-  recent: DashboardRecentAttempt[],
-  part: number,
-): SpeakingReviewState {
-  const attempt = latestWritingAttemptForPart(recent, part);
-  if (!attempt) return "none";
-  if (attempt.band != null && attempt.band > 0) return "scored";
-  return "under_review";
 }
 
 export function speakingReviewState(
@@ -127,12 +145,20 @@ export function speakingReviewState(
   return "under_review";
 }
 
+function writingReviewState(recent: DashboardRecentAttempt[]): SpeakingReviewState {
+  const attempt = latestAttemptForModule(recent, "writing");
+  if (!attempt) return "none";
+  if (attempt.band != null && attempt.band > 0) return "scored";
+  return "under_review";
+}
+
 export function moduleReviewState(
   recent: DashboardRecentAttempt[],
   module: DashboardModule,
 ): SpeakingReviewState {
-  if (module !== "speaking") return "none";
-  return speakingReviewState(recent);
+  if (module === "speaking") return speakingReviewState(recent);
+  if (module === "writing") return writingReviewState(recent);
+  return "none";
 }
 
 export function speakingPendingPath(attempt: DashboardRecentAttempt): string {
@@ -150,51 +176,23 @@ export function moduleBandLabel(
   return live ? "—" : "Soon";
 }
 
-function normalizeBand(band: number | null | undefined): number | null {
-  if (band == null || band <= 0) return null;
-  return band;
-}
-
-export function latestBandByModule(
+export function dashboardModuleBands(
   recent: DashboardRecentAttempt[],
+  latestMock?: DashboardMockSnapshot | null,
 ): ModuleBand[] {
-  const rows: ModuleBand[] = [];
-
-  for (const module of MODULE_ORDER) {
-    if (module === "writing") {
-      for (const part of [1, 2] as const) {
-        const attempt = latestWritingAttemptForPart(recent, part);
-        if (!attempt) continue;
-        rows.push({
-          key: `writing-${part}`,
-          module: "writing",
-          part,
-          label: writingModuleLabel(part),
-          band: normalizeBand(attempt.band),
-          live: LIVE_MODULES.writing,
-          reviewState: writingReviewStateForPart(recent, part),
-          attemptId: attempt.id,
-          href: attemptReportHref(attempt),
-          testNumber: testNumberForMockId(attempt.mock_test.id),
-        });
-      }
-      continue;
-    }
-
-    const scored = recent.find(
-      (a) =>
-        a.module === module &&
-        a.band != null &&
-        a.band > 0 &&
-        isCompletedAttempt(a),
-    );
+  return MODULE_ORDER.map((module) => {
     const latest = latestAttemptForModule(recent, module);
     const reviewState = moduleReviewState(recent, module);
-    const band =
-      normalizeBand(scored?.band) ??
-      (module === "speaking" ? normalizeBand(latest?.band) : null);
+    const rollup = rollupBandForModule(latestMock, module);
+    let band = rollup;
+    if (band == null && module === "speaking") {
+      band = normalizeBand(latest?.band);
+    }
+    const testNumber = latest
+      ? testNumberForMockId(latest.mock_test.id)
+      : latestMock?.catalog_number ?? null;
 
-    rows.push({
+    return {
       key: module,
       module,
       label: MODULE_LABELS[module],
@@ -203,11 +201,17 @@ export function latestBandByModule(
       reviewState,
       attemptId: latest?.id ?? null,
       href: latest ? attemptReportHref(latest) : null,
-      testNumber: latest ? testNumberForMockId(latest.mock_test.id) : null,
-    });
-  }
+      testNumber: typeof testNumber === "number" ? testNumber : null,
+      mockAttemptId: latest?.mock_attempt_id ?? latestMock?.mock_attempt_id ?? null,
+    };
+  });
+}
 
-  return rows;
+/** @deprecated Prefer dashboardModuleBands with latest_mock snapshot. */
+export function latestBandByModule(
+  recent: DashboardRecentAttempt[],
+): ModuleBand[] {
+  return dashboardModuleBands(recent, null);
 }
 
 export function countCompletedForModule(
@@ -233,6 +237,26 @@ export function countTestedModuleBands(
       b.reviewState !== "none" ||
       countCompletedForModule(recent, b.module, b.part) > 0,
   ).length;
+}
+
+export function dashboardOverallBand(
+  summary: {
+    stats: { average_band: number | null };
+    completed_mock_count?: number;
+    latest_mock?: DashboardMockSnapshot | null;
+  },
+): number | null {
+  const latest = summary.latest_mock;
+  if (latest?.status === "completed" && latest.aggregate_band != null) {
+    return latest.aggregate_band;
+  }
+  if ((summary.completed_mock_count ?? 0) > 0 && summary.stats.average_band != null) {
+    return summary.stats.average_band;
+  }
+  if (latest?.aggregate_band != null && latest.aggregate_band > 0) {
+    return latest.aggregate_band;
+  }
+  return null;
 }
 
 export function strongestModule(bands: ModuleBand[]): ModuleBand | null {

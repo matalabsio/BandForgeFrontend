@@ -10,7 +10,7 @@ import {
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
-import { speakingModuleReviewPath } from "@/lib/module-review-paths";
+import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { parseSpeakingPrompt } from "@/modules/speaking/lib/parse-speaking-prompt";
@@ -185,16 +185,27 @@ export function SpeakingPage({
       const result = await speakingApi.submit(attemptId, audioBlob, recordSeconds);
       persistModuleResultAttempt(testNumber, "speaking", result.attempt_id);
       if (mockAttemptId) {
-        router.replace(speakingModuleReviewPath(testNumber, mockAttemptId));
+        router.replace(
+          sectionResultsPathForMockSubmit(mockTestId, "speaking", {
+            attempt: result.attempt_id,
+            part: 1,
+            mockAttemptId,
+          }),
+        );
         return;
       }
-      router.replace(speakingModuleReviewPath(testNumber));
+      router.replace(
+        sectionResultsPathForMockSubmit(mockTestId, "speaking", {
+          attempt: result.attempt_id,
+          part: 1,
+        }),
+      );
     } catch (e) {
       setError(formatExamSubmitError(e));
     } finally {
       setBusy(false);
     }
-  }, [attemptId, audioBlob, busy, recordSeconds, router, testNumber, mockAttemptId]);
+  }, [attemptId, audioBlob, busy, recordSeconds, router, mockTestId, mockAttemptId]);
 
   if (showInstructions) {
     return (

@@ -19,7 +19,12 @@ const moduleIcons: Record<
 };
 
 export function DashboardTodaysPlan() {
-  const dateLabel = BRAND_TODAYS_PLAN[0]?.dateLabel ?? "Today";
+  const dateLabel =
+    new Intl.DateTimeFormat("en-GB", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }).format(new Date()).replace(",", " ·") ?? "Today";
 
   return (
     <section>

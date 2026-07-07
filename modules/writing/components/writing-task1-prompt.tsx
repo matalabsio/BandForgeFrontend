@@ -12,6 +12,13 @@ type Props = {
   minWords?: number;
 };
 
+type PromptParts = {
+  intro: string;
+  description: string;
+  summarise: string;
+  minWords: string;
+};
+
 function parseChartSpec(value: unknown): WritingChartSpec | null {
   if (!value) return null;
   const raw =
@@ -130,6 +137,34 @@ function splitTask1Prompt(raw: string): { beforeChart: string; afterChart: strin
   };
 }
 
+function splitTask1InstructionBlocks(raw: string): PromptParts | null {
+  const text = raw.replace(/\s+/g, " ").trim();
+  if (!text) return null;
+
+  const introMatch = text.match(/You should spend about .*? on this task\./i);
+  const summariseMatch = text.match(/Summarise .*? relevant\./i);
+  const minWordsMatch = text.match(/Write at least \d+ words\.?/i);
+
+  const intro = introMatch?.[0]?.trim() ?? "";
+  const summarise = summariseMatch?.[0]?.trim() ?? "";
+  const minWords = minWordsMatch?.[0]?.trim() ?? "";
+
+  if (!intro && !summarise && !minWords) return null;
+
+  let description = text;
+  if (intro) description = description.replace(intro, "").trim();
+  if (summarise) description = description.replace(summarise, "").trim();
+  if (minWords) description = description.replace(minWords, "").trim();
+  description = description.replace(/\s+/g, " ").trim();
+
+  return {
+    intro,
+    description,
+    summarise,
+    minWords,
+  };
+}
+
 export function WritingTask1Prompt({
   task,
   minutes = 20,
@@ -144,6 +179,7 @@ export function WritingTask1Prompt({
     task.options?.figure_note ??
     "[Grouped bar chart — four cities on x-axis; percentage on y-axis; four transport modes shown per city]";
   const { beforeChart, afterChart } = splitTask1Prompt(task.prompt);
+  const instructionParts = splitTask1InstructionBlocks(beforeChart || task.prompt);
 
   const isLineGraph =
     chart?.type === "line_graph" ||
@@ -184,7 +220,32 @@ export function WritingTask1Prompt({
       />
 
       {beforeChart ? (
-        <p className="text-[15px] leading-relaxed text-[#334155]">{beforeChart}</p>
+        instructionParts ? (
+          <div className="space-y-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 md:p-4">
+            {instructionParts.intro ? (
+              <p className="text-[13px] font-semibold text-[#334155]">
+                {instructionParts.intro}
+              </p>
+            ) : null}
+            {instructionParts.description ? (
+              <p className="text-[14px] leading-relaxed text-[#475569]">
+                {instructionParts.description}
+              </p>
+            ) : null}
+            {instructionParts.summarise ? (
+              <p className="text-[14px] leading-relaxed text-[#334155]">
+                {instructionParts.summarise}
+              </p>
+            ) : null}
+            {instructionParts.minWords ? (
+              <p className="text-[13px] font-semibold text-teal">
+                {instructionParts.minWords}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-[15px] leading-relaxed text-[#334155]">{beforeChart}</p>
+        )
       ) : null}
 
       <div data-test-question>{chartBlock}</div>

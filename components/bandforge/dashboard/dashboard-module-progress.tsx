@@ -92,7 +92,7 @@ export function DashboardModuleProgress({
           {testedLabel}
         </span>
       </div>
-      <ul className="grid grid-cols-1 items-stretch gap-2.5 min-[520px]:grid-cols-2 min-[520px]:gap-3 lg:grid-cols-5 lg:gap-3">
+      <ul className="grid grid-cols-1 items-stretch gap-2.5 min-[520px]:grid-cols-2 min-[520px]:gap-3 lg:grid-cols-4 lg:gap-3">
         {bands.map((mod) => {
           const Icon = moduleIcons[mod.module];
           const testsDone = countCompletedForModule(recent, mod.module, mod.part);
@@ -174,6 +174,7 @@ export function DashboardModuleProgress({
                     testNumber={mod.testNumber}
                     module={mod.module as ResultModule}
                     attemptId={mod.attemptId}
+                    mockAttemptId={mod.mockAttemptId}
                     className={actionClassName}
                   >
                     {actionLabel}

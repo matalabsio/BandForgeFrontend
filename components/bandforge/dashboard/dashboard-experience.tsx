@@ -16,7 +16,7 @@ import type {
   DashboardSummary,
   MockTestSummary,
 } from "@/components/bandforge/dashboard/types";
-import { countTestedModuleBands, latestBandByModule } from "@/components/scores/scores-utils";
+import { countTestedModuleBands, dashboardModuleBands, dashboardOverallBand } from "@/components/scores/scores-utils";
 import type { MockCatalogSlot } from "@/lib/mock-catalog-api";
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
 
@@ -45,9 +45,9 @@ export function DashboardExperience({
 }: Props) {
   const streak = summary.stats.current_streak ?? 0;
   const hasAttempts = summary.recent.length > 0;
-  const overallBand = summary.stats.average_band;
-  const testsCompleted = summary.recent.length;
-  const moduleBands = latestBandByModule(summary.recent);
+  const overallBand = dashboardOverallBand(summary);
+  const testsCompleted = summary.completed_mock_count ?? 0;
+  const moduleBands = dashboardModuleBands(summary.recent, summary.latest_mock);
   const testedModuleCount = countTestedModuleBands(moduleBands, summary.recent);
 
   return (
