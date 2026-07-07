@@ -47,3 +47,32 @@ export type SpeakingPendingPayload = {
   student_name: string | null;
   message: string;
 };
+
+export type SpeakingQuestionKind = "question" | "part2_intro";
+
+export type SpeakingQuestionManifest = {
+  id: string;
+  part: 1 | 2 | 3;
+  questionNumber: number;
+  prompt: string;
+  kind: SpeakingQuestionKind;
+  videoUrl?: string;
+  audioUrl?: string;
+  maxRecordSec?: number;
+  prepSec?: number;
+  recordSec?: number;
+};
+
+export type SpeakingSessionRecording = {
+  questionId: string;
+  part: 1 | 2 | 3;
+  durationSec: number;
+  /** Kept in memory during exam; not serialised to storage. */
+  blob?: Blob;
+};
+
+export type SpeakingExamPhase =
+  | "question"
+  | "part2_prep"
+  | "part2_record"
+  | "complete";

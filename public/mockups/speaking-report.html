@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BandForge — Speaking Score Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forge-navy:#0D1F3C;
+    --navy-deep:#081426;
+    --card:#122747;
+    --card-raised:#162E52;
+    --forge-teal:#0097A7;
+    --signal-cyan:#00BCD4;
+    --ink:#EAF1F8;
+    --ink-dim:#9FB2C8;
+    --ink-faint:#5F7492;
+    --line:rgba(0,188,212,0.14);
+    --good:#3ECF8E;
+    --good-bg:rgba(62,207,142,0.12);
+    --bad:#F0708A;
+    --bad-bg:rgba(240,112,138,0.12);
+    --amber:#F5C46B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:#050B16;
+    font-family:'DM Sans',sans-serif;
+    color:var(--ink);
+    display:flex;justify-content:center;
+    padding:40px 16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .phone{
+    width:390px;max-width:100%;
+    background:linear-gradient(180deg,var(--navy-deep) 0%,var(--forge-navy) 30%);
+    border:1px solid rgba(0,188,212,0.18);
+    border-radius:28px;
+    overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,0.6);
+  }
+
+  /* ── Header ── */
+  .top{
+    padding:20px 20px 0;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .wordmark{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;letter-spacing:-0.02em;}
+  .wordmark .band{color:var(--ink);}
+  .wordmark .forge{color:var(--signal-cyan);}
+  .bars{display:inline-flex;align-items:flex-end;gap:2px;margin-right:6px;}
+  .bars i{width:3px;border-radius:1px;background:var(--forge-teal);display:block;}
+  .bars i:nth-child(1){height:5px}.bars i:nth-child(2){height:8px}
+  .bars i:nth-child(3){height:11px;background:var(--signal-cyan)}.bars i:nth-child(4){height:14px;background:var(--signal-cyan)}
+  .test-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-faint);text-align:right;line-height:1.5;}
+
+  .screen-title{
+    padding:22px 20px 0;
+  }
+  .eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--forge-teal);margin-bottom:6px;}
+  .screen-title h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.01em;}
+
+  /* ── Hero score ── */
+  .hero{
+    margin:18px 20px 0;
+    background:radial-gradient(120% 140% at 50% -20%,rgba(0,151,167,0.28),rgba(13,31,60,0) 60%),var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:26px 20px 22px;
+    text-align:center;
+  }
+  .hero .band-num{
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+    font-size:72px;line-height:1;letter-spacing:-0.03em;
+    color:var(--ink);
+  }
+  .hero .band-label{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);margin-top:6px;}
+  .hero .descriptor{font-size:14px;color:var(--signal-cyan);font-weight:600;margin-top:2px;}
+  .verified{
+    display:inline-flex;align-items:center;gap:6px;
+    margin-top:14px;padding:6px 12px;border-radius:100px;
+    background:var(--good-bg);border:1px solid rgba(62,207,142,0.3);
+    font-size:11px;font-weight:600;color:var(--good);
+  }
+  .verified svg{width:12px;height:12px;}
+  .verified-sub{font-size:10px;color:var(--ink-faint);margin-top:8px;}
+
+  /* ── Criteria bars ── */
+  .section{padding:26px 20px 0;}
+  .section-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+  .section-h h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px;}
+  .section-h .tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-faint);}
+  .crit{margin-bottom:14px;}
+  .crit-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .crit-name{font-size:12.5px;font-weight:500;color:var(--ink-dim);}
+  .crit-score{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--ink);}
+  .crit-score em{font-style:normal;color:var(--bad);font-size:10px;margin-left:6px;}
+  .crit-score em.ok{color:var(--good);}
+  .track{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,0.06);}
+  .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,var(--forge-teal),var(--signal-cyan));}
+  .target-tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--amber);border-radius:1px;}
+  .target-note{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:var(--ink-faint);}
+  .target-note i{width:10px;height:2px;background:var(--amber);border-radius:1px;display:inline-block;}
+
+  .gap-callout{
+    margin-top:16px;padding:12px 14px;border-radius:12px;
+    background:rgba(245,196,107,0.08);border:1px solid rgba(245,196,107,0.22);
+    font-size:12.5px;line-height:1.5;color:var(--ink-dim);
+  }
+  .gap-callout b{color:var(--amber);font-weight:600;}
+
+  /* ── Part cards ── */
+  .parts{display:flex;flex-direction:column;gap:10px;}
+  .part-card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:14px 14px 12px;
+  }
+  .part-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .part-name{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--forge-teal);}
+  .part-band{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink);}
+  .part-note{font-size:12.5px;line-height:1.55;color:var(--ink-dim);}
+
+  /* ── Transcript (signature) ── */
+  .transcript-wrap{
+    margin-top:14px;
+    background:var(--card);border:1px solid rgba(0,188,212,0.28);border-radius:16px;
+    overflow:hidden;
+  }
+  .audio-bar{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 14px;border-bottom:1px solid var(--line);
+    background:rgba(0,151,167,0.08);
+  }
+  .play-btn{
+    width:32px;height:32px;border-radius:50%;flex-shrink:0;
+    background:var(--signal-cyan);display:flex;align-items:center;justify-content:center;
+  }
+  .play-btn svg{width:12px;height:12px;fill:var(--forge-navy);margin-left:2px;}
+  .wave{flex:1;display:flex;align-items:center;gap:2px;height:22px;}
+  .wave i{width:3px;border-radius:1px;background:rgba(0,188,212,0.5);display:block;}
+  .audio-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-faint);}
+  .transcript{padding:16px 16px 14px;font-size:13.5px;line-height:1.85;color:var(--ink-dim);}
+  .transcript .q{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--forge-teal);display:block;margin-bottom:8px;}
+  .hl-good{background:var(--good-bg);border-bottom:2px solid var(--good);border-radius:2px;padding:0 2px;color:var(--ink);}
+  .hl-bad{background:var(--bad-bg);border-bottom:2px solid var(--bad);border-radius:2px;padding:0 2px;color:var(--ink);}
+  .annotation{
+    margin:10px 0 4px;padding:10px 12px;border-radius:10px;
+    background:var(--bad-bg);border-left:3px solid var(--bad);
+    font-size:12px;line-height:1.5;color:var(--ink-dim);
+  }
+  .annotation b{color:var(--bad);font-weight:600;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:3px;}
+  .legend{display:flex;gap:14px;padding:0 16px 14px;font-size:10.5px;color:var(--ink-faint);}
+  .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;}
+  .legend .g i{background:var(--good);}
+  .legend .r i{background:var(--bad);}
+
+  /* ── Fluency stats ── */
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .stat{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:12px 10px;text-align:center;
+  }
+  .stat .num{font-family:'DM Mono',monospace;font-size:20px;color:var(--signal-cyan);}
+  .stat .num.warn{color:var(--amber);}
+  .stat .lbl{font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);margin-top:4px;line-height:1.4;}
+
+  /* ── Patterns ── */
+  .pattern{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:13px 14px;margin-bottom:8px;
+  }
+  .pattern-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+  .pattern-name{font-size:12.5px;font-weight:600;color:var(--ink);}
+  .pattern-freq{font-family:'DM Mono',monospace;font-size:10px;color:var(--bad);background:var(--bad-bg);padding:3px 8px;border-radius:100px;}
+  .pattern-ex{font-size:11.5px;line-height:1.5;color:var(--ink-faint);font-style:italic;}
+
+  /* ── Strengths / improvements ── */
+  .list-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .list-card + .list-card{margin-top:10px;}
+  .list-card h3{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;}
+  .list-card.s h3{color:var(--good);}
+  .list-card.i h3{color:var(--amber);}
+  .list-card li{list-style:none;font-size:12.5px;line-height:1.55;color:var(--ink-dim);padding-left:16px;position:relative;margin-bottom:8px;}
+  .list-card li:last-child{margin-bottom:0;}
+  .list-card.s li::before{content:'';position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:50%;background:var(--good);}
+  .list-card.i li::before{content:'';position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:50%;background:var(--amber);}
+
+  /* ── Advice ── */
+  .advice{
+    margin-top:14px;
+    background:linear-gradient(135deg,rgba(0,151,167,0.18),rgba(0,188,212,0.06)),var(--card);
+    border:1px solid rgba(0,188,212,0.3);border-radius:14px;padding:16px;
+  }
+  .advice h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;color:var(--signal-cyan);}
+  .advice p{font-size:12.5px;line-height:1.6;color:var(--ink-dim);}
+
+  /* ── CTA ── */
+  .cta{padding:26px 20px 28px;}
+  .cta-card{
+    background:var(--card-raised);border:1px solid rgba(0,188,212,0.35);
+    border-radius:16px;padding:18px 16px;
+  }
+  .cta-card h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;line-height:1.35;margin-bottom:6px;}
+  .cta-card p{font-size:12.5px;line-height:1.55;color:var(--ink-dim);margin-bottom:14px;}
+  .btn{
+    display:block;width:100%;text-align:center;
+    background:var(--signal-cyan);color:var(--forge-navy);
+    font-weight:700;font-size:14px;
+    padding:14px;border-radius:12px;border:none;
+  }
+  .btn-ghost{
+    display:block;width:100%;text-align:center;margin-top:8px;
+    background:transparent;color:var(--signal-cyan);
+    font-weight:600;font-size:13px;
+    padding:12px;border-radius:12px;border:1px solid rgba(0,188,212,0.35);
+  }
+  .cta-price{font-family:'DM Mono',monospace;}
+  .pdf-link{
+    display:block;text-align:center;margin-top:16px;
+    font-size:12px;color:var(--ink-faint);text-decoration:underline;text-underline-offset:3px;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Header -->
+  <div class="top">
+    <div style="display:flex;align-items:center;">
+      <span class="bars"><i></i><i></i><i></i><i></i></span>
+      <span class="wordmark"><span class="band">Band</span><span class="forge">Forge</span></span>
+    </div>
+    <div class="test-meta">MOCK TEST 2 · SPEAKING<br>04 JUL 2026</div>
+  </div>
+
+  <div class="screen-title">
+    <div class="eyebrow">Score Report</div>
+    <h1>Your Speaking evaluation</h1>
+  </div>
+
+  <!-- 1. Hero -->
+  <div class="hero">
+    <div class="band-num">6.5</div>
+    <div class="band-label">Overall Band</div>
+    <div class="descriptor">Competent User</div>
+    <div class="verified">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+      Verified by a human examiner
+    </div>
+    <div class="verified-sub">Reviewed by Kiriti Mortha · IELTS Trainer, Band 8.5</div>
+  </div>
+
+  <!-- 2. Criteria -->
+  <div class="section">
+    <div class="section-h"><h2>Criterion breakdown</h2><span class="tag">TARGET 7.0</span></div>
+
+    <div class="crit">
+      <div class="crit-row"><span class="crit-name">Fluency &amp; Coherence</span><span class="crit-score">6.0 <em>−1.0 to target</em></span></div>
+      <div class="track"><div class="fill" style="width:66.6%"></div><div class="target-tick" style="left:77.7%"></div></div>
+    </div>
+    <div class="crit">
+      <div class="crit-row"><span class="crit-name">Lexical Resource</span><span class="crit-score">6.5 <em>−0.5 to target</em></span></div>
+      <div class="track"><div class="fill" style="width:72.2%"></div><div class="target-tick" style="left:77.7%"></div></div>
+    </div>
+    <div class="crit">
+      <div class="crit-row"><span class="crit-name">Grammatical Range &amp; Accuracy</span><span class="crit-score">6.5 <em>−0.5 to target</em></span></div>
+      <div class="track"><div class="fill" style="width:72.2%"></div><div class="target-tick" style="left:77.7%"></div></div>
+    </div>
+    <div class="crit">
+      <div class="crit-row"><span class="crit-name">Pronunciation</span><span class="crit-score">7.0 <em class="ok">on target</em></span></div>
+      <div class="track"><div class="fill" style="width:77.7%"></div><div class="target-tick" style="left:77.7%"></div></div>
+    </div>
+    <div class="target-note"><i></i> Your target band</div>
+
+    <div class="gap-callout">
+      <b>Fluency &amp; Coherence is your biggest gap.</b> Closing it to 6.5 would lift your overall band to 6.5–7.0. Your improvement plan below focuses here first.
+    </div>
+  </div>
+
+  <!-- 3. Part performance -->
+  <div class="section">
+    <div class="section-h"><h2>Part by part</h2></div>
+    <div class="parts">
+      <div class="part-card">
+        <div class="part-head"><span class="part-name">Part 1 · Interview</span><span class="part-band">≈ 6.5</span></div>
+        <div class="part-note">Comfortable, natural answers on familiar topics. Responses were sometimes short — extend answers with a reason or example.</div>
+      </div>
+      <div class="part-card">
+        <div class="part-head"><span class="part-name">Part 2 · Cue Card</span><span class="part-band">≈ 6.5</span></div>
+        <div class="part-note">Covered all four cue card points with a clear story. Some hesitation in the second minute as ideas ran thin.</div>
+      </div>
+      <div class="part-card">
+        <div class="part-head"><span class="part-name">Part 3 · Discussion</span><span class="part-band">≈ 6.0</span></div>
+        <div class="part-note">Abstract questions caused noticeable slowdown — speech rate dropped 27% and pauses lengthened. This is where your band is being decided.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Annotated transcript (signature) -->
+  <div class="section">
+    <div class="section-h"><h2>Your words, annotated</h2><span class="tag">PART 2</span></div>
+    <div class="transcript-wrap">
+      <div class="audio-bar">
+        <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        <div class="wave">
+          <i style="height:6px"></i><i style="height:12px"></i><i style="height:18px"></i><i style="height:10px"></i><i style="height:16px"></i><i style="height:8px"></i><i style="height:14px"></i><i style="height:20px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:13px"></i><i style="height:17px"></i><i style="height:6px"></i><i style="height:11px"></i><i style="height:19px"></i><i style="height:8px"></i><i style="height:14px"></i><i style="height:10px"></i><i style="height:16px"></i><i style="height:6px"></i><i style="height:12px"></i>
+        </div>
+        <span class="audio-time">1:54</span>
+      </div>
+      <div class="transcript">
+        <span class="q">Describe a person who influenced your career choice</span>
+        I would like to talk about my uncle, who <span class="hl-good">played a pivotal role in shaping my career direction</span>. He was working in Australia as civil engineer and <span class="hl-bad">he is telling me many stories</span> about his projects there. <span class="hl-good">What struck me most was his persistence</span> — even when he faced difficulties with... with the registration process, he never give up.
+        <div class="annotation">
+          <b>Grammar · Tense consistency</b>
+          "he is telling me" — past narration slipped into present continuous. This happened 4 times across your test. Keep past-tense stories in past tense: "he told me many stories."
+        </div>
+      </div>
+      <div class="legend">
+        <span class="g"><i></i>Strong moment</span>
+        <span class="r"><i></i>Needs work · tap to see why</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Fluency stats -->
+  <div class="section">
+    <div class="section-h"><h2>Fluency data</h2><span class="tag">MEASURED</span></div>
+    <div class="stats-grid">
+      <div class="stat"><div class="num">128</div><div class="lbl">Words/min<br>Part 1</div></div>
+      <div class="stat"><div class="num">142</div><div class="lbl">Words/min<br>Part 2</div></div>
+      <div class="stat"><div class="num warn">104</div><div class="lbl">Words/min<br>Part 3</div></div>
+      <div class="stat"><div class="num">11:20</div><div class="lbl">Total speaking<br>time</div></div>
+      <div class="stat"><div class="num warn">7</div><div class="lbl">Pauses<br>over 2 sec</div></div>
+      <div class="stat"><div class="num">18/18</div><div class="lbl">Questions<br>attempted</div></div>
+    </div>
+  </div>
+
+  <!-- 6. Recurring patterns -->
+  <div class="section">
+    <div class="section-h"><h2>Recurring patterns</h2></div>
+    <div class="pattern">
+      <div class="pattern-head"><span class="pattern-name">Missing articles before singular nouns</span><span class="pattern-freq">9×</span></div>
+      <div class="pattern-ex">"working as civil engineer" · "it was big opportunity"</div>
+    </div>
+    <div class="pattern">
+      <div class="pattern-head"><span class="pattern-name">Tense drift in past narration</span><span class="pattern-freq">4×</span></div>
+      <div class="pattern-ex">"he is telling me" · "she is helping me that time"</div>
+    </div>
+    <div class="pattern">
+      <div class="pattern-head"><span class="pattern-name">Filler reliance: "actually"</span><span class="pattern-freq">12×</span></div>
+      <div class="pattern-ex">Used to buy thinking time, mostly in Part 3</div>
+    </div>
+  </div>
+
+  <!-- 7. Strengths / improvements -->
+  <div class="section">
+    <div class="section-h"><h2>What to build on</h2></div>
+    <div class="list-card s">
+      <h3>Strengths</h3>
+      <li>Strong topic vocabulary — "pivotal role," "persistence," "professional registration" used precisely</li>
+      <li>Clear story structure in Part 2 with a beginning, turning point, and reflection</li>
+    </div>
+    <div class="list-card i">
+      <h3>Improvements</h3>
+      <li>Extend Part 1 answers to 2–3 sentences: answer + reason + example (FC → 6.5)</li>
+      <li>Replace "actually" with linking phrases: "the way I see it," "to be honest" (FC)</li>
+      <li>Drill past-tense narration aloud — record 2-minute stories daily this week (GRA → 7.0)</li>
+    </div>
+    <div class="advice">
+      <h3>Your next 0.5 band</h3>
+      <p>Everything points to Part 3. Practise developing abstract answers with a position → reason → example structure so your speech rate holds when questions get harder. One focused week here moves FC to 6.5 and your overall to 7.0 territory.</p>
+    </div>
+  </div>
+
+  <!-- 8. CTA -->
+  <div class="cta">
+    <div class="cta-card">
+      <h3>Work on Part 3 with Kiriti directly</h3>
+      <p>A 30-minute 1:1 session focused on your exact gap — abstract question strategy and fluency under pressure.</p>
+      <button class="btn">Book a 1:1 session · <span class="cta-price">₹2,500</span></button>
+      <button class="btn-ghost">3-session pack · <span class="cta-price">₹6,500</span></button>
+    </div>
+    <a class="pdf-link" href="#">Download report as PDF</a>
+  </div>
+
+</div>
+</body>
+</html>
