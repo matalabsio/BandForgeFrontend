@@ -9,7 +9,9 @@ import { DiagnosticScoreAnalysisBlock } from "@/components/diagnostic/ui/diagnos
 import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-trust-badges";
 import { aggregateBand } from "@/lib/diagnostic-scoring";
 import { calculateWritingBand, wordCount } from "@/lib/diagnostic-scoring";
+import { isAnswerCorrect } from "@/lib/diagnostic-scoring";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
+import { loadDiagnosticPack, type DiagnosticPackQuestion } from "@/lib/diagnostic-pack";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import {
   bandBarPercent,
@@ -74,12 +76,28 @@ function skillReviewTitle(skill: SkillKey): string {
   return `${skillLabel(skill)} review`;
 }
 
+type QuestionReviewRow = {
+  id: string;
+  number: number;
+  prompt: string;
+  userAnswer: string;
+  correctAnswer: string;
+  explanation?: string;
+  status: "correct" | "incorrect" | "skipped";
+};
+
 export function DiagnosticResultsExperience() {
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<DiagnosticResultsSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progressWritingFallbackBand, setProgressWritingFallbackBand] = useState<number | null>(null);
   const [activeReviewSkill, setActiveReviewSkill] = useState<SkillKey | null>(null);
+  const [listeningQuestions, setListeningQuestions] = useState<DiagnosticPackQuestion[]>([]);
+  const [readingQuestions, setReadingQuestions] = useState<DiagnosticPackQuestion[]>([]);
+  const [answersByModule, setAnswersByModule] = useState<{
+    listening: Record<string, string>;
+    reading: Record<string, string>;
+  }>({ listening: {}, reading: {} });
 
   const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
   const targetBand = lead?.targetBand ?? 7.0;
@@ -145,6 +163,25 @@ export function DiagnosticResultsExperience() {
     }
   }, []);
 
+  useEffect(() => {
+    const progress = readDiagnosticProgress();
+    if (progress?.answers) {
+      setAnswersByModule({
+        listening: progress.answers.listening ?? {},
+        reading: progress.answers.reading ?? {},
+      });
+    }
+    void loadDiagnosticPack()
+      .then((pack) => {
+        setListeningQuestions(pack.listening.questions ?? []);
+        setReadingQuestions(pack.reading.questions ?? []);
+      })
+      .catch(() => {
+        setListeningQuestions([]);
+        setReadingQuestions([]);
+      });
+  }, []);
+
   const currentBand =
     snapshot?.aggregate_band ??
     (snapshot?.writingEvaluation ? aggregatePartialBand(snapshot) : 0);
@@ -156,12 +193,36 @@ export function DiagnosticResultsExperience() {
     : bandLabel(snapshot?.aggregate_band);
 
   const leadEmail = lead?.email;
-  const activeReviewItems =
-    activeReviewSkill === "listening"
-      ? (snapshot?.review?.listening?.wrong ?? [])
-      : activeReviewSkill === "reading"
-        ? (snapshot?.review?.reading?.wrong ?? [])
-        : [];
+  const activeReviewItems: QuestionReviewRow[] = useMemo(() => {
+    const sectionQuestions =
+      activeReviewSkill === "listening"
+        ? listeningQuestions
+        : activeReviewSkill === "reading"
+          ? readingQuestions
+          : [];
+    const answers =
+      activeReviewSkill === "listening"
+        ? answersByModule.listening
+        : activeReviewSkill === "reading"
+          ? answersByModule.reading
+          : {};
+    return sectionQuestions.map((q) => {
+      const userAnswer = answers[q.id] ?? "";
+      const isCorrect = isAnswerCorrect(userAnswer, q.answer);
+      const status: QuestionReviewRow["status"] = userAnswer.trim()
+        ? (isCorrect ? "correct" : "incorrect")
+        : "skipped";
+      return {
+        id: q.id,
+        number: q.number,
+        prompt: q.prompt,
+        userAnswer: userAnswer.trim() || "—",
+        correctAnswer: q.answer || "—",
+        explanation: q.skill ? `Skill focus: ${q.skill}` : undefined,
+        status,
+      };
+    });
+  }, [activeReviewSkill, listeningQuestions, readingQuestions, answersByModule]);
 
   return (
     <DiagnosticChrome variant="report">
@@ -264,7 +325,7 @@ export function DiagnosticResultsExperience() {
                   </p>
                 ) : activeReviewItems.length === 0 ? (
                   <p className="text-sm leading-relaxed text-[#5A6B82]">
-                    No incorrect answers found for this section. Great job.
+                    We could not load question data for this section yet.
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -274,7 +335,7 @@ export function DiagnosticResultsExperience() {
                         className="rounded-xl border border-border-soft bg-[#FAFCFF] p-3.5 sm:p-4"
                       >
                         <p className="text-xs font-semibold tracking-wide text-teal uppercase">
-                          Question {item.number}
+                          Question {item.number} · {item.status}
                         </p>
                         <p className="mt-1.5 text-sm font-medium text-navy">
                           {item.prompt}
@@ -287,6 +348,12 @@ export function DiagnosticResultsExperience() {
                           <span className="font-semibold text-navy">Correct answer:</span>{" "}
                           {item.correctAnswer || "—"}
                         </p>
+                        {item.explanation ? (
+                          <p className="mt-1 text-sm text-[#5A6B82]">
+                            <span className="font-semibold text-navy">Explanation:</span>{" "}
+                            {item.explanation}
+                          </p>
+                        ) : null}
                       </article>
                     ))}
                   </div>
