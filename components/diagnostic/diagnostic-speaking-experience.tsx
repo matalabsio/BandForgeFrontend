@@ -181,14 +181,6 @@ export function DiagnosticSpeakingExperience() {
     const progress = readDiagnosticProgress();
     if (!progress) return;
 
-    if (!progress.writingEvaluation?.evaluation_id) {
-      setError(
-        "Writing must be AI-evaluated before submitting. Return to Writing and submit your essay again.",
-      );
-      setSubmitting(false);
-      return;
-    }
-
     const finalAnswers: DiagnosticSpeakingAnswers = {
       ...speakingAnswers,
       part2: speakingAnswers.part2 ?? {

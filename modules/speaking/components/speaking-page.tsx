@@ -7,12 +7,15 @@ import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   DEFAULT_MOCK_SLUG,
+  mockHubPath,
+  mockPathFromProgress,
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
 import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
+import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { parseSpeakingPrompt } from "@/modules/speaking/lib/parse-speaking-prompt";
 import { speakingApi } from "@/modules/speaking/services/speaking-api";
 import { TestHeader, TestShell, TestTimer } from "@/modules/shared";
@@ -116,11 +119,21 @@ export function SpeakingPage({
       setShowInstructions(false);
       writeConsent(consentScope);
     } catch (e) {
+      if (e instanceof ApiError && mockAttemptId && (e.status === 403 || e.status === 409)) {
+        try {
+          const progress = await fetchMockProgressDeduped(mockAttemptId);
+          router.replace(mockPathFromProgress(mockSlug, mockAttemptId, progress));
+          return;
+        } catch {
+          router.replace(mockHubPath(mockSlug));
+          return;
+        }
+      }
       setError(e instanceof ApiError ? e.message : "Could not start speaking.");
     } finally {
       setLoading(false);
     }
-  }, [consentScope, mockAttemptId, mockTestId]);
+  }, [consentScope, mockAttemptId, mockSlug, mockTestId, router]);
 
   const stopRecording = useCallback(() => {
     if (tickRef.current) {
@@ -229,6 +242,22 @@ export function SpeakingPage({
   }
 
   if (!attemptId) {
+    if (error) {
+      return (
+        <TestShell
+          header={<TestHeader timer={null} />}
+        >
+          <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+            <p className="text-[14px] text-red-600" role="alert">
+              {error}
+            </p>
+            <Button variant="primary" onClick={() => void startExam()}>
+              Retry speaking
+            </Button>
+          </main>
+        </TestShell>
+      );
+    }
     return <ExamSectionLoader title="Loading speaking…" />;
   }
 
