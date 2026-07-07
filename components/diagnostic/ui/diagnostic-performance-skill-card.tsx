@@ -9,6 +9,7 @@ type Props = {
   coaching: string;
   barPercent: number;
   pending?: boolean;
+  onClick?: () => void;
 };
 
 const STATUS_LABELS: Record<SkillStatus, string> = {
@@ -79,16 +80,21 @@ export function DiagnosticPerformanceSkillCard({
   coaching,
   barPercent,
   pending = false,
+  onClick,
 }: Props) {
   const styles = CARD_STYLES[status];
   const isWeak = status === "focus_area" || status === "priority";
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
       className={cn(
-        "flex flex-col rounded-2xl border p-4 sm:rounded-[18px] sm:p-[22px] sm:pb-5",
+        "flex w-full flex-col rounded-2xl border p-4 text-left sm:rounded-[18px] sm:p-[22px] sm:pb-5",
+        onClick ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40" : "",
         styles.card,
       )}
+      aria-label={`Open ${label} review`}
     >
       <div className="mb-[11px] flex items-center justify-between gap-2 sm:mb-[18px]">
         <span className="text-[13px] font-semibold text-[#0D1F3C] sm:text-[15px]">
@@ -153,6 +159,6 @@ export function DiagnosticPerformanceSkillCard({
       >
         {pending ? "Examiner review in progress." : coaching}
       </p>
-    </div>
+    </button>
   );
 }

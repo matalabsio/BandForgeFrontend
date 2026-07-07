@@ -8,6 +8,7 @@ import { DiagnosticPerformanceSkillCard } from "@/components/diagnostic/ui/diagn
 import { DiagnosticScoreAnalysisBlock } from "@/components/diagnostic/ui/diagnostic-score-analysis-block";
 import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-trust-badges";
 import { aggregateBand } from "@/lib/diagnostic-scoring";
+import { calculateWritingBand, wordCount } from "@/lib/diagnostic-scoring";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import {
@@ -20,6 +21,9 @@ import {
   type SkillBands,
   type SkillKey,
 } from "@/lib/diagnostic-performance";
+import {
+  readDiagnosticProgress,
+} from "@/lib/diagnostic-storage";
 import {
   readDiagnosticResults,
   type DiagnosticResultsSnapshot,
@@ -66,27 +70,39 @@ const SKILL_ORDER: SkillKey[] = [
   "speaking",
 ];
 
+function skillReviewTitle(skill: SkillKey): string {
+  return `${skillLabel(skill)} review`;
+}
+
 export function DiagnosticResultsExperience() {
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<DiagnosticResultsSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progressWritingFallbackBand, setProgressWritingFallbackBand] = useState<number | null>(null);
+  const [activeReviewSkill, setActiveReviewSkill] = useState<SkillKey | null>(null);
 
   const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
   const targetBand = lead?.targetBand ?? 7.0;
 
   const pendingHuman = snapshot?.review_status === "pending_human";
   const hasWritingEval = snapshot?.writingEvaluation != null;
-  const effectiveWritingBand =
+  const writingBandFromSnapshot =
     snapshot?.writingEvaluation?.writing_band ?? snapshot?.writing_band ?? null;
+  const effectiveWritingBand =
+    writingBandFromSnapshot ?? progressWritingFallbackBand;
+  const effectiveSpeakingBand = snapshot?.speaking_band ?? null;
+  const writingPending = pendingHuman && effectiveWritingBand == null;
+  const speakingPending = pendingHuman;
+  const speakingBandForDisplay = speakingPending ? null : effectiveSpeakingBand;
 
   const skillBands: SkillBands = useMemo(
     () => ({
       listening: snapshot?.listening_band ?? null,
       reading: snapshot?.reading_band ?? null,
       writing: effectiveWritingBand,
-      speaking: pendingHuman ? null : (snapshot?.speaking_band ?? null),
+      speaking: speakingBandForDisplay,
     }),
-    [snapshot, effectiveWritingBand, pendingHuman],
+    [snapshot, effectiveWritingBand, speakingBandForDisplay],
   );
 
   const statuses = useMemo(
@@ -103,6 +119,23 @@ export function DiagnosticResultsExperience() {
     const cached = readDiagnosticResults();
     if (cached) {
       setSnapshot(cached);
+      const storedWritingBand =
+        cached.writingEvaluation?.writing_band ?? cached.writing_band ?? null;
+      if (storedWritingBand == null) {
+        const progress = readDiagnosticProgress();
+        const writingAnswers = progress?.answers?.writing
+          ? Object.values(progress.answers.writing)
+          : [];
+        const longestEssayWords = writingAnswers.reduce(
+          (max, essay) => Math.max(max, wordCount(essay)),
+          0,
+        );
+        setProgressWritingFallbackBand(
+          longestEssayWords > 0 ? calculateWritingBand(longestEssayWords, 1) : null,
+        );
+      } else {
+        setProgressWritingFallbackBand(null);
+      }
       setLoading(false);
     } else {
       setError(
@@ -123,6 +156,12 @@ export function DiagnosticResultsExperience() {
     : bandLabel(snapshot?.aggregate_band);
 
   const leadEmail = lead?.email;
+  const activeReviewItems =
+    activeReviewSkill === "listening"
+      ? (snapshot?.review?.listening?.wrong ?? [])
+      : activeReviewSkill === "reading"
+        ? (snapshot?.review?.reading?.wrong ?? [])
+        : [];
 
   return (
     <DiagnosticChrome variant="report">
@@ -152,7 +191,11 @@ export function DiagnosticResultsExperience() {
                 </h1>
                 <p className="mt-2 text-[15px] leading-relaxed font-light text-[#5A6B82] sm:text-[16.5px]">
                   {pendingHuman
-                    ? "Listening and Reading are scored. Writing and Speaking are with a certified examiner — full report within 24–48 hours."
+                    ? writingPending
+                      ? "Listening and Reading are scored. Writing and Speaking are with a certified examiner — full report within 24–48 hours."
+                      : speakingPending
+                        ? "Listening, Reading, and Writing are scored. Speaking is with a certified examiner — full report within 24–48 hours."
+                        : "All skills have AI-estimated scores now. Certified examiner review is in progress for final confirmation."
                     : "Based on your responses, here's an honest picture of where you stand."}
                 </p>
               </div>
@@ -177,8 +220,10 @@ export function DiagnosticResultsExperience() {
               {SKILL_ORDER.map((key) => {
                 const pending =
                   pendingHuman &&
-                  (key === "speaking" ||
-                    (key === "writing" && !hasWritingEval));
+                  ((key === "writing" &&
+                    effectiveWritingBand == null &&
+                    !hasWritingEval) ||
+                    key === "speaking");
                 const band = skillBands[key];
 
                 return (
@@ -190,10 +235,64 @@ export function DiagnosticResultsExperience() {
                     coaching={coachingCopy(statuses[key])}
                     barPercent={bandBarPercent(band)}
                     pending={pending}
+                    onClick={() => setActiveReviewSkill(key)}
                   />
                 );
               })}
             </div>
+
+            {activeReviewSkill ? (
+              <section className="rounded-[20px] border border-border-soft bg-white p-5 shadow-sm sm:p-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="font-display text-lg font-semibold text-navy">
+                    {skillReviewTitle(activeReviewSkill)}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveReviewSkill(null)}
+                    className="cursor-pointer rounded-full border border-border-soft px-3 py-1.5 text-xs font-medium text-[#5A6B82] hover:bg-[#F4F7FB]"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {(activeReviewSkill === "writing" || activeReviewSkill === "speaking") ? (
+                  <p className="text-sm leading-relaxed text-[#5A6B82]">
+                    {activeReviewSkill === "writing"
+                      ? "Writing question-by-question review is not available on this page yet. You can use the estimated writing band card above."
+                      : "Speaking answer transcript and examiner notes are not available yet while review is pending."}
+                  </p>
+                ) : activeReviewItems.length === 0 ? (
+                  <p className="text-sm leading-relaxed text-[#5A6B82]">
+                    No incorrect answers found for this section. Great job.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {activeReviewItems.map((item) => (
+                      <article
+                        key={item.id}
+                        className="rounded-xl border border-border-soft bg-[#FAFCFF] p-3.5 sm:p-4"
+                      >
+                        <p className="text-xs font-semibold tracking-wide text-teal uppercase">
+                          Question {item.number}
+                        </p>
+                        <p className="mt-1.5 text-sm font-medium text-navy">
+                          {item.prompt}
+                        </p>
+                        <p className="mt-2 text-sm text-[#5A6B82]">
+                          <span className="font-semibold text-navy">Your answer:</span>{" "}
+                          {item.userAnswer || "—"}
+                        </p>
+                        <p className="mt-1 text-sm text-[#5A6B82]">
+                          <span className="font-semibold text-navy">Correct answer:</span>{" "}
+                          {item.correctAnswer || "—"}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : null}
 
             {pendingHuman ? (
               <div className="flex flex-col gap-4 rounded-[20px] bg-[#0D1F3C] p-6 shadow-[0_18px_44px_rgba(13,31,60,0.28)] sm:flex-row sm:items-start sm:gap-[22px] sm:p-7 sm:px-8">
@@ -205,9 +304,13 @@ export function DiagnosticResultsExperience() {
                     While your report is finalised
                   </h3>
                   <p className="mt-2 text-[15px] leading-relaxed font-light text-[#C6D2E4]">
-                    Your Listening and Reading are already scored. A certified
-                    examiner is reviewing your Writing and Speaking now. In the
-                    meantime, preview the personalised study plan we&apos;ve
+                    Your Listening and Reading are already scored.{" "}
+                    {writingPending
+                      ? "A certified examiner is reviewing your Writing and Speaking now."
+                      : speakingPending
+                        ? "Your Writing AI estimate is ready, and a certified examiner is reviewing your Speaking now."
+                        : "Your Writing and Speaking AI estimates are ready, and certified examiner confirmation is in progress."}{" "}
+                    In the meantime, preview the personalised study plan we&apos;ve
                     started building for your{" "}
                     <span className="font-medium text-cyan">
                       Band {targetBand.toFixed(1)}
