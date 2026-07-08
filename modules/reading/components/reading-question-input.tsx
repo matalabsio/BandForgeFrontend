@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReadingQuestion } from "@/modules/reading/types";
+import { examTextInputProps } from "@/lib/exam-input-props";
 import { cn } from "@/lib/utils";
 
 const TFNG_DEFAULT = ["TRUE", "FALSE", "NOT GIVEN"] as const;
@@ -50,6 +51,7 @@ export function ReadingQuestionInput({ q, value, onChange }: Props) {
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      {...examTextInputProps}
       aria-label={`Question ${q.display_number ?? q.question_number}: answer`}
       placeholder="Type your answer"
       className="mt-3 w-full max-w-md rounded-md border border-[var(--reading-border)] bg-white px-3 py-2.5 text-[14px] text-[var(--reading-ink)] outline-none transition-shadow focus:border-[var(--reading-accent)] focus:ring-2 focus:ring-[var(--reading-accent)]/20"

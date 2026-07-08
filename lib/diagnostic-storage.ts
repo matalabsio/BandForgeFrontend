@@ -45,6 +45,8 @@ export type DiagnosticProgress = {
   startedAt: string;
   status: "in_progress" | "completed";
   currentModule: DiagnosticModule;
+  listeningPrepComplete?: boolean;
+  listeningAudioPlayed?: boolean;
   answers: {
     listening: Record<string, string>;
     reading: Record<string, string>;
@@ -103,6 +105,8 @@ export function createDiagnosticAttempt(): DiagnosticProgress {
     startedAt: new Date().toISOString(),
     status: "in_progress",
     currentModule: "listening",
+    listeningPrepComplete: false,
+    listeningAudioPlayed: false,
     answers: emptyAnswers(),
   };
   saveDiagnosticProgress(progress);
@@ -151,6 +155,35 @@ export function saveModuleAnswers(
   };
   saveDiagnosticProgress(next);
   return next;
+}
+
+export function markListeningPrepComplete(): DiagnosticProgress | null {
+  const progress = readDiagnosticProgress();
+  if (!progress || progress.status !== "in_progress") return null;
+  const next: DiagnosticProgress = { ...progress, listeningPrepComplete: true };
+  saveDiagnosticProgress(next);
+  return next;
+}
+
+export function markListeningAudioPlayed(): DiagnosticProgress | null {
+  const progress = readDiagnosticProgress();
+  if (!progress || progress.status !== "in_progress") return null;
+  const next: DiagnosticProgress = {
+    ...progress,
+    listeningPrepComplete: true,
+    listeningAudioPlayed: true,
+  };
+  saveDiagnosticProgress(next);
+  return next;
+}
+
+export function isListeningPrepComplete(progress?: DiagnosticProgress | null): boolean {
+  const current = progress ?? readDiagnosticProgress();
+  if (!current) return false;
+  const hasListeningWork = Object.keys(current.answers.listening).length > 0;
+  return Boolean(
+    current.listeningPrepComplete || current.listeningAudioPlayed || hasListeningWork,
+  );
 }
 
 function nextModuleAfter(module: DiagnosticModule): DiagnosticModule {

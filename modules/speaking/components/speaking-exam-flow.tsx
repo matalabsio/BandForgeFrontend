@@ -18,6 +18,7 @@ import type {
   SpeakingQuestionManifest,
   SpeakingSessionRecording,
 } from "@/modules/speaking/types";
+import { examTextInputProps } from "@/lib/exam-input-props";
 import { cn } from "@/lib/utils";
 
 type SubPhase = "play" | "record" | "part2_prep" | "part2_record" | "ready";
@@ -355,6 +356,7 @@ export function SpeakingExamFlow({
             <textarea
               value={part2Notes}
               onChange={(e) => setPart2Notes(e.target.value)}
+              {...examTextInputProps}
               placeholder="Notes (not submitted)…"
               className="min-h-[100px] w-full max-w-full resize-y rounded-xl border border-navy/10 bg-white p-3 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20 sm:min-h-[120px]"
             />

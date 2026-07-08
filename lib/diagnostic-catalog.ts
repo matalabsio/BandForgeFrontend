@@ -16,12 +16,14 @@ export const DIAGNOSTIC_SPEAKING_PART_COUNT = 1;
 
 /** Journey spec section timers (seconds). */
 export const DIAGNOSTIC_LISTENING_TIMER_SEC = 10 * 60;
+export const DIAGNOSTIC_LISTENING_PREP_SEC = 15;
 export const DIAGNOSTIC_READING_TIMER_SEC = 15 * 60;
 export const DIAGNOSTIC_WRITING_TIMER_SEC = 20 * 60;
 export const DIAGNOSTIC_PROCESSING_SEC = 12;
 
 export const diagnosticPaths = {
   landing: "/diagnostic",
+  listeningPrep: "/diagnostic/listening/prep",
   listening: "/diagnostic/listening",
   reading: "/diagnostic/reading",
   writing: "/diagnostic/writing",

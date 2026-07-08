@@ -24,6 +24,7 @@ import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api";
+import { examTextInputProps } from "@/lib/exam-input-props";
 
 type WritingPanel = "task1" | "task2";
 
@@ -285,6 +286,7 @@ export function DiagnosticWritingExperience() {
                   id={`diagnostic-writing-${activeTask.id}`}
                   value={essays[activeTask.id] ?? ""}
                   onChange={(e) => handleEssayChange(activeTask.id, e.target.value)}
+                  {...examTextInputProps}
                   className="min-h-[280px] w-full max-w-full resize-y rounded-[14px] border border-navy/10 bg-white p-4 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
                   placeholder="Write your response here…"
                 />

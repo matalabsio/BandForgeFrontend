@@ -2,7 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
 import { DiagnosticLeadForm } from "@/components/diagnostic/ui/diagnostic-lead-form";
 import { DiagnosticSectionGrid } from "@/components/diagnostic/ui/diagnostic-section-grid";
@@ -17,6 +17,7 @@ import {
   clearDiagnosticAttempt,
   createDiagnosticAttempt,
   hasInProgressDiagnostic,
+  isListeningPrepComplete,
   readDiagnosticProgress,
 } from "@/lib/diagnostic-storage";
 
@@ -36,21 +37,21 @@ function WhatsAppNote() {
 export function DiagnosticStartExperience() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [canContinue, setCanContinue] = useState(false);
-  const [lead, setLead] = useState<Partial<DiagnosticLead>>({});
-
-  useEffect(() => {
-    setCanContinue(hasInProgressDiagnostic());
-    const saved = readDiagnosticLead();
-    if (saved) setLead(saved);
-  }, []);
+  const [canContinue] = useState(() => hasInProgressDiagnostic());
+  const [lead, setLead] = useState<Partial<DiagnosticLead>>(
+    () => readDiagnosticLead() ?? {},
+  );
 
   const formValid = isLeadComplete(lead);
 
   const goToCurrentModule = () => {
     const progress = readDiagnosticProgress();
-    const module = progress?.currentModule ?? "listening";
-    router.replace(diagnosticPaths[module]);
+    const currentModule = progress?.currentModule ?? "listening";
+    if (currentModule === "listening" && !isListeningPrepComplete(progress)) {
+      router.replace(diagnosticPaths.listeningPrep);
+      return;
+    }
+    router.replace(diagnosticPaths[currentModule]);
   };
 
   const persistAndStart = () => {
@@ -58,7 +59,7 @@ export function DiagnosticStartExperience() {
     saveDiagnosticLead(lead);
     clearDiagnosticAttempt();
     createDiagnosticAttempt();
-    router.replace(diagnosticPaths.listening);
+    router.replace(diagnosticPaths.listeningPrep);
   };
 
   const handleStart = () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
@@ -27,7 +27,6 @@ import { DiagnosticReadingMatchingHeadings } from "@/components/diagnostic/diagn
 import { ReadingQuestionInput } from "@/modules/reading/components/reading-question-input";
 import { SentenceInlineBlank } from "@/modules/listening/components/listening-inline-answer";
 import {
-  INLINE_BLANK_PATTERN,
   splitPromptBlank,
 } from "@/modules/reading/lib/reading-inline-blank";
 import type { ReadingQuestion } from "@/modules/reading/types";
@@ -181,15 +180,13 @@ export function DiagnosticReadingExperience() {
   const router = useRouter();
   const [pack, setPack] = useState<DiagnosticPack | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>(
+    () => readDiagnosticProgress()?.answers.reading ?? {},
+  );
   const [submitting, setSubmitting] = useState(false);
   const [tab, setTab] = useState<Tab>("passage");
 
   useEffect(() => {
-    const progress = readDiagnosticProgress();
-    if (progress?.answers.reading) {
-      setAnswers(progress.answers.reading);
-    }
     void loadDiagnosticPack()
       .then(setPack)
       .catch((e: unknown) => {
@@ -231,6 +228,13 @@ export function DiagnosticReadingExperience() {
     router.replace(diagnosticTransitionPath("reading-writing"));
   }, [pack, answers, submitting, router]);
 
+  const readingThemeVars: CSSProperties = {
+    ["--reading-ink" as string]: "#0D1F3C",
+    ["--reading-ink-muted" as string]: "#5A6B82",
+    ["--reading-accent" as string]: "#0097A7",
+    ["--reading-border" as string]: "rgb(13 31 60 / 0.12)",
+  };
+
   return (
     <DiagnosticModuleGuard module="reading">
       <DiagnosticChrome variant="exam" fillViewport>
@@ -251,7 +255,10 @@ export function DiagnosticReadingExperience() {
           }
         >
           {pack ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+            <div
+              className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row"
+              style={readingThemeVars}
+            >
               {/* Mobile tabs */}
               <div className="flex shrink-0 gap-1.5 px-4 pt-3 sm:px-6 lg:hidden">
                 {(["passage", "questions"] as const).map((t) => (

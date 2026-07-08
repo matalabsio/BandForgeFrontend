@@ -9,11 +9,12 @@ import {
   DiagnosticExamColumn,
   DiagnosticExamScroll,
   DiagnosticExamShell,
-  DiagnosticPassageText,
 } from "@/components/diagnostic/diagnostic-exam-shell";
-import { DiagnosticAudioStrip } from "@/components/diagnostic/ui/diagnostic-audio-strip";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
-import { DIAGNOSTIC_LISTENING_TIMER_SEC } from "@/lib/diagnostic-catalog";
+import {
+  DIAGNOSTIC_LISTENING_TIMER_SEC,
+  diagnosticPaths,
+} from "@/lib/diagnostic-catalog";
 import {
   loadDiagnosticPack,
   packToListeningPart,
@@ -22,10 +23,13 @@ import {
 import { buildModuleReview, scoreListeningModule } from "@/lib/diagnostic-scoring";
 import {
   advanceDiagnosticModule,
+  isListeningPrepComplete,
+  markListeningAudioPlayed,
   readDiagnosticProgress,
   saveModuleAnswers,
 } from "@/lib/diagnostic-storage";
 import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
+import { QuestionAudio } from "@/modules/listening/components/question-audio";
 import { ListeningQuestionsPanel } from "@/modules/listening/components/listening-questions-panel";
 import type { ListeningPart } from "@/modules/listening/types";
 
@@ -33,9 +37,14 @@ export function DiagnosticListeningExperience() {
   const router = useRouter();
   const [pack, setPack] = useState<DiagnosticPack | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>(
+    () => readDiagnosticProgress()?.answers.listening ?? {},
+  );
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [audioPlayed, setAudioPlayed] = useState(
+    () => readDiagnosticProgress()?.listeningAudioPlayed ?? false,
+  );
 
   const listeningPart: ListeningPart | null = useMemo(
     () => (pack ? packToListeningPart(pack) : null),
@@ -44,15 +53,16 @@ export function DiagnosticListeningExperience() {
 
   useEffect(() => {
     const progress = readDiagnosticProgress();
-    if (progress?.answers.listening) {
-      setAnswers(progress.answers.listening);
+    if (!isListeningPrepComplete(progress)) {
+      router.replace(diagnosticPaths.listeningPrep);
+      return;
     }
     void loadDiagnosticPack()
       .then(setPack)
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : "Could not load diagnostic.");
       });
-  }, []);
+  }, [router]);
 
   const handleSubmit = useCallback(() => {
     if (!pack || submitting) return;
@@ -81,6 +91,13 @@ export function DiagnosticListeningExperience() {
     });
   }, []);
 
+  const handleAudioCompleted = useCallback(() => {
+    setAudioPlayed(true);
+    markListeningAudioPlayed();
+  }, []);
+
+  const questionsVisible = audioPlayed || !pack?.listening.audioUrl;
+
   return (
     <DiagnosticModuleGuard module="listening">
       <DiagnosticChrome variant="exam" fillViewport>
@@ -96,6 +113,7 @@ export function DiagnosticListeningExperience() {
           timer={
             <DiagnosticTimerPill
               durationSeconds={DIAGNOSTIC_LISTENING_TIMER_SEC}
+              active={questionsVisible}
               onExpire={handleSubmit}
             />
           }
@@ -104,20 +122,22 @@ export function DiagnosticListeningExperience() {
             <DiagnosticExamScroll>
               <DiagnosticExamColumn>
                 {pack.listening.audioUrl ? (
-                  <DiagnosticAudioStrip
-                    src={pack.listening.audioUrl}
-                    className="mb-5 lg:mb-8"
-                  />
-                ) : null}
-
-                <details className="mb-5 rounded-xl border border-navy/10 bg-navy/[0.03] px-4 py-3">
-                  <summary className="cursor-pointer text-sm font-medium text-[#5A6B82]">
-                    Show transcript
-                  </summary>
-                  <div className="mt-3 max-h-48 overflow-y-auto border-t border-navy/8 pt-3">
-                    <DiagnosticPassageText text={pack.listening.transcript} />
+                  <div className="mb-5 lg:mb-8">
+                    <QuestionAudio
+                      audioUrl={pack.listening.audioUrl}
+                      played={audioPlayed}
+                      variant="exam"
+                      autoplay={!audioPlayed}
+                      allowManualStartAfterBegin={!audioPlayed}
+                      onCompleted={handleAudioCompleted}
+                      sectionNote="The recording plays once. Questions unlock after the audio ends."
+                    />
                   </div>
-                </details>
+                ) : (
+                  <p className="mb-5 rounded-xl border border-navy/10 bg-navy/[0.03] px-4 py-3 text-sm text-[#5A6B82] lg:mb-8">
+                    Listening audio is unavailable. Questions are shown so you can proceed.
+                  </p>
+                )}
 
                 <ListeningQuestionsPanel
                   part={listeningPart}
@@ -125,8 +145,8 @@ export function DiagnosticListeningExperience() {
                   currentQuestionId={currentQuestionId}
                   onAnswer={handleAnswer}
                   onFocus={setCurrentQuestionId}
-                  partPlayed
-                  visible
+                  partPlayed={questionsVisible}
+                  visible={questionsVisible}
                   variant="diagnostic"
                 />
               </DiagnosticExamColumn>

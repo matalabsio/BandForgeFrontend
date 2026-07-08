@@ -10,6 +10,7 @@ import {
   PencilLine,
 } from "lucide-react";
 import { TestTimer } from "@/modules/shared";
+import { examTextInputProps } from "@/lib/exam-input-props";
 import { ExamPartFooter } from "@/components/exam/exam-part-footer";
 import { cn } from "@/lib/utils";
 
@@ -233,7 +234,7 @@ export function WritingExamWorkspace({
                   value={essay}
                   onChange={(e) => onEssayChange(e.target.value)}
                   placeholder="Type your response here. Organise your ideas into clear paragraphs…"
-                  spellCheck
+                  {...examTextInputProps}
                   className="answer-input h-full min-h-[min(52vh,520px)] w-full resize-none border-0 bg-transparent px-4 py-4 text-[16px] leading-[1.75] text-[#334155] placeholder:text-[#94A3B8] focus:outline-none focus:ring-0 md:min-h-[min(60vh,640px)] md:px-5 md:py-5 lg:min-h-0"
                 />
               </div>

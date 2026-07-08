@@ -20,18 +20,21 @@ export function DiagnosticInterstitialExperience({ slug }: Props) {
   const router = useRouter();
   const config = DIAGNOSTIC_TRANSITIONS[slug];
   const remaining = useCountdown(config.countdownSec);
-  const [ready, setReady] = useState(false);
+  const [ready] = useState(() => hasInProgressDiagnostic());
   const canContinue = remaining === 0;
   const progressPct =
     ((config.countdownSec - remaining) / config.countdownSec) * 100;
 
   useEffect(() => {
-    if (!hasInProgressDiagnostic()) {
+    if (!ready) {
       router.replace("/diagnostic");
-      return;
     }
-    setReady(true);
-  }, [router]);
+  }, [ready, router]);
+
+  useEffect(() => {
+    if (!ready || remaining !== 0) return;
+    router.replace(config.nextPath);
+  }, [ready, remaining, router, config.nextPath]);
 
   if (!ready) {
     return (

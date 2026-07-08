@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { writingTargets } from "@/lib/design-tokens";
+import { examTextInputProps } from "@/lib/exam-input-props";
 import { useCountdown } from "@/hooks/use-countdown";
 import { TestHeader, TestShell, TestTimer, WordCounter } from "@/modules/shared";
 import { cn } from "@/lib/utils";
@@ -98,6 +99,7 @@ export function TestWritingView() {
               id="essay"
               value={essay}
               onChange={(e) => handleChange(e.target.value)}
+              {...examTextInputProps}
               placeholder="Type your response here…"
               className="answer-input min-h-[240px] flex-1 resize-none rounded-lg border border-border bg-white p-4 text-ink transition-colors duration-200 focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/20"
             />
