@@ -324,7 +324,7 @@ export function SpeakingExamFlow({
       ) : null}
 
       {subPhase === "part2_prep" && cueCard ? (
-        <div className="rounded-[18px] border border-navy/10 bg-navy/[0.04] p-4 shadow-[0_16px_40px_rgba(13,31,60,0.06)] sm:p-5">
+        <div className="rounded-[18px] border border-navy/12 bg-white p-4 shadow-[0_14px_30px_rgba(13,31,60,0.07)] sm:p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="font-mono text-[10.5px] tracking-wider text-teal uppercase">
               Part 2 — Preparation
@@ -338,7 +338,7 @@ export function SpeakingExamFlow({
           </p>
           {cueCard.bullets.length > 0 ? (
             <>
-              <p className="mt-4 mb-2 text-[13px] font-light text-[#5A6B82]">You should say:</p>
+              <p className="mt-4 mb-2 text-[13px] font-medium text-[#475569]">You should say:</p>
               <ul className="flex flex-col gap-2.5">
                 {cueCard.bullets.map((b) => (
                   <li key={b} className="flex items-start gap-2.5">
@@ -358,7 +358,7 @@ export function SpeakingExamFlow({
               onChange={(e) => setPart2Notes(e.target.value)}
               {...examTextInputProps}
               placeholder="Notes (not submitted)…"
-              className="min-h-[100px] w-full max-w-full resize-y rounded-xl border border-navy/10 bg-white p-3 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20 sm:min-h-[120px]"
+              className="min-h-[100px] w-full max-w-full resize-y rounded-xl border border-navy/15 bg-slate-50 p-3 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/25 sm:min-h-[120px]"
             />
           </label>
         </div>
@@ -380,16 +380,17 @@ export function SpeakingExamFlow({
           answerBlob={captured ? answerBlob : null}
           onStop={handleStop}
           onRerecord={() => void handleRerecord()}
+          showRerecord={!isDiagnostic}
           className={isDiagnostic ? "mt-0" : undefined}
         />
       ) : null}
 
       {subPhase === "ready" ? (
-        <div className="rounded-[14px] border border-[#C9F0DC] bg-[#ECFBF3] px-4 py-3 text-center">
-          <p className="text-sm font-medium text-[#0E8F5B]">
+        <div className="rounded-[14px] border border-cyan/25 bg-cyan/10 px-4 py-3 text-center">
+          <p className="text-sm font-semibold text-[#075985]">
             {isLastStep
-              ? "Answer saved. Tap Hear to review, Re-record to try again, or Submit when ready."
-              : "Answer saved. Tap Hear to review your answer, or Re-record before continuing."}
+              ? "Answer saved. Tap Hear to review, or Submit when ready."
+              : "Answer saved. Tap Hear to review your answer, then continue."}
           </p>
         </div>
       ) : null}

@@ -182,14 +182,16 @@ export function SpeakingQuestionPlayer({
   return (
     <div
       className={cn(
-        "rounded-[18px] border border-navy/10 bg-navy/[0.04] p-4 sm:p-5",
-        variant === "diagnostic" && "shadow-[0_16px_40px_rgba(13,31,60,0.06)]",
+        "rounded-[18px] border border-navy/12 bg-white p-4 sm:p-5",
+        variant === "diagnostic" && "shadow-[0_14px_30px_rgba(13,31,60,0.07)]",
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="font-mono text-[10px] tracking-wider text-teal uppercase sm:text-[10.5px]">
-          {partLabel}
-        </p>
+        {variant !== "diagnostic" ? (
+          <p className="font-mono text-[10px] tracking-wider text-teal uppercase sm:text-[10.5px]">
+            {partLabel}
+          </p>
+        ) : null}
         {canListen ? (
           <button
             type="button"
@@ -197,8 +199,8 @@ export function SpeakingQuestionPlayer({
             className={cn(
               "inline-flex min-h-[36px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-200 sm:text-[13px]",
               isListening
-                ? "border-cyan/40 bg-cyan/15 text-teal"
-                : "border-navy/12 bg-white text-navy hover:border-cyan/30 hover:bg-cyan/5",
+                ? "border-cyan/45 bg-cyan/12 text-teal"
+                : "border-navy/15 bg-slate-50 text-navy hover:border-cyan/40 hover:bg-cyan/10",
             )}
             aria-label={isListening ? "Stop listening to question" : "Listen to examiner question"}
           >
@@ -234,7 +236,7 @@ export function SpeakingQuestionPlayer({
       ) : null}
 
       {!videoUrl ? (
-        <div className="mt-4 rounded-xl border border-dashed border-navy/15 bg-white/90 p-4">
+        <div className="mt-4 rounded-xl border border-navy/15 bg-slate-50 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6E83A0]">
             Examiner question
           </p>
@@ -265,14 +267,16 @@ export function SpeakingQuestionCard({
   return (
     <div
       className={cn(
-        "rounded-[18px] border border-navy/10 bg-navy/[0.04] p-4 sm:p-5",
-        variant === "diagnostic" && "shadow-[0_16px_40px_rgba(13,31,60,0.06)]",
+        "rounded-[18px] border border-navy/12 bg-white p-4 sm:p-5",
+        variant === "diagnostic" && "shadow-[0_14px_30px_rgba(13,31,60,0.07)]",
       )}
     >
-      <p className="font-mono text-[10px] tracking-wider text-teal uppercase sm:text-[10.5px]">
-        {partLabel}
-      </p>
-      <div className="mt-4 rounded-xl border border-dashed border-navy/15 bg-white/90 p-4">
+      {variant !== "diagnostic" ? (
+        <p className="font-mono text-[10px] tracking-wider text-teal uppercase sm:text-[10.5px]">
+          {partLabel}
+        </p>
+      ) : null}
+      <div className="mt-4 rounded-xl border border-navy/15 bg-slate-50 p-4">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6E83A0]">
           Examiner question
         </p>

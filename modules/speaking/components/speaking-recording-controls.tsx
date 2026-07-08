@@ -17,6 +17,7 @@ type Props = {
   onStart?: () => void;
   className?: string;
   showStart?: boolean;
+  showRerecord?: boolean;
 };
 
 export function SpeakingRecordingControls({
@@ -29,6 +30,7 @@ export function SpeakingRecordingControls({
   onStart,
   className,
   showStart = false,
+  showRerecord = true,
 }: Props) {
   const recording = phase === "recording";
   const captured = phase === "captured";
@@ -230,20 +232,22 @@ export function SpeakingRecordingControls({
           Hear
         </button>
 
-        <button
-          type="button"
-          onClick={onRerecord}
-          disabled={recording}
-          className={cn(
-            "col-span-2 flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
-            captured
-              ? "border-navy/12 bg-white text-navy hover:border-cyan/30 hover:bg-cyan/5"
-              : "border-navy/12 bg-white text-[#6E83A0] hover:bg-navy/[0.03]",
-          )}
-        >
-          <RotateCcw className="size-3.5 shrink-0" />
-          Re-record
-        </button>
+        {showRerecord ? (
+          <button
+            type="button"
+            onClick={onRerecord}
+            disabled={recording}
+            className={cn(
+              "col-span-2 flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
+              captured
+                ? "border-navy/12 bg-white text-navy hover:border-cyan/30 hover:bg-cyan/5"
+                : "border-navy/12 bg-white text-[#6E83A0] hover:bg-navy/[0.03]",
+            )}
+          >
+            <RotateCcw className="size-3.5 shrink-0" />
+            Re-record
+          </button>
+        ) : null}
       </div>
     </div>
   );

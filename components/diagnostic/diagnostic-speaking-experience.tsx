@@ -37,23 +37,24 @@ export function DiagnosticSpeakingExperience() {
   const [pack, setPack] = useState<DiagnosticPack | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [micScope, setMicScope] = useState<string | null>(null);
-  const [micPassed, setMicPassed] = useState(false);
-  const [flowMeta, setFlowMeta] = useState<SpeakingFlowMeta | null>(null);
-  const [speakingAnswers, setSpeakingAnswers] = useState<DiagnosticSpeakingAnswers>({
-    part1: {},
-    part2: null,
+  const [micScope] = useState<string | null>(
+    () => readDiagnosticProgress()?.attemptId ?? null,
+  );
+  const [micPassed, setMicPassed] = useState(() => {
+    const progress = readDiagnosticProgress();
+    if (!progress?.attemptId) return false;
+    return readMicCheckPassed(progress.attemptId);
   });
+  const [flowMeta, setFlowMeta] = useState<SpeakingFlowMeta | null>(null);
+  const [speakingAnswers, setSpeakingAnswers] = useState<DiagnosticSpeakingAnswers>(
+    () =>
+      readDiagnosticProgress()?.answers.speaking ?? {
+        part1: {},
+        part2: null,
+      },
+  );
 
   useEffect(() => {
-    const progress = readDiagnosticProgress();
-    if (progress?.answers.speaking) {
-      setSpeakingAnswers(progress.answers.speaking);
-    }
-    if (progress?.attemptId) {
-      setMicScope(progress.attemptId);
-      setMicPassed(readMicCheckPassed(progress.attemptId));
-    }
     void loadDiagnosticPack()
       .then(setPack)
       .catch((e: unknown) => {
@@ -199,7 +200,19 @@ export function DiagnosticSpeakingExperience() {
         >
           {!micPassed ? (
             <DiagnosticExamScroll>
-              <DiagnosticExamColumn className="py-4 sm:py-6">
+              <DiagnosticExamColumn className="py-4 sm:py-6 lg:py-8">
+                <div className="mb-4 rounded-[16px] border border-navy/12 bg-white p-4 shadow-[0_10px_24px_rgba(13,31,60,0.06)] sm:mb-5 sm:p-5">
+                  <p className="font-mono text-[10px] tracking-[0.14em] text-teal uppercase">
+                    Speaking format
+                  </p>
+                  <h2 className="mt-1.5 text-lg font-semibold leading-tight text-navy sm:text-xl">
+                    Video-first examiner prompts, timed answers, one-take flow
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-[#334155]">
+                    Complete a quick mic check first. Then Part 1, Part 2 prep + long
+                    turn, and Part 3 run continuously like the real IELTS speaking test.
+                  </p>
+                </div>
                 <SpeakingMicCheck
                   variant="diagnostic"
                   onBegin={handleMicBegin}

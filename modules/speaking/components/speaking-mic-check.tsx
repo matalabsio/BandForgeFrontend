@@ -295,7 +295,7 @@ export function SpeakingMicCheck({
         className={cn(
           "mt-5 rounded-[18px] p-5 text-center sm:p-6",
           isDiagnostic
-            ? "border border-navy/10 bg-navy/[0.04] shadow-[0_16px_40px_rgba(13,31,60,0.06)]"
+            ? "border border-navy/12 bg-white shadow-[0_14px_30px_rgba(13,31,60,0.07)]"
             : "border border-cyan/15 bg-[#122747]",
         )}
       >
@@ -303,7 +303,7 @@ export function SpeakingMicCheck({
           className={cn(
             "relative mx-auto flex items-center justify-center rounded-full border-2",
             isDiagnostic
-              ? "size-24 border-cyan/40 bg-cyan/8"
+              ? "size-24 border-cyan/45 bg-cyan/10"
               : "size-[104px] border-cyan bg-[radial-gradient(circle_at_50%_40%,rgba(0,188,212,0.25),rgba(0,151,167,0.05))]",
           )}
         >
@@ -330,7 +330,7 @@ export function SpeakingMicCheck({
         <p
           className={cn(
             "mt-1 text-xs",
-            isDiagnostic ? "text-[#6E83A0]" : "text-[#5F7492]",
+            isDiagnostic ? "text-[#475569]" : "text-[#5F7492]",
           )}
         >
           {statusSub}
@@ -353,7 +353,7 @@ export function SpeakingMicCheck({
             className={cn(
               "mt-5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors duration-200",
               isDiagnostic
-                ? "border-navy/10 bg-white hover:border-cyan/30 hover:bg-cyan/5"
+                  ? "border-navy/15 bg-white hover:border-cyan/40 hover:bg-cyan/8"
                 : "border-cyan/15 bg-teal/10 hover:bg-teal/15",
               isPlaying && "border-cyan/40 ring-2 ring-cyan/20",
             )}
@@ -397,7 +397,7 @@ export function SpeakingMicCheck({
                     ? "border-[#C9F0DC] bg-[#ECFBF3] text-[#0E8F5B]"
                     : "border-[#3ECF8E]/40 bg-[#3ECF8E]/12 text-[#3ECF8E]"
                   : isDiagnostic
-                    ? "border-navy/12 text-[#5A6B82] hover:border-[#C9F0DC] hover:bg-[#ECFBF3]/60"
+                    ? "border-navy/15 text-[#334155] hover:border-cyan/40 hover:bg-cyan/8"
                     : "border-cyan/15 text-[#9FB2C8] hover:border-[#3ECF8E]/30",
               )}
             >
@@ -410,7 +410,7 @@ export function SpeakingMicCheck({
               className={cn(
                 "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border px-3 py-2.5 text-xs font-semibold transition-colors duration-200 sm:text-sm",
                 isDiagnostic
-                  ? "border-navy/12 bg-white text-[#5A6B82] hover:bg-navy/[0.03]"
+                  ? "border-navy/15 bg-white text-[#334155] hover:border-navy/25 hover:bg-slate-50"
                   : "border-cyan/15 text-[#9FB2C8] hover:bg-white/5",
               )}
             >
@@ -448,7 +448,7 @@ export function SpeakingMicCheck({
           className={cn(
             "mt-2 flex gap-3 rounded-xl border p-3.5",
             isDiagnostic
-              ? "border-amber-200/80 bg-[#FEF8EC]"
+              ? "border-amber-300/80 bg-[#FFF7E8]"
               : "border-[#F5C46B]/30 bg-[#F5C46B]/10",
           )}
         >
@@ -475,7 +475,7 @@ export function SpeakingMicCheck({
             <p
               className={cn(
                 "mt-0.5 text-[11.5px] leading-relaxed",
-                isDiagnostic ? "text-[#5C4A2E]" : "text-[#9FB2C8]",
+                isDiagnostic ? "text-[#6B4D1F]" : "text-[#9FB2C8]",
               )}
             >
               Locking your phone stops the recording. Don&apos;t switch apps mid-test.
@@ -513,7 +513,7 @@ export function SpeakingMicCheck({
         <p
           className={cn(
             "mt-2.5 text-center font-mono text-[10px] tracking-widest uppercase",
-            isDiagnostic ? "text-[#6E83A0]" : "text-[#5F7492]",
+            isDiagnostic ? "text-[#64748B]" : "text-[#5F7492]",
           )}
         >
           Part 1 starts immediately · {totalMinutes} min total

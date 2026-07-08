@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Star } from "lucide-react";
 import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
@@ -20,29 +20,20 @@ export function DiagnosticInterstitialExperience({ slug }: Props) {
   const router = useRouter();
   const config = DIAGNOSTIC_TRANSITIONS[slug];
   const remaining = useCountdown(config.countdownSec);
-  const [ready] = useState(() => hasInProgressDiagnostic());
   const canContinue = remaining === 0;
   const progressPct =
     ((config.countdownSec - remaining) / config.countdownSec) * 100;
 
   useEffect(() => {
-    if (!ready) {
+    if (!hasInProgressDiagnostic()) {
       router.replace("/diagnostic");
     }
-  }, [ready, router]);
+  }, [router]);
 
   useEffect(() => {
-    if (!ready || remaining !== 0) return;
+    if (remaining !== 0) return;
     router.replace(config.nextPath);
-  }, [ready, remaining, router, config.nextPath]);
-
-  if (!ready) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" />
-      </div>
-    );
-  }
+  }, [remaining, router, config.nextPath]);
 
   return (
     <DiagnosticChrome variant="marketing" fillViewport>

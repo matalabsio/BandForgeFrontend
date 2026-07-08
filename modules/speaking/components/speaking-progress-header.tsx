@@ -20,21 +20,21 @@ export function SpeakingProgressHeader({
   const progress = totalSteps > 0 ? ((stepIndex + 1) / totalSteps) * 100 : 0;
 
   return (
-    <div className={cn("shrink-0 border-b border-navy/8 bg-white px-4 py-3 sm:px-6", className)}>
+    <div className={cn("shrink-0 border-b border-navy/12 bg-white px-4 py-3 sm:px-6", className)}>
       <div className="mx-auto w-full max-w-[760px]">
         <div className="flex items-center justify-between gap-3">
-          <p className="font-mono text-[10px] tracking-wider text-teal uppercase sm:text-[10.5px]">
+          <p className="font-mono text-[10px] tracking-wider text-teal uppercase sm:text-[11px]">
             Part {part}
           </p>
-          <p className="font-mono text-[10px] text-[#6E83A0] sm:text-[11px]">
+          <p className="font-mono text-[11px] text-[#475569] sm:text-[12px]">
             {stepIndex + 1} / {totalSteps}
           </p>
         </div>
-        <p className="mt-1 truncate font-display text-sm font-semibold text-navy sm:text-base">
+        <p className="mt-1 truncate font-display text-base font-semibold text-navy sm:text-[18px]">
           {partLabel}
         </p>
         <div
-          className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-navy/8"
+          className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-slate-200"
           role="progressbar"
           aria-valuenow={stepIndex + 1}
           aria-valuemin={1}
