@@ -13,6 +13,7 @@ import {
 import { isAuthEnabled } from "@/lib/flags";
 import { accessTokenExpired } from "@/lib/jwt-expiry";
 import { getAccessToken } from "@/lib/session";
+import { recordingFilenameForMime } from "@/modules/speaking/lib/media-recorder-support";
 import type {
   SpeakingPendingPayload,
   StartSpeakingPayload,
@@ -143,7 +144,8 @@ export const speakingApi = {
     durationSec: number,
   ): Promise<SubmitSpeakingPayload> {
     const formData = new FormData();
-    formData.append("file", audio, "recording.webm");
+    const filename = recordingFilenameForMime(audio.type);
+    formData.append("file", audio, filename);
     formData.append("duration_sec", String(durationSec));
     return examMultipartCall<SubmitSpeakingPayload>(
       `/api/speaking/attempts/${encodeURIComponent(attemptId)}/submit`,

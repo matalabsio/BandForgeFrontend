@@ -56,8 +56,10 @@ import { audioPanelInstruction } from "@/modules/listening/lib/listening-questio
 import { GREENFIELD_LISTENING_STAGES } from "@/modules/listening/listening-test-stages";
 import {
   initialPartAudioPhase,
+  questionsBrowsable,
   type ListeningPartAudioPhase,
 } from "@/modules/listening/lib/listening-part-intro";
+import { useListeningPreviewCountdown } from "@/modules/listening/hooks/use-listening-preview-countdown";
 import { useListeningMockGuard } from "@/modules/listening/hooks/use-listening-mock-guard";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
@@ -175,8 +177,19 @@ export function ListeningPage({
   }, [partPlayed]);
 
   const handleBeginSection = useCallback(() => {
+    setPartAudioPhase("preview");
+  }, []);
+
+  const handlePreviewComplete = useCallback(() => {
     setPartAudioPhase("playing");
   }, []);
+
+  const { remaining: previewRemaining, progressPct: previewProgressPct } =
+    useListeningPreviewCountdown({
+      phase: partAudioPhase,
+      onPreviewComplete: handlePreviewComplete,
+      resetKey: part,
+    });
 
   const stageMeta = GREENFIELD_LISTENING_STAGES.find((s) => s.part === part);
 
@@ -639,7 +652,7 @@ export function ListeningPage({
       const examPart =
         state.parts.find((p) => p.part === part) ?? state.parts[0];
       const instruction = audioPanelInstruction(examPart, mockSlug);
-      const questionsVisible = partPlayed;
+      const questionsVisible = questionsBrowsable(partAudioPhase);
       const testTitle = mockAttemptId
         ? mockMeta.displayLabel
         : (state.test?.title ?? stageMeta?.context ?? "Listening");
@@ -729,6 +742,8 @@ export function ListeningPage({
                 instruction={instruction}
                 phase={partAudioPhase}
                 onBeginSection={handleBeginSection}
+                previewRemaining={previewRemaining}
+                previewProgressPct={previewProgressPct}
               />
             </div>
             <div className="min-h-[52vh] border-t border-[var(--exam-border)] lg:min-h-0 lg:w-[min(44%,480px)] lg:shrink-0 lg:border-l lg:border-t-0 lg:max-h-[calc(100dvh-3rem)]">
@@ -740,6 +755,7 @@ export function ListeningPage({
                 onFocus={setCurrent}
                 partPlayed={partPlayed}
                 visible={questionsVisible}
+                phase={partAudioPhase}
                 nextPartLabel={nextPartLabel}
                 submitBusy={submitting}
                 onSubmitPart={() => void handleSubmit()}

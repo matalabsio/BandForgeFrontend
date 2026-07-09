@@ -191,10 +191,10 @@ export function ObjectiveModuleReviewClient({ testId, module, testNumber }: Prop
       footer={
         <SectionResultsCtaBar
           layout="split"
-          primaryLabel="Review Answers"
-          onPrimary={() => openReview()}
-          secondaryLabel={continueLabel(payload.next_module)}
-          onSecondary={handleContinue}
+          primaryLabel={continueLabel(payload.next_module)}
+          onPrimary={handleContinue}
+          secondaryLabel="Review Answers"
+          onSecondary={() => openReview()}
         />
       }
     >

@@ -19,6 +19,7 @@ export type StartReadingPayload = {
   test?: { id: string; title: string; description?: string | null };
   passage_text?: string | null;
   questions?: ReadingQuestion[];
+  saved_answers?: Record<string, string>;
 };
 
 export type ReadingQuestionsPayload = {

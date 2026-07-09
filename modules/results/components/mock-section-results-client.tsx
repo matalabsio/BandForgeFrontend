@@ -279,10 +279,10 @@ export function MockSectionResultsClient({
           continueAction ? (
             <SectionResultsCtaBar
               layout="split"
-              primaryLabel="Review Answers"
-              onPrimary={() => openReview()}
-              secondaryLabel={continueAction.label}
-              onSecondary={handleContinue}
+              primaryLabel={continueAction.label}
+              onPrimary={handleContinue}
+              secondaryLabel="Review Answers"
+              onSecondary={() => openReview()}
             />
           ) : null
         }

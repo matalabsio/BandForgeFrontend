@@ -86,7 +86,7 @@ export function DiagnosticListeningPrepExperience() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <span className="mt-1 size-2 shrink-0 rounded-full bg-cyan" aria-hidden />
-                  <span>Questions will appear after the audio finishes.</span>
+                  <span>You&apos;ll have 30 seconds to read the questions before the recording starts.</span>
                 </li>
               </ul>
             </div>

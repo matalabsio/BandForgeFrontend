@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useId, useState } from "react";
 import { Check, ChevronDown, Minus, X } from "lucide-react";
 import type { SectionReviewQuestion } from "./section-results-types";
 
@@ -19,10 +19,17 @@ type RowProps = {
   highlight?: boolean;
 };
 
+function answeredValue(q: SectionReviewQuestion): string {
+  return q.status === "skipped" ? "not answered" : q.user_answer.trim() || "—";
+}
+
 export function SectionAnswerRow({ question: q, highlight = false }: RowProps) {
-  const mapStyle = isMapLabelling(q);
   const explanation = q.explanation?.trim() ?? "";
-  const prompt = q.prompt?.trim() ?? "";
+  const prompt = (q.prompt?.trim() || `Question ${q.question_number}`).trim();
+  const mapStyle = isMapLabelling(q);
+  const userLabel = mapStyle ? "Your match" : "Your answer";
+  const correctLabel = mapStyle ? "Correct match" : "Correct answer";
+  const answered = answeredValue(q);
   const borderClass =
     q.status === "incorrect"
       ? "border-red-100"
@@ -35,145 +42,85 @@ export function SectionAnswerRow({ question: q, highlight = false }: RowProps) {
       : highlight
         ? "bg-cyan/5"
         : "bg-white";
+  const detailsId = useId();
+  const hasExplanation = Boolean(explanation);
+  const [expanded, setExpanded] = useState(highlight);
 
-  if (mapStyle) {
-    const promptLabel = prompt || `Question ${q.question_number}`;
-    return (
-      <ExpandableRow
-        id={`section-q-${q.question_number}`}
-        className={`rounded-[13px] border px-3.5 py-3 sm:px-4 ${borderClass} ${bgClass}`}
-        explanation={explanation}
-        defaultOpen={highlight}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-[14px] font-bold text-navy">
-              <span className="font-mono text-[#94A3B8]">{q.question_number}</span>{" "}
-              {promptLabel}
-            </p>
-          </div>
-          <StatusIcon status={q.status} />
+  useEffect(() => {
+    if (highlight) setExpanded(true);
+  }, [highlight]);
+
+  return (
+    <article
+      id={`section-q-${q.question_number}`}
+      className={`rounded-[13px] border px-3.5 py-3 sm:px-4 ${borderClass} ${bgClass}`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-5 shrink-0 pt-0.5 font-mono text-[13px] font-medium text-[#94A3B8]">
+          {q.question_number}
         </div>
-        <div className="mt-2.5 space-y-1 text-[13px] leading-relaxed">
-          <p className="break-words">
-            <span className="text-muted">Your match: </span>
-            <span
-              className={
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <p className="break-words text-[13px] leading-snug text-navy sm:text-[13.5px]">
+            <span className="font-semibold text-navy">Question: </span>
+            {prompt}
+          </p>
+          <div className="grid gap-1.5 sm:grid-cols-[minmax(7rem,9rem)_1fr] sm:gap-x-3 sm:gap-y-1.5">
+            <p className="text-[12.5px] font-semibold text-muted sm:text-[13px]">{userLabel}</p>
+            <p
+              className={`break-words text-[13px] sm:text-[13.5px] ${
                 q.status === "skipped"
                   ? "italic text-[#94A3B8]"
                   : q.status === "incorrect"
                     ? "font-semibold text-red-600"
                     : "font-semibold text-emerald-700"
-              }
+              }`}
             >
-              {q.status === "skipped" ? "not answered" : q.user_answer.trim() || "—"}
-            </span>
-          </p>
-          {q.status !== "correct" ? (
-            <p className="break-words">
-              <span className="text-muted">Correct match: </span>
-              <span className="font-semibold text-navy">{q.correct_answer}</span>
+              {answered}
             </p>
+            <p className="text-[12.5px] font-semibold text-muted sm:text-[13px]">
+              {correctLabel}
+            </p>
+            <p className="break-words text-[13px] font-semibold text-navy sm:text-[13.5px]">
+              {q.correct_answer}
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-start gap-2">
+          <StatusIcon status={q.status} />
+          {hasExplanation ? (
+            <button
+              type="button"
+              className="mt-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-[#64748B] transition-colors hover:bg-slate-100 hover:text-[#334155] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/35"
+              aria-expanded={expanded}
+              aria-controls={detailsId}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              <span className="sr-only">
+                {expanded ? "Hide explanation" : "Show explanation"}
+              </span>
+              <span aria-hidden>{expanded ? "Hide" : "Explain"}</span>
+              <ChevronDown
+                className={`size-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                aria-hidden
+              />
+            </button>
           ) : null}
         </div>
-      </ExpandableRow>
-    );
-  }
-
-  return (
-    <ExpandableRow
-      id={`section-q-${q.question_number}`}
-      className={`flex flex-col gap-0 rounded-[13px] border px-3 py-3 sm:px-3.5 ${borderClass} ${bgClass}`}
-      explanation={explanation}
-      prompt={prompt}
-      defaultOpen={highlight}
-    >
-      <div className="flex items-center gap-3 sm:gap-3.5">
-        <div className="w-5 shrink-0 font-mono text-[13px] font-medium text-[#94A3B8]">
-          {q.question_number}
-        </div>
-        <div className="min-w-0 flex-1 text-[13px] leading-snug text-navy">
-          {q.status === "skipped" ? (
-            <p className="italic text-[#94A3B8]">No answer given (skipped)</p>
-          ) : (
-            <p className="break-words">
-              Your answer:{" "}
-              <strong
-                className={`font-semibold ${
-                  q.status === "incorrect" ? "text-red-600" : "text-navy"
-                }`}
-              >
-                {q.user_answer.trim()}
-              </strong>
-            </p>
-          )}
-          {q.status !== "correct" ? (
-            <p className="mt-1 break-words text-muted">
-              Correct: <strong className="font-semibold text-navy">{q.correct_answer}</strong>
-            </p>
-          ) : null}
-        </div>
-        <StatusIcon status={q.status} />
       </div>
-    </ExpandableRow>
-  );
-}
-
-function ExpandableRow({
-  id,
-  className,
-  children,
-  explanation,
-  prompt,
-  defaultOpen = false,
-}: {
-  id: string;
-  className: string;
-  children: ReactNode;
-  explanation: string;
-  prompt?: string;
-  defaultOpen?: boolean;
-}) {
-  const hasExpandable = Boolean(explanation || prompt);
-
-  if (!hasExpandable) {
-    return (
-      <div id={id} className={className}>
-        {children}
-      </div>
-    );
-  }
-
-  return (
-    <details
-      id={id}
-      className={`group overflow-hidden ${className}`}
-      open={defaultOpen}
-    >
-      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-        <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">{children}</div>
-          <ChevronDown
-            className="mt-0.5 size-4 shrink-0 text-[#94A3B8] transition-transform group-open:rotate-180"
-            aria-hidden
-          />
+      {hasExplanation ? (
+        <div
+          id={detailsId}
+          className={`grid transition-all duration-200 ease-out ${expanded ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+        >
+          <div className="overflow-hidden">
+            <div className="border-t border-[rgb(13_31_60/0.08)] pt-2.5 text-[13px] leading-relaxed text-[#5A6B82]">
+              <span className="font-semibold text-navy">Explanation: </span>
+              {explanation}
+            </div>
+          </div>
         </div>
-      </summary>
-      <div className="mt-2.5 border-t border-[rgb(13_31_60/0.08)] pt-2.5 text-[13px] leading-relaxed">
-        {prompt ? (
-          <p className="mb-2 break-words text-muted">
-            <span className="font-semibold text-navy">Question: </span>
-            {prompt}
-          </p>
-        ) : null}
-        {explanation ? (
-          <p className="break-words text-[#5A6B82]">
-            <span className="font-semibold text-navy">Explanation: </span>
-            {explanation}
-          </p>
-        ) : null}
-      </div>
-    </details>
+      ) : null}
+    </article>
   );
 }
 

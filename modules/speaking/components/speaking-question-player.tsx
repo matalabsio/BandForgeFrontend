@@ -258,12 +258,17 @@ export function SpeakingQuestionPlayer({
 export function SpeakingQuestionCard({
   prompt,
   partLabel,
+  videoUrl,
   variant = "mock",
 }: {
   prompt: string;
   partLabel: string;
+  /** When present, video is primary — do not show examiner text. */
+  videoUrl?: string;
   variant?: "mock" | "diagnostic";
 }) {
+  const hasVideo = Boolean(videoUrl);
+
   return (
     <div
       className={cn(
@@ -276,14 +281,20 @@ export function SpeakingQuestionCard({
           {partLabel}
         </p>
       ) : null}
-      <div className="mt-4 rounded-xl border border-navy/15 bg-slate-50 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6E83A0]">
-          Examiner question
+      {hasVideo ? (
+        <p className="mt-3 text-sm leading-relaxed text-[#475569]">
+          Answer the examiner&apos;s question. Recording is in progress.
         </p>
-        <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-navy sm:text-[15px]">
-          {prompt}
-        </p>
-      </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-navy/15 bg-slate-50 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6E83A0]">
+            Examiner question
+          </p>
+          <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-navy sm:text-[15px]">
+            {prompt}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

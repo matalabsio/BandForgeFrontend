@@ -27,6 +27,10 @@ import {
   pickSubmitRecording,
   saveSpeakingSessionRecording,
 } from "@/modules/speaking/lib/speaking-session-storage";
+import {
+  acquireSpeakingWakeLock,
+  type SpeakingWakeLockHandle,
+} from "@/modules/speaking/lib/speaking-wake-lock";
 import { speakingApi } from "@/modules/speaking/services/speaking-api";
 import type { SpeakingSessionRecording } from "@/modules/speaking/types";
 import { TestHeader, TestShell, TestTimer } from "@/modules/shared";
@@ -73,6 +77,28 @@ export function SpeakingPage({
     active: Boolean(attemptId),
   });
   useExamSessionGuard(Boolean(attemptId));
+
+  const wakeLockRef = useRef<SpeakingWakeLockHandle | null>(null);
+
+  useEffect(() => {
+    if (!micPassed || !attemptId) return;
+
+    let cancelled = false;
+    void acquireSpeakingWakeLock().then((handle) => {
+      if (cancelled) {
+        void handle.release();
+        return;
+      }
+      wakeLockRef.current = handle;
+    });
+
+    return () => {
+      cancelled = true;
+      const handle = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (handle) void handle.release();
+    };
+  }, [micPassed, attemptId]);
 
   const startExam = useCallback(async () => {
     setLoading(true);
@@ -146,6 +172,9 @@ export function SpeakingPage({
           submitClip.blob,
           submitClip.durationSec,
         );
+        const wake = wakeLockRef.current;
+        wakeLockRef.current = null;
+        if (wake) void wake.release();
         persistModuleResultAttempt(testNumber, "speaking", result.attempt_id);
         if (mockAttemptId) {
           router.replace(
@@ -208,7 +237,7 @@ export function SpeakingPage({
     <TestShell
       header={<TestHeader timer={<TestTimer remainingSeconds={remaining} />} />}
     >
-      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-y-auto p-4 md:p-8">
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-y-auto p-4 md:p-8 lg:p-10">
         {studentName ? (
           <div className="mb-4 inline-flex items-center gap-2 self-start rounded-full border border-border bg-surface px-3 py-1.5 text-meta text-ink/75">
             <UserRound className="size-3.5 text-teal" aria-hidden />

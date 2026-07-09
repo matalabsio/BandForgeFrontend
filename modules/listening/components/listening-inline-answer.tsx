@@ -35,7 +35,7 @@ export function SentenceInlineBlank({
   return (
     <div
       className={cn(
-        isExam && isActive && "rounded-sm bg-[#fafafa] px-1 py-0.5 ring-1 ring-[#18181b]/15",
+        isExam && isActive && "rounded-sm bg-[#e8e8e8] px-1 py-0.5 ring-1 ring-[#18181b]/45",
         isReading &&
           isActive &&
           "rounded-sm bg-[var(--reading-accent-soft)]/40 px-1 py-0.5 ring-1 ring-[var(--reading-accent)]/25",
@@ -153,7 +153,7 @@ export function LabelInlineBlank({
       <div
         className={cn(
           "grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 sm:grid-cols-[2.5rem_8rem_1fr]",
-          isActive && "rounded-sm bg-[#fafafa] ring-1 ring-[#18181b]/15",
+          isActive && "rounded-sm bg-[#e8e8e8] ring-1 ring-[#18181b]/45",
         )}
       >
         <span className="font-mono text-[12px] font-semibold tabular-nums text-[#18181b]">

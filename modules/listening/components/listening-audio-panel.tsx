@@ -3,6 +3,7 @@
 import { memo } from "react";
 import type { ListeningPart } from "@/modules/listening/types";
 import { QuestionAudio } from "@/modules/listening/components/question-audio";
+import { ListeningPreviewBanner } from "@/modules/listening/components/listening-preview-banner";
 import {
   formatQuestionTypeLabel,
   sanitizeInstructionText,
@@ -21,6 +22,8 @@ type Props = {
   instruction?: string | null;
   phase: ListeningPartAudioPhase;
   onBeginSection: () => void;
+  previewRemaining?: number;
+  previewProgressPct?: number;
 };
 
 function qDisplay(q: ListeningPart["questions"][number]): number {
@@ -56,6 +59,8 @@ function ListeningAudioPanelBase({
   instruction,
   phase,
   onBeginSection,
+  previewRemaining = 0,
+  previewProgressPct = 0,
 }: Props) {
   const ordered = sortedQuestions(part.questions);
   const qStart = ordered[0] ? qDisplay(ordered[0]) : 1;
@@ -63,7 +68,8 @@ function ListeningAudioPanelBase({
   const partPlayed = Boolean(playedParts[part.part]);
   const sharedUrl = partLevelAudioUrl(part);
   const awaitingStart = phase === "awaiting_start";
-  const showPlayer = phase === "playing" || partPlayed;
+  const inPreview = phase === "preview";
+  const showPlayer = phase === "playing" || phase === "complete" || partPlayed;
 
   const handlePartAudioDone = () => {
     onPartPlayed(part.part);
@@ -124,8 +130,16 @@ function ListeningAudioPanelBase({
             </button>
           ) : null}
 
+          {inPreview ? (
+            <ListeningPreviewBanner
+              remainingSeconds={previewRemaining}
+              progressPct={previewProgressPct}
+              variant="exam"
+            />
+          ) : null}
+
           {showPlayer ? (
-            <div className="mt-5">
+            <div className={inPreview ? "" : "mt-5"}>
               <QuestionAudio
                 key={sharedUrl ?? "no-audio"}
                 audioUrl={sharedUrl}
@@ -134,7 +148,7 @@ function ListeningAudioPanelBase({
                 autoplay={phase === "playing" && !partPlayed}
                 allowManualStartAfterBegin={phase === "playing"}
                 onCompleted={handlePartAudioDone}
-                sectionNote="One recording for all 10 questions. It plays once after you begin. Pausing and replay are disabled."
+                sectionNote="One recording for all questions. It plays once. You can answer while you listen. Pausing and replay are disabled."
               />
             </div>
           ) : null}

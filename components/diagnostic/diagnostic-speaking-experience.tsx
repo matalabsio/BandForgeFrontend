@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mic } from "lucide-react";
 import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
@@ -30,6 +30,10 @@ import {
   writeMicCheckPassed,
 } from "@/modules/speaking/lib/speaking-mic-check-storage";
 import { diagnosticManifestFromPack } from "@/modules/speaking/lib/speaking-question-manifest";
+import {
+  acquireSpeakingWakeLock,
+  type SpeakingWakeLockHandle,
+} from "@/modules/speaking/lib/speaking-wake-lock";
 import type { SpeakingSessionRecording } from "@/modules/speaking/types";
 
 export function DiagnosticSpeakingExperience() {
@@ -61,6 +65,28 @@ export function DiagnosticSpeakingExperience() {
         setError(e instanceof Error ? e.message : "Could not load diagnostic.");
       });
   }, []);
+
+  const wakeLockRef = useRef<SpeakingWakeLockHandle | null>(null);
+
+  useEffect(() => {
+    if (!micPassed || !pack) return;
+
+    let cancelled = false;
+    void acquireSpeakingWakeLock().then((handle) => {
+      if (cancelled) {
+        void handle.release();
+        return;
+      }
+      wakeLockRef.current = handle;
+    });
+
+    return () => {
+      cancelled = true;
+      const handle = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (handle) void handle.release();
+    };
+  }, [micPassed, pack]);
 
   const handleMicBegin = useCallback(() => {
     if (!micScope) return;
@@ -151,6 +177,9 @@ export function DiagnosticSpeakingExperience() {
       });
 
       completeDiagnostic(scores, review);
+      const wake = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (wake) void wake.release();
       router.replace(diagnosticPaths.processing);
     },
     [pack, router, speakingAnswers, submitting],

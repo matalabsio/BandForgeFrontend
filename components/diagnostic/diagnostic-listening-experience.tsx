@@ -30,8 +30,19 @@ import {
 } from "@/lib/diagnostic-storage";
 import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
 import { QuestionAudio } from "@/modules/listening/components/question-audio";
+import { ListeningPreviewBanner } from "@/modules/listening/components/listening-preview-banner";
 import { ListeningQuestionsPanel } from "@/modules/listening/components/listening-questions-panel";
+import { useListeningPreviewCountdown } from "@/modules/listening/hooks/use-listening-preview-countdown";
+import {
+  questionsBrowsable,
+  type ListeningPartAudioPhase,
+} from "@/modules/listening/lib/listening-part-intro";
 import type { ListeningPart } from "@/modules/listening/types";
+
+function initialDiagnosticPhase(audioPlayed: boolean): ListeningPartAudioPhase {
+  if (audioPlayed) return "complete";
+  return "preview";
+}
 
 export function DiagnosticListeningExperience() {
   const router = useRouter();
@@ -44,6 +55,9 @@ export function DiagnosticListeningExperience() {
   const [submitting, setSubmitting] = useState(false);
   const [audioPlayed, setAudioPlayed] = useState(
     () => readDiagnosticProgress()?.listeningAudioPlayed ?? false,
+  );
+  const [partAudioPhase, setPartAudioPhase] = useState<ListeningPartAudioPhase>(() =>
+    initialDiagnosticPhase(readDiagnosticProgress()?.listeningAudioPlayed ?? false),
   );
 
   const listeningPart: ListeningPart | null = useMemo(
@@ -63,6 +77,27 @@ export function DiagnosticListeningExperience() {
         setError(e instanceof Error ? e.message : "Could not load diagnostic.");
       });
   }, [router]);
+
+  useEffect(() => {
+    if (audioPlayed) {
+      setPartAudioPhase("complete");
+      return;
+    }
+    if (pack && !audioPlayed) {
+      setPartAudioPhase("preview");
+    }
+  }, [audioPlayed, pack]);
+
+  const handlePreviewComplete = useCallback(() => {
+    setPartAudioPhase("playing");
+  }, []);
+
+  const { remaining: previewRemaining, progressPct: previewProgressPct } =
+    useListeningPreviewCountdown({
+      phase: partAudioPhase,
+      onPreviewComplete: handlePreviewComplete,
+      resetKey: "diagnostic-listening",
+    });
 
   const handleSubmit = useCallback(() => {
     if (!pack || submitting) return;
@@ -93,10 +128,16 @@ export function DiagnosticListeningExperience() {
 
   const handleAudioCompleted = useCallback(() => {
     setAudioPlayed(true);
+    setPartAudioPhase("complete");
     markListeningAudioPlayed();
   }, []);
 
-  const questionsVisible = audioPlayed || !pack?.listening.audioUrl;
+  const questionsVisible =
+    questionsBrowsable(partAudioPhase) || !pack?.listening.audioUrl;
+  const showAudioPlayer =
+    Boolean(pack?.listening.audioUrl) &&
+    (partAudioPhase === "playing" || partAudioPhase === "complete");
+  const inPreview = partAudioPhase === "preview";
 
   return (
     <DiagnosticModuleGuard module="listening">
@@ -121,19 +162,29 @@ export function DiagnosticListeningExperience() {
           {pack && listeningPart ? (
             <DiagnosticExamScroll>
               <DiagnosticExamColumn>
-                {pack.listening.audioUrl ? (
+                {inPreview ? (
                   <div className="mb-5 lg:mb-8">
-                    <QuestionAudio
-                      audioUrl={pack.listening.audioUrl}
-                      played={audioPlayed}
-                      variant="exam"
-                      autoplay={!audioPlayed}
-                      allowManualStartAfterBegin={!audioPlayed}
-                      onCompleted={handleAudioCompleted}
-                      sectionNote="The recording plays once. Questions unlock after the audio ends."
+                    <ListeningPreviewBanner
+                      remainingSeconds={previewRemaining}
+                      progressPct={previewProgressPct}
+                      variant="diagnostic"
                     />
                   </div>
-                ) : (
+                ) : null}
+
+                {showAudioPlayer ? (
+                  <div className="mb-5 lg:mb-8">
+                    <QuestionAudio
+                      audioUrl={pack.listening.audioUrl ?? null}
+                      played={audioPlayed}
+                      variant="exam"
+                      autoplay={partAudioPhase === "playing" && !audioPlayed}
+                      allowManualStartAfterBegin={partAudioPhase === "playing"}
+                      onCompleted={handleAudioCompleted}
+                      sectionNote="The recording plays once. You can answer while you listen. Pausing and replay are disabled."
+                    />
+                  </div>
+                ) : pack.listening.audioUrl ? null : (
                   <p className="mb-5 rounded-xl border border-navy/10 bg-navy/[0.03] px-4 py-3 text-sm text-[#5A6B82] lg:mb-8">
                     Listening audio is unavailable. Questions are shown so you can proceed.
                   </p>
@@ -145,8 +196,9 @@ export function DiagnosticListeningExperience() {
                   currentQuestionId={currentQuestionId}
                   onAnswer={handleAnswer}
                   onFocus={setCurrentQuestionId}
-                  partPlayed={questionsVisible}
+                  partPlayed={audioPlayed}
                   visible={questionsVisible}
+                  phase={partAudioPhase}
                   variant="diagnostic"
                 />
               </DiagnosticExamColumn>

@@ -88,6 +88,12 @@ export function SpeakingExamFlow({
     maxDurationSec: subPhase === "part2_record" ? recordSec : undefined,
   });
 
+  useEffect(() => {
+    if (recorder.lastError) {
+      setError(recorder.lastError);
+    }
+  }, [recorder.lastError]);
+
   const partLabel =
     current?.part === 2
       ? "Part 2 — Long turn"
@@ -98,7 +104,7 @@ export function SpeakingExamFlow({
   const nextLabel =
     isLastStep && subPhase === "ready"
       ? completeLabel
-      : current?.part === 1 && !isPart2
+      : subPhase === "record"
         ? "Next question"
         : isPart2
           ? "Continue"
@@ -116,8 +122,10 @@ export function SpeakingExamFlow({
 
   const captured = recordingControlPhase === "captured";
 
-  const showFooter = subPhase === "ready";
-  const footerDisabled = footerBusy;
+  /** Parts 1/3: Next Question during recording; Submit / Continue on ready. */
+  const showFooter = subPhase === "ready" || subPhase === "record";
+  const footerDisabled =
+    footerBusy || (subPhase === "record" && !recorder.recording);
 
   const flowMeta = useMemo((): SpeakingFlowMeta | null => {
     if (!current) return null;
@@ -215,7 +223,9 @@ export function SpeakingExamFlow({
       setSubPhase("part2_record");
       part2AutoStopRef.current = false;
       void recorder.startRecordingWithBeep().then((ok) => {
-        if (!ok) setError("Microphone access is required.");
+        if (!ok) {
+          setError((prev) => prev ?? "Microphone access is required.");
+        }
       });
     }
   }, [subPhase, prepRemaining, recorder]);
@@ -246,7 +256,9 @@ export function SpeakingExamFlow({
 
     setSubPhase("record");
     void recorder.startRecordingWithBeep().then((ok) => {
-      if (!ok) setError("Microphone access is required for the speaking section.");
+      if (!ok) {
+        setError((prev) => prev ?? "Microphone access is required for the speaking section.");
+      }
     });
   }, [current, recorder]);
 
@@ -273,21 +285,6 @@ export function SpeakingExamFlow({
     autoStartedRef.current = false;
     setPlayKey((k) => k + 1);
   }, []);
-
-  const handleRerecord = useCallback(async () => {
-    if (!current) return;
-    if (recorder.recording) {
-      await recorder.stopRecording();
-    }
-    recordingsRef.current = recordingsRef.current.filter(
-      (r) => r.questionId !== current.id,
-    );
-    setAnswerBlob(null);
-    setSubPhase("play");
-    autoStartedRef.current = false;
-    part2AutoStopRef.current = false;
-    setPlayKey((k) => k + 1);
-  }, [current, recorder]);
 
   const handleStop = useCallback(() => {
     void stopAndValidate();
@@ -320,6 +317,7 @@ export function SpeakingExamFlow({
           variant={variant}
           partLabel={partLabel}
           prompt={current.prompt}
+          videoUrl={current.videoUrl}
         />
       ) : null}
 
@@ -379,8 +377,10 @@ export function SpeakingExamFlow({
           countdownSec={subPhase === "part2_record" ? recordSec : null}
           answerBlob={captured ? answerBlob : null}
           onStop={handleStop}
-          onRerecord={() => void handleRerecord()}
-          showRerecord={!isDiagnostic}
+          onRerecord={() => undefined}
+          showRerecord={false}
+          showStop={subPhase === "part2_record"}
+          hideElapsed={subPhase === "record" || subPhase === "ready"}
           className={isDiagnostic ? "mt-0" : undefined}
         />
       ) : null}
@@ -390,7 +390,7 @@ export function SpeakingExamFlow({
           <p className="text-sm font-semibold text-[#075985]">
             {isLastStep
               ? "Answer saved. Tap Hear to review, or Submit when ready."
-              : "Answer saved. Tap Hear to review your answer, then continue."}
+              : "Answer saved. Tap Hear to review, then continue."}
           </p>
         </div>
       ) : null}

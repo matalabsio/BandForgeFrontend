@@ -17,7 +17,12 @@ type Props = {
   onStart?: () => void;
   className?: string;
   showStart?: boolean;
+  /** One-take exam: hide Re-record (default). */
   showRerecord?: boolean;
+  /** Parts 1/3: hide Stop; learner uses Next Question. */
+  showStop?: boolean;
+  /** Parts 1/3: no elapsed `Recording… Ns` label. */
+  hideElapsed?: boolean;
 };
 
 export function SpeakingRecordingControls({
@@ -30,7 +35,9 @@ export function SpeakingRecordingControls({
   onStart,
   className,
   showStart = false,
-  showRerecord = true,
+  showRerecord = false,
+  showStop = true,
+  hideElapsed = false,
 }: Props) {
   const recording = phase === "recording";
   const captured = phase === "captured";
@@ -107,10 +114,14 @@ export function SpeakingRecordingControls({
     countdownSec != null
       ? `Recording… ${seconds}s / ${countdownSec}s`
       : recording
-        ? `Recording… ${seconds}s`
+        ? hideElapsed
+          ? "Recording…"
+          : `Recording… ${seconds}s`
         : captured
           ? `Answer captured · ${formatAudioDuration(playbackDuration || seconds)}`
           : "Waiting to record";
+
+  const showActionRow = showStart || showStop || captured || showRerecord;
 
   return (
     <div
@@ -184,71 +195,85 @@ export function SpeakingRecordingControls({
         </button>
       ) : null}
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:gap-3">
-        {showStart && onStart ? (
-          <button
-            type="button"
-            onClick={onStart}
-            disabled={recording || captured}
-            className="col-span-2 flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border border-cyan/30 bg-cyan px-4 text-sm font-semibold text-[#06222B] transition-colors duration-200 hover:bg-brand-sky-hover disabled:cursor-not-allowed disabled:opacity-50 sm:text-[15px]"
-          >
-            <Mic className="size-4 shrink-0" />
-            Start recording
-          </button>
-        ) : null}
+      {showActionRow ? (
+        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:gap-3">
+          {showStart && onStart ? (
+            <button
+              type="button"
+              onClick={onStart}
+              disabled={recording || captured}
+              className="col-span-2 flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border border-cyan/30 bg-cyan px-4 text-sm font-semibold text-[#06222B] transition-colors duration-200 hover:bg-brand-sky-hover disabled:cursor-not-allowed disabled:opacity-50 sm:text-[15px]"
+            >
+              <Mic className="size-4 shrink-0" />
+              Start recording
+            </button>
+          ) : null}
 
-        <button
-          type="button"
-          onClick={onStop}
-          disabled={!recording}
-          className={cn(
-            "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
-            recording
-              ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-              : "border-navy/12 bg-white text-[#6E83A0]",
-          )}
-        >
-          <Square className="size-3.5 shrink-0 fill-current" />
-          Stop
-        </button>
+          {showStop ? (
+            <button
+              type="button"
+              onClick={onStop}
+              disabled={!recording}
+              className={cn(
+                "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
+                recording
+                  ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                  : "border-navy/12 bg-white text-[#6E83A0]",
+                !captured && "col-span-2",
+              )}
+            >
+              <Square className="size-3.5 shrink-0 fill-current" />
+              Stop
+            </button>
+          ) : null}
 
-        <button
-          type="button"
-          onClick={() => void toggleHear()}
-          disabled={!captured || !playbackUrl}
-          className={cn(
-            "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
-            captured && playbackUrl
-              ? "border-navy/12 bg-white text-navy hover:border-cyan/30 hover:bg-cyan/5"
-              : "border-navy/12 bg-white text-[#6E83A0]",
-            isHearing && "border-cyan/40 bg-cyan/10 text-teal",
-          )}
-        >
-          {isHearing ? (
-            <Pause className="size-3.5 shrink-0" />
-          ) : (
-            <Headphones className="size-3.5 shrink-0" />
-          )}
-          Hear
-        </button>
+          {captured ? (
+            <button
+              type="button"
+              onClick={() => void toggleHear()}
+              disabled={!playbackUrl}
+              className={cn(
+                "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
+                playbackUrl
+                  ? "border-navy/12 bg-white text-navy hover:border-cyan/30 hover:bg-cyan/5"
+                  : "border-navy/12 bg-white text-[#6E83A0]",
+                isHearing && "border-cyan/40 bg-cyan/10 text-teal",
+                !showStop && "col-span-2",
+              )}
+            >
+              {isHearing ? (
+                <Pause className="size-3.5 shrink-0" />
+              ) : (
+                <Headphones className="size-3.5 shrink-0" />
+              )}
+              Hear
+            </button>
+          ) : null}
 
-        {showRerecord ? (
-          <button
-            type="button"
-            onClick={onRerecord}
-            disabled={recording}
-            className={cn(
-              "col-span-2 flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
-              captured
-                ? "border-navy/12 bg-white text-navy hover:border-cyan/30 hover:bg-cyan/5"
-                : "border-navy/12 bg-white text-[#6E83A0] hover:bg-navy/[0.03]",
-            )}
-          >
-            <RotateCcw className="size-3.5 shrink-0" />
-            Re-record
-          </button>
-        ) : null}
-      </div>
+          {showRerecord ? (
+            <button
+              type="button"
+              onClick={onRerecord}
+              disabled={recording}
+              className={cn(
+                "col-span-2 flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
+                captured
+                  ? "border-navy/12 bg-white text-navy hover:border-cyan/30 hover:bg-cyan/5"
+                  : "border-navy/12 bg-white text-[#6E83A0] hover:bg-navy/[0.03]",
+              )}
+            >
+              <RotateCcw className="size-3.5 shrink-0" />
+              Re-record
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {recording && !showStop ? (
+        <p className="mt-4 text-center text-xs leading-relaxed text-[#64748B]">
+          Tap Next question when you finish speaking.
+        </p>
+      ) : null}
     </div>
   );
 }

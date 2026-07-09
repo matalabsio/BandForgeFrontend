@@ -20,10 +20,10 @@ export function SpeakingRetryDialog({ open, onRetry }: Props) {
     >
       <div className="w-full max-w-sm rounded-[18px] border border-border bg-white p-6 shadow-xl">
         <h2 id="speaking-retry-title" className="font-display text-lg font-semibold text-navy">
-          We didn&apos;t catch a response
+          We didn&apos;t catch a response — try again?
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-[#5A6B82]">
-          Your answer was too short or too quiet. Try again before moving to the next question.
+          Your answer was too short or too quiet. Record again before moving on.
         </p>
         <div className="mt-5">
           <Button variant="primary" className="w-full" onClick={onRetry}>

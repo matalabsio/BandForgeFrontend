@@ -241,7 +241,7 @@ export function SpeakingMicCheck({
         "w-full",
         isDiagnostic
           ? "mx-auto max-w-[760px]"
-          : "mx-auto max-w-md rounded-[28px] border border-cyan/20 bg-gradient-to-b from-[#081426] to-[#0D1F3C] p-5 text-[#EAF1F8] shadow-2xl md:p-6",
+          : "mx-auto max-w-md rounded-[28px] border border-cyan/20 bg-gradient-to-b from-[#081426] to-[#0D1F3C] p-5 text-[#EAF1F8] shadow-2xl md:max-w-3xl md:p-7 lg:max-w-4xl",
       )}
     >
       {/* Hidden audio element — reliable playback across browsers */}
@@ -296,7 +296,7 @@ export function SpeakingMicCheck({
           "mt-5 rounded-[18px] p-5 text-center sm:p-6",
           isDiagnostic
             ? "border border-navy/12 bg-white shadow-[0_14px_30px_rgba(13,31,60,0.07)]"
-            : "border border-cyan/15 bg-[#122747]",
+            : "border border-cyan/15 bg-[#122747] md:mx-auto md:max-w-2xl",
         )}
       >
         <div
@@ -421,7 +421,7 @@ export function SpeakingMicCheck({
         ) : null}
       </div>
 
-      <div className="mt-6">
+      <div className={cn("mt-6", !isDiagnostic && "md:mx-auto md:w-full md:max-w-3xl")}>
         <h2
           className={cn(
             "font-display text-[15px] font-bold",
@@ -478,7 +478,8 @@ export function SpeakingMicCheck({
                 isDiagnostic ? "text-[#6B4D1F]" : "text-[#9FB2C8]",
               )}
             >
-              Locking your phone stops the recording. Don&apos;t switch apps mid-test.
+              We&apos;ll try to keep your screen awake during the test. Locking your
+              phone or switching apps can still stop the recording.
             </p>
           </div>
         </div>
@@ -498,7 +499,12 @@ export function SpeakingMicCheck({
         </p>
       ) : null}
 
-      <div className="mt-6 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div
+        className={cn(
+          "mt-6 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+          !isDiagnostic && "md:mx-auto md:w-full md:max-w-3xl",
+        )}
+      >
         <Button
           variant="primary"
           className={cn(

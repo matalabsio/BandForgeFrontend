@@ -9,6 +9,7 @@ import { ListeningQuestionPanel } from "@/modules/listening/components/listening
 import { ListeningNoteCompletionBlock } from "@/modules/listening/components/listening-note-completion-block";
 import { ListeningSentenceCompletionBlock } from "@/modules/listening/components/listening-sentence-completion-block";
 import { groupListeningQuestions } from "@/modules/listening/lib/listening-question-groups";
+import type { ListeningPartAudioPhase } from "@/modules/listening/lib/listening-part-intro";
 import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ type Props = {
   onFocus: (questionId: string) => void;
   partPlayed?: boolean;
   visible?: boolean;
+  phase?: ListeningPartAudioPhase;
   nextPartLabel?: string;
   submitBusy?: boolean;
   onSubmitPart?: () => void;
@@ -44,6 +46,7 @@ function ListeningQuestionsPanelBase({
   onFocus,
   partPlayed = false,
   visible = true,
+  phase,
   nextPartLabel,
   submitBusy = false,
   onSubmitPart,
@@ -62,6 +65,8 @@ function ListeningQuestionsPanelBase({
   }
 
   const isDiagnostic = variant === "diagnostic";
+  const showNav = visible;
+  const inPreview = phase === "preview";
 
   return (
     <div
@@ -74,13 +79,30 @@ function ListeningQuestionsPanelBase({
             : "h-full bg-[var(--exam-surface)] lg:max-h-[calc(100dvh-3rem)]",
       )}
     >
-      {visible && !isDiagnostic ? (
-        <div className="shrink-0 border-b border-[var(--exam-border)] bg-white px-3 py-3 sm:px-4">
+      {showNav ? (
+        <div
+          className={cn(
+            "shrink-0 border-b bg-white px-3 py-3 sm:px-4",
+            isDiagnostic ? "border-navy/10" : "border-[var(--exam-border)]",
+          )}
+        >
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--exam-accent)]">
+            <p
+              className={cn(
+                "text-[10px] font-bold uppercase tracking-[0.16em]",
+                isDiagnostic ? "text-cyan" : "text-[var(--exam-accent)]",
+              )}
+            >
               Answer sheet
             </p>
-            <p className="rounded-full bg-[var(--exam-paper)] px-2.5 py-0.5 text-[11px] font-bold tabular-nums text-[var(--exam-ink)]">
+            <p
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[11px] font-bold tabular-nums",
+                isDiagnostic
+                  ? "bg-navy/[0.04] text-navy"
+                  : "bg-[var(--exam-paper)] text-[var(--exam-ink)]",
+              )}
+            >
               1-{sorted.length}
             </p>
           </div>
@@ -97,10 +119,16 @@ function ListeningQuestionsPanelBase({
                   className={cn(
                     "flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-md border text-[12px] font-bold transition-colors duration-150",
                     isCurrent
-                      ? "border-[var(--exam-accent)] bg-[var(--exam-accent)] text-white"
+                      ? isDiagnostic
+                        ? "border-cyan bg-cyan text-white"
+                        : "border-[var(--exam-accent)] bg-[var(--exam-accent)] text-white"
                       : answered
-                        ? "border-[var(--exam-accent)]/50 bg-[var(--exam-accent-soft)] text-[var(--exam-accent)]"
-                        : "border-[var(--exam-border)] bg-white text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)]",
+                        ? isDiagnostic
+                          ? "border-cyan/50 bg-cyan/10 text-cyan"
+                          : "border-[var(--exam-accent)]/50 bg-[var(--exam-accent-soft)] text-[var(--exam-accent)]"
+                        : isDiagnostic
+                          ? "border-navy/14 bg-white text-[#5A6B82] hover:border-navy/30"
+                          : "border-[var(--exam-border)] bg-white text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)]",
                   )}
                   aria-label={`Question ${qDisplay(q)}${answered ? ", answered" : ""}`}
                   aria-selected={isCurrent}
@@ -121,12 +149,27 @@ function ListeningQuestionsPanelBase({
       >
         {!visible ? (
           <div className="flex min-h-full flex-1 items-center justify-center">
-            <div className="max-w-sm rounded-lg border border-[var(--exam-border)] bg-white p-5 text-center shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--exam-accent)]">
-                Audio in progress
+            <div
+              className={cn(
+                "max-w-sm rounded-lg border bg-white p-5 text-center shadow-sm",
+                isDiagnostic ? "border-navy/10" : "border-[var(--exam-border)]",
+              )}
+            >
+              <p
+                className={cn(
+                  "text-[11px] font-bold uppercase tracking-[0.14em]",
+                  isDiagnostic ? "text-cyan" : "text-[var(--exam-accent)]",
+                )}
+              >
+                Waiting to begin
               </p>
-              <p className="mt-2 text-[13px] leading-relaxed text-[var(--exam-ink-muted)]">
-                Questions are shown after this part audio ends.
+              <p
+                className={cn(
+                  "mt-2 text-[13px] leading-relaxed",
+                  isDiagnostic ? "text-[#5A6B82]" : "text-[var(--exam-ink-muted)]",
+                )}
+              >
+                Questions appear when you begin this section.
               </p>
             </div>
           </div>
@@ -134,6 +177,18 @@ function ListeningQuestionsPanelBase({
 
         {visible ? (
           <div className="space-y-4">
+            {inPreview ? (
+              <p
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-[12px] leading-relaxed",
+                  isDiagnostic
+                    ? "border-cyan/30 bg-cyan/5 text-[#5A6B82]"
+                    : "border-[var(--exam-accent)]/30 bg-[var(--exam-accent-soft)] text-[var(--exam-ink-muted)]",
+                )}
+              >
+                Read the questions before the recording starts.
+              </p>
+            ) : null}
             {blocks.map((block) => {
               if (block.kind === "form") {
                 return (

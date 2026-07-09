@@ -92,10 +92,10 @@ export function PracticeSectionResultsClient({
       footer={
         <SectionResultsCtaBar
           layout="split"
-          primaryLabel="Review Answers"
-          onPrimary={() => openReview()}
-          secondaryLabel={primaryLabel}
-          onSecondary={() => router.push(primaryHref)}
+          primaryLabel={primaryLabel}
+          onPrimary={() => router.push(primaryHref)}
+          secondaryLabel="Review Answers"
+          onSecondary={() => openReview()}
         />
       }
     >

@@ -171,6 +171,7 @@ export function ReadingPage({
   const [questions, setQuestions] = useState<ReadingQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const autosaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const pendingAutosaveValuesRef = useRef<Record<string, string>>({});
   const shouldShowIntro = !mockAttemptId || passage === 1;
   const shouldShowIntroRef = useRef(shouldShowIntro);
   const instructionScope = useMemo(
@@ -287,6 +288,7 @@ export function ReadingPage({
       });
       if (!attemptId) return;
       const saveAttemptId = attemptId;
+      pendingAutosaveValuesRef.current[id] = value;
       if (autosaveTimers.current[id]) clearTimeout(autosaveTimers.current[id]);
       autosaveTimers.current[id] = setTimeout(() => {
         void (async () => {
@@ -298,6 +300,9 @@ export function ReadingPage({
             await readingApi.autosave(saveAttemptId, id, value, {
               signal: controller.signal,
             });
+            if (pendingAutosaveValuesRef.current[id] === value) {
+              delete pendingAutosaveValuesRef.current[id];
+            }
           } catch (e) {
             if (e instanceof Error && e.name === "AbortError") return;
             /* ignore other autosave errors */
@@ -317,6 +322,7 @@ export function ReadingPage({
     attemptIdRef.current = attemptId;
     if (prev !== null && prev !== attemptId) {
       clearAutosaveTimers();
+      pendingAutosaveValuesRef.current = {};
     }
   }, [attemptId, clearAutosaveTimers]);
 
@@ -398,15 +404,18 @@ export function ReadingPage({
   const flushAutosaves = useCallback(
     async (id: string, snapshot: Record<string, string>) => {
       clearAutosaveTimers();
+      const pending = Object.entries(pendingAutosaveValuesRef.current);
+      if (pending.length === 0) return;
       await Promise.all(
-        questions.map((q) =>
+        pending.map(([questionId]) =>
           readingApi
-            .autosave(id, q.id, (snapshot[q.id] ?? "").trim())
+            .autosave(id, questionId, (snapshot[questionId] ?? "").trim())
             .catch(() => undefined),
         ),
       );
+      pendingAutosaveValuesRef.current = {};
     },
-    [questions, clearAutosaveTimers],
+    [clearAutosaveTimers],
   );
 
   const submitAll = useCallback(async () => {
@@ -563,7 +572,11 @@ export function ReadingPage({
       setQuestions(qs);
       const init: Record<string, string> = {};
       for (const q of qs) init[q.id] = "";
-      if (snap?.answers && !freshPassage) {
+      if (!freshPassage && start.saved_answers) {
+        for (const q of qs) {
+          if (start.saved_answers[q.id]) init[q.id] = start.saved_answers[q.id];
+        }
+      } else if (snap?.answers && !freshPassage) {
         for (const q of qs) {
           if (snap.answers[q.id]) init[q.id] = snap.answers[q.id];
         }
@@ -621,6 +634,7 @@ export function ReadingPage({
               test: initialBoot.test ?? { id: testId, title: "Reading" },
               passage_text: initialBoot.passage_text,
               questions: initialBoot.questions as ReadingQuestion[],
+            saved_answers: initialBoot.saved_answers ?? {},
             };
           } else {
             start = await readingApi.start(testId, {

@@ -28,7 +28,8 @@ export function ListeningIntroCard({
       instructions={[
         `Listening is the first module in this ${meta.displayLabel} flow and includes ${meta.listeningPartCount} parts.`,
         "Each part audio is played only once.",
-        "Questions are shown after the current part audio finishes.",
+        "You have 30 seconds to read the questions before each recording starts.",
+        "You can browse and answer questions while the recording plays.",
         "Submit each part to move to the next section.",
         "Use headphones before you begin.",
       ]}

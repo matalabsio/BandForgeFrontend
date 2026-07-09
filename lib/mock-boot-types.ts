@@ -26,6 +26,7 @@ export type ReadingBootServer = {
   resumed: boolean;
   passage_text?: string | null;
   questions?: unknown[];
+  saved_answers?: Record<string, string>;
   test?: { id: string; title: string; description?: string | null };
 };
 
