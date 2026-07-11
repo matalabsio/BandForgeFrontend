@@ -2,16 +2,16 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { BfHeaderMobileMenu } from "@/components/bandforge/bf-header-mobile-menu";
 import { BfMarketingWordmark } from "@/components/bandforge/bf-marketing-wordmark";
+import { BfMarketingNavIcon } from "@/components/bandforge/bf-marketing-nav-icon";
 import {
   BF_MARKETING_NAV,
-  BF_MARKETING_NAV_MOBILE_EXTRA,
 } from "@/components/bandforge/bf-marketing-nav";
 import { BfHeaderAuthCta } from "@/components/bandforge/bf-header-auth-cta";
 
 const navLink =
-  "text-[0.9375rem] font-medium text-muted no-underline transition-colors hover:text-navy";
+  "inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] font-medium text-muted no-underline transition-colors duration-200 hover:text-navy";
 const navLinkActive =
-  "text-[0.9375rem] font-semibold text-navy no-underline transition-colors";
+  "inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] font-semibold text-navy no-underline transition-colors duration-200";
 
 type Props = {
   activeHref?: string;
@@ -24,29 +24,26 @@ export function BandForgeHeaderMarketing({ activeHref }: Props) {
       <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-3 px-4 py-3.5 sm:px-5 lg:px-10 lg:py-4">
         <BfMarketingWordmark />
 
-        <div className="hidden items-center gap-[34px] lg:flex">
-          <nav className="flex items-center gap-[34px]" aria-label="Primary">
-            {BF_MARKETING_NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                prefetch
-                className={
-                  activeHref === item.href ||
-                  (activeHref === "/about" && item.href === "/about")
-                    ? navLinkActive
-                    : navLink
-                }
-                aria-current={
-                  activeHref === item.href ||
-                  (activeHref === "/about" && item.href === "/about")
-                    ? "page"
-                    : undefined
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
+        <div className="hidden items-center gap-6 lg:flex">
+          <nav className="flex items-center gap-7" aria-label="Primary">
+            {BF_MARKETING_NAV.map((item) => {
+              const active =
+                activeHref === item.href ||
+                (activeHref === "/about" && item.href === "/about");
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  prefetch
+                  className={active ? navLinkActive : navLink}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <BfMarketingNavIcon name={item.icon} />
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
           <Suspense
             fallback={
@@ -71,9 +68,7 @@ export function BandForgeHeaderMarketing({ activeHref }: Props) {
           >
             <BfHeaderAuthCta compact />
           </Suspense>
-          <BfHeaderMobileMenu
-            items={[...BF_MARKETING_NAV, ...BF_MARKETING_NAV_MOBILE_EXTRA]}
-          />
+          <BfHeaderMobileMenu items={BF_MARKETING_NAV} />
         </div>
       </div>
     </header>

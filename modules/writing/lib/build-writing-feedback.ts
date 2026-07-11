@@ -1,4 +1,6 @@
 import type {
+  GrammarMistake,
+  SpellingMistake,
   WritingCriterionScore,
   WritingEssayHighlight,
   WritingFeedback,
@@ -179,6 +181,57 @@ function findPhrase(text: string, phrase: string): number {
   return lower.indexOf(target);
 }
 
+function buildAiHighlights(
+  text: string,
+  spellingMistakes: SpellingMistake[],
+  grammarMistakes: GrammarMistake[],
+): WritingEssayHighlight[] {
+  const highlights: WritingEssayHighlight[] = [];
+  const used = new Set<string>();
+
+  for (const mistake of spellingMistakes.slice(0, 8)) {
+    const idx = findPhrase(text, mistake.original);
+    if (idx === -1) continue;
+    const slice = text.slice(idx, idx + mistake.original.length);
+    const key = `spelling:${slice.toLowerCase()}`;
+    if (used.has(key)) continue;
+    used.add(key);
+    highlights.push({ text: slice, type: "spelling" });
+  }
+
+  for (const mistake of grammarMistakes.slice(0, 6)) {
+    const idx = findPhrase(text, mistake.original);
+    if (idx === -1) continue;
+    const slice = text.slice(idx, idx + mistake.original.length);
+    const key = `grammar:${slice.toLowerCase()}`;
+    if (used.has(key)) continue;
+    used.add(key);
+    highlights.push({ text: slice, type: "grammar" });
+  }
+
+  return highlights;
+}
+
+function buildEvaluatedLabel(review: WritingReview): string {
+  if (review.ai_provider === "claude") {
+    return review.ai_model_name
+      ? `AI evaluated (Claude · ${review.ai_model_name})`
+      : "AI evaluated (Claude)";
+  }
+  if (review.ai_provider === "groq") {
+    return review.ai_model_name
+      ? `AI evaluated (Groq fallback · ${review.ai_model_name})`
+      : "AI evaluated (Groq fallback)";
+  }
+  if (review.ai_model_name) {
+    return `AI evaluated (${review.ai_model_name})`;
+  }
+  if (review.ai_available === false) {
+    return "AI unavailable · Using rubric fallback";
+  }
+  return "AI evaluated · Band descriptors applied";
+}
+
 function buildHighlights(
   text: string,
   strongWords: string[],
@@ -309,11 +362,21 @@ export function buildWritingFeedback(review: WritingReview): WritingFeedback {
     aiImprovements.length > 0
       ? aiImprovements.slice(0, 4)
       : buildImprovements(review, overall);
-  const evaluated_label = review.ai_model_name
-    ? `AI evaluated (${review.ai_model_name})`
-    : review.ai_available === false
-      ? "AI unavailable · Using rubric fallback"
-      : "AI evaluated · Band descriptors applied";
+  const spelling_mistakes = review.spelling_mistakes ?? [];
+  const grammar_mistakes = review.grammar_mistakes ?? [];
+  const aiHighlights = buildAiHighlights(
+    review.user_answer,
+    spelling_mistakes,
+    grammar_mistakes,
+  );
+  const heuristicHighlights = buildHighlights(
+    review.user_answer,
+    strong_words,
+    weak_words,
+  );
+  const highlights =
+    aiHighlights.length > 0 ? aiHighlights : heuristicHighlights;
+  const evaluated_label = buildEvaluatedLabel(review);
 
   return {
     overall_band: overall,
@@ -325,7 +388,9 @@ export function buildWritingFeedback(review: WritingReview): WritingFeedback {
     criterion_gap_label,
     strong_words,
     weak_words,
-    highlights: buildHighlights(review.user_answer, strong_words, weak_words),
+    highlights,
+    spelling_mistakes,
+    grammar_mistakes,
     evaluated_label,
   };
 }

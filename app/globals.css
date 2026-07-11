@@ -189,6 +189,17 @@ html {
     margin-top: 0;
   }
 
+  .bf-legal-body p + p {
+    margin-top: 0.75rem;
+  }
+
+  .bf-legal-body p + ul,
+  .bf-legal-body ul + p,
+  .bf-legal-body p + div,
+  .bf-legal-body div + p {
+    margin-top: 0.75rem;
+  }
+
   .text-h1 {
     font-size: var(--text-h1);
     line-height: 1.2;

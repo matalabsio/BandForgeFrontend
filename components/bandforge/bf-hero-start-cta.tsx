@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 
 type Props = {
@@ -12,6 +13,7 @@ export function BfHeroStartCta({ className }: Props) {
   return (
     <Link href={diagnosticPaths.landing} prefetch className={className}>
       Take the Free Diagnostic Test
+      <ArrowRight className="size-[1.125rem] shrink-0" strokeWidth={2.25} aria-hidden />
     </Link>
   );
 }

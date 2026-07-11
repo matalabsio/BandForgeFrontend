@@ -43,6 +43,7 @@ async function footerNavLinks() {
 const legal = [
   { href: "/privacy-policy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
+  { href: "/refund-policy", label: "Refunds" },
 ] as const;
 
 function FooterColumn({

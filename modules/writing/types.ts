@@ -72,6 +72,18 @@ export type WritingSessionTask = {
   review_status: string;
 };
 
+export type SpellingMistake = {
+  original: string;
+  correction: string;
+  context?: string;
+};
+
+export type GrammarMistake = {
+  original: string;
+  correction: string;
+  issue?: string;
+};
+
 export type WritingReview = {
   attempt_id: string;
   status: string;
@@ -91,6 +103,9 @@ export type WritingReview = {
   ai_strengths?: string[];
   ai_improvements?: string[];
   ai_model_name?: string | null;
+  ai_provider?: string | null;
+  spelling_mistakes?: SpellingMistake[];
+  grammar_mistakes?: GrammarMistake[];
   min_words: number;
   submitted_at: string | null;
   saved_for_review: boolean;
@@ -121,7 +136,7 @@ export type WritingCriterionScore = {
 
 export type WritingEssayHighlight = {
   text: string;
-  type: "strong" | "improve";
+  type: "strong" | "improve" | "spelling" | "grammar";
 };
 
 export type WritingVocabTag = {
@@ -140,5 +155,7 @@ export type WritingFeedback = {
   strong_words: string[];
   weak_words: WritingVocabTag[];
   highlights: WritingEssayHighlight[];
+  spelling_mistakes: SpellingMistake[];
+  grammar_mistakes: GrammarMistake[];
   evaluated_label: string;
 };

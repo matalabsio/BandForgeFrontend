@@ -1,3 +1,4 @@
+import { Clock } from "lucide-react";
 import { BfHeroActions } from "@/components/bandforge/bf-hero-actions";
 import { BfHeroDiagnosticCard } from "@/components/bandforge/bf-hero-diagnostic-card";
 import { BfSectionEyebrow } from "@/components/bandforge/ui";
@@ -11,9 +12,12 @@ export function BandForgeHero() {
       <div className="bf-container">
         <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           <div className="min-w-0 text-left lg:mx-0 lg:max-w-none">
-            <BfSectionEyebrow className="mb-4 sm:mb-5 lg:mb-6">
-              IELTS Diagnostic · 90 minutes
-            </BfSectionEyebrow>
+            <div className="mb-4 flex items-center gap-2 sm:mb-5 lg:mb-6">
+              <Clock className="size-3.5 shrink-0 text-cyan" strokeWidth={2.25} aria-hidden />
+              <BfSectionEyebrow className="mb-0">
+                IELTS Diagnostic · 90 minutes
+              </BfSectionEyebrow>
+            </div>
             <h1
               id="bf-hero-heading"
               className="font-display mb-4 text-[1.875rem] leading-[1.1] font-bold tracking-[-0.03em] text-balance text-navy sm:mb-[18px] sm:text-[2.125rem] sm:leading-[1.08] lg:mb-6 lg:text-[3.5rem] lg:tracking-[-0.035em]"

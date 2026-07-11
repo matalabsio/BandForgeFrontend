@@ -76,7 +76,11 @@ function HighlightedEssay({
           "underline decoration-2 underline-offset-[3px]",
           hl.type === "strong"
             ? "decoration-cyan"
-            : "decoration-[#FBBF24]",
+            : hl.type === "spelling"
+              ? "decoration-[#EF4444]"
+              : hl.type === "grammar"
+                ? "decoration-[#F59E0B]"
+                : "decoration-[#FBBF24]",
         )}
       >
         {slice}
@@ -257,6 +261,50 @@ export function WritingFeedbackView({
                 </ul>
               </div>
             </section>
+
+            {feedback.spelling_mistakes.length > 0 ? (
+              <section className="rounded-2xl border border-[#FECACA] border-l-4 border-l-[#EF4444] bg-[#FEF2F2] p-5 shadow-sm sm:p-6">
+                <h3 className="text-[14px] font-bold text-ink">
+                  Spelling mistakes ({feedback.spelling_mistakes.length})
+                </h3>
+                <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-[#334155]">
+                  {feedback.spelling_mistakes.map((item) => (
+                    <li key={`${item.original}-${item.correction}`} className="flex flex-wrap gap-2">
+                      <span className="font-medium text-[#DC2626] line-through">
+                        {item.original}
+                      </span>
+                      <span className="text-[#94A3B8]" aria-hidden>
+                        →
+                      </span>
+                      <span className="font-semibold text-[#0D1F3C]">{item.correction}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {feedback.grammar_mistakes.length > 0 ? (
+              <section className="rounded-2xl border border-[#FDE68A] border-l-4 border-l-[#F59E0B] bg-[#FFFBEB] p-5 shadow-sm sm:p-6">
+                <h3 className="text-[14px] font-bold text-ink">
+                  Grammar issues ({feedback.grammar_mistakes.length})
+                </h3>
+                <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-[#334155]">
+                  {feedback.grammar_mistakes.map((item) => (
+                    <li key={`${item.original}-${item.correction}`}>
+                      <span className="font-medium text-[#B45309]">{item.original}</span>
+                      <span className="text-[#94A3B8]" aria-hidden>
+                        {" "}
+                        →{" "}
+                      </span>
+                      <span className="font-semibold text-[#0D1F3C]">{item.correction}</span>
+                      {item.issue ? (
+                        <span className="text-[#64748B]"> · {item.issue}</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
             <section className="rounded-2xl border border-cyan/20 bg-cyan-soft/30 p-5 shadow-sm sm:p-6">
               <h3 className="font-display text-[18px] font-bold text-[#0D1F3C]">

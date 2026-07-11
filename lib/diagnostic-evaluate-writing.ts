@@ -1,4 +1,5 @@
 import { ApiError, parseApiError, parseJsonResponse, type ApiErrorBody } from "@/lib/api";
+import type { GrammarMistake, SpellingMistake } from "@/modules/writing/types";
 
 export type DiagnosticWritingEvaluation = {
   evaluation_id: string;
@@ -20,6 +21,9 @@ export type DiagnosticWritingEvaluation = {
     paragraph_count: number;
   };
   warnings?: string[];
+  spelling_mistakes?: SpellingMistake[];
+  grammar_mistakes?: GrammarMistake[];
+  provider?: string | null;
 };
 
 type EvaluateWritingBody = {
@@ -37,9 +41,12 @@ type EvaluateWritingResponse = {
   feedback: DiagnosticWritingEvaluation["feedback"];
   metadata: DiagnosticWritingEvaluation["metadata"];
   warnings?: string[];
+  spelling_mistakes?: SpellingMistake[];
+  grammar_mistakes?: GrammarMistake[];
+  provider?: string | null;
 };
 
-/** Evaluate diagnostic writing essay via backend (Groq hidden behind BFF). */
+/** Evaluate diagnostic writing essay via backend (Claude primary, Groq fallback). */
 export async function evaluateDiagnosticWriting(
   body: EvaluateWritingBody,
 ): Promise<DiagnosticWritingEvaluation> {
@@ -60,5 +67,8 @@ export async function evaluateDiagnosticWriting(
     feedback: data.feedback,
     metadata: data.metadata,
     warnings: data.warnings,
+    spelling_mistakes: data.spelling_mistakes,
+    grammar_mistakes: data.grammar_mistakes,
+    provider: data.provider,
   };
 }

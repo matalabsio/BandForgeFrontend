@@ -1,10 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Download } from "lucide-react";
 import { useInstallPrompt } from "@/lib/pwa/install-prompt-context";
 
 type InstallPromptButtonProps = {
-  variant?: "primary" | "compact";
+  variant?: "primary" | "compact" | "icon";
   className?: string;
 };
 
@@ -18,8 +19,28 @@ export function InstallPromptButton({
     return null;
   }
 
-  if (!canInstall && !(isIos && variant === "primary")) {
+  if (
+    !canInstall &&
+    !(isIos && (variant === "primary" || variant === "icon"))
+  ) {
     return null;
+  }
+
+  if (variant === "icon") {
+    return (
+      <button
+        type="button"
+        onClick={openModal}
+        aria-label="Install BandForge"
+        title="Install BandForge"
+        className={cn(
+          "inline-flex cursor-pointer items-center justify-center rounded-full border border-border-soft bg-white p-2.5 text-navy transition-colors duration-200 hover:border-navy/15 hover:bg-surface-alt",
+          className,
+        )}
+      >
+        <Download className="size-4" strokeWidth={2} aria-hidden />
+      </button>
+    );
   }
 
   const baseClass =
