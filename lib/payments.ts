@@ -106,6 +106,20 @@ export function getPaymentHistory(): Promise<{ payments: PaymentHistoryItem[] }>
   return paymentsCall<{ payments: PaymentHistoryItem[] }>("/history");
 }
 
+/** Structured checkout/verify trail (browser console). Never log signature values. */
+export function paymentTraceLog(
+  event: string,
+  fields: Record<string, string | boolean | number | null | undefined> = {},
+): void {
+  console.info(
+    JSON.stringify({
+      scope: "bandforge_payments",
+      event,
+      ...fields,
+    }),
+  );
+}
+
 /** Display helper: backend stores amounts in paise. */
 export function formatInr(paise: number): string {
   const rupees = paise / 100;

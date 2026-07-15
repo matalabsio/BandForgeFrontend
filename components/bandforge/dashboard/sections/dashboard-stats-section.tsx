@@ -4,6 +4,7 @@ import { DashboardModuleProgress } from "@/components/bandforge/dashboard/dashbo
 import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
 import { DashboardTodaysPlan } from "@/components/bandforge/dashboard/dashboard-todays-plan";
 import { fetchDashboardSummary } from "@/lib/dashboard-server";
+import { fetchLearningProfile } from "@/lib/learning-server";
 import {
   countTestedModuleBands,
   dashboardModuleBands,
@@ -23,13 +24,17 @@ type Props = {
 };
 
 export async function DashboardStatsSection({ cookieHeader, user }: Props) {
-  const summary = await fetchDashboardSummary(cookieHeader);
+  const [summary, learning] = await Promise.all([
+    fetchDashboardSummary(cookieHeader),
+    fetchLearningProfile(cookieHeader),
+  ]);
   const streak = summary.stats.current_streak ?? 0;
   const hasAttempts = summary.recent.length > 0;
   const overallBand = dashboardOverallBand(summary);
   const testsCompleted = summary.completed_mock_count ?? 0;
   const moduleBands = dashboardModuleBands(summary.recent, summary.latest_mock);
   const testedModuleCount = countTestedModuleBands(moduleBands, summary.recent);
+  const todaysTasks = learning?.todays_tasks ?? [];
 
   return (
     <>
@@ -53,12 +58,13 @@ export async function DashboardStatsSection({ cookieHeader, user }: Props) {
             testedCount={testedModuleCount}
             moduleCount={moduleBands.length}
           />
-          <DashboardTodaysPlan />
+          <DashboardTodaysPlan tasks={todaysTasks} />
         </>
       ) : (
         <>
           <DashboardEmptyHero firstName={user.firstName} />
           <DashboardEmptyModules />
+          <DashboardTodaysPlan tasks={todaysTasks} />
         </>
       )}
     </>

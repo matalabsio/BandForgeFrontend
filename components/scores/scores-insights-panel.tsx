@@ -7,19 +7,38 @@ import {
 } from "@/components/bandforge/dashboard/dashboard-card";
 import type { ModuleBand } from "@/components/scores/scores-utils";
 import { focusModule, strongestModule } from "@/components/scores/scores-utils";
+import type { LearningRecommendation, LearningWeakness } from "@/lib/learning-types";
 
 export function ScoresInsightsPanel({
   summary,
   moduleBands,
+  recommendations = [],
+  topWeaknesses = [],
 }: {
   summary: DashboardSummary;
   moduleBands: ModuleBand[];
+  recommendations?: LearningRecommendation[];
+  topWeaknesses?: LearningWeakness[];
 }) {
-  const insights = deriveInsights(summary);
+  const insights = deriveInsights(summary, recommendations);
   const strong = strongestModule(moduleBands);
   const focus = focusModule(moduleBands);
 
   const items: { title: string; body: string; tag: string }[] = [];
+
+  if (recommendations[0]) {
+    items.push({
+      title: recommendations[0].title,
+      body: recommendations[0].reason,
+      tag: "Priority",
+    });
+  } else if (focus?.band != null) {
+    items.push({
+      title: `Focus: ${focus.label}`,
+      body: `Extra practice in ${focus.label.toLowerCase()} could lift your average band fastest.`,
+      tag: "Priority",
+    });
+  }
 
   if (strong?.band != null) {
     items.push({
@@ -29,18 +48,22 @@ export function ScoresInsightsPanel({
     });
   }
 
-  if (focus?.band != null && focus.module !== strong?.module) {
+  if (topWeaknesses[0]) {
     items.push({
-      title: `Focus: ${focus.label}`,
-      body: `Extra practice in ${focus.label.toLowerCase()} could lift your average band fastest.`,
-      tag: "Priority",
+      title: "Tracked weakness",
+      body: topWeaknesses[0].label,
+      tag: "Tip",
     });
-  }
-
-  if (insights[0]) {
+  } else if (insights[0] && !recommendations[0]) {
     items.push({
       title: "Listening tip",
       body: insights[0],
+      tag: "Tip",
+    });
+  } else if (recommendations[1]) {
+    items.push({
+      title: recommendations[1].title,
+      body: recommendations[1].reason,
       tag: "Tip",
     });
   }
@@ -57,10 +80,10 @@ export function ScoresInsightsPanel({
     <DashboardCard>
       <DashboardCardHeader
         title="What to work on"
-        subtitle="Based on your completed mocks"
+        subtitle="Based on your adaptive learning profile"
         action={
           <span className="rounded-full border border-ink/10 bg-ink/[0.02] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink/40">
-            Rule-based
+            Adaptive
           </span>
         }
       />
@@ -98,7 +121,7 @@ export function ScoresInsightsPanel({
         ))}
       </ul>
       <p className="border-t border-ink/6 px-5 py-3 text-[11px] text-ink/40">
-        AI Coach insights: coming in a few days.
+        Recommendations update when new evaluations complete.
       </p>
     </DashboardCard>
   );

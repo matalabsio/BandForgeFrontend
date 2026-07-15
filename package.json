@@ -19,6 +19,7 @@
     "test:exam-timer": "node modules/shared/hooks/exam-timer.test.mjs",
     "test:diagnostic-scoring": "node lib/diagnostic-scoring.test.mjs",
     "test:diagnostic-pack": "node lib/diagnostic-pack.test.mjs",
+    "test:writing-diagnostic-adapter": "node modules/writing/lib/diagnostic-to-writing-review.test.mjs",
     "build:diagnostic-pack": "node ../scripts/build-diagnostic-pack.mjs"
   },
   "dependencies": {

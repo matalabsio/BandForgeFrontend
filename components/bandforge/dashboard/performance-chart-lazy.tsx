@@ -23,10 +23,19 @@ const PerformanceChartDynamic = dynamic(
 type Props = {
   attempts: DashboardRecentAttempt[];
   averageBand: number | null;
+  targetBand?: number | null;
 };
 
-export function PerformanceChartLazy({ attempts, averageBand }: Props) {
+export function PerformanceChartLazy({
+  attempts,
+  averageBand,
+  targetBand = null,
+}: Props) {
   return (
-    <PerformanceChartDynamic attempts={attempts} averageBand={averageBand} />
+    <PerformanceChartDynamic
+      attempts={attempts}
+      averageBand={averageBand}
+      targetBand={targetBand}
+    />
   );
 }

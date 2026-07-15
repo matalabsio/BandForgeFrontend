@@ -7,6 +7,7 @@ import { ScoresInsightsPanel } from "@/components/scores/scores-insights-panel";
 import { ScoresPageHeader } from "@/components/scores/scores-page-header";
 import { ScoresStatRow } from "@/components/scores/scores-stat-row";
 import { dashboardModuleBands } from "@/components/scores/scores-utils";
+import type { LearningRecommendation, LearningWeakness } from "@/lib/learning-types";
 
 import type { MockSlug } from "@/lib/mock-catalog";
 
@@ -16,6 +17,8 @@ type Props = {
   fresh?: boolean;
   highlightAttemptId?: string | null;
   mockSlug?: MockSlug | null;
+  recommendations?: LearningRecommendation[];
+  topWeaknesses?: LearningWeakness[];
 };
 
 export function ScoresExperience({
@@ -24,6 +27,8 @@ export function ScoresExperience({
   fresh = false,
   highlightAttemptId = null,
   mockSlug = null,
+  recommendations = [],
+  topWeaknesses = [],
 }: Props) {
   const moduleBands = dashboardModuleBands(summary.recent, summary.latest_mock);
 
@@ -46,6 +51,7 @@ export function ScoresExperience({
         <PerformanceChartLazy
           attempts={summary.recent}
           averageBand={summary.stats.average_band}
+          targetBand={profileTargetBand}
         />
         <ModuleBandsPanel bands={moduleBands} />
       </div>
@@ -57,7 +63,12 @@ export function ScoresExperience({
         />
       </div>
 
-      <ScoresInsightsPanel summary={summary} moduleBands={moduleBands} />
+      <ScoresInsightsPanel
+        summary={summary}
+        moduleBands={moduleBands}
+        recommendations={recommendations}
+        topWeaknesses={topWeaknesses}
+      />
     </div>
   );
 }

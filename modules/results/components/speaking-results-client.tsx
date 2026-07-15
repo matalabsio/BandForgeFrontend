@@ -2,28 +2,34 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { persistModuleResultAttempt, readModuleResultAttempt } from "@/lib/exam-session-storage";
+import { ApiError } from "@/lib/api";
+import {
+  persistModuleResultAttempt,
+  readModuleResultAttempt,
+} from "@/lib/exam-session-storage";
 import { speakingApi } from "@/modules/speaking/services/speaking-api";
 import { SpeakingFeedbackView } from "@/modules/speaking/components/speaking-feedback-view";
+import { buildSpeakingFeedback } from "@/modules/speaking/lib/build-speaking-feedback";
+import type {
+  SpeakingPendingPayload,
+  SpeakingReportPayload,
+} from "@/modules/speaking/types";
 
 type Props = {
   testNumber: number;
   attemptFromQuery?: string;
+  targetBand?: number | null;
 };
 
-type SpeakingResultData = {
-  status: string;
-  review_status: string;
-  human_band: number | null;
-  submitted_at: string | null;
-  student_name: string | null;
-  message: string;
-};
-
-export function SpeakingResultsClient({ testNumber, attemptFromQuery }: Props) {
+export function SpeakingResultsClient({
+  testNumber,
+  attemptFromQuery,
+  targetBand = null,
+}: Props) {
   const queryAttempt = attemptFromQuery?.trim() || null;
   const [attemptId, setAttemptId] = useState<string | null>(queryAttempt);
-  const [result, setResult] = useState<SpeakingResultData | null>(null);
+  const [pending, setPending] = useState<SpeakingPendingPayload | null>(null);
+  const [report, setReport] = useState<SpeakingReportPayload | null>(null);
   const [loading, setLoading] = useState(Boolean(queryAttempt));
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +47,8 @@ export function SpeakingResultsClient({ testNumber, attemptFromQuery }: Props) {
 
   useEffect(() => {
     if (!attemptId) {
-      setResult(null);
+      setPending(null);
+      setReport(null);
       setLoading(false);
       return;
     }
@@ -51,12 +58,33 @@ export function SpeakingResultsClient({ testNumber, attemptFromQuery }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const data = await speakingApi.pending(attemptId);
-        if (!cancelled) setResult(data);
+        const pendingData = await speakingApi.pending(attemptId);
+        if (cancelled) return;
+        setPending(pendingData);
+
+        if (pendingData.human_band == null) {
+          setReport(null);
+          return;
+        }
+
+        try {
+          const reportData = await speakingApi.report(attemptId);
+          if (!cancelled) setReport(reportData);
+        } catch (e) {
+          if (cancelled) return;
+          if (e instanceof ApiError && e.status === 409) {
+            setReport(null);
+            return;
+          }
+          throw e;
+        }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Could not load speaking feedback.");
-          setResult(null);
+          setError(
+            e instanceof Error ? e.message : "Could not load speaking feedback.",
+          );
+          setPending(null);
+          setReport(null);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -76,7 +104,7 @@ export function SpeakingResultsClient({ testNumber, attemptFromQuery }: Props) {
     );
   }
 
-  if (!attemptId || !result) {
+  if (!attemptId || !pending) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-surface p-8 text-center">
         <p className="text-[14px] text-ink/70">
@@ -93,15 +121,17 @@ export function SpeakingResultsClient({ testNumber, attemptFromQuery }: Props) {
     );
   }
 
-  if (result.human_band == null) {
+  if (pending.human_band == null || !report) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-surface p-8 text-center">
         <p className="text-[14px] text-ink/70">
           Your speaking response is still under human review.
         </p>
         <p className="mt-2 max-w-md text-[13px] text-ink/60">
-          {result.message || "Please check back shortly. We will publish your verified band once review is complete."}
+          {pending.message ||
+            "Please check back shortly. We will publish your verified band once review is complete."}
         </p>
+        {error ? <p className="mt-2 text-[13px] text-red-600">{error}</p> : null}
         <Link
           href={`/test/${testNumber}/speaking/pending?attempt=${encodeURIComponent(attemptId)}`}
           className="mt-4 inline-flex min-h-[44px] items-center font-semibold text-cyan"
@@ -112,13 +142,6 @@ export function SpeakingResultsClient({ testNumber, attemptFromQuery }: Props) {
     );
   }
 
-  return (
-    <SpeakingFeedbackView
-      testNumber={testNumber}
-      studentName={result.student_name}
-      humanBand={result.human_band}
-      submittedAt={result.submitted_at}
-      reviewerMessage={result.message}
-    />
-  );
+  const feedback = buildSpeakingFeedback(report, { targetBand });
+  return <SpeakingFeedbackView testNumber={testNumber} feedback={feedback} />;
 }

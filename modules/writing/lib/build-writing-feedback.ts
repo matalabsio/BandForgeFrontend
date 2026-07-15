@@ -196,7 +196,13 @@ function buildAiHighlights(
     const key = `spelling:${slice.toLowerCase()}`;
     if (used.has(key)) continue;
     used.add(key);
-    highlights.push({ text: slice, type: "spelling" });
+    highlights.push({
+      text: slice,
+      type: "spelling",
+      title: "Spelling",
+      detail: "Check the spelling of this word.",
+      suggestion: mistake.correction || undefined,
+    });
   }
 
   for (const mistake of grammarMistakes.slice(0, 6)) {
@@ -206,7 +212,81 @@ function buildAiHighlights(
     const key = `grammar:${slice.toLowerCase()}`;
     if (used.has(key)) continue;
     used.add(key);
-    highlights.push({ text: slice, type: "grammar" });
+    highlights.push({
+      text: slice,
+      type: "grammar",
+      title: "Grammar",
+      detail: mistake.issue?.trim() || "Adjust the grammar in this phrase.",
+      suggestion: mistake.correction || undefined,
+    });
+  }
+
+  return highlights;
+}
+
+function buildAiStrongHighlights(
+  text: string,
+  spans: { text: string; reason?: string }[] | undefined,
+): WritingEssayHighlight[] {
+  if (!spans || spans.length === 0) return [];
+  const highlights: WritingEssayHighlight[] = [];
+  const used = new Set<string>();
+  for (const span of spans.slice(0, 4)) {
+    const phrase = span.text?.trim();
+    if (!phrase) continue;
+    const idx = findPhrase(text, phrase);
+    if (idx === -1) continue;
+    const slice = text.slice(idx, idx + phrase.length);
+    const key = `strong:${slice.toLowerCase()}`;
+    if (used.has(key)) continue;
+    used.add(key);
+    highlights.push({
+      text: slice,
+      type: "strong",
+      title: "Strong span",
+      detail: span.reason?.trim() || "Clear, effective phrasing.",
+    });
+  }
+  return highlights;
+}
+
+function buildVocabHighlights(
+  text: string,
+  strongWords: string[],
+  weakWords: WritingVocabTag[],
+): WritingEssayHighlight[] {
+  const highlights: WritingEssayHighlight[] = [];
+  const used = new Set<string>();
+
+  for (const word of strongWords.slice(0, 4)) {
+    const idx = findPhrase(text, word);
+    if (idx === -1) continue;
+    const slice = text.slice(idx, idx + word.length);
+    const key = `strong-word:${slice.toLowerCase()}`;
+    if (used.has(key)) continue;
+    used.add(key);
+    highlights.push({
+      text: slice,
+      type: "strong",
+      title: "Strong vocabulary",
+      detail: "Precise or academic word choice.",
+    });
+  }
+
+  for (const { word, alternatives } of weakWords.slice(0, 4)) {
+    const idx = findPhrase(text, word);
+    if (idx === -1) continue;
+    const slice = text.slice(idx, idx + word.length);
+    const key = `weak:${slice.toLowerCase()}`;
+    if (used.has(key)) continue;
+    used.add(key);
+    highlights.push({
+      text: slice,
+      type: "improve",
+      title: "Vocabulary",
+      detail: "Consider a more precise alternative.",
+      suggestion: alternatives?.filter(Boolean).slice(0, 3).join(", ") || undefined,
+    });
   }
 
   return highlights;
@@ -232,39 +312,85 @@ function buildEvaluatedLabel(review: WritingReview): string {
   return "AI evaluated · Band descriptors applied";
 }
 
+function confidenceLabel(confidence: number | null | undefined): string | null {
+  if (confidence == null || Number.isNaN(confidence)) return null;
+  const clamped = Math.max(0, Math.min(1, confidence));
+  if (clamped >= 0.75) return "AI confidence: high";
+  if (clamped >= 0.45) return "AI confidence: medium";
+  return "AI confidence: low";
+}
+
+function vocabFromAi(review: WritingReview): {
+  strong_words: string[];
+  weak_words: WritingVocabTag[];
+} | null {
+  const items = review.vocabulary_highlights;
+  if (!items || items.length === 0) return null;
+  const strong_words = items
+    .filter((v) => v.polarity === "strong" && v.word?.trim())
+    .map((v) => v.word.trim())
+    .slice(0, 6);
+  const weak_words: WritingVocabTag[] = items
+    .filter((v) => v.polarity === "weak" && v.word?.trim())
+    .map((v) => ({
+      word: v.word.trim(),
+      alternatives: (v.alternatives ?? []).filter(Boolean).slice(0, 3),
+    }))
+    .slice(0, 6);
+  if (strong_words.length === 0 && weak_words.length === 0) return null;
+  return { strong_words, weak_words };
+}
+
+function rangesOverlap(
+  aStart: number,
+  aEnd: number,
+  bStart: number,
+  bEnd: number,
+): boolean {
+  return !(aEnd <= bStart || aStart >= bEnd);
+}
+
+/** Merge sources: strong_spans → spelling → grammar → weak vocab → strong words. Cap 12. */
+function mergeWritingHighlights(
+  text: string,
+  batches: WritingEssayHighlight[][],
+  cap = 12,
+): WritingEssayHighlight[] {
+  const out: WritingEssayHighlight[] = [];
+  const placed: Array<{ start: number; end: number }> = [];
+
+  for (const batch of batches) {
+    for (const hl of batch) {
+      if (out.length >= cap) return out;
+      const idx = findPhrase(text, hl.text);
+      if (idx === -1) continue;
+      const end = idx + hl.text.length;
+      if (placed.some((p) => rangesOverlap(idx, end, p.start, p.end))) continue;
+      placed.push({ start: idx, end });
+      out.push({ ...hl, text: text.slice(idx, end) });
+    }
+  }
+  return out;
+}
+
 function buildHighlights(
   text: string,
   strongWords: string[],
   weakWords: WritingVocabTag[],
 ): WritingEssayHighlight[] {
-  const highlights: WritingEssayHighlight[] = [];
-  const used = new Set<string>();
-
-  for (const word of strongWords.slice(0, 3)) {
-    const idx = findPhrase(text, word);
-    if (idx === -1) continue;
-    const slice = text.slice(idx, idx + word.length);
-    const key = slice.toLowerCase();
-    if (used.has(key)) continue;
-    used.add(key);
-    highlights.push({ text: slice, type: "strong" });
-  }
-
-  for (const { word } of weakWords.slice(0, 2)) {
-    const idx = findPhrase(text, word);
-    if (idx === -1) continue;
-    const slice = text.slice(idx, idx + word.length);
-    const key = slice.toLowerCase();
-    if (used.has(key)) continue;
-    used.add(key);
-    highlights.push({ text: slice, type: "improve" });
-  }
+  const highlights = buildVocabHighlights(text, strongWords, weakWords);
+  const used = new Set(highlights.map((h) => h.text.toLowerCase()));
 
   const sentences = text.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 40);
   if (highlights.length < 4 && sentences[0]) {
     const snippet = sentences[0].trim().slice(0, Math.min(80, sentences[0].length));
     if (snippet.length > 20 && !used.has(snippet.toLowerCase())) {
-      highlights.push({ text: snippet, type: "strong" });
+      highlights.push({
+        text: snippet,
+        type: "strong",
+        title: "Strong span",
+        detail: "Clear opening development.",
+      });
     }
   }
 
@@ -346,14 +472,26 @@ function buildNextBandAdvice(
   return `${intro} ${criterionGap.replace("You need ", "").replace(" to reach", " — aim")}${lengthHint}`;
 }
 
-/** Build UI feedback from review data until AI evaluation is wired. */
-export function buildWritingFeedback(review: WritingReview): WritingFeedback {
+/** Build UI feedback from review data — prefer AI fields when present. */
+export function buildWritingFeedback(
+  review: WritingReview,
+  options?: { targetBand?: number | null },
+): WritingFeedback {
   const overall = overallBand(review);
-  const target_band = DEFAULT_TARGET_BAND;
+  const target_band =
+    options?.targetBand != null && Number.isFinite(options.targetBand)
+      ? options.targetBand
+      : DEFAULT_TARGET_BAND;
   const criteria = criteriaFromAi(review) ?? buildCriteria(overall);
   const criterion_gap_label = criterionGapLabel(criteria, target_band);
-  const strong_words = findStrongWords(review.user_answer);
-  const weak_words = findWeakWords(review.user_answer);
+  const aiVocab = vocabFromAi(review);
+  const strong_words = aiVocab?.strong_words.length
+    ? aiVocab.strong_words
+    : findStrongWords(review.user_answer);
+  const weak_words =
+    aiVocab && aiVocab.weak_words.length > 0
+      ? aiVocab.weak_words
+      : findWeakWords(review.user_answer);
   const aiStrengths = review.ai_strengths ?? [];
   const aiImprovements = review.ai_improvements ?? [];
   const strengths =
@@ -364,26 +502,48 @@ export function buildWritingFeedback(review: WritingReview): WritingFeedback {
       : buildImprovements(review, overall);
   const spelling_mistakes = review.spelling_mistakes ?? [];
   const grammar_mistakes = review.grammar_mistakes ?? [];
-  const aiHighlights = buildAiHighlights(
+  const aiMistakeHighlights = buildAiHighlights(
     review.user_answer,
     spelling_mistakes,
     grammar_mistakes,
+  );
+  const aiStrongHighlights = buildAiStrongHighlights(
+    review.user_answer,
+    review.strong_spans,
+  );
+  const vocabHighlights = buildVocabHighlights(
+    review.user_answer,
+    strong_words,
+    weak_words,
   );
   const heuristicHighlights = buildHighlights(
     review.user_answer,
     strong_words,
     weak_words,
   );
+  const aiMerged = mergeWritingHighlights(review.user_answer, [
+    aiStrongHighlights,
+    aiMistakeHighlights.filter((h) => h.type === "spelling"),
+    aiMistakeHighlights.filter((h) => h.type === "grammar"),
+    vocabHighlights.filter((h) => h.type === "improve"),
+    vocabHighlights.filter((h) => h.type === "strong"),
+  ]);
   const highlights =
-    aiHighlights.length > 0 ? aiHighlights : heuristicHighlights;
+    aiMerged.length > 0 ? aiMerged : heuristicHighlights;
   const evaluated_label = buildEvaluatedLabel(review);
+  const aiNextBand = review.next_band_advice?.trim() ?? "";
+  const next_band_advice =
+    aiNextBand.length > 0
+      ? aiNextBand
+      : buildNextBandAdvice(review, overall, criterion_gap_label);
+  const confidence_label = confidenceLabel(review.confidence);
 
   return {
     overall_band: overall,
     criteria,
     strengths,
     improvements,
-    next_band_advice: buildNextBandAdvice(review, overall, criterion_gap_label),
+    next_band_advice,
     target_band,
     criterion_gap_label,
     strong_words,
@@ -392,5 +552,8 @@ export function buildWritingFeedback(review: WritingReview): WritingFeedback {
     spelling_mistakes,
     grammar_mistakes,
     evaluated_label,
+    confidence_label,
+    human_verified: review.human_verified === true || review.band_source === "human",
+    reviewer_notes: review.reviewer_notes ?? null,
   };
 }

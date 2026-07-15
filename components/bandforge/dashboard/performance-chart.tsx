@@ -23,7 +23,7 @@ const PAD_X = 32;
 const PAD_Y = 16;
 const MIN_BAND = 0;
 const MAX_BAND = 9;
-const TARGET_BAND = 6;
+const DEFAULT_TARGET_BAND = 7;
 
 const MODULE_CHART_COLORS: Record<DashboardModule, string> = {
   listening: SIGNAL_CYAN,
@@ -214,10 +214,16 @@ function DeltaBadge({ delta }: { delta: number | null }) {
 export function PerformanceChart({
   attempts,
   averageBand,
+  targetBand = null,
 }: {
   attempts: DashboardRecentAttempt[];
   averageBand: number | null;
+  targetBand?: number | null;
 }) {
+  const TARGET_BAND =
+    targetBand != null && Number.isFinite(targetBand)
+      ? targetBand
+      : DEFAULT_TARGET_BAND;
   const gradientId = useId().replace(/:/g, "");
   const glowId = `glow-${gradientId}`;
   const filterOptions = useMemo(() => modulesWithData(attempts), [attempts]);

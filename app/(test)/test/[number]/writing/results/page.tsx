@@ -12,7 +12,7 @@ export const metadata = { title: "Writing Feedback · BandForge" };
 
 type PageProps = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ attempt?: string; part?: string; mock_attempt?: string }>;
+  searchParams: Promise<{ attempt?: string; part?: string; mock_attempt?: string; coach?: string }>;
 };
 
 export default async function WritingResultsPage({ params, searchParams }: PageProps) {
@@ -42,6 +42,7 @@ export default async function WritingResultsPage({ params, searchParams }: PageP
   const mockAttemptId = sp.mock_attempt?.trim() ?? null;
   const part = Number.parseInt(sp.part ?? "1", 10);
   const resolvedPart = Number.isFinite(part) && part >= 1 ? part : 1;
+  const coachOpen = sp.coach === "1";
 
   if (isMockSectionResultsUrl(new URLSearchParams(sp as Record<string, string>))) {
     return (
@@ -58,6 +59,11 @@ export default async function WritingResultsPage({ params, searchParams }: PageP
   }
 
   return (
-    <WritingResultsClient testNumber={testNumber} attemptFromQuery={sp.attempt} />
+    <WritingResultsClient
+      testNumber={testNumber}
+      attemptFromQuery={sp.attempt}
+      targetBand={user.target_band ?? null}
+      coachOpen={coachOpen}
+    />
   );
 }

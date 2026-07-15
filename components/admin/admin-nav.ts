@@ -1,5 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Activity,
+  BarChart3,
   ClipboardList,
   CreditCard,
   LayoutDashboard,
@@ -53,11 +55,23 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         match: ["/admin/writing", "/admin/diagnostics"],
       },
       {
+        href: "/admin/review-analytics",
+        label: "Review analytics",
+        Icon: BarChart3,
+        description: "Agreement, overrides, and criterion MAE",
+      },
+      {
         href: "/admin/payments",
         label: "Payments",
         Icon: CreditCard,
         description: "Revenue and subscriptions",
         match: ["/admin/subscriptions"],
+      },
+      {
+        href: "/admin/ai",
+        label: "AI ops",
+        Icon: Activity,
+        description: "Budget, latency, and provider health",
       },
     ],
   },
@@ -92,11 +106,13 @@ export const ADMIN_TOP_NAV: AdminTopNavItem[] = [
     label: "Evaluators",
     match: ["/admin/writing", "/admin/diagnostics"],
   },
+  { href: "/admin/review-analytics", label: "Analytics" },
   {
     href: "/admin/payments",
     label: "Payments",
     match: ["/admin/subscriptions"],
   },
+  { href: "/admin/ai", label: "AI ops" },
 ];
 
 /** Mobile fixed bottom tab bar. */

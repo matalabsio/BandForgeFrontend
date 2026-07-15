@@ -70,6 +70,8 @@ export type WritingSessionTask = {
   part: number;
   human_band: number | null;
   review_status: string;
+  ai_status?: string | null;
+  ai_band?: number | null;
 };
 
 export type SpellingMistake = {
@@ -82,6 +84,17 @@ export type GrammarMistake = {
   original: string;
   correction: string;
   issue?: string;
+};
+
+export type VocabularyHighlight = {
+  word: string;
+  polarity: "strong" | "weak";
+  alternatives?: string[];
+};
+
+export type StrongSpan = {
+  text: string;
+  reason?: string;
 };
 
 export type WritingReview = {
@@ -98,7 +111,10 @@ export type WritingReview = {
   band: number | null;
   ai_band?: number | null;
   ai_available?: boolean;
+  ai_status?: string | null;
   band_source?: string;
+  human_verified?: boolean;
+  reviewer_notes?: string | null;
   ai_criteria?: Record<string, number>;
   ai_strengths?: string[];
   ai_improvements?: string[];
@@ -106,6 +122,10 @@ export type WritingReview = {
   ai_provider?: string | null;
   spelling_mistakes?: SpellingMistake[];
   grammar_mistakes?: GrammarMistake[];
+  next_band_advice?: string;
+  confidence?: number | null;
+  vocabulary_highlights?: VocabularyHighlight[];
+  strong_spans?: StrongSpan[];
   min_words: number;
   submitted_at: string | null;
   saved_for_review: boolean;
@@ -117,6 +137,9 @@ export type WritingPendingPayload = {
   status: string;
   review_status: string;
   human_band: number | null;
+  ai_status?: string | null;
+  ai_band?: number | null;
+  ai_available?: boolean;
   submitted_at: string | null;
   message: string;
   session_tasks?: WritingSessionTask[];
@@ -137,6 +160,9 @@ export type WritingCriterionScore = {
 export type WritingEssayHighlight = {
   text: string;
   type: "strong" | "improve" | "spelling" | "grammar";
+  title?: string;
+  detail?: string;
+  suggestion?: string;
 };
 
 export type WritingVocabTag = {
@@ -158,4 +184,8 @@ export type WritingFeedback = {
   spelling_mistakes: SpellingMistake[];
   grammar_mistakes: GrammarMistake[];
   evaluated_label: string;
+  /** Subtle meta label e.g. "AI confidence: medium" — not a student band */
+  confidence_label?: string | null;
+  human_verified?: boolean;
+  reviewer_notes?: string | null;
 };

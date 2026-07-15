@@ -271,6 +271,7 @@ export type WritingReviewListItem = {
   status: string;
   human_band: number | null;
   ai_overall_band?: number | null;
+  ai_status?: string | null;
   task_label?: string | null;
   created_at: string;
 };
@@ -294,6 +295,8 @@ export type WritingReviewDetail = {
   reviewer_notes: string | null;
   ai_scores: Record<string, unknown> | null;
   ai_feedback: Record<string, unknown> | null;
+  ai_status?: string | null;
+  ai_error?: string | null;
   student_name: string | null;
   student_email: string | null;
   student_target_band: number | null;
@@ -377,7 +380,34 @@ export type AuditLogItem = {
   action: string;
   resource_type: string;
   resource_id: string | null;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
+};
+
+export type ReviewHistoryItem = {
+  id: string;
+  action: string;
+  admin_email: string | null;
+  summary: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type ReviewAnalyticsResponse = {
+  module: string;
+  days: number;
+  completed: number;
+  with_ai: number;
+  without_ai: number;
+  agreement_rate: number | null;
+  override_rate: number | null;
+  overall_mae: number | null;
+  criterion_mae: Array<{
+    key: string;
+    label: string;
+    mae: number | null;
+    sample_count: number;
+  }>;
 };
 
 export type AdminPaymentItem = {
@@ -410,9 +440,76 @@ export type AdminPaymentMetrics = {
   active_subscriptions: number;
 };
 
+export type AiBudgetSnapshot = {
+  ok: boolean;
+  daily_used: number;
+  daily_limit: number;
+  monthly_used: number;
+  monthly_limit: number;
+  warning: boolean;
+  reason: string | null;
+};
+
+export type AiCircuitSnapshot = {
+  open: boolean;
+  failures: number;
+  open_until: number | null;
+  reason: string | null;
+};
+
+export type AiFailureItem = {
+  provider: string;
+  reason: string;
+  at: string;
+};
+
+export type AiMetricsResponse = {
+  period: string;
+  day: string;
+  calls: number;
+  success: number;
+  errors: number;
+  retries: number;
+  stub_calls: number;
+  cache_hits: number;
+  cache_misses: number;
+  tokens_in: number;
+  tokens_out: number;
+  estimated_cost_usd: number;
+  avg_latency_ms: number;
+  success_rate_pct: number;
+  retry_rate_pct: number;
+  redis_status: string;
+  generated_at: string;
+  budget: AiBudgetSnapshot;
+  circuit: AiCircuitSnapshot;
+  recent_failures: AiFailureItem[];
+  speaking_pending: number;
+  speaking_failed: number;
+};
+
+export type AiHealthResponse = {
+  redis_status: string;
+  claude_configured: boolean;
+  groq_configured: boolean;
+  writing_eval_stub: boolean;
+  budget_ok: boolean;
+  circuit_open: boolean;
+  speaking_pending: number;
+  speaking_failed: number;
+};
+
 export const adminApi = {
   metrics() {
     return adminCall<DashboardMetrics>("/dashboard/metrics");
+  },
+
+  aiMetrics() {
+    return adminCall<AiMetricsResponse>("/ai/metrics");
+  },
+
+  aiHealth() {
+    return adminCall<AiHealthResponse>("/ai/health");
   },
 
   dashboardOverview() {
@@ -694,6 +791,13 @@ export const adminApi = {
     );
   },
 
+  retryWritingAi(id: string, source: "mock" | "diagnostic" = "mock") {
+    return adminCall<WritingReviewDetail>(
+      `/writing/${id}/retry-ai?source=${encodeURIComponent(source)}`,
+      { method: "POST" },
+    );
+  },
+
   listDiagnostics(params?: {
     status?: string;
     q?: string;
@@ -781,5 +885,25 @@ export const adminApi = {
       items: AuditLogItem[];
       total: number;
     }>(`/audit?page=${page}`);
+  },
+
+  getSpeakingHistory(reviewId: string) {
+    return adminCall<{ items: ReviewHistoryItem[] }>(
+      `/speaking/${reviewId}/history`,
+    );
+  },
+
+  getWritingHistory(reviewId: string, source: "mock" | "diagnostic" = "mock") {
+    return adminCall<{ items: ReviewHistoryItem[] }>(
+      `/writing/${reviewId}/history?source=${source}`,
+    );
+  },
+
+  reviewAnalytics(params?: { module?: "speaking" | "writing" | "all"; days?: number }) {
+    const q = new URLSearchParams();
+    if (params?.module) q.set("module", params.module);
+    if (params?.days) q.set("days", String(params.days));
+    const suffix = q.toString() ? `?${q}` : "";
+    return adminCall<ReviewAnalyticsResponse>(`/review-analytics${suffix}`);
   },
 };

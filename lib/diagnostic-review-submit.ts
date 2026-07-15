@@ -30,7 +30,7 @@ export function submitDiagnosticForReview(
     client_attempt_id: progress.attemptId,
     full_name: lead.fullName,
     phone: lead.phone,
-    email: lead.email,
+    email: lead.email ?? null,
     goal_label: lead.goalLabel,
     target_band: lead.targetBand,
     listening_band: snapshot.listening_band,

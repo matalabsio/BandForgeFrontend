@@ -6,20 +6,26 @@ import {
   EvaluatorAiPrescore,
   EvaluatorOverallBand,
   EvaluatorReviewActions,
+  EvaluatorScoreComparison,
   EvaluatorStudentContext,
   EvaluatorStudentHeader,
   EvaluatorQueueBadge,
   EvaluatorWritingRubric,
+  EvaluatorReviewHistory,
 } from "@/components/admin/evaluator";
 import {
   evaluatorCard,
   evaluatorCardPad,
 } from "@/components/admin/evaluator/evaluator-ui";
 import { adminLink } from "@/components/admin/admin-ui";
+import { Button } from "@/components/ui/button";
 import { adminApi, type WritingReviewDetail } from "@/lib/admin-api";
+import { compareWritingScores } from "@/lib/review-comparison";
 import {
+  aiScoresToWritingCriteria,
   computeWritingOverallBand,
   WRITING_CRITERIA_KEYS,
+  WRITING_CRITERIA_LABELS,
   defaultWritingCriteriaFromReview,
   type WritingHumanCriteriaScores,
 } from "@/lib/writing-band";
@@ -137,9 +143,34 @@ export function AdminWritingDetailClient({ reviewId, source }: Props) {
   const overall = useMemo(() => computeWritingOverallBand(criteria), [criteria]);
   const readOnly = review?.status === "completed";
 
+  const comparison = useMemo(
+    () =>
+      compareWritingScores(
+        criteria,
+        review?.ai_scores ?? null,
+        WRITING_CRITERIA_LABELS,
+      ),
+    [criteria, review?.ai_scores],
+  );
+  const overriddenKeys = useMemo(
+    () =>
+      new Set(comparison.rows.filter((r) => r.overridden).map((r) => r.key)),
+    [comparison],
+  );
+  const aiCriteria = useMemo(
+    () => aiScoresToWritingCriteria(review?.ai_scores ?? null),
+    [review?.ai_scores],
+  );
+
   const onCriteriaChange = (key: keyof WritingHumanCriteriaScores, value: number) => {
     setCriteria((prev) => ({ ...prev, [key]: value }));
     setSuccess(null);
+  };
+
+  const acceptAiScores = () => {
+    if (!aiCriteria) return;
+    setCriteria(aiCriteria);
+    setSuccess("Copied AI scores into the rubric.");
   };
 
   const saveDraft = async () => {
@@ -251,6 +282,7 @@ export function AdminWritingDetailClient({ reviewId, source }: Props) {
               scores={criteria}
               onChange={onCriteriaChange}
               readOnly={readOnly}
+              overriddenKeys={overriddenKeys}
             />
 
             <section
@@ -274,14 +306,69 @@ export function AdminWritingDetailClient({ reviewId, source }: Props) {
           </div>
 
           <aside className="space-y-4 lg:sticky lg:top-4">
+            {(review.ai_status || review.ai_error) && (
+              <section className={cn(evaluatorCard, evaluatorCardPad, "space-y-2")}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold text-navy">AI status</h3>
+                  <span className="rounded-full bg-cyan-soft px-2.5 py-1 font-mono text-xs font-semibold text-teal">
+                    {review.ai_status ?? "unknown"}
+                  </span>
+                </div>
+                {review.ai_error ? (
+                  <p className="text-sm text-danger">{review.ai_error}</p>
+                ) : null}
+                {source === "mock" &&
+                (review.ai_status === "ai_failed" ||
+                  review.ai_status === "pending") &&
+                !readOnly ? (
+                  <Button
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      void (async () => {
+                        setBusy(true);
+                        setError(null);
+                        try {
+                          const updated = await adminApi.retryWritingAi(
+                            reviewId,
+                            source,
+                          );
+                          setReview(updated);
+                          setSuccess("AI evaluation re-queued.");
+                        } catch (e) {
+                          setError(
+                            e instanceof Error ? e.message : "Retry failed",
+                          );
+                        } finally {
+                          setBusy(false);
+                        }
+                      })();
+                    }}
+                  >
+                    Retry AI evaluation
+                  </Button>
+                ) : null}
+              </section>
+            )}
             <EvaluatorAiPrescore
               aiScores={aiPrescoreScores}
               variant="writing"
+            />
+            <EvaluatorScoreComparison
+              comparison={comparison}
+              onAcceptAi={acceptAiScores}
+              readOnly={readOnly}
+              hasAi={Boolean(aiCriteria)}
             />
             <AiFeedbackPanel feedback={review.ai_feedback} />
             <EvaluatorStudentContext
               currentBand={review.student_current_band}
               targetBand={review.student_target_band}
+            />
+            <EvaluatorReviewHistory
+              reviewId={review.id}
+              module="writing"
+              source={source}
             />
 
             <div className="hidden lg:block">

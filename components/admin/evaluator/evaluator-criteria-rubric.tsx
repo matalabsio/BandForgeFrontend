@@ -18,6 +18,8 @@ type Props = {
   scores: Partial<HumanCriteriaScores>;
   onChange: (key: keyof HumanCriteriaScores, value: number) => void;
   readOnly?: boolean;
+  /** Criterion keys that differ from AI (≥ 0.5) */
+  overriddenKeys?: ReadonlySet<string>;
 };
 
 const CHIPS = bandChipValues(4, 9);
@@ -26,6 +28,7 @@ export function EvaluatorCriteriaRubric({
   scores,
   onChange,
   readOnly = false,
+  overriddenKeys,
 }: Props) {
   return (
     <section>
@@ -40,11 +43,21 @@ export function EvaluatorCriteriaRubric({
         {CRITERIA_KEYS.map((key) => (
           <div
             key={key}
-            className="flex flex-col gap-3 rounded-[14px] border border-[#EAEEF3] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-[18px]"
+            className={cn(
+              "flex flex-col gap-3 rounded-[14px] border bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-[18px]",
+              overriddenKeys?.has(key)
+                ? "border-[#FDE68A] bg-[#FFFBEB]/40"
+                : "border-[#EAEEF3]",
+            )}
           >
             <div className="min-w-0 sm:w-[220px] sm:shrink-0">
               <p className="text-[14.5px] font-semibold text-navy">
                 {CRITERIA_LABELS[key]}
+                {overriddenKeys?.has(key) ? (
+                  <span className="ml-2 text-[10px] font-bold uppercase text-[#B45309]">
+                    vs AI
+                  </span>
+                ) : null}
               </p>
               <p className="mt-0.5 text-xs font-light text-[#94A3B8]">
                 {CRITERIA_DESCRIPTIONS[key]}

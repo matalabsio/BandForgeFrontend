@@ -76,25 +76,6 @@ export function DiagnosticLeadForm({ value, onChange, className }: Props) {
 
       <div>
         <label
-          htmlFor="diagnostic-lead-email"
-          className="mb-1.5 block text-xs font-medium text-[#5A6B82]"
-        >
-          Email for your band report
-        </label>
-        <input
-          id="diagnostic-lead-email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          value={value.email ?? ""}
-          onChange={(e) => setField("email", e.target.value.trim())}
-          placeholder="you@example.com"
-          className="h-[46px] w-full rounded-[11px] border border-[#D9E0E8] bg-white px-3.5 text-sm text-navy outline-none transition-colors placeholder:text-[#9AA7B8] focus:border-cyan focus:ring-2 focus:ring-cyan/20"
-        />
-      </div>
-
-      <div>
-        <label
           htmlFor="diagnostic-lead-goal"
           className="mb-1.5 block text-xs font-medium text-[#5A6B82]"
         >
@@ -120,6 +101,26 @@ export function DiagnosticLeadForm({ value, onChange, className }: Props) {
             ))}
           </select>
           <ChevronDown className="pointer-events-none absolute top-1/2 right-3.5 size-[18px] -translate-y-1/2 text-[#7689A0]" />
+        </div>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {DIAGNOSTIC_GOAL_OPTIONS.map((g) => {
+            const selected = value.goal === g.id;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => handleGoalChange(g.id)}
+                className={cn(
+                  "cursor-pointer rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-colors",
+                  selected
+                    ? "border border-cyan/30 bg-cyan/10 text-teal"
+                    : "bg-[#F1F5F9] text-[#5A6B82] hover:bg-[#E8EDF3]",
+                )}
+              >
+                {g.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

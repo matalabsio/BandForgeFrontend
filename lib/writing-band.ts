@@ -59,7 +59,12 @@ export function aiScoresToWritingCriteria(
   aiScores: Record<string, unknown> | null | undefined,
 ): WritingHumanCriteriaScores | null {
   if (!aiScores) return null;
-  const nested = aiScores.criteria_scores;
+  const nested =
+    aiScores.criteria_scores && typeof aiScores.criteria_scores === "object"
+      ? aiScores.criteria_scores
+      : aiScores.criteria && typeof aiScores.criteria === "object"
+        ? aiScores.criteria
+        : null;
   const source =
     nested && typeof nested === "object"
       ? (nested as Record<string, unknown>)

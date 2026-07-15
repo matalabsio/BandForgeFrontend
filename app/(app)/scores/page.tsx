@@ -13,6 +13,7 @@ import {
   getCachedDashboardSummary,
   getCachedServerUser,
 } from "@/lib/server-cache";
+import { fetchLearningProfile } from "@/lib/learning-server";
 
 export const metadata = {
   title: "Performance · BandForge",
@@ -40,12 +41,16 @@ async function ScoresPageContent({ searchParams }: PageProps) {
   const mockSlug =
     resolvedMock && PUBLISHED_MOCK_SLUGS.includes(resolvedMock) ? resolvedMock : null;
 
-  const summary = await getCachedDashboardSummary(cookieHeader);
+  const [summary, learning] = await Promise.all([
+    getCachedDashboardSummary(cookieHeader),
+    fetchLearningProfile(cookieHeader),
+  ]);
 
   const profileTarget =
-    user.target_band !== null && user.target_band !== undefined
+    learning?.target_band ??
+    (user.target_band !== null && user.target_band !== undefined
       ? user.target_band
-      : null;
+      : null);
 
   return (
     <ScoresExperience
@@ -54,6 +59,8 @@ async function ScoresPageContent({ searchParams }: PageProps) {
       fresh={fresh}
       highlightAttemptId={highlightAttemptId}
       mockSlug={mockSlug}
+      recommendations={learning?.recommendations ?? []}
+      topWeaknesses={learning?.top_weaknesses ?? []}
     />
   );
 }

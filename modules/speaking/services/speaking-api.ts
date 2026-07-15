@@ -16,6 +16,7 @@ import { getAccessToken } from "@/lib/session";
 import { recordingFilenameForMime } from "@/modules/speaking/lib/media-recorder-support";
 import type {
   SpeakingPendingPayload,
+  SpeakingReportPayload,
   StartSpeakingPayload,
   SubmitSpeakingPayload,
 } from "@/modules/speaking/types";
@@ -156,6 +157,13 @@ export const speakingApi = {
   pending(attemptId: string): Promise<SpeakingPendingPayload> {
     return examJsonCall<SpeakingPendingPayload>(
       `/api/speaking/attempts/${encodeURIComponent(attemptId)}/pending`,
+      { method: "GET" },
+    );
+  },
+
+  report(attemptId: string): Promise<SpeakingReportPayload> {
+    return examJsonCall<SpeakingReportPayload>(
+      `/api/speaking/attempts/${encodeURIComponent(attemptId)}/report`,
       { method: "GET" },
     );
   },

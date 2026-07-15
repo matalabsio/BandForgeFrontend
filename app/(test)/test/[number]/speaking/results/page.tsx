@@ -58,6 +58,10 @@ export default async function SpeakingResultsPage({ params, searchParams }: Page
   }
 
   return (
-    <SpeakingResultsClient testNumber={testNumber} attemptFromQuery={sp.attempt} />
+    <SpeakingResultsClient
+      testNumber={testNumber}
+      attemptFromQuery={sp.attempt}
+      targetBand={user.target_band ?? null}
+    />
   );
 }

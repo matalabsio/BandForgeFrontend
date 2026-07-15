@@ -15,5 +15,7 @@ export { EvaluatorCriteriaRubric } from "./evaluator-criteria-rubric";
 export { EvaluatorWritingRubric } from "./evaluator-writing-rubric";
 export { EvaluatorOverallBand } from "./evaluator-overall-band";
 export { EvaluatorAiPrescore } from "./evaluator-ai-prescore";
+export { EvaluatorScoreComparison } from "./evaluator-score-comparison";
 export { EvaluatorStudentContext } from "./evaluator-student-context";
 export { EvaluatorReviewActions } from "./evaluator-review-actions";
+export { EvaluatorReviewHistory } from "./evaluator-review-history";

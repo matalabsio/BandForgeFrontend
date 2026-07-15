@@ -37,18 +37,10 @@ function formatSubmitted(iso: string) {
   }
 }
 
-function pendingBandLabel(status: string): string {
-  if (status === "completed") return "—";
-  return "Coming soon · 24h review";
-}
-
 function bandCell(row: WritingReviewListItem): string {
   if (row.human_band != null) return row.human_band.toFixed(1);
-  if (row.status === "pending" || row.status === "in_review") {
-    return pendingBandLabel(row.status);
-  }
-  if (row.ai_overall_band != null) return `~${row.ai_overall_band.toFixed(1)}`;
-  return pendingBandLabel(row.status);
+  if (row.ai_overall_band != null) return `~${row.ai_overall_band.toFixed(1)} AI`;
+  return "—";
 }
 
 function StatusBadge({ status }: { status: string }) {

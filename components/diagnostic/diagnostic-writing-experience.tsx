@@ -14,6 +14,7 @@ import {
   type DiagnosticWritingTask,
 } from "@/lib/diagnostic-pack";
 import { evaluateDiagnosticWriting } from "@/lib/diagnostic-evaluate-writing";
+import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import { wordCount } from "@/lib/diagnostic-scoring";
 import {
   advanceDiagnosticModule,
@@ -147,11 +148,23 @@ export function DiagnosticWritingExperience() {
     }
 
     try {
+      const blocks = splitPromptBlocks(primaryTask.prompt);
+      const visualDescription =
+        primaryTask.part === 1
+          ? (
+              primaryTask.visualDescription?.trim() ||
+              blocks?.description?.trim() ||
+              ""
+            )
+          : "";
+      const lead = readDiagnosticLead();
       const writingEvaluation = await evaluateDiagnosticWriting({
         client_attempt_id: progress.attemptId,
         task_part: primaryTask.part,
         question: primaryTask.prompt,
         essay: essayText,
+        visual_description: visualDescription || undefined,
+        target_band: lead?.targetBand ?? null,
       });
 
       advanceDiagnosticModule("writing", {

@@ -12,6 +12,7 @@ import {
   getPlans,
   getSubscription,
   openRazorpayCheckout,
+  paymentTraceLog,
   verifyPayment,
 } from "@/lib/payments";
 import { PlanCard } from "@/components/pricing/plan-card";
@@ -122,6 +123,10 @@ export function PricingClient() {
     router.push(loginPathWithNext("/pricing", true));
   }
 
+  function redirectVerifyAuthFailed() {
+    router.push(loginPathWithNext("/checkout/success", true));
+  }
+
   async function handleBuy(slug: string) {
     if (busySlug) return;
     setBusySlug(slug);
@@ -140,13 +145,25 @@ export function PricingClient() {
         order,
         onSuccess: async (response) => {
           setOverlay("verifying");
+          const orderId = response.razorpay_order_id;
+          const paymentId = response.razorpay_payment_id;
           try {
-            const refreshed = await ensureSession();
-            if (!refreshed) {
-              setOverlay(null);
-              redirectSessionExpired();
-              return;
-            }
+            paymentTraceLog("CHECKOUT_SUCCESS", {
+              order: orderId,
+              payment: paymentId,
+            });
+            // Do not call ensureSession() here — on failure it can logout and
+            // clear cookies, abandoning a paid order. BFF proxy refreshes on 401.
+            paymentTraceLog("SESSION_REFRESH_SKIPPED_POST_CHECKOUT", {
+              order: orderId,
+              payment: paymentId,
+              reason: "fulfillment_first",
+            });
+            paymentTraceLog("VERIFY_REQUEST", {
+              order: orderId,
+              payment: paymentId,
+              signature_present: Boolean(response.razorpay_signature),
+            });
             const result = await verifyPayment(response);
             if (result.subscription.is_active) {
               router.push("/checkout/success");
@@ -160,7 +177,15 @@ export function PricingClient() {
           } catch (e) {
             setOverlay(null);
             if (e instanceof ApiError && e.status === 401) {
-              redirectSessionExpired();
+              paymentTraceLog("VERIFY_AUTH_FAILED", {
+                order: orderId,
+                payment: paymentId,
+              });
+              setPaymentFailureMessage(
+                `Payment may have succeeded. Sign in again to activate your plan. Order: ${orderId}`,
+              );
+              setStatusModal("verify_failed");
+              redirectVerifyAuthFailed();
             } else {
               setPaymentFailureMessage(verifyFailureDetail(e));
               setStatusModal("verify_failed");

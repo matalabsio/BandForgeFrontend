@@ -10,9 +10,11 @@ import {
   EvaluatorOverallBand,
   EvaluatorPartTabs,
   EvaluatorReviewActions,
+  EvaluatorScoreComparison,
   EvaluatorStudentContext,
   EvaluatorStudentHeader,
   EvaluatorQueueBadge,
+  EvaluatorReviewHistory,
 } from "@/components/admin/evaluator";
 import {
   evaluatorCard,
@@ -20,9 +22,12 @@ import {
 } from "@/components/admin/evaluator/evaluator-ui";
 import { adminLink } from "@/components/admin/admin-ui";
 import { adminApi, type SpeakingReviewDetail } from "@/lib/admin-api";
+import { compareSpeakingScores } from "@/lib/review-comparison";
 import {
+  aiScoresToCriteria,
   computeOverallBand,
   CRITERIA_KEYS,
+  CRITERIA_LABELS,
   defaultCriteriaFromReview,
   type HumanCriteriaScores,
 } from "@/lib/speaking-band";
@@ -68,9 +73,34 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
   const readOnly = review?.status === "completed";
   const activePart = review?.submission_meta?.part ?? 2;
 
+  const comparison = useMemo(
+    () =>
+      compareSpeakingScores(
+        criteria,
+        review?.ai_scores ?? null,
+        CRITERIA_LABELS,
+      ),
+    [criteria, review?.ai_scores],
+  );
+  const overriddenKeys = useMemo(
+    () =>
+      new Set(comparison.rows.filter((r) => r.overridden).map((r) => r.key)),
+    [comparison],
+  );
+  const aiCriteria = useMemo(
+    () => aiScoresToCriteria(review?.ai_scores ?? null),
+    [review?.ai_scores],
+  );
+
   const onCriteriaChange = (key: keyof HumanCriteriaScores, value: number) => {
     setCriteria((prev) => ({ ...prev, [key]: value }));
     setSuccess(null);
+  };
+
+  const acceptAiScores = () => {
+    if (!aiCriteria) return;
+    setCriteria(aiCriteria);
+    setSuccess("Copied AI scores into the rubric.");
   };
 
   const saveDraft = async () => {
@@ -187,6 +217,7 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
               scores={criteria}
               onChange={onCriteriaChange}
               readOnly={readOnly}
+              overriddenKeys={overriddenKeys}
             />
 
             <section
@@ -211,10 +242,17 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
 
           <aside className="space-y-4 lg:sticky lg:top-4">
             <EvaluatorAiPrescore aiScores={review.ai_scores} />
+            <EvaluatorScoreComparison
+              comparison={comparison}
+              onAcceptAi={acceptAiScores}
+              readOnly={readOnly}
+              hasAi={Boolean(aiCriteria)}
+            />
             <EvaluatorStudentContext
               currentBand={review.student_current_band}
               targetBand={review.student_target_band}
             />
+            <EvaluatorReviewHistory reviewId={review.id} module="speaking" />
 
             <div className="hidden lg:block">
               <EvaluatorReviewActions {...actionProps} variant="actions-only" />

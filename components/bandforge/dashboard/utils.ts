@@ -39,7 +39,14 @@ export function resolveProfileTargetBand(
   return suggestedTargetBand(averageBand);
 }
 
-export function deriveInsights(summary: DashboardSummary): string[] {
+export function deriveInsights(
+  summary: DashboardSummary,
+  recommendations?: { title: string; reason: string }[],
+): string[] {
+  if (recommendations && recommendations.length > 0) {
+    return recommendations.slice(0, 3).map((r) => `${r.title}: ${r.reason}`);
+  }
+
   const lines: string[] = [];
   const { stats, recent } = summary;
 

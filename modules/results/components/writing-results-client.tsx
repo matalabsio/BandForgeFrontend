@@ -14,9 +14,16 @@ import { mockTestIdForNumber } from "@/lib/mock-catalog";
 type Props = {
   testNumber: number;
   attemptFromQuery?: string;
+  targetBand?: number | null;
+  coachOpen?: boolean;
 };
 
-export function WritingResultsClient({ testNumber, attemptFromQuery }: Props) {
+export function WritingResultsClient({
+  testNumber,
+  attemptFromQuery,
+  targetBand = null,
+  coachOpen = false,
+}: Props) {
   const mockTestId = mockTestIdForNumber(testNumber);
   const mockAttemptId = useResolvedMockAttemptId(mockTestId);
   const queryAttempt = attemptFromQuery?.trim() || null;
@@ -106,6 +113,8 @@ export function WritingResultsClient({ testNumber, attemptFromQuery }: Props) {
         review={review}
         mockAttemptId={mockAttemptId}
         showContinueTask2={showContinueTask2}
+        targetBand={targetBand}
+        coachOpen={coachOpen}
       />
     </div>
   );

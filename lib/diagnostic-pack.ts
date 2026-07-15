@@ -23,6 +23,8 @@ export type DiagnosticWritingTask = {
   title: string;
   prompt: string;
   diagramUrl?: string;
+  /** Text description of the chart/diagram for AI Task Achievement scoring. */
+  visualDescription?: string;
 };
 
 export type DiagnosticSpeakingPart1Question = {
@@ -103,6 +105,12 @@ function parseWritingTasks(writing: Record<string, unknown>): DiagnosticWritingT
         prompt: String(row.prompt ?? ""),
         diagramUrl:
           typeof row.diagramUrl === "string" ? row.diagramUrl : undefined,
+        visualDescription:
+          typeof row.visualDescription === "string"
+            ? row.visualDescription
+            : typeof row.visual_description === "string"
+              ? row.visual_description
+              : undefined,
       };
     });
   }
@@ -115,6 +123,12 @@ function parseWritingTasks(writing: Record<string, unknown>): DiagnosticWritingT
       prompt: String(writing.prompt ?? ""),
       diagramUrl:
         typeof writing.diagramUrl === "string" ? writing.diagramUrl : undefined,
+      visualDescription:
+        typeof writing.visualDescription === "string"
+          ? writing.visualDescription
+          : typeof writing.visual_description === "string"
+            ? writing.visual_description
+            : undefined,
     },
   ];
 }

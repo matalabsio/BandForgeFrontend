@@ -91,6 +91,7 @@ export function DashboardExperience({
               <PerformanceChartLazy
                 attempts={summary.recent}
                 averageBand={summary.stats.average_band}
+                targetBand={profileTargetBand}
               />
             </div>
             <div className="min-w-0">

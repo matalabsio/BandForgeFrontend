@@ -11,7 +11,11 @@ import { aggregateBand } from "@/lib/diagnostic-scoring";
 import { calculateWritingBand, wordCount } from "@/lib/diagnostic-scoring";
 import { isAnswerCorrect } from "@/lib/diagnostic-scoring";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
-import { loadDiagnosticPack, type DiagnosticPackQuestion } from "@/lib/diagnostic-pack";
+import {
+  loadDiagnosticPack,
+  type DiagnosticPackQuestion,
+  type DiagnosticWritingTask,
+} from "@/lib/diagnostic-pack";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import {
   bandBarPercent,
@@ -30,6 +34,10 @@ import {
   readDiagnosticResults,
   type DiagnosticResultsSnapshot,
 } from "@/lib/diagnostic-session";
+import { diagnosticToWritingReview } from "@/modules/writing/lib/diagnostic-to-writing-review";
+import { WritingResultsView } from "@/modules/writing/components/writing-results-view";
+import type { DiagnosticWritingEvaluation } from "@/lib/diagnostic-evaluate-writing";
+
 
 function aggregatePartialBand(snapshot: DiagnosticResultsSnapshot): number {
   const partial = aggregateBand(
@@ -94,10 +102,12 @@ export function DiagnosticResultsExperience() {
   const [activeReviewSkill, setActiveReviewSkill] = useState<SkillKey | null>(null);
   const [listeningQuestions, setListeningQuestions] = useState<DiagnosticPackQuestion[]>([]);
   const [readingQuestions, setReadingQuestions] = useState<DiagnosticPackQuestion[]>([]);
+  const [writingTasks, setWritingTasks] = useState<DiagnosticWritingTask[]>([]);
   const [answersByModule, setAnswersByModule] = useState<{
     listening: Record<string, string>;
     reading: Record<string, string>;
-  }>({ listening: {}, reading: {} });
+    writing: Record<string, string>;
+  }>({ listening: {}, reading: {}, writing: {} });
 
   const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
   const targetBand = lead?.targetBand ?? 7.0;
@@ -169,18 +179,50 @@ export function DiagnosticResultsExperience() {
       setAnswersByModule({
         listening: progress.answers.listening ?? {},
         reading: progress.answers.reading ?? {},
+        writing: progress.answers.writing ?? {},
       });
     }
     void loadDiagnosticPack()
       .then((pack) => {
         setListeningQuestions(pack.listening.questions ?? []);
         setReadingQuestions(pack.reading.questions ?? []);
+        setWritingTasks(pack.writing.tasks ?? []);
       })
       .catch(() => {
         setListeningQuestions([]);
         setReadingQuestions([]);
+        setWritingTasks([]);
       });
   }, []);
+
+  const diagnosticWritingReview = useMemo(() => {
+    const evaluation = snapshot?.writingEvaluation as
+      | DiagnosticWritingEvaluation
+      | undefined;
+    if (!evaluation) return null;
+
+    const essays = answersByModule.writing;
+    let essay = "";
+    let taskId = "";
+    for (const [id, text] of Object.entries(essays)) {
+      if ((text?.trim().length ?? 0) > essay.trim().length) {
+        essay = text;
+        taskId = id;
+      }
+    }
+    if (!essay.trim()) return null;
+
+    const task =
+      writingTasks.find((t) => t.id === taskId) ?? writingTasks[0] ?? null;
+    return diagnosticToWritingReview({
+      evaluation,
+      essay,
+      question: task?.prompt?.trim() || "Diagnostic writing task",
+      taskPart: task?.part ?? 1,
+      testTitle: task?.title ?? "Free Diagnostic",
+      attemptId: evaluation.evaluation_id,
+    });
+  }, [snapshot?.writingEvaluation, answersByModule.writing, writingTasks]);
 
   const currentBand =
     snapshot?.aggregate_band ??
@@ -192,7 +234,7 @@ export function DiagnosticResultsExperience() {
       : "—"
     : bandLabel(snapshot?.aggregate_band);
 
-  const leadEmail = lead?.email;
+  const leadPhone = lead?.phone;
   const activeReviewItems: QuestionReviewRow[] = useMemo(() => {
     const sectionQuestions =
       activeReviewSkill === "listening"
@@ -223,6 +265,19 @@ export function DiagnosticResultsExperience() {
       };
     });
   }, [activeReviewSkill, listeningQuestions, readingQuestions, answersByModule]);
+
+  if (activeReviewSkill === "writing" && diagnosticWritingReview) {
+    return (
+      <WritingResultsView
+        mode="diagnostic"
+        review={diagnosticWritingReview}
+        onBack={() => setActiveReviewSkill(null)}
+        backHref={diagnosticPaths.results}
+        dashboardHref="/dashboard"
+        targetBand={targetBand}
+      />
+    );
+  }
 
   return (
     <DiagnosticChrome variant="report">
@@ -317,11 +372,15 @@ export function DiagnosticResultsExperience() {
                   </button>
                 </div>
 
-                {(activeReviewSkill === "writing" || activeReviewSkill === "speaking") ? (
+                {activeReviewSkill === "writing" ? (
                   <p className="text-sm leading-relaxed text-[#5A6B82]">
-                    {activeReviewSkill === "writing"
-                      ? "Writing question-by-question review is not available on this page yet. You can use the estimated writing band card above."
-                      : "Speaking answer transcript and examiner notes are not available yet while review is pending."}
+                    {hasWritingEval
+                      ? "We could not load your essay for detailed feedback. Re-open this page after completing Writing, or check that your diagnostic progress is still saved."
+                      : "Writing AI feedback is not available yet for this attempt. If your essay was under the minimum length, it was not evaluated."}
+                  </p>
+                ) : activeReviewSkill === "speaking" ? (
+                  <p className="text-sm leading-relaxed text-[#5A6B82]">
+                    Speaking answer transcript and examiner notes are not available yet while review is pending.
                   </p>
                 ) : activeReviewItems.length === 0 ? (
                   <p className="text-sm leading-relaxed text-[#5A6B82]">
@@ -393,10 +452,10 @@ export function DiagnosticResultsExperience() {
               />
             )}
 
-            {pendingHuman && leadEmail ? (
+            {pendingHuman && leadPhone ? (
               <p className="text-center text-[12.5px] font-light text-[#6E83A0]">
-                Full report will be emailed to{" "}
-                <span className="font-medium text-navy">{leadEmail}</span> within
+                Full report will be sent on WhatsApp to{" "}
+                <span className="font-medium text-navy">+91 {leadPhone}</span> within
                 24–48 hours.
               </p>
             ) : null}
