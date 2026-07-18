@@ -6,6 +6,7 @@ import {
   shortModuleExamPath,
 } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
+import { parseSkillContext } from "@/lib/practice-submit";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { fetchReadingBootServer, resolveMockMetaServer } from "@/lib/mock-server";
 import { getCachedCookieHeader } from "@/lib/server-cache";
@@ -19,7 +20,12 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ passage?: string; mock_attempt?: string; auto?: string }>;
+  searchParams: Promise<{
+    passage?: string;
+    mock_attempt?: string;
+    auto?: string;
+    skill_context?: string;
+  }>;
 };
 
 export default async function TestReadingPage({ params, searchParams }: Props) {
@@ -32,6 +38,7 @@ export default async function TestReadingPage({ params, searchParams }: Props) {
 
   const passage = sp.passage ? Number.parseInt(sp.passage, 10) : 1;
   const autoStart = sp.auto === "1" || sp.auto === "true";
+  const skillContext = parseSkillContext(sp.skill_context);
   const mockTestId = mockTestIdForNumber(testNumber);
   const mockSlug = canonicalMockSlug(mockTestId);
   const returnPath = shortModuleExamPath(testNumber, "reading", { passage });
@@ -64,6 +71,7 @@ export default async function TestReadingPage({ params, searchParams }: Props) {
         autoStart={autoStart}
         initialBoot={initialBoot}
         testNumber={testNumber}
+        skillContext={skillContext}
       />
     </MockLayout>
   );

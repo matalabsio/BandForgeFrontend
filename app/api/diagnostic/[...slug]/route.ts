@@ -70,6 +70,10 @@ async function handle(req: Request, ctx: Ctx) {
   return proxyToBackend(req, path);
 }
 
+export async function GET(req: Request, ctx: Ctx) {
+  return handle(req, ctx);
+}
+
 export async function POST(req: Request, ctx: Ctx) {
   return handle(req, ctx);
 }

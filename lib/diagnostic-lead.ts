@@ -16,6 +16,8 @@ export type DiagnosticLead = {
   goal: DiagnosticGoalId;
   goalLabel: string;
   targetBand: number;
+  /** ISO date YYYY-MM-DD — IELTS exam date for plan timeline. */
+  examDate: string;
 };
 
 export const DIAGNOSTIC_GOAL_OPTIONS: {
@@ -58,9 +60,47 @@ export function isValidIndiaPhone(phone: string): boolean {
   return digits.length === 10 && /^[6-9]/.test(digits);
 }
 
+/** Tomorrow in local time as YYYY-MM-DD (minimum selectable exam date). */
+export function minExamDateIso(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+export function parseExamDate(iso: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const d = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export function isValidFutureExamDate(examDate: string): boolean {
+  const parsed = parseExamDate(examDate);
+  if (!parsed) return false;
+  const min = parseExamDate(minExamDateIso());
+  if (!min) return false;
+  return parsed >= min;
+}
+
+/** Calendar days from today until exam (0 on exam day). */
+export function daysUntilExam(examDate: string): number {
+  const exam = parseExamDate(examDate);
+  if (!exam) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((exam.getTime() - today.getTime()) / 86_400_000);
+  return Math.max(0, diff);
+}
+
+/** Inclusive prep window length for plan preview (prep start through exam). */
+export function totalPrepDays(examDate: string): number {
+  const remaining = daysUntilExam(examDate);
+  return Math.max(1, remaining + 1);
+}
+
 export function isLeadComplete(lead: Partial<DiagnosticLead> | null): lead is DiagnosticLead {
   if (!lead?.fullName?.trim() || !lead.goal) return false;
-  return isValidIndiaPhone(lead.phone ?? "");
+  if (!isValidIndiaPhone(lead.phone ?? "")) return false;
+  return isValidFutureExamDate(lead.examDate ?? "");
 }
 
 export function readDiagnosticLead(): DiagnosticLead | null {

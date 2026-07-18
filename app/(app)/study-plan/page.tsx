@@ -1,13 +1,10 @@
 import { StudyPlanExperience } from "@/components/bandforge/study-plan/study-plan-experience";
-import {
-  emptyLearningProfile,
-  fetchLearningProfile,
-} from "@/lib/learning-server";
+import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
+import { fetchEntitledContext } from "@/lib/entitled-route-server";
 import {
   getCachedCookieHeader,
   getCachedServerSession,
 } from "@/lib/server-cache";
-import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +17,7 @@ export default async function StudyPlanPage() {
   const user = await getCachedServerSession(cookieHeader);
   redirectIfUnauthenticated(user, "/study-plan", cookieHeader);
 
-  const profile =
-    (await fetchLearningProfile(cookieHeader)) ??
-    emptyLearningProfile(user?.id ?? "");
+  const { profile } = await fetchEntitledContext(cookieHeader, user!.id);
 
   return <StudyPlanExperience profile={profile} />;
 }

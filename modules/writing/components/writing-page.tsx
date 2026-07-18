@@ -18,6 +18,7 @@ import {
 } from "@/lib/mock-catalog";
 import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistMockAttemptId, persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import type { PracticeSkill } from "@/lib/practice-types";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
@@ -97,6 +98,7 @@ type Props = {
   initialBoot?: WritingBootServer | null;
   testNumber?: number;
   flow?: "mock" | "diagnostic";
+  skillContext?: PracticeSkill | null;
 };
 
 export function WritingPage({
@@ -108,6 +110,7 @@ export function WritingPage({
   initialBoot = null,
   testNumber: testNumberProp,
   flow = "mock",
+  skillContext = null,
 }: Props) {
   const isDiagnostic = isDiagnosticFlow(flow, mockTestId);
   const router = useRouter();
@@ -208,6 +211,7 @@ export function WritingPage({
         part,
         mockAttemptId: mockAttemptId ?? undefined,
         forceNew: false,
+        skillContext: skillContext ?? undefined,
       });
       setAttemptId(res.attempt_id);
       setTask(res.task ?? null);

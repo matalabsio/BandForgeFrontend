@@ -1,5 +1,6 @@
 import {
   persistDiagnosticResults,
+  readDiagnosticResults,
   type DiagnosticModuleReview,
   type DiagnosticResultsSnapshot,
 } from "@/lib/diagnostic-session";
@@ -7,6 +8,7 @@ import type { DiagnosticWritingEvaluation } from "@/lib/diagnostic-evaluate-writ
 import { syncDiagnosticToServer } from "@/lib/diagnostic-sync";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import { submitDiagnosticForReview } from "@/lib/diagnostic-review-submit";
+import { aggregateBand } from "@/lib/diagnostic-scoring";
 
 export const DIAGNOSTIC_PROGRESS_KEY = "bf-diagnostic-progress";
 
@@ -59,6 +61,9 @@ export type DiagnosticProgress = {
     reading?: DiagnosticModuleReview;
   };
   writingEvaluation?: DiagnosticWritingEvaluation;
+  /** True while background AI evaluation is still running. */
+  writingEvalPending?: boolean;
+  writingEvalEssayHash?: string;
   completedAt?: string;
 };
 
@@ -208,6 +213,8 @@ export function advanceDiagnosticModule(
       | { module: "speaking"; answers: DiagnosticSpeakingAnswers };
     review?: DiagnosticProgress["review"];
     writingEvaluation?: DiagnosticWritingEvaluation;
+    writingEvalPending?: boolean;
+    writingEvalEssayHash?: string;
   },
 ): DiagnosticProgress | null {
   const progress = readDiagnosticProgress();
@@ -230,8 +237,73 @@ export function advanceDiagnosticModule(
     scores: partial?.scores ?? progress.scores,
     review: partial?.review ?? progress.review,
     writingEvaluation: partial?.writingEvaluation ?? progress.writingEvaluation,
+    writingEvalPending:
+      partial?.writingEvalPending ?? progress.writingEvalPending,
+    writingEvalEssayHash:
+      partial?.writingEvalEssayHash ?? progress.writingEvalEssayHash,
   };
   saveDiagnosticProgress(next);
+  return next;
+}
+
+/** Clear pending Writing eval flags after failure or timeout (band stays null). */
+export function clearWritingEvalPending(): DiagnosticProgress | null {
+  const progress = readDiagnosticProgress();
+  if (!progress) return null;
+  if (!progress.writingEvalPending && !progress.writingEvalEssayHash) {
+    return progress;
+  }
+  const next: DiagnosticProgress = {
+    ...progress,
+    writingEvalPending: false,
+    writingEvalEssayHash: undefined,
+  };
+  saveDiagnosticProgress(next);
+  return next;
+}
+
+/** Apply a finished background Writing evaluation to progress + results snapshot. */
+export function applyWritingEvaluationResult(
+  evaluation: DiagnosticWritingEvaluation,
+): DiagnosticProgress | null {
+  const progress = readDiagnosticProgress();
+  if (!progress) return null;
+
+  const writingBand = evaluation.writing_band;
+  const scores: DiagnosticModuleScores = {
+    listening_band: progress.scores?.listening_band ?? null,
+    reading_band: progress.scores?.reading_band ?? null,
+    writing_band: writingBand,
+    speaking_band: progress.scores?.speaking_band ?? null,
+    aggregate_band: aggregateBand(
+      progress.scores?.listening_band ?? null,
+      progress.scores?.reading_band ?? null,
+      writingBand,
+      progress.scores?.speaking_band ?? null,
+    ),
+  };
+
+  const next: DiagnosticProgress = {
+    ...progress,
+    scores,
+    writingEvaluation: evaluation,
+    writingEvalPending: false,
+    writingEvalEssayHash: undefined,
+  };
+  saveDiagnosticProgress(next);
+
+  const existing = readDiagnosticResults();
+  if (existing) {
+    const snapshot: DiagnosticResultsSnapshot = {
+      ...existing,
+      writing_band: writingBand,
+      aggregate_band: scores.aggregate_band,
+      writingEvaluation: evaluation,
+    };
+    persistDiagnosticResults(snapshot);
+    void syncDiagnosticToServer(snapshot, progress.startedAt);
+  }
+
   return next;
 }
 
@@ -266,7 +338,7 @@ export function completeDiagnostic(
     writingEvaluation: progress.writingEvaluation,
   };
   persistDiagnosticResults(snapshot);
-  syncDiagnosticToServer(snapshot, progress.startedAt);
+  void syncDiagnosticToServer(snapshot, progress.startedAt);
 
   const lead = readDiagnosticLead();
   if (lead) {

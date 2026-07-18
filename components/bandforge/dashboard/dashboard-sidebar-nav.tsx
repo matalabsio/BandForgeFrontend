@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
-import { DASHBOARD_NAV } from "@/components/bandforge/dashboard/dashboard-nav";
+import { DASHBOARD_NAV, isNavItemActive } from "@/components/bandforge/dashboard/dashboard-nav";
 import { PremiumCta } from "@/components/bandforge/dashboard/premium-cta";
 import { cn } from "@/lib/utils";
 
@@ -9,12 +9,14 @@ type Props = {
   pathname: string;
   displayName: string;
   avatarUrl?: string | null;
+  showPremiumCta?: boolean;
 };
 
 export function DashboardSidebarNav({
   pathname,
   displayName,
   avatarUrl = null,
+  showPremiumCta = true,
 }: Props) {
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
 
@@ -25,8 +27,8 @@ export function DashboardSidebarNav({
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto" aria-label="Main">
-        {DASHBOARD_NAV.map((group) => (
-          <div key={group.title || "main"}>
+        {DASHBOARD_NAV.map((group, groupIndex) => (
+          <div key={group.title || `untitled-${groupIndex}`}>
             {group.title ? (
               <p className="mb-2 px-3 font-roboto-condensed text-[10px] font-bold uppercase tracking-[0.14em] text-ink/35">
                 {group.title}
@@ -34,10 +36,7 @@ export function DashboardSidebarNav({
             ) : null}
             <ul className="flex flex-col gap-0.5">
               {group.items.map((item) => {
-                const active =
-                  pathname === item.href ||
-                  (item.href !== "/dashboard" &&
-                    pathname.startsWith(item.href));
+                const active = isNavItemActive(pathname, item.href);
                 const inner = (
                   <>
                     <item.Icon
@@ -51,6 +50,7 @@ export function DashboardSidebarNav({
                 );
                 const className = cn(
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-colors",
+                  item.indent && "ml-3",
                   active
                     ? "bg-cyan/10 text-ink"
                     : "text-ink/60 hover:bg-ink/5 hover:text-ink",
@@ -79,7 +79,7 @@ export function DashboardSidebarNav({
       </nav>
 
       <div className="mt-6 space-y-4 border-t border-ink/8 pt-5">
-        <PremiumCta />
+        {showPremiumCta ? <PremiumCta /> : null}
         <Link
           href="/profile"
           className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-ink/5"

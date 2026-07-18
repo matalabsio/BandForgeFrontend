@@ -32,6 +32,7 @@ import {
 import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
 import { readingModuleResultsPath } from "@/lib/reading-test";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import type { PracticeSkill } from "@/lib/practice-types";
 import { testNumberForMockId } from "@/lib/mock-catalog";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { readingApi } from "@/modules/reading/services/reading-api";
@@ -103,6 +104,7 @@ type Props = {
   initialBoot?: ReadingBootServer | null;
   testNumber?: number;
   flow?: "mock" | "diagnostic";
+  skillContext?: PracticeSkill | null;
 };
 
 type SessionStart = Awaited<ReturnType<typeof readingApi.start>>;
@@ -127,6 +129,7 @@ export function ReadingPage({
   initialBoot = null,
   testNumber: testNumberProp,
   flow = "mock",
+  skillContext = null,
 }: Props) {
   const isDiagnostic = isDiagnosticFlow(flow, testId);
   const { replace, push } = useRouter();
@@ -641,6 +644,7 @@ export function ReadingPage({
               forceNew: false,
               part: passage,
               mockAttemptId: mockAttemptId ?? undefined,
+              skillContext: skillContext ?? undefined,
             });
             if (!start.questions?.length || !start.passage_text) {
               const qs = await readingApi.questions(testId, { part: passage });

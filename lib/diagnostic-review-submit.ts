@@ -9,6 +9,7 @@ type SubmitBody = {
   email: string | null;
   goal_label: string | null;
   target_band: number | null;
+  exam_date: string | null;
   listening_band: number | null;
   reading_band: number | null;
   writing_band: number | null;
@@ -33,6 +34,7 @@ export function submitDiagnosticForReview(
     email: lead.email ?? null,
     goal_label: lead.goalLabel,
     target_band: lead.targetBand,
+    exam_date: lead.examDate,
     listening_band: snapshot.listening_band,
     reading_band: snapshot.reading_band,
     writing_band: snapshot.writing_band,

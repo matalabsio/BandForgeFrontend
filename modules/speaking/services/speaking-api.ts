@@ -12,6 +12,7 @@ import {
 } from "@/lib/exam-session";
 import { isAuthEnabled } from "@/lib/flags";
 import { accessTokenExpired } from "@/lib/jwt-expiry";
+import type { PracticeSkill } from "@/lib/practice-types";
 import { getAccessToken } from "@/lib/session";
 import { recordingFilenameForMime } from "@/modules/speaking/lib/media-recorder-support";
 import type {
@@ -125,6 +126,7 @@ export const speakingApi = {
       part?: number;
       forceNew?: boolean;
       mockAttemptId?: string;
+      skillContext?: PracticeSkill;
     },
   ): Promise<StartSpeakingPayload> {
     const params = new URLSearchParams();
@@ -132,6 +134,9 @@ export const speakingApi = {
     if (options?.forceNew === true) params.set("force_new", "true");
     if (options?.mockAttemptId) {
       params.set("mock_attempt_id", options.mockAttemptId);
+    }
+    if (options?.skillContext) {
+      params.set("skill_context", options.skillContext);
     }
     return examJsonCall<StartSpeakingPayload>(
       `/api/speaking/${encodeURIComponent(mockTestId)}/start?${params.toString()}`,

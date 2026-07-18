@@ -181,7 +181,7 @@ export function DiagnosticListeningExperience() {
                       autoplay={partAudioPhase === "playing" && !audioPlayed}
                       allowManualStartAfterBegin={partAudioPhase === "playing"}
                       onCompleted={handleAudioCompleted}
-                      sectionNote="The recording plays once. You can answer while you listen. Pausing and replay are disabled."
+                      sectionNote="Use earphones for the clearest audio. The recording plays once — take notes as you listen and answer while you go. Pausing and replay are disabled."
                     />
                   </div>
                 ) : pack.listening.audioUrl ? null : (

@@ -1,4 +1,5 @@
 import { examApiCall } from "@/lib/exam-api-call";
+import type { PracticeSkill } from "@/lib/practice-types";
 import type {
   StartWritingPayload,
   SubmitWritingPayload,
@@ -13,6 +14,7 @@ export const writingApi = {
       part?: number;
       forceNew?: boolean;
       mockAttemptId?: string;
+      skillContext?: PracticeSkill;
     },
   ): Promise<StartWritingPayload> {
     const params = new URLSearchParams();
@@ -20,6 +22,9 @@ export const writingApi = {
     if (options?.forceNew === true) params.set("force_new", "true");
     if (options?.mockAttemptId) {
       params.set("mock_attempt_id", options.mockAttemptId);
+    }
+    if (options?.skillContext) {
+      params.set("skill_context", options.skillContext);
     }
     return examApiCall<StartWritingPayload>(
       `/api/writing/${encodeURIComponent(mockTestId)}/start?${params.toString()}`,

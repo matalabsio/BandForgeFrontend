@@ -13,7 +13,7 @@ import {
   type DiagnosticPack,
   type DiagnosticWritingTask,
 } from "@/lib/diagnostic-pack";
-import { evaluateDiagnosticWriting } from "@/lib/diagnostic-evaluate-writing";
+import { startDiagnosticWritingEvaluation } from "@/lib/diagnostic-evaluate-writing";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import { wordCount } from "@/lib/diagnostic-scoring";
 import {
@@ -158,7 +158,7 @@ export function DiagnosticWritingExperience() {
             )
           : "";
       const lead = readDiagnosticLead();
-      const writingEvaluation = await evaluateDiagnosticWriting({
+      const started = await startDiagnosticWritingEvaluation({
         client_attempt_id: progress.attemptId,
         task_part: primaryTask.part,
         question: primaryTask.prompt,
@@ -167,18 +167,36 @@ export function DiagnosticWritingExperience() {
         target_band: lead?.targetBand ?? null,
       });
 
-      advanceDiagnosticModule("writing", {
-        moduleAnswers: { module: "writing", answers: essays },
-        scores: {
-          listening_band: progress?.scores?.listening_band ?? null,
-          reading_band: progress?.scores?.reading_band ?? null,
-          writing_band: writingEvaluation.writing_band,
-          speaking_band: null,
-          aggregate_band: null,
-        },
-        review: progress?.review,
-        writingEvaluation,
-      });
+      if (started.status === "complete") {
+        advanceDiagnosticModule("writing", {
+          moduleAnswers: { module: "writing", answers: essays },
+          scores: {
+            listening_band: progress?.scores?.listening_band ?? null,
+            reading_band: progress?.scores?.reading_band ?? null,
+            writing_band: started.evaluation.writing_band,
+            speaking_band: null,
+            aggregate_band: null,
+          },
+          review: progress?.review,
+          writingEvaluation: started.evaluation,
+          writingEvalPending: false,
+        });
+      } else {
+        // Background evaluation — continue to Speaking immediately.
+        advanceDiagnosticModule("writing", {
+          moduleAnswers: { module: "writing", answers: essays },
+          scores: {
+            listening_band: progress?.scores?.listening_band ?? null,
+            reading_band: progress?.scores?.reading_band ?? null,
+            writing_band: null,
+            speaking_band: null,
+            aggregate_band: null,
+          },
+          review: progress?.review,
+          writingEvalPending: true,
+          writingEvalEssayHash: started.essayHash,
+        });
+      }
       router.replace(diagnosticTransitionPath("writing-speaking"));
     } catch (e: unknown) {
       if (e instanceof ApiError && e.status === 429) {
@@ -212,7 +230,7 @@ export function DiagnosticWritingExperience() {
           loading={!pack}
           footerLabel="Continue to speaking"
           footerBusy={submitting}
-          footerBusyLabel="Evaluating your essay…"
+          footerBusyLabel="Submitting…"
           onFooter={handleSubmit}
           footerWidth="full"
           timer={
@@ -334,7 +352,7 @@ export function DiagnosticWritingExperience() {
                   onClick={handleSubmit}
                   className="mt-6 flex min-h-[var(--spacing-touch,48px)] w-full cursor-pointer items-center justify-center gap-2 rounded-[13px] bg-cyan px-6 font-display text-base font-semibold text-[#06222B] shadow-[0_12px_28px_rgba(0,188,212,0.30)] transition-colors hover:bg-brand-sky-hover disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
                 >
-                  {submitting ? "Evaluating your essay…" : "Continue to speaking"}
+                  {submitting ? "Submitting…" : "Continue to speaking"}
                   {!submitting ? <ArrowRight className="size-4" aria-hidden /> : null}
                 </button>
               </div>

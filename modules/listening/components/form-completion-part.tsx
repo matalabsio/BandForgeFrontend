@@ -180,13 +180,15 @@ function FormCompletionPartBase({
 
       <p className="mt-4 text-body text-ink/80">{instructions}</p>
 
-      <div className="mt-4">
-        <QuestionAudio
-          audioUrl={audioUrl}
-          played={partPlayed}
-          onCompleted={() => onPartPlayed(part.part)}
-        />
-      </div>
+      {deferAudio ? null : (
+        <div className="mt-4">
+          <QuestionAudio
+            audioUrl={audioUrl}
+            played={partPlayed}
+            onCompleted={() => onPartPlayed(part.part)}
+          />
+        </div>
+      )}
 
       <div className="mt-6 overflow-x-auto rounded-xl border-2 border-ink/20 bg-white p-4 shadow-sm sm:p-6">
         <p className="text-center text-[11px] font-bold uppercase tracking-widest text-navy">

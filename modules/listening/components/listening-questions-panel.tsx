@@ -202,7 +202,7 @@ function ListeningQuestionsPanelBase({
                     onFocus={onFocus}
                     onPartPlayed={() => {}}
                     variant={isDiagnostic ? "default" : "exam"}
-                    deferAudio={!isDiagnostic}
+                    deferAudio
                   />
                 );
               }

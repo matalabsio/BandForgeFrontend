@@ -132,7 +132,11 @@ export function formatInr(paise: number): string {
 
 // --- Razorpay checkout script + popup -------------------------------------
 
-type RazorpayInstrument = { method: string };
+type RazorpayInstrument = {
+  method: string;
+  /** UPI flows: qr (desktop), intent (mobile). Avoid collect (deprecated 2026). */
+  flows?: Array<"qr" | "intent" | "collect">;
+};
 
 type RazorpayDisplayConfig = {
   display: {
@@ -201,10 +205,21 @@ function razorpayContactPrefill(raw: string | null | undefined): {
   return { contactEditable: true };
 }
 
-/** Fallback when Dashboard Payment Configuration ID is not set (local dev). */
+/**
+ * Fallback when Dashboard Payment Configuration ID is not set.
+ * Prefers UPI QR (desktop) + Intent (mobile). Collect/VPA typing is omitted (NPCI 2026).
+ * Cannot enable UPI if the Razorpay account has not activated the method — use Dashboard
+ * Payment Configuration + RAZORPAY_CHECKOUT_CONFIG_ID for production certainty.
+ */
 const RAZORPAY_FALLBACK_CHECKOUT_CONFIG: RazorpayDisplayConfig = {
   display: {
-    sequence: ["upi", "card", "netbanking", "wallet"],
+    blocks: {
+      upi_preferred: {
+        name: "Pay using UPI",
+        instruments: [{ method: "upi", flows: ["qr", "intent"] }],
+      },
+    },
+    sequence: ["block.upi_preferred", "upi", "card", "netbanking", "wallet"],
     hide: [{ method: "paylater" }],
     preferences: { show_default_blocks: true },
   },

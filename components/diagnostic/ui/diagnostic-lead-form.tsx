@@ -3,6 +3,7 @@
 import {
   DIAGNOSTIC_GOAL_OPTIONS,
   goalFromId,
+  minExamDateIso,
   normalizeIndiaPhone,
   type DiagnosticGoalId,
   type DiagnosticLead,
@@ -122,6 +123,26 @@ export function DiagnosticLeadForm({ value, onChange, className }: Props) {
             );
           })}
         </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor="diagnostic-lead-exam-date"
+          className="mb-1.5 block text-xs font-medium text-[#5A6B82]"
+        >
+          When is your IELTS exam?
+        </label>
+        <input
+          id="diagnostic-lead-exam-date"
+          type="date"
+          min={minExamDateIso()}
+          value={value.examDate ?? ""}
+          onChange={(e) => setField("examDate", e.target.value)}
+          className="h-[46px] w-full rounded-[11px] border border-[#D9E0E8] bg-white px-3.5 text-sm text-navy outline-none transition-colors focus:border-cyan focus:ring-2 focus:ring-cyan/20"
+        />
+        <p className="mt-1.5 text-[11px] text-[#94A3B8]">
+          Your personalised plan is paced from today until this date.
+        </p>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { examApiCall } from "@/lib/exam-api-call";
+import type { PracticeSkill } from "@/lib/practice-types";
 import type {
   AutosavePayload,
   ListeningQuestionsPayload,
@@ -15,6 +16,7 @@ export const listeningApi = {
       part?: number;
       mockAttemptId?: string;
       includeQuestions?: boolean;
+      skillContext?: PracticeSkill;
     },
   ): Promise<StartListeningPayload> {
     const params = new URLSearchParams();
@@ -25,6 +27,9 @@ export const listeningApi = {
     }
     if (options?.includeQuestions !== false) {
       params.set("include_questions", "true");
+    }
+    if (options?.skillContext) {
+      params.set("skill_context", options.skillContext);
     }
     const qs = params.toString() ? `?${params.toString()}` : "";
     return examApiCall<StartListeningPayload>(

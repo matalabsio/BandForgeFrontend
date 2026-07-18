@@ -60,11 +60,11 @@ export function DashboardTodaysPlan({ tasks = [] }: Props) {
         </p>
       ) : (
         <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-1">
-          {visible.map((task) => {
+          {visible.map((task, index) => {
             const Icon = moduleIcons[task.module] ?? BookIcon;
             return (
               <Link
-                key={task.id}
+                key={`${task.id}-${index}`}
                 href={task.href || "/mocks"}
                 className="flex w-[300px] shrink-0 items-center gap-[15px] rounded-[0.9375rem] border border-border-soft bg-white px-5 py-[18px] transition-colors hover:border-cyan/40"
               >

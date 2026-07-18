@@ -10,6 +10,12 @@ export type UpdateProfileInput = {
   full_name: string;
   phone?: string | null;
   target_band?: number | null;
+  exam_date?: string | null;
+};
+
+export type UpdateProfileResult = {
+  user: AuthUser;
+  warnings: Record<string, string>;
 };
 
 async function profileFetch<T>(
@@ -28,16 +34,26 @@ async function profileFetch<T>(
   return body as T;
 }
 
-export async function updateProfile(input: UpdateProfileInput): Promise<AuthUser> {
-  return profileFetch<AuthUser>("profile", {
+export async function updateProfile(
+  input: UpdateProfileInput,
+): Promise<UpdateProfileResult> {
+  const body = await profileFetch<{
+    user: AuthUser;
+    warnings?: Record<string, string>;
+  }>("profile", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       full_name: input.full_name,
       phone: input.phone ?? null,
       target_band: input.target_band ?? null,
+      exam_date: input.exam_date ?? null,
     }),
   });
+  return {
+    user: body.user,
+    warnings: body.warnings ?? {},
+  };
 }
 
 export async function uploadProfileAvatar(file: File): Promise<AuthUser> {

@@ -75,6 +75,7 @@ import {
 } from "@/lib/diagnostic-exam-nav";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import type { PracticeSkill } from "@/lib/practice-types";
 
 function readConsent(moduleKey: string, attemptScope: string): boolean {
   if (typeof window === "undefined") return false;
@@ -103,6 +104,7 @@ type Props = {
   initialBoot?: ListeningBootServer | null;
   testNumber?: number;
   flow?: "mock" | "diagnostic";
+  skillContext?: PracticeSkill | null;
 };
 
 export function ListeningPage({
@@ -114,6 +116,7 @@ export function ListeningPage({
   initialBoot = null,
   testNumber: testNumberProp,
   flow = "mock",
+  skillContext = null,
 }: Props) {
   const isDiagnostic = isDiagnosticFlow(flow, testId);
   const isExam = variant === "exam";
@@ -389,6 +392,7 @@ export function ListeningPage({
           part,
           mockAttemptId: mockAttemptId ?? undefined,
           includeQuestions: true,
+          skillContext: skillContext ?? undefined,
         });
         dispatch({ type: "started", payload: start });
         if (start.parts?.length && start.test) {
@@ -459,7 +463,7 @@ export function ListeningPage({
         beginAttemptInFlightRef.current = null;
       }
     },
-    [testId, part, mockAttemptId, sectionStart, dispatch, mockSlug, replace],
+    [testId, part, mockAttemptId, sectionStart, dispatch, mockSlug, replace, skillContext],
   );
 
   useEffect(() => {

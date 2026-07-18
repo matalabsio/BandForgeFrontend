@@ -2,9 +2,7 @@ import type { ComponentType, SVGProps } from "react";
 import {
   BarChartIcon,
   BookIcon,
-  CrownIcon,
   FileTextIcon,
-  FlameIcon,
   HeadphonesIcon,
   HomeIcon,
   LayoutGridIcon,
@@ -12,7 +10,6 @@ import {
   PencilIcon,
   UserIcon,
 } from "@/components/bandforge/dashboard/icons";
-import { shortModuleExamPath } from "@/lib/mock-catalog";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -21,6 +18,7 @@ export type NavLink = {
   href: string;
   Icon: Icon;
   disabled?: boolean;
+  indent?: boolean;
 };
 
 export type NavGroup = {
@@ -31,54 +29,69 @@ export type NavGroup = {
 export const DASHBOARD_NAV: NavGroup[] = [
   {
     title: "",
-    items: [{ label: "Home", href: "/dashboard", Icon: HomeIcon }],
+    items: [{ label: "Dashboard", href: "/dashboard", Icon: HomeIcon }],
   },
   {
-    title: "Tests",
+    title: "Study Plan",
     items: [
-      {
-        label: "Listening",
-        href: shortModuleExamPath(1, "listening"),
-        Icon: HeadphonesIcon,
-      },
-      {
-        label: "Reading",
-        href: shortModuleExamPath(1, "reading"),
-        Icon: BookIcon,
-      },
-      {
-        label: "Writing",
-        href: "/test/writing",
-        Icon: PencilIcon,
-      },
-      {
-        label: "Speaking",
-        href: shortModuleExamPath(1, "speaking"),
-        Icon: MicIcon,
-      },
+      { label: "Today's Plan", href: "/study-plan/today", Icon: FileTextIcon },
+      { label: "Full Plan", href: "/study-plan", Icon: FileTextIcon, indent: true },
+    ],
+  },
+  {
+    title: "Practice",
+    items: [
+      { label: "Listening", href: "/practice/listening", Icon: HeadphonesIcon },
+      { label: "Reading", href: "/practice/reading", Icon: BookIcon },
+      { label: "Writing", href: "/practice/writing", Icon: PencilIcon },
+      { label: "Speaking", href: "/practice/speaking", Icon: MicIcon },
     ],
   },
   {
     title: "Progress",
     items: [
       { label: "Performance", href: "/scores", Icon: BarChartIcon },
-      { label: "Streak", href: "/streak", Icon: FlameIcon },
+      { label: "Diagnostic Report", href: "/diagnostic/report", Icon: FileTextIcon },
     ],
   },
   {
-    title: "Content",
+    title: "Resources",
     items: [
       { label: "Content Library", href: "/content-library", Icon: LayoutGridIcon },
-      { label: "Study Plan", href: "/study-plan", Icon: FileTextIcon },
-      { label: "Plans", href: "/plan", Icon: CrownIcon },
+      { label: "Mock tests", href: "/test", Icon: FileTextIcon },
     ],
+  },
+  {
+    title: "",
+    items: [{ label: "Settings", href: "/profile", Icon: UserIcon }],
   },
 ];
 
 export const MOBILE_BOTTOM_NAV: NavLink[] = [
   { label: "Home", href: "/dashboard", Icon: HomeIcon },
-  { label: "Tests", href: "/test", Icon: FileTextIcon },
-  { label: "Progress", href: "/scores", Icon: BarChartIcon },
-  { label: "Content", href: "/content-library", Icon: LayoutGridIcon },
+  { label: "Today", href: "/study-plan/today", Icon: FileTextIcon },
+  { label: "Practice", href: "/practice/listening", Icon: HeadphonesIcon },
+  { label: "Scores", href: "/scores", Icon: BarChartIcon },
   { label: "Profile", href: "/profile", Icon: UserIcon },
 ];
+
+export function isNavItemActive(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  if (href === "/dashboard") return false;
+  if (href === "/study-plan") {
+    return pathname === "/study-plan";
+  }
+  if (href === "/study-plan/today") {
+    return pathname.startsWith("/study-plan/today");
+  }
+  if (href.startsWith("/practice/")) {
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+  if (href === "/test") {
+    return pathname === "/test" || pathname.startsWith("/test/");
+  }
+  if (href !== "/dashboard" && href !== "/profile") {
+    return pathname.startsWith(href);
+  }
+  return false;
+}

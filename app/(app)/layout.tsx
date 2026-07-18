@@ -7,6 +7,8 @@ import {
   getBandforgePathname,
 } from "@/lib/bandforge-pathname";
 import { authGuardRedirectPath } from "@/lib/auth";
+import { hasFullSkillProgram } from "@/lib/entitlement";
+import { fetchSubscription } from "@/lib/payments-server";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { formatUserDisplayName } from "@/lib/user-display";
 
@@ -22,7 +24,10 @@ export default async function BandforgeAppLayout({
     getBandforgePathname(),
   ]);
 
-  const user = await getCachedServerSession(cookieHeader);
+  const [user, subscription] = await Promise.all([
+    getCachedServerSession(cookieHeader),
+    fetchSubscription(cookieHeader),
+  ]);
   if (!user) {
     redirect(authGuardRedirectPath(pathname, cookieHeader));
   }
@@ -32,6 +37,7 @@ export default async function BandforgeAppLayout({
     ? "Account"
     : formatUserDisplayName(user);
   const shellAvatarUrl = hideHeader ? null : (user.avatar_display_url ?? null);
+  const showPremiumCta = !hasFullSkillProgram(subscription);
 
   return (
     <AppAuthShell serverAuthenticated>
@@ -45,6 +51,7 @@ export default async function BandforgeAppLayout({
             pathname={pathname}
             displayName={formatUserDisplayName(user)}
             avatarUrl={user.avatar_display_url}
+            showPremiumCta={showPremiumCta}
           />
         }
       >

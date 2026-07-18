@@ -41,6 +41,13 @@ export function emptyLearningProfile(userId = ""): LearningProfile {
     refreshed_at: null,
     plan_week_start: null,
     todays_tasks: [],
+    prep_start: null,
+    exam_date: null,
+    total_days: null,
+    current_day: null,
+    days_remaining: null,
+    skill_difficulty: {},
+    hub_progress: {},
   };
 }
 

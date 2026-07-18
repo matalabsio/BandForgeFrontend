@@ -18,6 +18,10 @@
     "test:exam-session": "node lib/exam-session.test.mjs",
     "test:exam-timer": "node modules/shared/hooks/exam-timer.test.mjs",
     "test:diagnostic-scoring": "node lib/diagnostic-scoring.test.mjs",
+    "test:plan-preview": "node lib/plan-preview.test.mjs",
+    "test:entitlement": "node lib/entitlement.test.mjs",
+    "test:entitled-route": "node lib/entitled-route.test.mjs",
+    "test:study-plan-calendar": "node lib/study-plan-calendar.test.mjs",
     "test:diagnostic-pack": "node lib/diagnostic-pack.test.mjs",
     "test:writing-diagnostic-adapter": "node modules/writing/lib/diagnostic-to-writing-review.test.mjs",
     "build:diagnostic-pack": "node ../scripts/build-diagnostic-pack.mjs"

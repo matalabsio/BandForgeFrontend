@@ -13,6 +13,9 @@ const PROTECTED_PREFIXES = [
   "/mock",
   "/test",
   "/admin",
+  "/study-plan",
+  "/practice",
+  "/diagnostic/report",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -85,5 +88,10 @@ export const config = {
     "/test/:path*",
     "/admin",
     "/admin/:path*",
+    "/study-plan",
+    "/study-plan/:path*",
+    "/practice",
+    "/practice/:path*",
+    "/diagnostic/report",
   ],
 };

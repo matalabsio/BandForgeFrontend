@@ -14,6 +14,7 @@ import {
 } from "@/lib/mock-catalog";
 import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
+import type { PracticeSkill } from "@/lib/practice-types";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { SpeakingExamFlow } from "@/modules/speaking/components/speaking-exam-flow";
@@ -47,12 +48,14 @@ type Props = {
   mockSlug?: string;
   mockMeta?: MockMeta;
   testNumber?: number;
+  skillContext?: PracticeSkill | null;
 };
 
 export function SpeakingPage({
   mockTestId,
   mockSlug = DEFAULT_MOCK_SLUG,
   testNumber: testNumberProp,
+  skillContext = null,
 }: Props) {
   const router = useRouter();
   const mockAttemptId = useResolvedMockAttemptId(mockTestId);
@@ -107,6 +110,7 @@ export function SpeakingPage({
       const boot = await speakingApi.start(mockTestId, {
         part: 1,
         mockAttemptId: mockAttemptId ?? undefined,
+        skillContext: skillContext ?? undefined,
       });
       setAttemptId(boot.attempt_id);
       setStudentName(boot.student_name);

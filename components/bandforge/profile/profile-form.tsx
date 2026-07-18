@@ -80,7 +80,7 @@ export function ProfileForm({ user }: Props) {
       }
       setSaving(true);
       try {
-        const updated = await updateProfile({
+        const { user: updated, warnings } = await updateProfile({
           full_name: name,
           phone: phone.trim() || null,
           target_band: targetBand === "" ? null : Number(targetBand),
@@ -90,6 +90,9 @@ export function ProfileForm({ user }: Props) {
           setTargetBand(updated.target_band);
         }
         setMessage("Profile saved. Your dashboard target band is updated.");
+        if (warnings.phone) {
+          setError(warnings.phone);
+        }
         refresh();
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("bf-profile-updated"));

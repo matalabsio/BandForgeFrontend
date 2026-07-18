@@ -1,14 +1,23 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ProductionAuthConfigError } from "@/components/auth/production-auth-config-error";
+import { DashboardGate } from "@/components/bandforge/dashboard/dashboard-gate";
 import { DashboardProfileSync } from "@/components/bandforge/dashboard/dashboard-profile-sync";
 import { DashboardContentSkeleton } from "@/components/bandforge/dashboard/dashboard-shell-skeleton";
-import { DashboardMocksActivitySection } from "@/components/bandforge/dashboard/sections/dashboard-mocks-activity-section";
-import { DashboardStatsSection } from "@/components/bandforge/dashboard/sections/dashboard-stats-section";
+import { DashboardPersonalizedSection } from "@/components/bandforge/dashboard/sections/dashboard-personalized-section";
+import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
+import { DashboardPlanPaywall } from "@/components/bandforge/dashboard/dashboard-plan-paywall";
 import {
   isProductionAuthMisconfigured,
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
+import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
+import {
+  emptyLearningProfile,
+  fetchLearningProfile,
+} from "@/lib/learning-server";
+import { fetchSubscription } from "@/lib/payments-server";
 import {
   getCachedCookieHeader,
   getCachedServerSession,
@@ -33,6 +42,57 @@ function DashboardHeaderSkeleton() {
   );
 }
 
+type UserProps = {
+  firstName: string;
+  displayName: string;
+  email: string | null;
+  avatarUrl: string | null;
+};
+
+type DashboardBodyProps = {
+  cookieHeader: string;
+  user: UserProps;
+  userId: string;
+};
+
+async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps) {
+  const [learning, subscription] = await Promise.all([
+    fetchLearningProfile(cookieHeader),
+    fetchSubscription(cookieHeader),
+  ]);
+  const profile = learning ?? emptyLearningProfile(userId);
+
+  if (!isDiagnosticComplete(profile)) {
+    redirect("/diagnostic");
+  }
+
+  if (!hasFullSkillProgram(subscription)) {
+    return (
+      <>
+        <DashboardTopHeader
+          firstName={user.firstName}
+          displayName={user.displayName}
+          email={user.email}
+          avatarUrl={user.avatarUrl}
+          streakDays={0}
+        />
+        <DashboardPlanPaywall />
+      </>
+    );
+  }
+
+  return (
+    <DashboardGate learning={profile} subscription={subscription}>
+      <DashboardPersonalizedSection
+        cookieHeader={cookieHeader}
+        learning={profile}
+        user={user}
+        userId={userId}
+      />
+    </DashboardGate>
+  );
+}
+
 export default async function DashboardPage() {
   if (isProductionAuthMisconfigured()) {
     return <ProductionAuthConfigError />;
@@ -43,7 +103,7 @@ export default async function DashboardPage() {
   redirectIfUnauthenticated(user, "/dashboard", cookieHeader);
   const sessionUser = resolveSessionUser(user);
 
-  const userProps = {
+  const userProps: UserProps = {
     firstName: getUserFirstName(sessionUser),
     displayName: formatUserDisplayName(sessionUser),
     email: sessionUser.email,
@@ -54,11 +114,19 @@ export default async function DashboardPage() {
     <>
       <DashboardProfileSync />
       <div className="space-y-6">
-        <Suspense fallback={<DashboardHeaderSkeleton />}>
-          <DashboardStatsSection cookieHeader={cookieHeader} user={userProps} />
-        </Suspense>
-        <Suspense fallback={<DashboardContentSkeleton />}>
-          <DashboardMocksActivitySection cookieHeader={cookieHeader} />
+        <Suspense
+          fallback={
+            <>
+              <DashboardHeaderSkeleton />
+              <DashboardContentSkeleton />
+            </>
+          }
+        >
+          <DashboardBody
+            cookieHeader={cookieHeader}
+            user={userProps}
+            userId={sessionUser.id}
+          />
         </Suspense>
       </div>
     </>

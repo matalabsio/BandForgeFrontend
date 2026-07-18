@@ -6,6 +6,7 @@ import {
   shortModuleExamPath,
 } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
+import { parseSkillContext } from "@/lib/practice-submit";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
 import { resolveMockMetaServer } from "@/lib/mock-server";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ part?: string }>;
+  searchParams: Promise<{ part?: string; skill_context?: string }>;
 };
 
 export default async function TestWritingPage({ params, searchParams }: Props) {
@@ -35,6 +36,7 @@ export default async function TestWritingPage({ params, searchParams }: Props) {
     redirect(shortModuleExamPath(testNumber, "writing", { part: 1 }));
   }
   const part = partRaw as 1 | 2;
+  const skillContext = parseSkillContext(sp.skill_context);
   const mockTestId = mockTestIdForNumber(testNumber);
   const mockSlug = canonicalMockSlug(mockTestId);
   const returnPath = shortModuleExamPath(testNumber, "writing", { part });
@@ -51,6 +53,7 @@ export default async function TestWritingPage({ params, searchParams }: Props) {
         mockMeta={mockMeta}
         part={part}
         testNumber={testNumber}
+        skillContext={skillContext}
       />
     </MockLayout>
   );

@@ -9,7 +9,7 @@ import {
   CloseIcon,
   PanelIcon,
 } from "@/components/bandforge/dashboard/icons";
-import { MOBILE_BOTTOM_NAV } from "@/components/bandforge/dashboard/dashboard-nav";
+import { MOBILE_BOTTOM_NAV, isNavItemActive } from "@/components/bandforge/dashboard/dashboard-nav";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_KEY = "bf-dashboard-sidebar";
@@ -241,9 +241,7 @@ export function DashboardShell({
         aria-label="Mobile navigation"
       >
         {MOBILE_BOTTOM_NAV.map((item) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const active = isNavItemActive(pathname, item.href);
           return (
             <Link
               key={item.href}

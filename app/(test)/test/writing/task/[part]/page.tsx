@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 import { resolveAuthRedirectPath } from "@/lib/auth";
 import { M01_MOCK_TEST_ID } from "@/lib/mock-catalog";
+import { parseSkillContext } from "@/lib/practice-submit";
 import { writingTestHubPath } from "@/lib/writing-test";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { WritingPage } from "@/modules/writing/components/writing-page";
 
 type Props = {
   params: Promise<{ part: string }>;
-  searchParams: Promise<{ mock_attempt?: string; auto?: string }>;
+  searchParams: Promise<{ mock_attempt?: string; auto?: string; skill_context?: string }>;
 };
 
 export default async function WritingTaskPage({ params, searchParams }: Props) {
@@ -29,11 +30,14 @@ export default async function WritingTaskPage({ params, searchParams }: Props) {
     );
   }
 
+  const skillContext = parseSkillContext(sp.skill_context);
+
   return (
     <WritingPage
       mockTestId={M01_MOCK_TEST_ID}
       part={part}
       autoStart={sp.auto === "1" || sp.auto === "true"}
+      skillContext={skillContext}
     />
   );
 }

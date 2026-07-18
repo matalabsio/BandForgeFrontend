@@ -1,4 +1,5 @@
 import { examApiCall } from "@/lib/exam-api-call";
+import type { PracticeSkill } from "@/lib/practice-types";
 import type {
   ReadingQuestionsPayload,
   ReadingScoreReport,
@@ -13,6 +14,7 @@ export const readingApi = {
       forceNew?: boolean;
       part?: number;
       mockAttemptId?: string;
+      skillContext?: PracticeSkill;
     },
   ): Promise<StartReadingPayload> {
     const params = new URLSearchParams();
@@ -21,6 +23,9 @@ export const readingApi = {
     if (options?.part) params.set("passage", String(options.part));
     if (options?.mockAttemptId) {
       params.set("mock_attempt_id", options.mockAttemptId);
+    }
+    if (options?.skillContext) {
+      params.set("skill_context", options.skillContext);
     }
     const qs = `?${params.toString()}`;
     return examApiCall<StartReadingPayload>(

@@ -6,6 +6,8 @@ export type LearningStudyTask = {
   subtitle: string;
   module: string;
   kind: "practice" | "homework" | "goal";
+  task_type?: "watch" | "practice" | "submit";
+  hub_id?: string | null;
   duration_min: number;
   href: string;
   status: "pending" | "done" | "skipped";
@@ -27,6 +29,23 @@ export type LearningStudyWeek = {
 export type LearningStudyPlan = {
   weekly_focus: string;
   weeks: LearningStudyWeek[];
+  prep_start?: string | null;
+  exam_date?: string | null;
+  total_days?: number | null;
+  plan_tier?: string | null;
+  skill_difficulty?: Record<string, string>;
+  session_path_kind?: string | null;
+  diagnostic_attempt_id?: string | null;
+  assigned_hub_ids?: string[];
+};
+
+export type SkillHubProgress = {
+  skill: string;
+  completed_count: number;
+  total_count: number;
+  required_for_mock: number;
+  mock_unlocked: boolean;
+  mock_test_id?: string | null;
 };
 
 export type LearningRecommendation = {
@@ -89,4 +108,11 @@ export type LearningProfile = {
   refreshed_at: string | null;
   plan_week_start: string | null;
   todays_tasks: LearningStudyTask[];
+  prep_start?: string | null;
+  exam_date?: string | null;
+  total_days?: number | null;
+  current_day?: number | null;
+  days_remaining?: number | null;
+  skill_difficulty?: Record<string, string>;
+  hub_progress?: Record<string, SkillHubProgress>;
 };
