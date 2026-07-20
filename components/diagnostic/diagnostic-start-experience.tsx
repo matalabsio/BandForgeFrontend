@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
@@ -20,6 +21,8 @@ import {
   isListeningPrepComplete,
   readDiagnosticProgress,
 } from "@/lib/diagnostic-storage";
+import { getSubscription } from "@/lib/payments";
+import { hasFullSkillProgram } from "@/lib/entitlement";
 
 function WhatsAppNote() {
   return (
@@ -37,6 +40,7 @@ function WhatsAppNote() {
 export function DiagnosticStartExperience() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   // SSR-safe defaults — hydrate from localStorage after mount to avoid mismatch.
   const [canContinue, setCanContinue] = useState(false);
   const [lead, setLead] = useState<Partial<DiagnosticLead>>({});
@@ -45,6 +49,26 @@ export function DiagnosticStartExperience() {
     setLead(readDiagnosticLead() ?? {});
     setCanContinue(hasInProgressDiagnostic());
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const sub = await getSubscription();
+        if (!cancelled && hasFullSkillProgram(sub)) {
+          router.replace("/dashboard");
+          return;
+        }
+      } catch {
+        /* guest or offline — show diagnostic form */
+      } finally {
+        if (!cancelled) setCheckingAccess(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   const formValid = isLeadComplete(lead);
 
@@ -84,6 +108,11 @@ export function DiagnosticStartExperience() {
 
   return (
     <DiagnosticChrome variant="marketing">
+      {checkingAccess ? (
+        <div className="mx-auto flex min-h-[40vh] max-w-6xl items-center justify-center px-4">
+          <p className="text-sm text-[#5A6B82]">Loading your account…</p>
+        </div>
+      ) : (
       <div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-10 sm:px-6 lg:pb-16">
         <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-12 xl:gap-16">
           {/* Hero column */}
@@ -154,12 +183,16 @@ export function DiagnosticStartExperience() {
               )}
 
               <p className="mt-3.5 text-center text-[12.5px] font-light text-[#94A3B8]">
-                Free. No account required to start.
+                Free. No account required to start.{" "}
+                <Link href="/login" className="font-medium text-cyan hover:underline">
+                  Already subscribed? Sign in
+                </Link>
               </p>
             </div>
           </div>
         </div>
       </div>
+      )}
     </DiagnosticChrome>
   );
 }

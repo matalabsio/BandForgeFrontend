@@ -49,11 +49,11 @@ export function hasActivePersonalizedPlan(profile: LearningProfile): boolean {
   return (plan.weeks?.length ?? 0) > 0;
 }
 
-/** Subscribed users with a generated plan may use the dashboard even if diagnostic flags are stale. */
+/** Subscribed users always reach the dashboard; others need a completed diagnostic baseline. */
 export function canAccessPersonalizedDashboard(
   profile: LearningProfile,
   subscription: Subscription | null | undefined,
 ): boolean {
-  if (!hasFullSkillProgram(subscription)) return false;
-  return isDiagnosticComplete(profile) || hasActivePersonalizedPlan(profile);
+  if (hasFullSkillProgram(subscription)) return true;
+  return isDiagnosticComplete(profile);
 }
