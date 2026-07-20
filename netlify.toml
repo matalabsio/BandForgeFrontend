@@ -1,7 +1,0 @@
-# Netlify deploy for BandForge Next.js app.
-# Reading/listening start proxies to EC2 can take ~5s; allow headroom on API routes.
-[functions]
-  node_bundler = "esbuild"
-
-[functions."*"]
-  timeout = 26

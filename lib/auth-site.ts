@@ -1,27 +1,39 @@
-/** Canonical production origin for Google OAuth (must match EC2 GOOGLE_REDIRECT_URI host). */
+/** Canonical production origin for Google OAuth (must match Railway GOOGLE_REDIRECT_URI host). */
 export const PRODUCTION_OAUTH_ORIGIN =
   process.env.NEXT_PUBLIC_OAUTH_SITE_URL?.replace(/\/$/, "") ||
-  "https://bandforge.netlify.app";
+  "https://bandforge-web.vercel.app";
 
-/** Netlify deploy previews: `https://<hash>--bandforge.netlify.app` */
-export function isNetlifyDeployPreviewHost(hostname: string): boolean {
+/** Non-canonical hosts (Vercel previews / legacy Netlify) cannot keep OAuth cookies. */
+export function isDeployPreviewHost(hostname: string): boolean {
+  if (hostname === "bandforge-web.vercel.app") return false;
+  if (hostname.endsWith(".vercel.app")) return true;
   return /--[a-z0-9-]+\.netlify\.app$/i.test(hostname);
 }
 
-export function isNetlifyDeployPreviewOrigin(origin: string): boolean {
+/** @deprecated Use isDeployPreviewHost */
+export function isNetlifyDeployPreviewHost(hostname: string): boolean {
+  return isDeployPreviewHost(hostname);
+}
+
+export function isDeployPreviewOrigin(origin: string): boolean {
   try {
-    return isNetlifyDeployPreviewHost(new URL(origin).hostname);
+    return isDeployPreviewHost(new URL(origin).hostname);
   } catch {
     return false;
   }
 }
 
+/** @deprecated Use isDeployPreviewOrigin */
+export function isNetlifyDeployPreviewOrigin(origin: string): boolean {
+  return isDeployPreviewOrigin(origin);
+}
+
 /**
  * Google OAuth redirect_uri is fixed to production. Previews must start OAuth on
- * bandforge.netlify.app or Google returns to production without cookies on preview.
+ * bandforge-web.vercel.app or Google returns to production without cookies on preview.
  */
 export function oauthOriginForRequest(requestOrigin: string): string {
-  if (isNetlifyDeployPreviewOrigin(requestOrigin)) {
+  if (isDeployPreviewOrigin(requestOrigin)) {
     return PRODUCTION_OAUTH_ORIGIN;
   }
   return requestOrigin.replace(/\/$/, "");

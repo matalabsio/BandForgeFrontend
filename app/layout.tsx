@@ -27,7 +27,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://matalabs.io"),
+  metadataBase: new URL("https://bandforge-web.vercel.app"),
   applicationName: "BandForge",
   manifest: "/manifest.webmanifest",
   title: {

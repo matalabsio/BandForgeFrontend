@@ -24,7 +24,7 @@ export function ProductionAuthConfigError() {
           <ul className="mt-2 list-inside list-disc space-y-1 font-mono text-xs">
             <li>NEXT_PUBLIC_AUTH_ENABLED=true</li>
             <li>
-              NEXT_PUBLIC_API_URL=https://bandforge-api-production-6b30.up.railway.app
+              NEXT_PUBLIC_API_URL=https://adequate-surprise-production-0f84.up.railway.app
             </li>
             <li>NEXT_PUBLIC_PHONE_OTP_ENABLED=false</li>
             <li>ADMIN_ALLOWED_EMAIL=product@matalabs.io</li>

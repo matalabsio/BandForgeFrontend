@@ -182,7 +182,7 @@ function LoginForm() {
             href={productionLoginUrl(next)}
             className="cursor-pointer font-semibold text-teal underline-offset-2 hover:underline"
           >
-            bandforge.netlify.app
+            bandforge-web.vercel.app
           </a>
           ). Sign in there, then open the dashboard on production.
         </p>

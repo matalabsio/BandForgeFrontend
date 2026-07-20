@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const base = "https://matalabs.io";
+const base = "https://bandforge-web.vercel.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();

@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://matalabs.io/sitemap.xml",
+    sitemap: "https://bandforge-web.vercel.app/sitemap.xml",
   };
 }
