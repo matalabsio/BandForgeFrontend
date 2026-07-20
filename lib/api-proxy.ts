@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getApiUrl } from "@/lib/api";
+import { getApiUrl, isApiUrlConfiguredForVercel } from "@/lib/api";
 import type { AuthResponse } from "@/lib/auth";
 import { logAuthMetric } from "@/lib/auth-metrics";
 import { applyAuthCookiesToResponse, DEFAULT_MAX_AGE } from "@/lib/auth-cookies";
@@ -7,6 +7,23 @@ import { refreshAuthSession } from "@/lib/auth-server";
 import { accessTokenExpired } from "@/lib/jwt-expiry";
 import { isPerfEnabled, perfLog } from "@/lib/performance";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+
+function backendUnreachableDetail(): string {
+  const config = isApiUrlConfiguredForVercel();
+  if (!config.ok) {
+    return config.detail;
+  }
+  if (process.env.VERCEL === "1") {
+    return (
+      `Cannot reach the API at ${getApiUrl()}. ` +
+      "Check Railway deploy health and Networking → Target Port (must match gunicorn bind port)."
+    );
+  }
+  return (
+    "Cannot reach the API. Start the backend: " +
+    "uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+  );
+}
 
 function parseBearerToken(authorization: string | null): string | null {
   if (!authorization?.startsWith("Bearer ")) return null;
@@ -171,13 +188,7 @@ export async function proxyToBackend(
         status: 503,
       }),
     );
-    return NextResponse.json(
-      {
-        detail:
-          "Cannot reach the API. Start the backend: uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
-      },
-      { status: 503 },
-    );
+    return NextResponse.json({ detail: backendUnreachableDetail() }, { status: 503 });
   }
 
   if (res.status === 401 && hasRefreshCookie(cookieHeader)) {

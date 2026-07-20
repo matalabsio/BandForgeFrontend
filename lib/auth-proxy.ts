@@ -6,7 +6,7 @@ import {
 } from "@/lib/auth-cookies";
 import type { AuthResponse } from "@/lib/auth";
 import { refreshAuthSession } from "@/lib/auth-server";
-import { getApiUrl, type ApiErrorBody } from "@/lib/api";
+import { getApiUrl, isApiUrlConfiguredForVercel, type ApiErrorBody } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
@@ -100,12 +100,13 @@ export async function proxyAuthRequest(
       timeoutMs: 10_000,
     });
   } catch (e) {
-    const unreachable =
-      e instanceof TypeError &&
-      (e.cause as NodeJS.ErrnoException | undefined)?.code === "ECONNREFUSED";
-    const message = unreachable
-      ? "Backend API is not reachable. Start it: cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
-      : "Backend API request failed. Check that the API is running on port 8000.";
+    const config = isApiUrlConfiguredForVercel();
+    const message =
+      !config.ok
+        ? config.detail
+        : process.env.VERCEL === "1"
+          ? `Backend API is not reachable at ${getApiUrl()}. Check Railway deploy and public domain Target Port.`
+          : "Backend API is not reachable. Start it: cd backend && uvicorn app.main:app --reload --host 127.0.0.1 --port 8000";
     return NextResponse.json({ error: message }, { status: 503 });
   }
   const body = await backendRes.text();

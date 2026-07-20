@@ -11,6 +11,32 @@ function isLocalhostUrl(url: string): boolean {
   }
 }
 
+/** Warn/fail fast when Vercel deploys without a reachable Railway API URL. */
+export function isApiUrlConfiguredForVercel(): { ok: true } | { ok: false; detail: string } {
+  if (process.env.VERCEL !== "1") {
+    return { ok: true };
+  }
+
+  const publicUrl = process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
+  if (!publicUrl) {
+    return {
+      ok: false,
+      detail:
+        "NEXT_PUBLIC_API_URL is missing on Vercel. Set it for Production and Preview, then redeploy.",
+    };
+  }
+
+  if (isLocalhostUrl(publicUrl)) {
+    return {
+      ok: false,
+      detail:
+        "NEXT_PUBLIC_API_URL points at localhost on Vercel. Use your Railway API URL instead.",
+    };
+  }
+
+  return { ok: true };
+}
+
 /** Backend base URL — single resolver for BFF proxies and server fetches. */
 export function getApiUrl(): string {
   const publicUrl = process.env.NEXT_PUBLIC_API_URL
@@ -27,6 +53,15 @@ export function getApiUrl(): string {
   }
 
   return apiUrl || publicUrl || "http://127.0.0.1:8000";
+}
+
+/** Same as getApiUrl but throws on misconfigured Vercel deploys (server routes). */
+export function requireApiUrl(): string {
+  const config = isApiUrlConfiguredForVercel();
+  if (!config.ok) {
+    throw new Error(config.detail);
+  }
+  return getApiUrl();
 }
 
 export type ApiErrorBody = {

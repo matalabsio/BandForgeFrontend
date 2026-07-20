@@ -3,8 +3,15 @@ import { withSerwist } from "@serwist/turbopack";
 
 if (process.env.VERCEL === "1" && process.env.NEXT_PUBLIC_AUTH_ENABLED !== "true") {
   console.warn(
-    "[bandforge-web] NEXT_PUBLIC_AUTH_ENABLED is not true — production will run in guest mode. " +
-      "Set NEXT_PUBLIC_AUTH_ENABLED=true in Vercel Production env and redeploy.",
+    "[bandforge-web] NEXT_PUBLIC_AUTH_ENABLED is not true — deploy will run in guest mode. " +
+      "Set NEXT_PUBLIC_AUTH_ENABLED=true in Vercel Production and Preview env, then redeploy.",
+  );
+}
+
+if (process.env.VERCEL === "1" && !process.env.NEXT_PUBLIC_API_URL) {
+  console.warn(
+    "[bandforge-web] NEXT_PUBLIC_API_URL is missing — BFF cannot reach Railway API. " +
+      "Set it for Production and Preview in Vercel env, then redeploy.",
   );
 }
 
