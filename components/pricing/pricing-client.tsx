@@ -274,10 +274,15 @@ export function PricingClient() {
         >
           <p className="font-semibold">Checkout is not available right now</p>
           <p className="mt-1 text-[13px] leading-relaxed text-amber-900/90">
-            Razorpay API credentials failed validation. Regenerate matching{" "}
-            <span className="font-medium">Test mode</span> keys in Razorpay Dashboard →
-            Settings → API Keys, update <code className="text-xs">backend/.env</code>,
-            then restart the backend. Plans are shown below for reference.
+            The API returned <code className="text-xs">payments_enabled: false</code>.
+            On production this means{" "}
+            <span className="font-medium">Railway → Variables</span> need{" "}
+            <code className="text-xs">RAZORPAY_ENABLED=true</code> plus matching{" "}
+            <span className="font-medium">Test mode</span>{" "}
+            <code className="text-xs">RAZORPAY_KEY_ID</code> /{" "}
+            <code className="text-xs">RAZORPAY_KEY_SECRET</code>, then redeploy.
+            For local dev, set the same in <code className="text-xs">backend/.env</code>{" "}
+            and restart uvicorn. Plans are shown below for reference.
           </p>
         </div>
       ) : null}

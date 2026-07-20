@@ -36,6 +36,7 @@ import {
 import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
 import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
+import { hasFullSkillProgram } from "@/lib/entitlement";
 import {
   createOrder,
   getPlans,
@@ -153,6 +154,7 @@ type StatusModal =
 export function DiagnosticPlanRevealExperience() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const [snapshot, setSnapshot] = useState<DiagnosticResultsSnapshot | null>(null);
   const [hasSubscription, setHasSubscription] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -205,7 +207,12 @@ export function DiagnosticPlanRevealExperience() {
         const program = plans.find((p) => p.slug === FULL_SKILL_PROGRAM_SLUG);
         if (program) setPlanPrice(formatPlanPriceInr(program.amount));
         setPaymentsEnabled(enabled);
-        setHasSubscription(Boolean(sub.is_active));
+        const subscribed = hasFullSkillProgram(sub);
+        setHasSubscription(subscribed);
+        if (subscribed) {
+          router.replace("/dashboard");
+          return;
+        }
 
         if (session) {
           const user = await getMe().catch(() => null);
@@ -217,11 +224,12 @@ export function DiagnosticPlanRevealExperience() {
         }
       } finally {
         setLoading(false);
+        setCheckingAccess(false);
       }
     })();
     // Mount-only bootstrap — do not depend on `lead`/`snapshot` or setSnapshot
     // retriggers this effect and exceeds max update depth.
-  }, []);
+  }, [router]);
 
   const handleCheckout = useCallback(async () => {
     if (checkoutBusy || hasSubscription) return;
@@ -253,8 +261,8 @@ export function DiagnosticPlanRevealExperience() {
               payment: response.razorpay_payment_id,
             });
             const result = await verifyPayment(response);
-            if (result.subscription.is_active) {
-              router.push("/checkout/success");
+            if (hasFullSkillProgram(result.subscription)) {
+              router.replace("/dashboard");
               return;
             }
             setOverlay(null);
@@ -313,7 +321,7 @@ export function DiagnosticPlanRevealExperience() {
   return (
     <DiagnosticChrome variant="report">
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
-        {loading ? (
+        {loading || checkingAccess ? (
           <PlanRevealSkeleton />
         ) : !snapshot || !lead || !planPreview ? (
           <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-border-soft bg-white p-8 text-center shadow-sm">

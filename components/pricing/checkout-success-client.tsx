@@ -29,7 +29,9 @@ export function CheckoutSuccessClient() {
         setSubscription(sub);
         if (!sub.is_active) {
           router.replace("/pricing");
+          return;
         }
+        router.replace("/dashboard");
       })
       .catch(() => {
         if (active) router.replace("/pricing");

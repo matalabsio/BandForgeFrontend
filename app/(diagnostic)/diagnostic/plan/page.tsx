@@ -1,11 +1,27 @@
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { DiagnosticPlanRevealExperience } from "@/components/diagnostic/diagnostic-plan-reveal-experience";
+import { hasFullSkillProgram } from "@/lib/entitlement";
+import { fetchSubscription } from "@/lib/payments-server";
+import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 
 export const metadata: Metadata = {
   title: "Your Study Plan · BandForge",
   robots: { index: false, follow: false },
 };
 
-export default function DiagnosticPlanRevealPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DiagnosticPlanRevealPage() {
+  const cookieHeader = await getCachedCookieHeader();
+  const user = await getCachedServerSession(cookieHeader);
+
+  if (user) {
+    const subscription = await fetchSubscription(cookieHeader);
+    if (hasFullSkillProgram(subscription)) {
+      redirect("/dashboard");
+    }
+  }
+
   return <DiagnosticPlanRevealExperience />;
 }
