@@ -2,16 +2,16 @@ function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, "");
 }
 
-/** Retired Railway service — older Vercel builds still bake this host. */
-const LEGACY_RAILWAY_API_HOST = "bandforge-api-production-6b30.up.railway.app";
-/** Current Railway API (adequate-surprise). Override with API_URL on Vercel (no redeploy). */
-export const DEFAULT_RAILWAY_API_URL =
-  "https://adequate-surprise-production-0f84.up.railway.app";
+/** Retired Railway hosts — older Vercel builds may still bake these. */
+const LEGACY_RAILWAY_API_HOSTS = new Set([
+  "bandforge-api-production-6b30.up.railway.app",
+  "adequate-surprise-production-0f84.up.railway.app",
+]);
 
 function normalizeApiUrl(url: string): string {
   if (!url) return url;
   try {
-    if (new URL(url).hostname === LEGACY_RAILWAY_API_HOST) {
+    if (LEGACY_RAILWAY_API_HOSTS.has(new URL(url).hostname)) {
       return DEFAULT_RAILWAY_API_URL;
     }
   } catch {
