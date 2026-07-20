@@ -1,10 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Download } from "lucide-react";
 
-import { type Subscription, getSubscription } from "@/lib/payments";
+import { getMe } from "@/lib/auth";
+import {
+  type PaymentHistoryItem,
+  type Subscription,
+  clearCheckoutReceiptContext,
+  getPaymentHistory,
+  getSubscription,
+  readCheckoutReceiptContext,
+} from "@/lib/payments";
+
+const REDIRECT_DELAY_S = 12;
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -15,34 +25,181 @@ function formatDate(iso: string | null): string {
   });
 }
 
+function formatAmount(amount: number, currency: string): string {
+  const major = amount / 100;
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: currency || "INR",
+    minimumFractionDigits: 0,
+  }).format(major);
+}
+
+function buildReceiptText(
+  sub: Subscription,
+  payment: PaymentHistoryItem | null,
+  userName: string,
+  userEmail: string,
+): string {
+  const now = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+  const lines = [
+    "════════════════════════════════════════",
+    "           BANDFORGE — PAYMENT RECEIPT",
+    "════════════════════════════════════════",
+    "",
+    `Date:            ${now}`,
+    `Student:         ${userName}`,
+    `Email:           ${userEmail}`,
+    "",
+    "────────────────────────────────────────",
+    "  Plan Details",
+    "────────────────────────────────────────",
+    `Plan:            ${sub.plan_name ?? "Full Skill Program"}`,
+    `Status:          ${sub.is_active ? "Active" : "Inactive"}`,
+    `Valid from:      ${formatDate(sub.starts_at)}`,
+    `Valid until:     ${formatDate(sub.expires_at)}`,
+    "",
+  ];
+
+  if (payment) {
+    lines.push(
+      "────────────────────────────────────────",
+      "  Payment Details",
+      "────────────────────────────────────────",
+      `Amount:          ${formatAmount(payment.amount, payment.currency)}`,
+      `Payment ID:      ${payment.razorpay_payment_id ?? "—"}`,
+      `Payment status:  ${payment.status}`,
+      `Paid on:         ${formatDate(payment.created_at)}`,
+      "",
+    );
+  }
+
+  lines.push(
+    "════════════════════════════════════════",
+    "  Thank you for choosing BandForge!",
+    "  Support: support@matalabs.io",
+    "════════════════════════════════════════",
+  );
+
+  return lines.join("\n");
+}
+
+function downloadReceipt(content: string, paymentId: string | null) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `BandForge_Receipt_${paymentId ?? new Date().toISOString().slice(0, 10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export function CheckoutSuccessClient() {
   const router = useRouter();
-  // Read-only: subscription was granted by POST /verify before navigation here.
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [payment, setPayment] = useState<PaymentHistoryItem | null>(null);
+  const [userName, setUserName] = useState("Student");
+  const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(REDIRECT_DELAY_S);
+  const [receiptDownloaded, setReceiptDownloaded] = useState(false);
+  const downloadedRef = useRef(false);
+
+  const doDownloadReceipt = useCallback(
+    (
+      sub: Subscription,
+      pay: PaymentHistoryItem | null,
+      name: string,
+      email: string,
+    ) => {
+      if (downloadedRef.current) return;
+      downloadedRef.current = true;
+      setReceiptDownloaded(true);
+      const text = buildReceiptText(sub, pay, name, email);
+      downloadReceipt(text, pay?.razorpay_payment_id ?? null);
+      clearCheckoutReceiptContext();
+    },
+    [],
+  );
 
   useEffect(() => {
     let active = true;
-    getSubscription()
-      .then((sub) => {
+
+    (async () => {
+      try {
+        const receiptCtx = readCheckoutReceiptContext();
+        const [sub, history, me] = await Promise.all([
+          getSubscription(),
+          getPaymentHistory().catch(() => ({ payments: [] })),
+          getMe().catch(() => null),
+        ]);
+
         if (!active) return;
+
+        const name = me?.full_name ?? "Student";
+        const email = me?.email ?? "";
+        setUserName(name);
+        setUserEmail(email);
+
         setSubscription(sub);
+
+        const latestPaid =
+          history.payments.find(
+            (p) => p.status === "paid" || p.status === "captured",
+          ) ??
+          (receiptCtx
+            ? ({
+                id: receiptCtx.order_id,
+                plan_name: receiptCtx.plan_name ?? sub.plan_name,
+                amount: receiptCtx.amount ?? 0,
+                currency: receiptCtx.currency ?? "INR",
+                status: "paid",
+                created_at: new Date().toISOString(),
+                razorpay_payment_id: receiptCtx.payment_id,
+              } satisfies PaymentHistoryItem)
+            : null);
+
+        if (latestPaid) setPayment(latestPaid);
+
         if (!sub.is_active) {
           router.replace("/pricing");
           return;
         }
-        router.replace("/dashboard");
-      })
-      .catch(() => {
+
+        // Auto-download receipt once data is ready
+        window.setTimeout(() => {
+          if (active) doDownloadReceipt(sub, latestPaid, name, email);
+        }, 800);
+      } catch {
         if (active) router.replace("/pricing");
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    })();
+
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, doDownloadReceipt]);
+
+  // Countdown timer → redirect to dashboard
+  useEffect(() => {
+    if (loading || !subscription?.is_active) return;
+
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          router.replace("/dashboard");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [loading, subscription, router]);
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 text-center">
@@ -71,25 +228,70 @@ export function CheckoutSuccessClient() {
         <Row label="Plan" value={loading ? "—" : (subscription?.plan_name ?? "—")} />
         <Row label="Status" value={subscription?.is_active ? "Active" : "—"} pill />
         <Row label="Valid until" value={formatDate(subscription?.expires_at ?? null)} />
+        {payment ? (
+          <>
+            <Row
+              label="Amount"
+              value={formatAmount(payment.amount, payment.currency)}
+            />
+            <Row
+              label="Payment ID"
+              value={payment.razorpay_payment_id ?? "—"}
+              mono
+            />
+          </>
+        ) : null}
       </div>
 
-      <div className="mt-7 flex w-full flex-col gap-2.5 sm:flex-row">
-        <Link
-          href="/dashboard"
-          className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep"
+      {/* Receipt download + manual re-download */}
+      <div className="mt-5 flex items-center gap-3">
+        {receiptDownloaded ? (
+          <span className="text-[13px] text-success font-medium">
+            Receipt downloaded
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => {
+            if (subscription) {
+              downloadedRef.current = false;
+              doDownloadReceipt(subscription, payment, userName, userEmail);
+            }
+          }}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border-soft bg-white px-3 py-1.5 text-xs font-semibold text-navy transition-colors hover:bg-surface-alt disabled:opacity-50"
         >
-          Go to dashboard
-        </Link>
-        <Link
-          href="/profile/billing"
-          className="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-border-soft bg-white px-4 text-sm font-semibold text-navy transition-colors duration-200 hover:bg-surface-alt"
-        >
-          View payment history
-        </Link>
+          <Download className="size-3.5" />
+          Download receipt
+        </button>
       </div>
 
-      <p className="mt-4 font-mono text-[11px] text-muted-light">
-        Receipt saved to your account.
+      {/* Auto-redirect countdown */}
+      <div className="mt-6 w-full">
+        <div className="mb-2 flex items-center justify-between text-[12px] text-muted">
+          <span>Redirecting to dashboard</span>
+          <span className="font-mono">{countdown}s</span>
+        </div>
+        <div className="h-1 w-full overflow-hidden rounded-full bg-border-soft">
+          <div
+            className="h-full rounded-full bg-navy transition-all duration-1000 ease-linear"
+            style={{
+              width: `${((REDIRECT_DELAY_S - countdown) / REDIRECT_DELAY_S) * 100}%`,
+            }}
+          />
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => router.replace("/dashboard")}
+        className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep"
+      >
+        Go to dashboard now
+      </button>
+
+      <p className="mt-3 font-mono text-[11px] text-muted-light">
+        Receipt auto-downloaded. You can re-download from payment history anytime.
       </p>
     </div>
   );
@@ -99,10 +301,12 @@ function Row({
   label,
   value,
   pill,
+  mono,
 }: {
   label: string;
   value: string;
   pill?: boolean;
+  mono?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between border-b border-border-soft py-2.5 last:border-0">
@@ -112,7 +316,11 @@ function Row({
           {value}
         </span>
       ) : (
-        <span className="font-mono text-[13px] font-semibold text-navy">{value}</span>
+        <span
+          className={`text-[13px] font-semibold text-navy ${mono ? "font-mono text-[11px]" : ""}`}
+        >
+          {value}
+        </span>
       )}
     </div>
   );

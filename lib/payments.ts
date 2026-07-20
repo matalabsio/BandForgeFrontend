@@ -53,6 +53,45 @@ export type RazorpayHandlerResponse = {
   razorpay_signature: string;
 };
 
+export type CheckoutReceiptContext = {
+  order_id: string;
+  payment_id: string;
+  plan_name?: string | null;
+  amount?: number;
+  currency?: string;
+};
+
+const CHECKOUT_RECEIPT_KEY = "bf_checkout_receipt";
+
+export function saveCheckoutReceiptContext(ctx: CheckoutReceiptContext): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(CHECKOUT_RECEIPT_KEY, JSON.stringify(ctx));
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+export function readCheckoutReceiptContext(): CheckoutReceiptContext | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(CHECKOUT_RECEIPT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as CheckoutReceiptContext;
+  } catch {
+    return null;
+  }
+}
+
+export function clearCheckoutReceiptContext(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(CHECKOUT_RECEIPT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 async function paymentsCall<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/payments${path}`, {
     ...init,

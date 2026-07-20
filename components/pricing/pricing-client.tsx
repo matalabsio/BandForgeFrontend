@@ -13,6 +13,7 @@ import {
   getSubscription,
   openRazorpayCheckout,
   paymentTraceLog,
+  saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
 import { PlanCard } from "@/components/pricing/plan-card";
@@ -166,6 +167,13 @@ export function PricingClient() {
             });
             const result = await verifyPayment(response);
             if (result.subscription.is_active) {
+              saveCheckoutReceiptContext({
+                order_id: orderId,
+                payment_id: paymentId,
+                plan_name: order.plan_name,
+                amount: order.amount,
+                currency: order.currency,
+              });
               router.push("/checkout/success");
               return;
             }

@@ -43,6 +43,7 @@ import {
   getSubscription,
   openRazorpayCheckout,
   paymentTraceLog,
+  saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
 function PlanRevealSkeleton() {
@@ -262,7 +263,14 @@ export function DiagnosticPlanRevealExperience() {
             });
             const result = await verifyPayment(response);
             if (hasFullSkillProgram(result.subscription)) {
-              router.replace("/dashboard");
+              saveCheckoutReceiptContext({
+                order_id: response.razorpay_order_id,
+                payment_id: response.razorpay_payment_id,
+                plan_name: order.plan_name,
+                amount: order.amount,
+                currency: order.currency,
+              });
+              router.replace("/checkout/success");
               return;
             }
             setOverlay(null);
