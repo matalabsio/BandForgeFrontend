@@ -6,6 +6,8 @@ export function ProductionAuthConfigError() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL
     ? "set"
     : "(not set)";
+  const authLooksLikeApiUrl =
+    authFlag.startsWith("http://") || authFlag.startsWith("https://");
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-surface px-4">
@@ -19,6 +21,15 @@ export function ProductionAuthConfigError() {
           then <strong>Redeploy</strong> (required —{" "}
           <code className="text-sm">NEXT_PUBLIC_*</code> is baked at build time).
         </p>
+        {authLooksLikeApiUrl ? (
+          <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left text-sm text-ink/90">
+            <strong>Wrong value detected:</strong>{" "}
+            <code className="text-xs">NEXT_PUBLIC_AUTH_ENABLED</code> is set to your
+            API URL. It must be exactly{" "}
+            <code className="text-xs">true</code>. Put the Railway URL in{" "}
+            <code className="text-xs">NEXT_PUBLIC_API_URL</code> instead.
+          </p>
+        ) : null}
         <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-left text-sm text-ink/80">
           <p className="font-medium text-ink">Required (Production + Preview on Vercel)</p>
           <ul className="mt-2 list-inside list-disc space-y-1 font-mono text-xs">

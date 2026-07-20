@@ -1,10 +1,17 @@
 import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
 
-if (process.env.VERCEL === "1" && process.env.NEXT_PUBLIC_AUTH_ENABLED !== "true") {
+const authFlag = process.env.NEXT_PUBLIC_AUTH_ENABLED?.trim() ?? "";
+const authMisconfiguredAsUrl =
+  authFlag.startsWith("http://") || authFlag.startsWith("https://");
+
+if (process.env.VERCEL === "1" && authFlag !== "true") {
   console.warn(
-    "[bandforge-web] NEXT_PUBLIC_AUTH_ENABLED is not true — deploy will run in guest mode. " +
-      "Set NEXT_PUBLIC_AUTH_ENABLED=true in Vercel Production and Preview env, then redeploy.",
+    authMisconfiguredAsUrl
+      ? "[bandforge-web] NEXT_PUBLIC_AUTH_ENABLED looks like an API URL — set it to true " +
+          "and put the Railway URL in NEXT_PUBLIC_API_URL instead."
+      : "[bandforge-web] NEXT_PUBLIC_AUTH_ENABLED is not true — deploy will run in guest mode. " +
+          "Set NEXT_PUBLIC_AUTH_ENABLED=true in Vercel Production and Preview env, then redeploy.",
   );
 }
 
