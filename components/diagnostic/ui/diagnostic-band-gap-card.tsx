@@ -1,24 +1,22 @@
 import { ArrowRight } from "lucide-react";
 import { BandGapTable } from "@/components/bandforge/dashboard/band-gap-table";
 import {
+  bandGapSummary,
   skillStatuses,
   type SkillBands,
 } from "@/lib/diagnostic-performance";
 
 type Props = {
   bands: SkillBands;
-  currentBand: number;
   targetBand: number;
-  gap: number;
 };
 
-export function DiagnosticBandGapCard({
-  bands,
-  currentBand,
-  targetBand,
-  gap,
-}: Props) {
+export function DiagnosticBandGapCard({ bands, targetBand }: Props) {
   const statuses = skillStatuses(bands, targetBand);
+  const { currentBand, gap, scoredCount, isPartial } = bandGapSummary(
+    bands,
+    targetBand,
+  );
 
   return (
     <div className="rounded-2xl border border-[#E8EDF3] bg-white p-4 shadow-[0_2px_12px_rgba(13,31,60,0.05)] sm:rounded-[18px] sm:p-[22px] sm:px-[26px]">
@@ -28,7 +26,7 @@ export function DiagnosticBandGapCard({
         </span>
         <span className="flex items-center gap-1.5 text-xs font-semibold text-[#0D1F3C]">
           <span className="font-mono">
-            {currentBand > 0 ? currentBand.toFixed(1) : "—"}
+            {currentBand != null ? currentBand.toFixed(1) : "—"}
           </span>
           <ArrowRight className="size-3.5 text-[#94A3B8]" strokeWidth={2} />
           <span className="font-mono text-[#0097A7]">{targetBand.toFixed(1)}</span>
@@ -46,7 +44,7 @@ export function DiagnosticBandGapCard({
                 Now
               </p>
               <p className="font-mono text-[32px] leading-none font-medium tracking-[-0.02em] text-[#0D1F3C]">
-                {currentBand > 0 ? currentBand.toFixed(1) : "—"}
+                {currentBand != null ? currentBand.toFixed(1) : "—"}
               </p>
             </div>
             <ArrowRight className="size-5 shrink-0 text-[#94A3B8]" strokeWidth={2} />
@@ -59,16 +57,21 @@ export function DiagnosticBandGapCard({
               </p>
             </div>
           </div>
-          <div className="mt-[15px]">
-            {gap > 0 ? (
+          <div className="mt-[15px] space-y-2">
+            {gap > 0 && currentBand != null ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FBEFD6] px-3 py-1.5 text-[12.5px] font-semibold text-[#9A6B12]">
                 +{gap.toFixed(1)} band overall to close
               </span>
-            ) : (
+            ) : currentBand != null ? (
               <span className="inline-flex items-center rounded-full bg-[#E6F7FA] px-3 py-1.5 text-[12.5px] font-semibold text-[#0097A7]">
                 On target
               </span>
-            )}
+            ) : null}
+            {isPartial ? (
+              <p className="text-[11px] leading-snug text-[#94A3B8]">
+                Based on {scoredCount} of 4 skills — pending scores excluded
+              </p>
+            ) : null}
           </div>
         </div>
 

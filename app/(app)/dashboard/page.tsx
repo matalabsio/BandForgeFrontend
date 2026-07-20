@@ -12,10 +12,14 @@ import {
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
-import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
+import {
+  canAccessPersonalizedDashboard,
+  hasFullSkillProgram,
+} from "@/lib/entitlement";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
+  refreshLearningProfileServer,
 } from "@/lib/learning-server";
 import { fetchSubscription } from "@/lib/payments-server";
 import {
@@ -56,13 +60,21 @@ type DashboardBodyProps = {
 };
 
 async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps) {
-  const [learning, subscription] = await Promise.all([
-    fetchLearningProfile(cookieHeader),
-    fetchSubscription(cookieHeader),
-  ]);
-  const profile = learning ?? emptyLearningProfile(userId);
+  const subscription = await fetchSubscription(cookieHeader);
+  let learning = await fetchLearningProfile(cookieHeader);
+  let profile = learning ?? emptyLearningProfile(userId);
 
-  if (!isDiagnosticComplete(profile)) {
+  if (
+    hasFullSkillProgram(subscription) &&
+    !canAccessPersonalizedDashboard(profile, subscription)
+  ) {
+    const refreshed = await refreshLearningProfileServer(cookieHeader);
+    if (refreshed) {
+      profile = refreshed;
+    }
+  }
+
+  if (!canAccessPersonalizedDashboard(profile, subscription)) {
     redirect("/diagnostic");
   }
 

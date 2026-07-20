@@ -139,6 +139,48 @@ export function overallBandGap(
   return Math.max(0, target - current);
 }
 
+const SKILL_ORDER: SkillKey[] = ["listening", "reading", "writing", "speaking"];
+
+/** Count skills with a scored band (> 0). */
+export function scoredSkillCount(bands: SkillBands): number {
+  return SKILL_ORDER.filter((key) => {
+    const band = bands[key];
+    return band != null && band > 0;
+  }).length;
+}
+
+/** IELTS-style half-band average from scored skills only (matches backend aggregate). */
+export function aggregateFromSkillBands(bands: SkillBands): number | null {
+  const scored = SKILL_ORDER.map((key) => bands[key]).filter(
+    (band): band is number => band != null && band > 0,
+  );
+  if (scored.length === 0) return null;
+  const avg = scored.reduce((sum, band) => sum + band, 0) / scored.length;
+  return Math.round(avg * 2) / 2;
+}
+
+export type BandGapSummary = {
+  currentBand: number | null;
+  gap: number;
+  scoredCount: number;
+  isPartial: boolean;
+};
+
+/** Derive overall band + gap from the same per-skill rows shown in the UI. */
+export function bandGapSummary(
+  bands: SkillBands,
+  targetBand: number,
+): BandGapSummary {
+  const scoredCount = scoredSkillCount(bands);
+  const currentBand = aggregateFromSkillBands(bands);
+  return {
+    currentBand,
+    gap: overallBandGap(currentBand, targetBand),
+    scoredCount,
+    isPartial: scoredCount > 0 && scoredCount < SKILL_ORDER.length,
+  };
+}
+
 export function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";

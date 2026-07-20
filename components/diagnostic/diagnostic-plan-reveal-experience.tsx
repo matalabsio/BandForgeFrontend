@@ -27,7 +27,6 @@ import {
 } from "@/lib/diagnostic-plan-content";
 import {
   initialsFromName,
-  overallBandGap,
   type SkillBands,
 } from "@/lib/diagnostic-performance";
 import {
@@ -45,8 +44,6 @@ import {
   paymentTraceLog,
   verifyPayment,
 } from "@/lib/payments";
-import { aggregateBand } from "@/lib/diagnostic-scoring";
-
 function PlanRevealSkeleton() {
   return (
     <div className="animate-pulse space-y-6">
@@ -185,22 +182,6 @@ export function DiagnosticPlanRevealExperience() {
     }),
     [snapshot, effectiveWritingBand, pendingHuman],
   );
-
-  const currentBand = useMemo(() => {
-    if (!snapshot) return 0;
-    if (snapshot.aggregate_band != null && snapshot.aggregate_band > 0) {
-      return snapshot.aggregate_band;
-    }
-    const partial = aggregateBand(
-      snapshot.listening_band,
-      snapshot.reading_band,
-      effectiveWritingBand,
-      pendingHuman ? null : snapshot.speaking_band,
-    );
-    return partial ?? 0;
-  }, [snapshot, effectiveWritingBand, pendingHuman]);
-
-  const gap = overallBandGap(currentBand, targetBand);
 
   const planPreview = useMemo(() => {
     if (!examDate) return null;
@@ -367,12 +348,7 @@ export function DiagnosticPlanRevealExperience() {
               daysToTest={planPreview.daysRemaining}
             />
 
-            <DiagnosticBandGapCard
-              bands={skillBands}
-              currentBand={currentBand}
-              targetBand={targetBand}
-              gap={gap}
-            />
+            <DiagnosticBandGapCard bands={skillBands} targetBand={targetBand} />
 
             <DiagnosticSkillTags difficulty={planPreview.difficulty} />
 

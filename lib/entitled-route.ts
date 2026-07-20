@@ -1,4 +1,5 @@
 import {
+  canAccessPersonalizedDashboard,
   hasFullSkillProgram,
   isDiagnosticComplete,
 } from "@/lib/entitlement";
@@ -19,12 +20,12 @@ export function resolveEntitledRoute({
   learning,
   subscription,
 }: Args): EntitledRouteResult {
-  if (!isDiagnosticComplete(learning)) {
-    return { kind: "redirect", path: "/diagnostic" };
-  }
-
   if (!hasFullSkillProgram(subscription)) {
     return { kind: "paywall" };
+  }
+
+  if (!canAccessPersonalizedDashboard(learning, subscription)) {
+    return { kind: "redirect", path: "/diagnostic" };
   }
 
   return { kind: "ok", profile: learning };

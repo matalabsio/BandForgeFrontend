@@ -39,8 +39,6 @@ function toSkillBands(diagnostic: DiagnosticLatest): SkillBands {
 export function DiagnosticReportExperience({ diagnostic, targetBand }: Props) {
   const bands = toSkillBands(diagnostic);
   const statuses = skillStatuses(bands, targetBand);
-  const currentBand = diagnostic.aggregate_band ?? 0;
-  const gap = Math.max(0, targetBand - (currentBand > 0 ? currentBand : 0));
 
   return (
     <div className="space-y-8">
@@ -59,12 +57,7 @@ export function DiagnosticReportExperience({ diagnostic, targetBand }: Props) {
         </p>
       </header>
 
-      <DiagnosticBandGapCard
-        bands={bands}
-        currentBand={currentBand}
-        targetBand={targetBand}
-        gap={gap}
-      />
+      <DiagnosticBandGapCard bands={bands} targetBand={targetBand} />
 
       <section>
         <p className="mb-3 font-mono text-xs tracking-[0.1em] text-muted-light uppercase">
