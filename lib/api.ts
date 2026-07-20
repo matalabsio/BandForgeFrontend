@@ -2,6 +2,24 @@ function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, "");
 }
 
+/** Retired Railway service — older Vercel builds still bake this host. */
+const LEGACY_RAILWAY_API_HOST = "bandforge-api-production-6b30.up.railway.app";
+/** Current Railway API (adequate-surprise). Override with API_URL on Vercel (no redeploy). */
+export const DEFAULT_RAILWAY_API_URL =
+  "https://adequate-surprise-production-0f84.up.railway.app";
+
+function normalizeApiUrl(url: string): string {
+  if (!url) return url;
+  try {
+    if (new URL(url).hostname === LEGACY_RAILWAY_API_HOST) {
+      return DEFAULT_RAILWAY_API_URL;
+    }
+  } catch {
+    /* ignore invalid URL */
+  }
+  return stripTrailingSlash(url);
+}
+
 function isLocalhostUrl(url: string): boolean {
   try {
     const host = new URL(url).hostname;
@@ -17,20 +35,25 @@ export function isApiUrlConfiguredForVercel(): { ok: true } | { ok: false; detai
     return { ok: true };
   }
 
-  const publicUrl = process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
-  if (!publicUrl) {
+  const resolved = normalizeApiUrl(
+    process.env.API_URL?.trim() ||
+      process.env.NEXT_PUBLIC_API_URL?.trim() ||
+      "",
+  );
+
+  if (!resolved) {
     return {
       ok: false,
       detail:
-        "NEXT_PUBLIC_API_URL is missing on Vercel. Set it for Production and Preview, then redeploy.",
+        "API_URL / NEXT_PUBLIC_API_URL is missing on Vercel. Set API_URL to your Railway URL (works without redeploy).",
     };
   }
 
-  if (isLocalhostUrl(publicUrl)) {
+  if (isLocalhostUrl(resolved)) {
     return {
       ok: false,
       detail:
-        "NEXT_PUBLIC_API_URL points at localhost on Vercel. Use your Railway API URL instead.",
+        "API URL points at localhost on Vercel. Set API_URL to your Railway public URL.",
     };
   }
 
@@ -47,12 +70,13 @@ export function getApiUrl(): string {
     : "";
 
   if (process.env.VERCEL === "1") {
-    if (publicUrl) return publicUrl;
-    if (apiUrl && !isLocalhostUrl(apiUrl)) return apiUrl;
-    return publicUrl || "http://127.0.0.1:8000";
+    // API_URL is runtime on Vercel — prefer it over baked NEXT_PUBLIC_* (fixes without redeploy).
+    if (apiUrl && !isLocalhostUrl(apiUrl)) return normalizeApiUrl(apiUrl);
+    if (publicUrl) return normalizeApiUrl(publicUrl);
+    return normalizeApiUrl(DEFAULT_RAILWAY_API_URL);
   }
 
-  return apiUrl || publicUrl || "http://127.0.0.1:8000";
+  return normalizeApiUrl(apiUrl || publicUrl || "http://127.0.0.1:8000");
 }
 
 /** Same as getApiUrl but throws on misconfigured Vercel deploys (server routes). */

@@ -1,4 +1,5 @@
 import {
+  DEFAULT_RAILWAY_API_URL,
   getApiUrl,
   parseApiError,
   parseJsonResponse,
@@ -82,10 +83,16 @@ export async function fetchGoogleAuthorizationUrl(
     authorization_url?: string;
   } & ApiErrorBody>(res);
   if (!res.ok || !body.authorization_url) {
+    const detail = parseApiError(body, res.status);
+    if (detail.includes("Application not found")) {
+      throw new Error(
+        `Railway API not found at ${getApiUrl()}. In Vercel set API_URL=${DEFAULT_RAILWAY_API_URL} (Production + Preview).`,
+      );
+    }
     throw new Error(
       body.authorization_url
         ? "Google sign-in is not available."
-        : parseApiError(body, res.status),
+        : detail,
     );
   }
   return body.authorization_url;
