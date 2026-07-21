@@ -21,9 +21,14 @@ import { navigateAfterMockStart } from "@/lib/mock-exam-nav";
 import { formatMockStartError } from "@/lib/api";
 import { mockAttemptStorageKey } from "@/modules/mock/lib/mock-session-storage";
 import {
-  mockApi,
-  type MockAttemptSummary,
-} from "@/modules/mock/services/mock-api";
+  hasPendingMockResults,
+  moduleResultStatusLabel,
+  overallResultPresentation,
+  shouldPollMockResults,
+} from "@/modules/mock/lib/mock-result-presentation";
+import { mockApi, type MockAttemptSummary } from "@/modules/mock/services/mock-api";
+
+const POLL_MS = 30_000;
 
 type Props = {
   mockSlug: string;
@@ -32,7 +37,7 @@ type Props = {
 };
 
 function bandLabel(band: number | null | undefined): string {
-  if (band == null || band <= 0) return "—";
+  if (band == null) return "—";
   return band.toFixed(1);
 }
 
@@ -86,15 +91,17 @@ const MODULE_META = [
 function ModuleScoreCard({
   label,
   band,
-  hint,
   Icon,
   accent,
+  status,
+  statusFailed = false,
 }: {
   label: string;
   band: string;
-  hint?: string;
   Icon: typeof HeadphonesIcon;
   accent: string;
+  status: string;
+  statusFailed?: boolean;
 }) {
   return (
     <div
@@ -111,9 +118,19 @@ function ModuleScoreCard({
       <p className="mt-3 font-display text-3xl font-bold tabular-nums sm:text-4xl">
         {band}
       </p>
-      {hint ? (
-        <p className="mt-1 text-[11px] font-medium opacity-70">{hint}</p>
-      ) : null}
+      <p
+        className={`mt-1 flex items-center gap-1.5 text-[11px] font-semibold ${
+          statusFailed ? "text-red-700" : "opacity-75"
+        }`}
+      >
+        <span
+          className={`size-1.5 shrink-0 rounded-full ${
+            statusFailed ? "bg-red-600" : "bg-current"
+          }`}
+          aria-hidden
+        />
+        {status}
+      </p>
     </div>
   );
 }
@@ -153,22 +170,75 @@ function MockResultsBody({
   };
 
   useEffect(() => {
-    if (initialSummary) return;
-    setLoading(true);
-    setError(null);
-    void mockApi
-      .summary(mockAttemptId)
-      .then((s) => {
-        setSummary(s);
-        setLoading(false);
-      })
-      .catch((e) => {
+    let active = true;
+    let inFlight = false;
+    let timer: number | null = null;
+    let currentSummary = initialSummary;
+
+    const clearPoll = () => {
+      if (timer != null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    const schedulePoll = (nextSummary: MockAttemptSummary) => {
+      clearPoll();
+      if (
+        !active ||
+        !shouldPollMockResults(nextSummary, document.visibilityState)
+      ) {
+        return;
+      }
+      timer = window.setTimeout(() => {
+        void refresh();
+      }, POLL_MS);
+    };
+
+    const refresh = async () => {
+      if (inFlight || document.visibilityState === "hidden") return;
+      inFlight = true;
+      try {
+        const nextSummary = await mockApi.summary(mockAttemptId);
+        if (!active) return;
+        currentSummary = nextSummary;
+        setSummary(nextSummary);
+        setError(null);
+        schedulePoll(nextSummary);
+      } catch (e) {
+        if (!active) return;
         setError(e instanceof Error ? e.message : "Could not load mock results.");
-        setLoading(false);
-      });
+        if (currentSummary) schedulePoll(currentSummary);
+      } finally {
+        inFlight = false;
+        if (active) setLoading(false);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        clearPoll();
+      } else if (!currentSummary || hasPendingMockResults(currentSummary)) {
+        void refresh();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    if (initialSummary) {
+      schedulePoll(initialSummary);
+    } else {
+      void refresh();
+    }
+
+    return () => {
+      active = false;
+      clearPoll();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [mockAttemptId, initialSummary]);
 
   const completedLabel = formatCompleted(summary?.completed_at);
+  const overall = summary ? overallResultPresentation(summary) : null;
 
   return (
     <div className="min-h-dvh bg-[var(--exam-surface,#f8fafc)] px-4 py-8 sm:px-6 sm:py-12">
@@ -183,7 +253,7 @@ function MockResultsBody({
               <div className="h-28 flex-1 rounded-2xl bg-[var(--exam-border)]" />
             </div>
           </div>
-        ) : error ? (
+        ) : error && !summary ? (
           <p className="text-[14px] text-red-600" role="alert">
             {error}
           </p>
@@ -201,6 +271,11 @@ function MockResultsBody({
                   Finished {completedLabel}
                 </p>
               ) : null}
+              {error ? (
+                <p className="mt-2 text-[12px] text-amber-700" role="status">
+                  Results refresh failed. We’ll try again while reviews are pending.
+                </p>
+              ) : null}
             </header>
 
             <div className="relative mt-8 overflow-hidden rounded-3xl border border-[var(--exam-border)] bg-gradient-to-br from-[var(--exam-bar,#0f172a)] via-[#1e293b] to-[#0f766e] p-6 text-center text-white shadow-lg sm:p-8 sm:text-left">
@@ -209,43 +284,28 @@ function MockResultsBody({
                 aria-hidden
               />
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/65">
-                Overall band
+                {overall?.label}
               </p>
               <p className="mt-2 font-display text-6xl font-bold tabular-nums sm:text-7xl">
-                {bandLabel(summary.aggregate_band)}
+                {bandLabel(overall?.band)}
               </p>
               <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-white/75 sm:mx-0">
-                Average of Listening, Reading, Writing, and Speaking for this
-                attempt.
+                {overall?.description}
               </p>
             </div>
 
             <div className="mt-6 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1 snap-x snap-mandatory sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
               {MODULE_META.map(({ key, label, bandKey, Icon, accent }) => {
-                const band = summary[bandKey];
-                const mod = summary.modules.find((m) => m.module === key);
-                let hint: string | undefined;
-                if (key === "writing" && band == null) {
-                  hint =
-                    mod?.status === "completed"
-                      ? "Under review"
-                      : "Not completed";
-                } else if (key === "writing" && band != null) {
-                  hint = "Human reviewed";
-                } else if (key === "speaking" && band == null) {
-                  hint =
-                    mod?.status === "completed"
-                      ? "Under review"
-                      : "Not completed";
-                } else if (key === "speaking" && band != null) {
-                  hint = "Human reviewed";
-                }
+                const result = summary.module_result_states[key];
+                const band = result?.band ?? summary[bandKey];
+                const source = result?.source ?? "unavailable";
                 return (
                   <div key={key} className="snap-start sm:snap-align-none">
                     <ModuleScoreCard
                       label={label}
                       band={bandLabel(band)}
-                      hint={hint}
+                      status={moduleResultStatusLabel(source, key)}
+                      statusFailed={source === "failed"}
                       Icon={Icon}
                       accent={accent}
                     />

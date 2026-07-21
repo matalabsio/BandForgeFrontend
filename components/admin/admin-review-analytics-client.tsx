@@ -145,8 +145,11 @@ export function AdminReviewAnalyticsClient() {
               </tr>
             </thead>
             <tbody>
-              {(data?.criterion_mae ?? []).map((row) => (
-                <tr key={`${row.key}-${row.label}`} className="border-b border-[#F8FAFC]">
+              {(data?.criterion_mae ?? []).map((row, index) => (
+                <tr
+                  key={`${row.key}-${index}`}
+                  className="border-b border-[#F8FAFC]"
+                >
                   <td className="px-4 py-2.5 font-medium text-[#334155] sm:px-5">
                     {row.label}
                   </td>

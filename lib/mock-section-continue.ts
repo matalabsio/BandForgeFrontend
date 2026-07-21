@@ -67,7 +67,7 @@ export function getMockSectionContinue(ctx: MockSectionContext): MockSectionCont
         label: "Continue to Next Section",
       };
     }
-    if (ctx.testNumber === 1) {
+    if ((meta.speakingMinutes ?? 0) > 0) {
       return {
         path: shortModuleExamPath(ctx.testNumber, "speaking"),
         label: "Continue to Speaking",

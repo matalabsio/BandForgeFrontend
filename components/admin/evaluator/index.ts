@@ -19,3 +19,7 @@ export { EvaluatorScoreComparison } from "./evaluator-score-comparison";
 export { EvaluatorStudentContext } from "./evaluator-student-context";
 export { EvaluatorReviewActions } from "./evaluator-review-actions";
 export { EvaluatorReviewHistory } from "./evaluator-review-history";
+export {
+  EvaluatorSpeakingAiAdvisory,
+  EvaluatorSpeakingResponses,
+} from "./evaluator-speaking-responses";

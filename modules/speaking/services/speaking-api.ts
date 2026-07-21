@@ -15,11 +15,22 @@ import { accessTokenExpired } from "@/lib/jwt-expiry";
 import type { PracticeSkill } from "@/lib/practice-types";
 import { getAccessToken } from "@/lib/session";
 import { recordingFilenameForMime } from "@/modules/speaking/lib/media-recorder-support";
+import {
+  confirmSpeakingUploadBody,
+  createSpeakingUploadBody,
+  finalizeSpeakingBody,
+} from "@/modules/speaking/lib/speaking-upload-contract";
 import type {
+  FinalizeSpeakingPayload,
+  SpeakingNotificationPreferences,
+  SpeakingNotificationPreferencesPatch,
   SpeakingPendingPayload,
   SpeakingReportPayload,
+  SpeakingResponsesPayload,
+  SpeakingResponseUploadSessionPayload,
   StartSpeakingPayload,
   SubmitSpeakingPayload,
+  UploadSpeakingResponsePayload,
 } from "@/modules/speaking/types";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
@@ -77,7 +88,7 @@ async function examMultipartCall<T>(
 async function examJsonCall<T>(
   path: string,
   init?: RequestInit,
-  options?: { timeoutMs?: number },
+  options?: { timeoutMs?: number; signal?: AbortSignal },
 ): Promise<T> {
   purgeExpiredAccessMirror();
   await ensureExamSessionIfStale();
@@ -87,6 +98,12 @@ async function examJsonCall<T>(
     () => controller.abort(),
     options?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
   );
+  const abortFromCaller = () => controller.abort();
+  if (options?.signal?.aborted) {
+    controller.abort();
+  } else {
+    options?.signal?.addEventListener("abort", abortFromCaller, { once: true });
+  }
 
   const headers = authHeaders();
   headers.set("Content-Type", "application/json");
@@ -107,6 +124,7 @@ async function examJsonCall<T>(
   } catch (e) {
     if (e instanceof ExamSessionError) throw e;
     if (e instanceof Error && e.name === "AbortError") {
+      if (options?.signal?.aborted) throw e;
       throw new ApiError("Request timed out. Please try again.", 408);
     }
     if (e instanceof ApiError && e.status === 401 && isAuthEnabled()) {
@@ -116,10 +134,33 @@ async function examJsonCall<T>(
     throw e;
   } finally {
     clearTimeout(timer);
+    options?.signal?.removeEventListener("abort", abortFromCaller);
   }
 }
 
 export const speakingApi = {
+  notificationPreferences(
+    options?: { signal?: AbortSignal },
+  ): Promise<SpeakingNotificationPreferences> {
+    return examJsonCall<SpeakingNotificationPreferences>(
+      "/api/speaking/notification-preferences",
+      { method: "GET" },
+      options,
+    );
+  },
+
+  updateNotificationPreferences(
+    input: SpeakingNotificationPreferencesPatch,
+  ): Promise<SpeakingNotificationPreferences> {
+    return examJsonCall<SpeakingNotificationPreferences>(
+      "/api/speaking/notification-preferences",
+      {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      },
+    );
+  },
+
   start(
     mockTestId: string,
     options?: {
@@ -159,10 +200,112 @@ export const speakingApi = {
     );
   },
 
-  pending(attemptId: string): Promise<SpeakingPendingPayload> {
+  responses(attemptId: string): Promise<SpeakingResponsesPayload> {
+    return examJsonCall<SpeakingResponsesPayload>(
+      `/api/speaking/attempts/${encodeURIComponent(attemptId)}/responses`,
+      { method: "GET" },
+    );
+  },
+
+  uploadResponse(
+    attemptId: string,
+    input: {
+      questionId: string;
+      part: 1 | 2 | 3;
+      sequence: number;
+      audio: Blob;
+      durationSec: number;
+    },
+  ): Promise<UploadSpeakingResponsePayload> {
+    const formData = new FormData();
+    formData.append("file", input.audio, recordingFilenameForMime(input.audio.type));
+    formData.append("question_id", input.questionId);
+    formData.append("part", String(input.part));
+    formData.append("sequence_number", String(input.sequence));
+    formData.append("duration_sec", String(input.durationSec));
+    return examMultipartCall<UploadSpeakingResponsePayload>(
+      `/api/speaking/attempts/${encodeURIComponent(attemptId)}/responses`,
+      formData,
+    );
+  },
+
+  createResponseUploadSession(
+    attemptId: string,
+    input: {
+      questionId: string;
+      part: 1 | 2 | 3;
+      sequence: number;
+      durationSec: number;
+      contentType: string;
+      contentLength: number;
+      idempotencyKey: string;
+    },
+  ): Promise<SpeakingResponseUploadSessionPayload> {
+    return examJsonCall<SpeakingResponseUploadSessionPayload>(
+      `/api/speaking/attempts/${encodeURIComponent(attemptId)}/response-sessions`,
+      {
+        method: "POST",
+        body: JSON.stringify(createSpeakingUploadBody(input)),
+      },
+    );
+  },
+
+  async putSignedResponse(
+    uploadUrl: string,
+    audio: Blob,
+    suppliedHeaders?: Record<string, string>,
+  ): Promise<void> {
+    const headers = new Headers(suppliedHeaders);
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", audio.type || "application/octet-stream");
+    }
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers,
+      body: audio,
+      signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      throw new ApiError(`Audio upload failed (${response.status}).`, response.status);
+    }
+  },
+
+  confirmResponseUpload(
+    attemptId: string,
+    responseId: string,
+    input: { idempotencyKey: string; durationSec: number },
+  ): Promise<UploadSpeakingResponsePayload> {
+    return examJsonCall<UploadSpeakingResponsePayload>(
+      `/api/speaking/attempts/${encodeURIComponent(attemptId)}/responses/${encodeURIComponent(responseId)}/confirm`,
+      {
+        method: "POST",
+        body: JSON.stringify(confirmSpeakingUploadBody(input)),
+      },
+    );
+  },
+
+  finalize(
+    attemptId: string,
+    input: { manifestHash: string },
+  ): Promise<FinalizeSpeakingPayload> {
+    return examJsonCall<FinalizeSpeakingPayload>(
+      `/api/speaking/attempts/${encodeURIComponent(attemptId)}/finalize`,
+      {
+        method: "POST",
+        body: JSON.stringify(finalizeSpeakingBody(input.manifestHash)),
+      },
+      { timeoutMs: SUBMIT_TIMEOUT_MS },
+    );
+  },
+
+  pending(
+    attemptId: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<SpeakingPendingPayload> {
     return examJsonCall<SpeakingPendingPayload>(
       `/api/speaking/attempts/${encodeURIComponent(attemptId)}/pending`,
       { method: "GET" },
+      options,
     );
   },
 

@@ -32,17 +32,35 @@ export async function acquireSpeakingWakeLock(): Promise<SpeakingWakeLockHandle>
 
   let sentinel: WakeLockSentinelLike | null = null;
   let released = false;
+  let requestInFlight: Promise<void> | null = null;
 
-  const request = async () => {
-    if (released || document.visibilityState !== "visible") return;
-    try {
-      sentinel = await nav.wakeLock!.request("screen");
-      sentinel.addEventListener("release", () => {
-        sentinel = null;
-      });
-    } catch {
-      sentinel = null;
+  const request = (): Promise<void> => {
+    if (
+      released ||
+      document.visibilityState !== "visible" ||
+      (sentinel && !sentinel.released)
+    ) {
+      return Promise.resolve();
     }
+    if (requestInFlight) return requestInFlight;
+    requestInFlight = (async () => {
+      try {
+        const acquired = await nav.wakeLock!.request("screen");
+        if (released) {
+          if (!acquired.released) await acquired.release();
+          return;
+        }
+        sentinel = acquired;
+        acquired.addEventListener("release", () => {
+          if (sentinel === acquired) sentinel = null;
+        });
+      } catch {
+        sentinel = null;
+      } finally {
+        requestInFlight = null;
+      }
+    })();
+    return requestInFlight;
   };
 
   const onVisibility = () => {
@@ -53,12 +71,15 @@ export async function acquireSpeakingWakeLock(): Promise<SpeakingWakeLockHandle>
 
   await request();
   document.addEventListener("visibilitychange", onVisibility);
+  window.addEventListener("pageshow", onVisibility);
 
   return {
     release: async () => {
       if (released) return;
       released = true;
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", onVisibility);
+      await requestInFlight;
       const current = sentinel;
       sentinel = null;
       if (current && !current.released) {

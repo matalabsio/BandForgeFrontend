@@ -19,10 +19,12 @@ type Props = {
   showStart?: boolean;
   /** One-take exam: hide Re-record (default). */
   showRerecord?: boolean;
-  /** Parts 1/3: hide Stop; learner uses Next Question. */
+  /** Hide the explicit answer-completion control when the parent owns stopping. */
   showStop?: boolean;
   /** Parts 1/3: no elapsed `Recording… Ns` label. */
   hideElapsed?: boolean;
+  stopLabel?: string;
+  waveform?: readonly number[];
 };
 
 export function SpeakingRecordingControls({
@@ -38,6 +40,8 @@ export function SpeakingRecordingControls({
   showRerecord = false,
   showStop = true,
   hideElapsed = false,
+  stopLabel = "Stop recording",
+  waveform,
 }: Props) {
   const recording = phase === "recording";
   const captured = phase === "captured";
@@ -48,6 +52,8 @@ export function SpeakingRecordingControls({
 
   useEffect(() => {
     if (!answerBlob) {
+      // Synchronise the derived object URL when a capture is cleared.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlaybackUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
@@ -132,39 +138,73 @@ export function SpeakingRecordingControls({
     >
       <audio ref={audioRef} className="hidden" playsInline preload="auto" />
 
-      <div className="flex items-center justify-center gap-2">
-        <span
-          className={cn(
-            "size-3 shrink-0 rounded-full",
-            recording ? "bg-red-500 motion-safe:animate-pulse" : captured ? "bg-teal" : "bg-navy/20",
-          )}
-          aria-hidden
-        />
-        <span className="text-sm font-semibold text-navy">
-          {recording ? "Recording in progress" : captured ? "Answer ready" : "Ready to record"}
-        </span>
+      <div className="flex flex-col items-center">
+        <div className="relative flex size-20 items-center justify-center" aria-hidden>
+          {recording ? (
+            <>
+              <span className="absolute inset-1 rounded-full border-2 border-cyan/50 motion-safe:animate-ping" />
+              <span className="absolute inset-0 rounded-full border border-cyan/30 motion-safe:animate-pulse" />
+            </>
+          ) : null}
+          <span
+            className={cn(
+              "relative flex size-14 items-center justify-center rounded-full shadow-[0_10px_24px_rgba(0,151,167,0.25)]",
+              recording
+                ? "bg-cyan text-[#06222B]"
+                : captured
+                  ? "bg-teal text-white"
+                  : "bg-slate-200 text-slate-500",
+            )}
+          >
+            <Mic className="size-6" />
+          </span>
+        </div>
+        <div className="mt-3 flex items-baseline justify-center gap-2">
+          <span className="font-mono text-xs font-medium tracking-[0.1em] text-teal uppercase">
+            {recording ? "Recording" : captured ? "Captured" : "Waiting"}
+          </span>
+          {recording ? (
+            <span className="font-mono text-sm font-medium text-navy">
+              {formatAudioDuration(seconds)}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <div
         className="mx-auto my-4 flex h-10 w-full max-w-xs items-end justify-center gap-1 overflow-hidden"
-        aria-hidden
+        aria-label={recording ? "Live microphone level" : "Audio waveform"}
+        role="img"
       >
         {Array.from({ length: 24 }).map((_, i) => (
           <span
             key={i}
             className={cn(
               "w-1 shrink-0 rounded-sm bg-cyan",
-              (recording || isHearing) && "motion-safe:animate-[bfwave_1.1s_ease-in-out_infinite]",
+              ((recording && !waveform) || isHearing) &&
+                "motion-safe:animate-[bfwave_1.1s_ease-in-out_infinite]",
             )}
             style={{
-              height: recording || isHearing ? `${10 + (i % 5) * 6}px` : captured ? "10px" : "6px",
+              height:
+                recording && waveform
+                  ? `${Math.max(4, (waveform[i] ?? 0.08) * 38)}px`
+                  : recording || isHearing
+                    ? `${10 + (i % 5) * 6}px`
+                    : captured
+                      ? "10px"
+                      : "6px",
               animationDelay: recording || isHearing ? `${i * 0.05}s` : undefined,
             }}
           />
         ))}
       </div>
 
-      <p className="text-center font-mono text-sm text-[#5A6B82]">{label}</p>
+      <p className="text-center font-mono text-sm text-[#475569]">
+        {label}
+      </p>
+      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {recording ? "Recording started." : captured ? "Recording stopped. Answer ready." : ""}
+      </span>
 
       {captured && playbackUrl ? (
         <button
@@ -223,7 +263,7 @@ export function SpeakingRecordingControls({
               )}
             >
               <Square className="size-3.5 shrink-0 fill-current" />
-              Stop
+              {stopLabel}
             </button>
           ) : null}
 

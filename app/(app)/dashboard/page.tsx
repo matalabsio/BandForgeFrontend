@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ProductionAuthConfigError } from "@/components/auth/production-auth-config-error";
 import { DashboardGate } from "@/components/bandforge/dashboard/dashboard-gate";
@@ -12,14 +11,10 @@ import {
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
-import {
-  canAccessPersonalizedDashboard,
-  hasFullSkillProgram,
-} from "@/lib/entitlement";
+import { hasFullSkillProgram } from "@/lib/entitlement";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
-  refreshLearningProfileServer,
 } from "@/lib/learning-server";
 import { fetchSubscription } from "@/lib/payments-server";
 import {
@@ -61,22 +56,8 @@ type DashboardBodyProps = {
 
 async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps) {
   const subscription = await fetchSubscription(cookieHeader);
-  let learning = await fetchLearningProfile(cookieHeader);
-  let profile = learning ?? emptyLearningProfile(userId);
-
-  if (
-    hasFullSkillProgram(subscription) &&
-    !canAccessPersonalizedDashboard(profile, subscription)
-  ) {
-    const refreshed = await refreshLearningProfileServer(cookieHeader);
-    if (refreshed) {
-      profile = refreshed;
-    }
-  }
-
-  if (!canAccessPersonalizedDashboard(profile, subscription)) {
-    redirect("/diagnostic");
-  }
+  const learning = await fetchLearningProfile(cookieHeader);
+  const profile = learning ?? emptyLearningProfile(userId);
 
   if (!hasFullSkillProgram(subscription)) {
     return (

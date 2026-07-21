@@ -235,6 +235,92 @@ export type SpeakingSubmissionMeta = {
   part_label?: string | null;
   cue_card?: string | null;
   prompt_title?: string | null;
+  manifest_hash?: string | null;
+  response_count?: number | null;
+  responses?: SpeakingSubmissionResponse[];
+  parts?: number[];
+};
+
+export type SpeakingFluencyMetrics = {
+  words_per_minute?: number | null;
+  total_speaking_seconds?: number | null;
+  long_pauses?: number | null;
+  response_count?: number | null;
+  questions_asked?: number | null;
+  word_count?: number | null;
+};
+
+export type SpeakingSubmissionResponse = {
+  response_id: string;
+  question_id: string;
+  part: number;
+  sequence_number: number;
+  duration_sec: number;
+  audio_url: string;
+  audio_play_url?: string | null;
+  transcription_status?: string | null;
+  transcript?: string | null;
+  fluency_metrics?: SpeakingFluencyMetrics | null;
+  /** Forward-compatible: the backend currently does not expose prompt text per response. */
+  prompt?: string | null;
+  prompt_title?: string | null;
+};
+
+export type SpeakingResponseMetrics = SpeakingFluencyMetrics & {
+  response_id: string;
+  part: number;
+  sequence_number: number;
+};
+
+export type SpeakingTranscriptionProgress = {
+  total: number;
+  queued: number;
+  processing: number;
+  completed: number;
+  failed: number;
+};
+
+export type SpeakingEvidenceQuote = {
+  response_id: string;
+  question_id: string;
+  quote: string;
+  criterion: "FC" | "LR" | "GRA" | "P";
+  polarity: "strength" | "weakness";
+  part: number;
+  issue?: string | null;
+  title?: string | null;
+  explanation?: string | null;
+  suggestion?: string | null;
+};
+
+export type SpeakingPartPerformance = {
+  part: number;
+  note: string;
+  band_estimate: number;
+};
+
+export type SpeakingAiEvaluation = {
+  band_scores?: {
+    FC?: number;
+    LR?: number;
+    GRA?: number;
+    P?: number;
+    P_confidence?: number;
+    overall?: number;
+  };
+  part_performance?: SpeakingPartPerformance[];
+  evidence_quotes?: SpeakingEvidenceQuote[];
+  recurring_patterns?: Array<{
+    pattern: string;
+    criterion: string;
+    frequency: string;
+    examples: string[];
+  }>;
+  strengths?: string[];
+  improvements?: string[];
+  vocabulary_highlights?: string[];
+  reviewer_flags?: string[];
+  next_band_advice?: string;
 };
 
 export type SpeakingReviewDetail = {
@@ -254,6 +340,10 @@ export type SpeakingReviewDetail = {
   audio_url: string | null;
   audio_play_url: string | null;
   ai_scores: Record<string, unknown> | null;
+  part_metrics: Record<string, SpeakingFluencyMetrics>;
+  attempt_metrics: SpeakingFluencyMetrics | null;
+  response_metrics: SpeakingResponseMetrics[];
+  transcription_progress: SpeakingTranscriptionProgress | null;
   student_name: string | null;
   student_email: string | null;
   student_target_band: number | null;
@@ -660,7 +750,7 @@ export const adminApi = {
       prompt?: string;
       correct_answer?: string;
       explanation?: string;
-      options?: unknown[];
+      options?: Array<{ label: string; text: string }>;
     },
   ) {
     return adminCall(`/questions/${id}`, {
@@ -717,6 +807,10 @@ export const adminApi = {
         pronunciation: number;
       };
       reviewer_notes?: string;
+      audio_confirmed: boolean;
+      confirmation: "confirm_final_approval";
+      idempotency_key: string;
+      ai_override_note?: string;
     },
   ) {
     return adminCall<SpeakingReviewDetail>(`/speaking/${id}/approve`, {

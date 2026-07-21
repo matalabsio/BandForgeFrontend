@@ -35,9 +35,9 @@ export function EvaluatorScoreComparison({
           <button
             type="button"
             onClick={onAcceptAi}
-            className="rounded-lg border border-cyan/30 bg-cyan-soft/40 px-2.5 py-1 text-[11px] font-semibold text-teal transition-colors hover:bg-cyan-soft"
+            className="cursor-pointer rounded-lg border border-cyan/30 bg-cyan-soft/40 px-2.5 py-1 text-[11px] font-semibold text-teal transition-colors hover:bg-cyan-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan"
           >
-            Accept AI scores
+            Copy AI scores
           </button>
         ) : null}
       </div>

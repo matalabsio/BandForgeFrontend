@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { AdminCreateMockForm } from "@/components/admin/admin-create-mock-form";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import {
   adminBtnPrimary,
@@ -28,13 +30,14 @@ function isAdminLiveMock(mock: AdminMockListItem): boolean {
 }
 
 export function AdminMocksClient() {
+  const router = useRouter();
   const [mocks, setMocks] = useState<AdminMockListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft" | "archived">("all");
-  const [showCreateSoon, setShowCreateSoon] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,6 +71,9 @@ export function AdminMocksClient() {
   }, [mocks, search, statusFilter]);
   const liveMocks = filtered.filter(isAdminLiveMock);
   const draftMocks = filtered.filter((m) => m.status === "draft");
+  const otherMocks = filtered.filter(
+    (m) => !isAdminLiveMock(m) && m.status !== "draft",
+  );
 
   const archiveMock = async (id: string) => {
     setBusyId(id);
@@ -110,22 +116,23 @@ export function AdminMocksClient() {
             </Link>
             <button
               type="button"
-              onClick={() => setShowCreateSoon((v) => !v)}
+              onClick={() => setShowCreate((v) => !v)}
               className={cn(adminBtnPrimary, "w-full sm:w-auto")}
             >
-              Create mock
+              {showCreate ? "Hide form" : "Create mock"}
             </button>
           </>
         }
       />
       {error ? <p className="text-red-600">{error}</p> : null}
-      {showCreateSoon ? (
-        <div className={cn(adminCard, "border-cyan/30 bg-cyan-soft/30")}>
-          <p className="font-semibold text-navy">Create mock is coming soon</p>
-          <p className={cn(adminSubtext, "mt-1")}>
-            Use the existing mock cards to edit, ingest, publish, and archive content for now.
-          </p>
-        </div>
+      {showCreate ? (
+        <AdminCreateMockForm
+          onCancel={() => setShowCreate(false)}
+          onCreated={({ id }) => {
+            setShowCreate(false);
+            router.push(`/admin/mocks/${id}`);
+          }}
+        />
       ) : null}
       <div className={cn(adminCard, "space-y-3")}>
         <label className="relative block">
@@ -205,19 +212,26 @@ export function AdminMocksClient() {
         </section>
       ) : null}
 
-      <div className={adminCard}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-bold text-navy">More mock tests</h2>
-            <p className={cn(adminSubtext, "mt-1 max-w-xl")}>
-              Test 3 and beyond are coming soon. Only Tests 1 and 2 are live right now.
-            </p>
+      {otherMocks.length > 0 ? (
+        <section>
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-navy">
+            <span className="size-2 rounded-full bg-amber-500" />
+            Other mocks
+            <span className={adminMutedLabel}>{otherMocks.length}</span>
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {otherMocks.map((mock) => (
+              <MockCard
+                key={mock.id}
+                mock={mock}
+                busyId={busyId}
+                onArchive={archiveMock}
+                onPublish={publishMock}
+              />
+            ))}
           </div>
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
-            Coming soon
-          </span>
-        </div>
-      </div>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import type { DiagnosticPack } from "@/lib/diagnostic-pack";
-import type { SpeakingQuestionManifest } from "@/modules/speaking/types";
+import type {
+  SpeakingQuestion,
+  SpeakingQuestionManifest,
+} from "@/modules/speaking/types";
 
 /** Phase A stub manifest for full mock speaking (Parts 1, 2, 3). */
 export const MOCK_SPEAKING_MANIFEST: SpeakingQuestionManifest[] = [
@@ -63,6 +66,31 @@ export const MOCK_SPEAKING_MANIFEST: SpeakingQuestionManifest[] = [
     kind: "question",
   },
 ];
+
+/** Adapt the attempt's frozen server manifest into the runtime shape. */
+export function speakingManifestFromServer(
+  questions: SpeakingQuestion[],
+): SpeakingQuestionManifest[] {
+  return questions.flatMap((question) => {
+    if (question.part !== 1 && question.part !== 2 && question.part !== 3) return [];
+    const kind = question.kind === "part2_intro" || question.part === 2
+      ? "part2_intro"
+      : "question";
+    return [{
+      id: question.id,
+      part: question.part,
+      questionNumber: question.question_number,
+      sequence: question.sequence_number,
+      prompt: question.prompt,
+      kind,
+      prepSec: question.prep_seconds || question.prep_sec || undefined,
+      recordSec:
+        question.max_recording_seconds || question.record_sec || question.max_record_sec || undefined,
+      maxRecordSec:
+        question.max_recording_seconds || question.max_record_sec || question.record_sec || undefined,
+    }];
+  });
+}
 
 export function diagnosticManifestFromPack(pack: DiagnosticPack): SpeakingQuestionManifest[] {
   const items: SpeakingQuestionManifest[] = pack.speaking.part1.questions.map((q, i) => ({

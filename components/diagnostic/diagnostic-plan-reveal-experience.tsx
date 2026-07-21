@@ -156,7 +156,9 @@ export function DiagnosticPlanRevealExperience() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [checkingAccess, setCheckingAccess] = useState(true);
-  const [snapshot, setSnapshot] = useState<DiagnosticResultsSnapshot | null>(null);
+  const [snapshot] = useState<DiagnosticResultsSnapshot | null>(() =>
+    readDiagnosticResults(),
+  );
   const [hasSubscription, setHasSubscription] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planPrice, setPlanPrice] = useState("—");
@@ -168,7 +170,7 @@ export function DiagnosticPlanRevealExperience() {
   );
   const [checkoutBusy, setCheckoutBusy] = useState(false);
 
-  const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
+  const lead = readDiagnosticLead();
   const targetBand = lead?.targetBand ?? 7.0;
   const examDate = lead?.examDate ?? "";
 
@@ -192,16 +194,14 @@ export function DiagnosticPlanRevealExperience() {
   }, [skillBands, targetBand, examDate]);
 
   useEffect(() => {
-    const cached = readDiagnosticResults();
     const currentLead = readDiagnosticLead();
-    if (cached) setSnapshot(cached);
 
     (async () => {
       try {
         const [{ plans, payments_enabled: enabled }, sub, session] =
           await Promise.all([
             getPlans(),
-            getSubscription().catch(() => ({ is_active: false })),
+            getSubscription().catch(() => null),
             ensureSession().catch(() => null),
           ]);
 
@@ -219,8 +219,8 @@ export function DiagnosticPlanRevealExperience() {
           const user = await getMe().catch(() => null);
           const full = isFullAccountUser(user?.role);
           setIsLoggedIn(full);
-          if (full && cached && currentLead) {
-            await syncDiagnosticLeadAfterAuth(cached, currentLead);
+          if (full && snapshot && currentLead) {
+            await syncDiagnosticLeadAfterAuth(snapshot, currentLead);
           }
         }
       } finally {
@@ -228,9 +228,8 @@ export function DiagnosticPlanRevealExperience() {
         setCheckingAccess(false);
       }
     })();
-    // Mount-only bootstrap — do not depend on `lead`/`snapshot` or setSnapshot
-    // retriggers this effect and exceeds max update depth.
-  }, [router]);
+    // Bootstrap is stable because the diagnostic snapshot is captured once on mount.
+  }, [router, snapshot]);
 
   const handleCheckout = useCallback(async () => {
     if (checkoutBusy || hasSubscription) return;

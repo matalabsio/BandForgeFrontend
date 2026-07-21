@@ -41,13 +41,3 @@ export function clearSpeakingSessionRecordings(scope: string): void {
     /* ignore */
   }
 }
-
-/** Pick the longest valid recording for Phase A single-submit stub. */
-export function pickSubmitRecording(
-  recordings: SpeakingSessionRecording[],
-): SpeakingSessionRecording | null {
-  if (recordings.length === 0) return null;
-  return recordings.reduce((best, cur) =>
-    cur.durationSec > best.durationSec ? cur : best,
-  );
-}

@@ -40,12 +40,29 @@ export type MockAttemptProgress = {
   aggregate_band: number | null;
 };
 
+export type MockModuleResultSource =
+  | "final"
+  | "ai_estimate"
+  | "processing"
+  | "failed"
+  | "awaiting_examiner"
+  | "unavailable";
+
+export type MockModuleResultState = {
+  band: number | null;
+  source: MockModuleResultSource;
+};
+
 export type MockAttemptSummary = MockAttemptProgress & {
   sections: SectionScore[];
   reading_band: number | null;
   listening_band: number | null;
   writing_band: number | null;
   speaking_band: number | null;
+  provisional_aggregate_band: number | null;
+  aggregate_is_provisional: boolean;
+  has_pending_reviews: boolean;
+  module_result_states: Record<string, MockModuleResultState>;
 };
 
 export type MockCheckpointResponse = {

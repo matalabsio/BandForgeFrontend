@@ -12,7 +12,7 @@ import {
 import { adminApi } from "@/lib/admin-api";
 
 type Props = {
-  onCreated: () => void;
+  onCreated: (mock: { id: string }) => void;
   onCancel: () => void;
 };
 
@@ -33,14 +33,14 @@ export function AdminCreateMockForm({ onCreated, onCancel }: Props) {
     setBusy(true);
     setError(null);
     try {
-      await adminApi.createMock({
+      const mock = await adminApi.createMock({
         title: title.trim(),
         description: description.trim() || undefined,
         listening_parts: listeningParts,
         reading_passages: readingPassages,
         writing_tasks: writingTasks,
       });
-      onCreated();
+      onCreated({ id: String(mock.id) });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not create mock");
     } finally {

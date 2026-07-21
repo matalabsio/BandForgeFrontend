@@ -38,7 +38,7 @@ export function ScoreHero({
             {bandDisplay(feedback.overall_band)}
           </p>
           <p className="mt-2 font-mono text-[0.625rem] tracking-[0.14em] text-muted-light uppercase">
-            Overall band
+            {feedback.human_verified ? "Overall band" : "AI estimated band"}
           </p>
         </div>
         <div className="min-w-0 flex-1">

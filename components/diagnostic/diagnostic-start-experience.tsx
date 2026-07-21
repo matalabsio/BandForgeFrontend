@@ -23,6 +23,8 @@ import {
 } from "@/lib/diagnostic-storage";
 import { getSubscription } from "@/lib/payments";
 import { hasFullSkillProgram } from "@/lib/entitlement";
+import { loginPathWithNext } from "@/lib/auth";
+import { readDiagnosticResults } from "@/lib/diagnostic-session";
 
 function WhatsAppNote() {
   return (
@@ -43,11 +45,20 @@ export function DiagnosticStartExperience() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   // SSR-safe defaults — hydrate from localStorage after mount to avoid mismatch.
   const [canContinue, setCanContinue] = useState(false);
+  const [hasCompletedResults, setHasCompletedResults] = useState(false);
   const [lead, setLead] = useState<Partial<DiagnosticLead>>({});
 
   useEffect(() => {
-    setLead(readDiagnosticLead() ?? {});
-    setCanContinue(hasInProgressDiagnostic());
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLead(readDiagnosticLead() ?? {});
+      setCanContinue(hasInProgressDiagnostic());
+      setHasCompletedResults(Boolean(readDiagnosticResults()));
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -184,7 +195,14 @@ export function DiagnosticStartExperience() {
 
               <p className="mt-3.5 text-center text-[12.5px] font-light text-[#94A3B8]">
                 Free. No account required to start.{" "}
-                <Link href="/login" className="font-medium text-cyan hover:underline">
+                <Link
+                  href={loginPathWithNext(
+                    hasCompletedResults
+                      ? diagnosticPaths.planReveal
+                      : diagnosticPaths.landing,
+                  )}
+                  className="font-medium text-cyan hover:underline"
+                >
                   Already subscribed? Sign in
                 </Link>
               </p>

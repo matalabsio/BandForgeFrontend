@@ -19,6 +19,8 @@ import {
   REFRESH_COOKIE,
 } from "@/lib/session";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { readDiagnosticResults } from "@/lib/diagnostic-session";
+import { resolvePostLoginDestination } from "@/lib/post-login-destination";
 
 function hasAuthCookies(): boolean {
   if (typeof document === "undefined") return false;
@@ -109,7 +111,10 @@ function LoginForm() {
   useEffect(() => {
     if (loading || onDeployPreview) return;
 
-    const dest = next.startsWith("/") ? next : "/dashboard";
+    const dest = resolvePostLoginDestination(
+      next,
+      Boolean(readDiagnosticResults()),
+    );
 
     if (getRefreshToken() && !hasAuthCookies()) {
       if (!escalatedToBootstrap.current) {

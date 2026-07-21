@@ -185,21 +185,19 @@ export function CheckoutSuccessClient() {
 
   // Countdown timer → redirect to dashboard
   useEffect(() => {
-    if (loading || !subscription?.is_active) return;
+    if (loading || !subscription?.is_active || countdown <= 0) return;
 
-    const interval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          router.replace("/dashboard");
-          return 0;
-        }
-        return prev - 1;
-      });
+    const timeout = window.setTimeout(() => {
+      setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
 
-    return () => clearInterval(interval);
-  }, [loading, subscription, router]);
+    return () => window.clearTimeout(timeout);
+  }, [countdown, loading, subscription]);
+
+  useEffect(() => {
+    if (loading || !subscription?.is_active || countdown > 0) return;
+    router.replace("/dashboard");
+  }, [countdown, loading, subscription, router]);
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 text-center">

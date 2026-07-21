@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -16,48 +17,11 @@ import {
   AnnotationPopover,
 } from "@/modules/shared/annotations/annotation-popover";
 import { annotationMarkClass } from "@/modules/shared/annotations/styles";
+import { locateAnnotations } from "@/modules/shared/annotations/annotation-locator";
 import type { AnnotationSpan } from "@/modules/shared/annotations/types";
 
-type Located = AnnotationSpan & { start: number; end: number };
-
 type TipCoords = { top: number; left: number };
-
-function locateAnnotations(
-  text: string,
-  annotations: AnnotationSpan[],
-): Located[] {
-  const located: Located[] = [];
-  const occupied: Array<{ start: number; end: number }> = [];
-
-  const overlaps = (start: number, end: number) =>
-    occupied.some((o) => !(end <= o.start || start >= o.end));
-
-  for (const ann of annotations) {
-    const phrase = ann.text?.trim();
-    if (!phrase) continue;
-    const lower = text.toLowerCase();
-    const target = phrase.toLowerCase();
-    let from = 0;
-    while (from < text.length) {
-      const idx = lower.indexOf(target, from);
-      if (idx === -1) break;
-      const end = idx + phrase.length;
-      if (!overlaps(idx, end)) {
-        occupied.push({ start: idx, end });
-        located.push({
-          ...ann,
-          text: text.slice(idx, end),
-          start: idx,
-          end,
-        });
-        break;
-      }
-      from = idx + 1;
-    }
-  }
-
-  return located.sort((a, b) => a.start - b.start);
-}
+const subscribeToHydration = () => () => {};
 
 function positionTip(anchor: DOMRect, tipHeight: number): TipCoords {
   const tipW = ANNOTATION_POPOVER_WIDTH;
@@ -99,7 +63,11 @@ export function AnnotatedText({
   const anchorBtnRef = useRef<HTMLButtonElement | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [coords, setCoords] = useState<TipCoords | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
+  );
   const located = locateAnnotations(text, annotations);
 
   const close = useCallback(() => {
@@ -112,10 +80,6 @@ export function AnnotatedText({
     anchorBtnRef.current = button;
     setOpenId(id);
     setCoords(positionTip(button.getBoundingClientRect(), 140));
-  }, []);
-
-  useEffect(() => {
-    setMounted(true);
   }, []);
 
   useLayoutEffect(() => {
@@ -207,6 +171,7 @@ export function AnnotatedText({
         )}
         aria-expanded={isOpen}
         aria-describedby={isOpen ? tipId : undefined}
+        aria-label={`${ann.title}: ${ann.text}`}
         onClick={(e) => {
           if (isOpen) {
             close();

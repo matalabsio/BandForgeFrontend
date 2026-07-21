@@ -5,6 +5,7 @@ import { Check, Clock, Mic, Pause, Play, RotateCcw, Smartphone, VolumeX } from "
 import { Button } from "@/components/ui/button";
 import {
   formatAudioDuration,
+  getAudioRecordingCapability,
   getSupportedAudioMimeType,
 } from "@/modules/speaking/lib/media-recorder-support";
 import { cn } from "@/lib/utils";
@@ -43,8 +44,21 @@ export function SpeakingMicCheck({
   const chunksRef = useRef<BlobPart[]>([]);
   const tickRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const mountedRef = useRef(true);
+  const playbackUrlRef = useRef<string | null>(null);
 
-  const stopStream = useCallback(() => {
+  const stopStream = useCallback((discardRecorder = false) => {
+    const recorder = recorderRef.current;
+    if (discardRecorder && recorder && recorder.state !== "inactive") {
+      recorder.ondataavailable = null;
+      recorder.onerror = null;
+      recorder.onstop = null;
+      try {
+        recorder.stop();
+      } catch {
+        /* recorder already stopped */
+      }
+    }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     recorderRef.current = null;
@@ -68,17 +82,24 @@ export function SpeakingMicCheck({
     setPlaybackDuration(0);
     setPlaybackUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
+      playbackUrlRef.current = null;
       return null;
     });
   }, []);
 
   useEffect(() => {
+    const audio = audioRef.current;
     return () => {
+      mountedRef.current = false;
       clearTick();
-      stopStream();
-      resetPlayback();
+      stopStream(true);
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute("src");
+      }
+      if (playbackUrlRef.current) URL.revokeObjectURL(playbackUrlRef.current);
     };
-  }, [clearTick, resetPlayback, stopStream]);
+  }, [clearTick, stopStream]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -114,11 +135,18 @@ export function SpeakingMicCheck({
     setConfirmed(false);
     resetPlayback();
     clearTick();
-    stopStream();
+    stopStream(true);
     chunksRef.current = [];
 
     try {
+      const capability = getAudioRecordingCapability();
+      if (!capability.supported) throw new Error(capability.message);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0 || audioTracks.some((track) => track.readyState !== "live")) {
+        stream.getTracks().forEach((track) => track.stop());
+        throw new Error("The selected microphone is not ready. Reconnect it and try again.");
+      }
       streamRef.current = stream;
 
       const mimeType = getSupportedAudioMimeType();
@@ -126,6 +154,15 @@ export function SpeakingMicCheck({
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream);
       recorderRef.current = recorder;
+      audioTracks.forEach((track) => {
+        track.onended = () => {
+          if (!mountedRef.current || recorderRef.current !== recorder) return;
+          clearTick();
+          stopStream(true);
+          setError("The microphone disconnected. Reconnect it, then test again.");
+          setPhase("idle");
+        };
+      });
 
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -146,6 +183,7 @@ export function SpeakingMicCheck({
         }
 
         const url = URL.createObjectURL(blob);
+        playbackUrlRef.current = url;
         setPlaybackUrl(url);
         setPlaybackDuration(MIC_TEST_SEC);
         setPhase("playback");
@@ -177,10 +215,19 @@ export function SpeakingMicCheck({
           recorder.stop();
         }
       }, 200);
-    } catch {
+    } catch (e) {
       clearTick();
-      stopStream();
-      setError("Microphone access is required. Tap Test my microphone and allow access.");
+      stopStream(true);
+      const name = e instanceof DOMException ? e.name : "";
+      const message =
+        name === "NotAllowedError" || name === "PermissionDeniedError"
+          ? "Microphone permission was denied. Enable it in browser settings, then try again."
+          : name === "NotFoundError" || name === "DevicesNotFoundError"
+            ? "No microphone was found. Connect one, then try again."
+            : e instanceof Error
+              ? e.message
+              : "Could not access the microphone. Check the device and try again.";
+      setError(message);
       setPhase("idle");
     }
   }, [clearTick, resetPlayback, stopStream]);
@@ -324,6 +371,8 @@ export function SpeakingMicCheck({
             "mt-4 text-sm font-semibold",
             isDiagnostic ? "text-navy" : undefined,
           )}
+          role="status"
+          aria-live="polite"
         >
           {statusLabel}
         </p>
@@ -351,7 +400,7 @@ export function SpeakingMicCheck({
             type="button"
             onClick={() => void playPlayback()}
             className={cn(
-              "mt-5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors duration-200",
+              "mt-5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
               isDiagnostic
                   ? "border-navy/15 bg-white hover:border-cyan/40 hover:bg-cyan/8"
                 : "border-cyan/15 bg-teal/10 hover:bg-teal/15",
@@ -391,7 +440,7 @@ export function SpeakingMicCheck({
               type="button"
               onClick={handleConfirm}
               className={cn(
-                "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border px-3 py-2.5 text-xs font-semibold transition-colors duration-200 sm:text-sm",
+                "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border px-3 py-2.5 text-xs font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan sm:text-sm",
                 confirmed
                   ? isDiagnostic
                     ? "border-[#C9F0DC] bg-[#ECFBF3] text-[#0E8F5B]"
@@ -408,7 +457,7 @@ export function SpeakingMicCheck({
               type="button"
               onClick={handleRecordAgain}
               className={cn(
-                "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border px-3 py-2.5 text-xs font-semibold transition-colors duration-200 sm:text-sm",
+                "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border px-3 py-2.5 text-xs font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan sm:text-sm",
                 isDiagnostic
                   ? "border-navy/15 bg-white text-[#334155] hover:border-navy/25 hover:bg-slate-50"
                   : "border-cyan/15 text-[#9FB2C8] hover:bg-white/5",

@@ -35,10 +35,12 @@ export async function GET(request: Request) {
       return NextResponse.redirect(bootstrapUrl);
     }
 
-    // Fresh OAuth cookies are on this response — go straight to destination
-    // (bootstrap refresh often failed and bounced users back to /login).
-    const destUrl = new URL(safeNext, request.url);
-    const res = NextResponse.redirect(destUrl);
+    // Fresh OAuth cookies are applied here. The client continuation can then
+    // recover and sync a completed guest diagnostic before choosing the final
+    // destination, without invoking the refresh/bootstrap loop.
+    const continueUrl = new URL("/auth/continue", request.url);
+    continueUrl.searchParams.set("next", safeNext);
+    const res = NextResponse.redirect(continueUrl);
     applyAuthCookiesToResponse(res, setCookies);
 
     const secure = process.env.NODE_ENV === "production";

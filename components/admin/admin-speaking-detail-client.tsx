@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   EvaluatorAiPrescore,
-  EvaluatorAudioPlayer,
   EvaluatorCriteriaRubric,
-  EvaluatorCueCard,
   EvaluatorOverallBand,
   EvaluatorPartTabs,
   EvaluatorReviewActions,
   EvaluatorScoreComparison,
+  EvaluatorSpeakingAiAdvisory,
+  EvaluatorSpeakingResponses,
   EvaluatorStudentContext,
   EvaluatorStudentHeader,
   EvaluatorQueueBadge,
@@ -24,11 +24,16 @@ import { adminLink } from "@/components/admin/admin-ui";
 import { adminApi, type SpeakingReviewDetail } from "@/lib/admin-api";
 import { compareSpeakingScores } from "@/lib/review-comparison";
 import {
+  hasLargeSpeakingOverride,
+  orderedSpeakingResponses,
+  speakingAiEvaluation,
+  speakingPipelineState,
+} from "@/lib/speaking-review-ui";
+import {
   aiScoresToCriteria,
   computeOverallBand,
   CRITERIA_KEYS,
   CRITERIA_LABELS,
-  defaultCriteriaFromReview,
   type HumanCriteriaScores,
 } from "@/lib/speaking-band";
 import { cn } from "@/lib/utils";
@@ -48,6 +53,13 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [activePart, setActivePart] = useState(1);
+  const [selectedResponseId, setSelectedResponseId] = useState<string | null>(null);
+  const [humanConfirmed, setHumanConfirmed] = useState(false);
+  const [approvalIdempotencyKey] = useState(
+    () =>
+      `${reviewId}:${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`,
+  );
 
   const load = useCallback(async () => {
     setError(null);
@@ -55,23 +67,55 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
       const data = await adminApi.getSpeaking(reviewId);
       setReview(data);
       setFeedback(data.reviewer_notes ?? "");
-      const defaults = defaultCriteriaFromReview(
-        data.human_criteria_scores,
-        data.ai_scores,
+      setCriteria(data.human_criteria_scores ?? {});
+      const ordered = orderedSpeakingResponses(data);
+      const initialPart = ordered[0]?.part ?? data.submission_meta?.part ?? 1;
+      setActivePart(initialPart);
+      setSelectedResponseId(
+        ordered.find((response) => response.part === initialPart)?.response_id ??
+          null,
       );
-      setCriteria(defaults ?? {});
+      setHumanConfirmed(data.status === "completed");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load review");
     }
   }, [reviewId]);
 
   useEffect(() => {
+    // Initial data hydration is intentionally driven by the route parameter.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
   const overall = useMemo(() => computeOverallBand(criteria), [criteria]);
   const readOnly = review?.status === "completed";
-  const activePart = review?.submission_meta?.part ?? 2;
+  const responses = useMemo(
+    () => (review ? orderedSpeakingResponses(review) : []),
+    [review],
+  );
+  const responseCounts = useMemo(
+    () =>
+      responses.reduce<Partial<Record<number, number>>>((counts, response) => {
+        counts[response.part] = (counts[response.part] ?? 0) + 1;
+        return counts;
+      }, {}),
+    [responses],
+  );
+  const evaluation = useMemo(
+    () => speakingAiEvaluation(review?.ai_scores ?? null),
+    [review?.ai_scores],
+  );
+  const pipelineState = useMemo(
+    () => (review ? speakingPipelineState(review) : "legacy"),
+    [review],
+  );
+  const failedTranscriptCount = useMemo(
+    () =>
+      responses.filter(
+        (response) => response.transcription_status?.toLowerCase() === "failed",
+      ).length,
+    [responses],
+  );
 
   const comparison = useMemo(
     () =>
@@ -91,16 +135,24 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
     () => aiScoresToCriteria(review?.ai_scores ?? null),
     [review?.ai_scores],
   );
+  const largeOverride = useMemo(
+    () => hasLargeSpeakingOverride(comparison),
+    [comparison],
+  );
 
   const onCriteriaChange = (key: keyof HumanCriteriaScores, value: number) => {
     setCriteria((prev) => ({ ...prev, [key]: value }));
+    setHumanConfirmed(false);
     setSuccess(null);
   };
 
   const acceptAiScores = () => {
     if (!aiCriteria) return;
     setCriteria(aiCriteria);
-    setSuccess("Copied AI scores into the rubric.");
+    setHumanConfirmed(false);
+    setSuccess(
+      "AI scores copied. Review each criterion and confirm your human assessment.",
+    );
   };
 
   const saveDraft = async () => {
@@ -131,6 +183,18 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
       setError("Select a half-band for all four criteria before submitting.");
       return;
     }
+    if (largeOverride && !feedback.trim()) {
+      setError(
+        "Add reviewer notes explaining any criterion or overall override of 1.0 band or more.",
+      );
+      return;
+    }
+    if (!humanConfirmed) {
+      setError(
+        "Confirm that you independently listened to the submitted recordings and assessed all four criteria before approval.",
+      );
+      return;
+    }
     setBusy(true);
     setError(null);
     setSuccess(null);
@@ -138,6 +202,10 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
       const updated = await adminApi.approveSpeaking(reviewId, {
         human_criteria_scores: criteria,
         reviewer_notes: feedback || undefined,
+        audio_confirmed: true,
+        confirmation: "confirm_final_approval",
+        idempotency_key: approvalIdempotencyKey,
+        ai_override_note: largeOverride ? feedback.trim() : undefined,
       });
       setReview(updated);
       setCriteria(updated.human_criteria_scores ?? criteria);
@@ -200,17 +268,26 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
           <div className="space-y-5">
-            <EvaluatorAudioPlayer
-              audioUrl={review.audio_play_url}
-              partLabel={review.submission_meta?.part_label ?? `Part ${activePart}`}
+            <EvaluatorPartTabs
+              activePart={activePart}
+              responseCounts={responseCounts}
+              onPartChange={(part) => {
+                setActivePart(part);
+                setSelectedResponseId(
+                  responses.find((response) => response.part === part)
+                    ?.response_id ?? null,
+                );
+              }}
             />
 
-            <EvaluatorPartTabs activePart={activePart} />
-
-            <EvaluatorCueCard
-              title={review.submission_meta?.prompt_title}
-              cueCard={review.submission_meta?.cue_card}
-              transcript={review.transcript}
+            <EvaluatorSpeakingResponses
+              review={review}
+              activePart={activePart}
+              responses={responses}
+              selectedResponseId={selectedResponseId}
+              onSelectResponse={setSelectedResponseId}
+              pipelineState={pipelineState}
+              evaluation={evaluation}
             />
 
             <EvaluatorCriteriaRubric
@@ -238,10 +315,72 @@ export function AdminSpeakingDetailClient({ reviewId }: Props) {
                 />
               </div>
             </section>
+
+            {!readOnly ? (
+              <section
+                className={cn(
+                  evaluatorCard,
+                  evaluatorCardPad,
+                  "space-y-3 border-l-4 border-l-cyan",
+                )}
+              >
+                <h3 className="text-sm font-bold text-navy">
+                  Examiner confirmation
+                </h3>
+                <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-[#334155]">
+                  <input
+                    type="checkbox"
+                    checked={humanConfirmed}
+                    onChange={(event) => {
+                      setHumanConfirmed(event.target.checked);
+                      setError(null);
+                    }}
+                    className="mt-0.5 size-4 rounded border-slate-300 accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan"
+                  />
+                  <span>
+                    I independently listened to the submitted recordings and assessed
+                    all four criteria. Transcripts and AI evidence were advisory only.
+                    {failedTranscriptCount > 0 ||
+                    pipelineState === "transcription_failed" ? (
+                      <>
+                        {" "}
+                        I understand that{" "}
+                        {failedTranscriptCount > 0
+                          ? `${failedTranscriptCount} ${
+                              failedTranscriptCount === 1
+                                ? "transcript is"
+                                : "transcripts are"
+                            } unavailable`
+                          : "some transcript material is unavailable"}{" "}
+                        and confirm these scores from the available audio.
+                      </>
+                    ) : null}
+                  </span>
+                </label>
+                {largeOverride ? (
+                  <p
+                    className={cn(
+                      "rounded-lg border px-3 py-2 text-xs",
+                      feedback.trim()
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : "border-amber-200 bg-amber-50 text-amber-900",
+                    )}
+                  >
+                    A score differs from AI by at least 1.0 band. Reviewer notes are
+                    required before approval
+                    {feedback.trim() ? " and have been provided." : "."}
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
           </div>
 
           <aside className="space-y-4 lg:sticky lg:top-4">
             <EvaluatorAiPrescore aiScores={review.ai_scores} />
+            <EvaluatorSpeakingAiAdvisory
+              evaluation={evaluation}
+              attemptMetrics={review.attempt_metrics}
+            />
             <EvaluatorScoreComparison
               comparison={comparison}
               onAcceptAi={acceptAiScores}

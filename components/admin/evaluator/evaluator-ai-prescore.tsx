@@ -5,7 +5,6 @@ import { Sparkles } from "lucide-react";
 import {
   evaluatorCard,
   evaluatorCardPad,
-  evaluatorMeta,
   evaluatorTitle,
 } from "@/components/admin/evaluator/evaluator-ui";
 import {
@@ -88,9 +87,10 @@ export function EvaluatorAiPrescore({ aiScores, variant = "speaking" }: Props) {
             type="button"
             role="switch"
             aria-checked={shown}
+            aria-label="Show AI pre-score"
             onClick={() => setShown((v) => !v)}
             className={cn(
-              "relative h-5 w-[34px] cursor-pointer rounded-full transition-colors",
+              "relative h-5 w-[34px] cursor-pointer rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan",
               shown ? "bg-cyan" : "bg-[#E4E9F0]",
             )}
           >

@@ -15,6 +15,9 @@ export type AnnotationSpan = {
   title: string;
   body: string;
   suggestion?: string;
+  /** Exact transcript offsets, preferred when the same quote occurs repeatedly. */
+  start?: number;
+  end?: number;
 };
 
 export const ANNOTATION_KIND_LABEL: Record<AnnotationKind, string> = {

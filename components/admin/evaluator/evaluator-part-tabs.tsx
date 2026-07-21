@@ -11,11 +11,17 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   activePart: number;
+  onPartChange?: (part: number) => void;
+  responseCounts?: Partial<Record<number, number>>;
 };
 
 const PARTS = [1, 2, 3];
 
-export function EvaluatorPartTabs({ activePart }: Props) {
+export function EvaluatorPartTabs({
+  activePart,
+  onPartChange,
+  responseCounts,
+}: Props) {
   return (
     <div
       className="flex border-b border-[#EAEEF3]"
@@ -24,23 +30,44 @@ export function EvaluatorPartTabs({ activePart }: Props) {
     >
       {PARTS.map((part) => {
         const active = part === activePart;
-        const disabled = part !== activePart;
         return (
           <button
             key={part}
             type="button"
             role="tab"
             aria-selected={active}
-            disabled={disabled}
+            aria-controls={`speaking-part-${part}`}
+            id={`speaking-part-tab-${part}`}
+            tabIndex={active ? 0 : -1}
+            onClick={() => onPartChange?.(part)}
+            onKeyDown={(event) => {
+              const keyToPart: Partial<Record<string, number>> = {
+                ArrowLeft: part === 1 ? 3 : part - 1,
+                ArrowRight: part === 3 ? 1 : part + 1,
+                Home: 1,
+                End: 3,
+              };
+              const nextPart = keyToPart[event.key];
+              if (!nextPart) return;
+              event.preventDefault();
+              onPartChange?.(nextPart);
+              document
+                .getElementById(`speaking-part-tab-${nextPart}`)
+                ?.focus();
+            }}
             className={cn(
-              "cursor-pointer px-4 py-2.5 text-sm font-medium transition-colors sm:px-[18px]",
+              "cursor-pointer px-4 py-2.5 text-sm font-medium transition-colors focus-visible:rounded-t-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan sm:px-[18px]",
               active
                 ? "border-b-[2.5px] border-cyan font-bold text-navy"
                 : "text-[#94A3B8] hover:text-[#5A6B82]",
-              disabled && !active && "cursor-not-allowed",
             )}
           >
             Part {part}
+            {responseCounts?.[part] != null ? (
+              <span className="ml-1.5 font-mono text-[10px] text-[#64748B]">
+                ({responseCounts[part]})
+              </span>
+            ) : null}
           </button>
         );
       })}

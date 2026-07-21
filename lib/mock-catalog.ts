@@ -228,6 +228,7 @@ export type MockMeta = {
   listeningMinutes: number;
   readingMinutes: number;
   writingMinutes: number;
+  speakingMinutes?: number;
   totalMinutes: number;
 };
 

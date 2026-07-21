@@ -12,6 +12,7 @@ import type { SpeakingModuleReviewPayload } from "@/lib/module-review-types";
 import { navigateFromProgress } from "@/lib/mock-exam-nav";
 import { mockApi } from "@/modules/mock/services/mock-api";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
+import { speakingStatusPath } from "@/modules/speaking/lib/speaking-status-routing";
 import {
   formatRecordedDuration,
   SectionResultsCtaBar,
@@ -23,6 +24,24 @@ type Props = {
   testId: string;
   testNumber: number;
 };
+
+function releaseMessage(payload: SpeakingModuleReviewPayload): string {
+  if (payload.release_state === "withdrawn") {
+    return "Your Speaking report is temporarily unavailable while it is reviewed.";
+  }
+  if (payload.release_state === "released" && payload.report_available === true) {
+    return payload.overall_band != null
+      ? `Your examiner-approved Speaking band is ${payload.overall_band.toFixed(1)}. Your report is ready.`
+      : "Your examiner-approved Speaking report is now available.";
+  }
+  if (payload.release_state === "processing") {
+    return "Your recording is being prepared for examiner review.";
+  }
+  if (payload.release_state === "awaiting_examiner") {
+    return "Your recording is awaiting examiner review.";
+  }
+  return "Your Speaking evaluation will be included in your final test results.";
+}
 
 export function SpeakingModuleReviewClient({ testId, testNumber }: Props) {
   const router = useRouter();
@@ -63,6 +82,11 @@ export function SpeakingModuleReviewClient({ testId, testNumber }: Props) {
       next_part: payload.next_part,
     });
   }, [mockAttemptId, payload, mockSlug, router, testId]);
+
+  const handleOpenSpeakingStatus = useCallback(() => {
+    if (!payload) return;
+    router.push(speakingStatusPath(testNumber, payload.attempt_id, payload));
+  }, [payload, router, testNumber]);
 
   const subtitle = useMemo(() => {
     if (!payload) return "";
@@ -108,13 +132,20 @@ export function SpeakingModuleReviewClient({ testId, testNumber }: Props) {
     <SectionResultsShell
       centered
       footer={
-        <SectionResultsCtaBar primaryLabel={ctaLabel} onPrimary={handleContinue} />
+        <SectionResultsCtaBar
+          primaryLabel={ctaLabel}
+          onPrimary={handleContinue}
+          secondaryLabel={
+            payload.report_available ? "View Speaking Report" : "Check Review Status"
+          }
+          onSecondary={handleOpenSpeakingStatus}
+        />
       }
     >
       <SectionSubmissionConfirmation
         subtitle={subtitle}
         stats={stats}
-        infoMessage="Your Speaking evaluation will be included in your final test results."
+        infoMessage={releaseMessage(payload)}
       />
     </SectionResultsShell>
   );

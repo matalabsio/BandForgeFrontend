@@ -134,10 +134,18 @@ export function DiagnosticSpeakingExperience() {
   const handleExamComplete = useCallback(
     (recordings: SpeakingSessionRecording[]) => {
       if (!pack || submitting) return;
-      const hasPart1 = recordings.some((r) => r.part === 1);
-      const hasPart2 = recordings.some((r) => r.part === 2);
-      if (!hasPart1 && !hasPart2) {
-        setError("Please complete at least one speaking recording before submitting.");
+      const expectedQuestionIds = [
+        ...pack.speaking.part1.questions.map((question) => question.id),
+        ...(pack.speaking.part2.enabled ? ["diagnostic-p2"] : []),
+      ];
+      const recordedQuestionIds = new Set(recordings.map((recording) => recording.questionId));
+      const missingCount = expectedQuestionIds.filter(
+        (questionId) => !recordedQuestionIds.has(questionId),
+      ).length;
+      if (missingCount > 0) {
+        setError(
+          `Please record every speaking answer before submitting (${missingCount} remaining).`,
+        );
         return;
       }
 

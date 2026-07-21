@@ -36,6 +36,8 @@ type Props = {
   /** Prefer over backHref for SPA shells (e.g. diagnostic results). */
   onBack?: () => void;
   coachOpen?: boolean;
+  primaryActionLabel?: string;
+  onPrimaryAction?: () => void;
 };
 
 export function WritingFeedbackView({
@@ -49,6 +51,8 @@ export function WritingFeedbackView({
   dashboardHref = "/dashboard",
   onBack,
   coachOpen = false,
+  primaryActionLabel,
+  onPrimaryAction,
 }: Props) {
   const router = useRouter();
   const isDiagnostic = mode === "diagnostic";
@@ -285,9 +289,10 @@ export function WritingFeedbackView({
             ) : (
               <FeedbackCtaFooter
                 primaryHref={nextHref}
-                primaryLabel={nextLabel}
+                primaryLabel={primaryActionLabel ?? nextLabel}
                 secondaryHref={dashboardHref}
                 secondaryLabel="Back to Dashboard"
+                onPrimaryClick={onPrimaryAction}
               />
             )}
           </aside>

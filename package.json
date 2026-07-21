@@ -13,6 +13,7 @@
     "test:auth-refresh": "node scripts/verify-auth-refresh-flow.mjs",
     "test:auth-redirect": "node scripts/verify-auth-redirect-flow.mjs",
     "test:auth-session": "node scripts/verify-auth-session-flow.mjs",
+    "test:post-login-destination": "node --experimental-strip-types lib/post-login-destination.test.mjs",
     "test:listening-inline-blank": "node modules/listening/lib/inline-blank.test.mjs",
     "test:jwt-expiry": "node lib/jwt-expiry.test.mjs",
     "test:exam-session": "node lib/exam-session.test.mjs",
@@ -24,6 +25,12 @@
     "test:study-plan-calendar": "node lib/study-plan-calendar.test.mjs",
     "test:diagnostic-pack": "node lib/diagnostic-pack.test.mjs",
     "test:writing-diagnostic-adapter": "node modules/writing/lib/diagnostic-to-writing-review.test.mjs",
+    "test:speaking-phases": "node --experimental-strip-types modules/speaking/lib/speaking-phases.test.mjs",
+    "test:speaking-report": "node --experimental-strip-types modules/speaking/lib/build-speaking-feedback.test.mjs",
+    "test:speaking-phase-13": "node --experimental-strip-types modules/speaking/lib/speaking-phase-13.test.mjs",
+    "test:speaking-review-ui": "node --experimental-strip-types lib/speaking-review-ui.test.mjs",
+    "test:speaking-transcripts": "node --experimental-strip-types modules/speaking/lib/speaking-transcript-groups.test.mjs",
+    "test:mock-results": "node --experimental-strip-types modules/mock/lib/mock-result-presentation.test.mjs",
     "build:diagnostic-pack": "node ../scripts/build-diagnostic-pack.mjs"
   },
   "dependencies": {

@@ -1,5 +1,10 @@
 /** Shared types for module-complete review (mirrors backend ModuleReviewResponse). */
 
+import type {
+  SpeakingReleaseState,
+  SpeakingReviewer,
+} from "@/modules/speaking/types";
+
 export type ModuleReviewQuestion = {
   question_id: string;
   question_number: number;
@@ -59,9 +64,28 @@ export type SpeakingModuleReviewPayload = {
   duration_seconds: number | null;
   duration_hint_seconds: number | null;
   ai_band: number | null;
+  overall_band: number | null;
+  score_source:
+    | "human"
+    | "ai_estimate"
+    | "processing"
+    | "failed"
+    | "unavailable";
+  ai_status: string | null;
+  evaluation_status: string | null;
+  criteria: Record<string, number>;
+  strengths: string[];
+  improvements: string[];
+  next_band_advice: string | null;
   prompts: string[];
   delivery_notes: string[];
   persona_message: string;
   next_module: string | null;
   next_part: number | null;
+  release_state: SpeakingReleaseState;
+  report_available: boolean;
+  released_at: string | null;
+  approval_version: number;
+  reviewer: SpeakingReviewer | null;
+  result_route: "pending" | "report";
 };

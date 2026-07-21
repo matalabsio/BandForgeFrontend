@@ -34,22 +34,24 @@ export function AdminQuestionsTreeClient({ mockId }: Props) {
   const [modules, setModules] = useState<TreeModule[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [activeModule, setActiveModule] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await adminApi.questionTree(mockId);
       setModules((res.modules ?? []) as TreeModule[]);
+      setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load questions");
+    } finally {
+      setLoading(false);
     }
   }, [mockId]);
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  if (error) return <p className="text-red-600">{error}</p>;
-  if (!modules.length) return <p className="text-gray-600">Loading…</p>;
 
   const flattened = useMemo(
     () =>
@@ -60,12 +62,25 @@ export function AdminQuestionsTreeClient({ mockId }: Props) {
       ),
     [modules],
   );
-  const shown = flattened.filter((row) => activeModule === "all" || row.module === activeModule);
-  const moduleStats = modules.map((m) => ({
-    module: m.module,
-    count: m.parts.reduce((sum, p) => sum + p.question_count, 0),
-  }));
+  const shown = useMemo(
+    () => flattened.filter((row) => activeModule === "all" || row.module === activeModule),
+    [flattened, activeModule],
+  );
+  const moduleStats = useMemo(
+    () =>
+      modules.map((m) => ({
+        module: m.module,
+        count: m.parts.reduce((sum, p) => sum + p.question_count, 0),
+      })),
+    [modules],
+  );
   const maxCount = Math.max(...moduleStats.map((m) => m.count), 1);
+
+  if (error) return <p className="text-red-600">{error}</p>;
+  if (loading) return <p className="text-gray-600">Loading…</p>;
+  if (!modules.length) {
+    return <p className="text-gray-600">No questions for this mock yet.</p>;
+  }
 
   return (
     <div className="space-y-6">

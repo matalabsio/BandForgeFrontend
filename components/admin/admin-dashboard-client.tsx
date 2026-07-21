@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   ArrowRight,
@@ -23,6 +24,7 @@ import {
   type BarItem,
   type CatalogModuleStat,
 } from "@/components/admin/admin-charts";
+import { AdminCreateMockForm } from "@/components/admin/admin-create-mock-form";
 import { AdminKpiCard } from "@/components/admin/admin-kpi-card";
 import {
   adminBtnPrimary,
@@ -199,11 +201,12 @@ function QuickActionCard({
 }
 
 export function AdminDashboardClient() {
+  const router = useRouter();
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [mocks, setMocks] = useState<AdminMockListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [createSoonOpen, setCreateSoonOpen] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [recentActivityVisible, setRecentActivityVisible] = useState(RECENT_ACTIVITY_INITIAL);
 
   useEffect(() => {
@@ -370,10 +373,10 @@ export function AdminDashboardClient() {
             <button
               type="button"
               className={cn(adminBtnPrimary, "w-full sm:w-auto")}
-              onClick={() => setCreateSoonOpen(true)}
+              onClick={() => setShowCreateForm((v) => !v)}
             >
               <Plus className="mr-1.5 size-4" aria-hidden />
-              Create mock
+              {showCreateForm ? "Hide form" : "Create mock"}
             </button>
             <Link
               href="/admin/mocks"
@@ -388,24 +391,14 @@ export function AdminDashboardClient() {
         </div>
       </section>
 
-      {createSoonOpen ? (
-        <div
-          className={cn(adminCard, "border-cyan/30 bg-cyan-soft/30")}
-          role="status"
-        >
-          <p className="font-semibold text-navy">Create mock — coming soon</p>
-          <p className="mt-1 text-sm text-[#5A6B82]">
-            Mock creation from the admin dashboard is not wired yet. Use the mocks catalog to
-            manage existing tests.
-          </p>
-          <button
-            type="button"
-            className={cn(adminBtnSecondary, "mt-3")}
-            onClick={() => setCreateSoonOpen(false)}
-          >
-            Dismiss
-          </button>
-        </div>
+      {showCreateForm ? (
+        <AdminCreateMockForm
+          onCancel={() => setShowCreateForm(false)}
+          onCreated={({ id }) => {
+            setShowCreateForm(false);
+            router.push(`/admin/mocks/${id}`);
+          }}
+        />
       ) : null}
 
       {/* KPI row */}
@@ -654,7 +647,7 @@ export function AdminDashboardClient() {
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <button
             type="button"
-            onClick={() => setCreateSoonOpen(true)}
+            onClick={() => setShowCreateForm(true)}
             className="group relative flex flex-col overflow-hidden rounded-[18px] bg-navy p-4 text-left transition hover:-translate-y-0.5 sm:p-[22px]"
           >
             <span

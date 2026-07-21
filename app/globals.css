@@ -544,3 +544,62 @@ html {
     animation: none;
   }
 }
+
+/* Speaking score report only: complete, high-contrast print/PDF output. */
+.speaking-report .speaking-report-print-only {
+  display: none;
+}
+
+@media print {
+  .speaking-report {
+    min-height: auto !important;
+    overflow: visible !important;
+    padding: 0.35in;
+    background: #ffffff !important;
+    color: #0f1923 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .speaking-report .speaking-report-actions,
+  .speaking-report .speaking-report-audio,
+  .speaking-report .speaking-report-interactive-hint,
+  .speaking-report .speaking-report-screen-analysis {
+    display: none !important;
+  }
+
+  .speaking-report .speaking-report-print-only {
+    display: block !important;
+  }
+
+  .speaking-report main > div {
+    display: block !important;
+    max-width: none !important;
+    padding-inline: 0 !important;
+  }
+
+  .speaking-report aside {
+    position: static !important;
+    margin-bottom: 1.5rem;
+  }
+
+  .speaking-report .speaking-report-card,
+  .speaking-report article {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .speaking-report .speaking-report-transcript,
+  .speaking-report main {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .speaking-report h1,
+  .speaking-report h2,
+  .speaking-report h3,
+  .speaking-report h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}

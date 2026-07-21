@@ -18,6 +18,8 @@ type Props = {
   onBack?: () => void;
   targetBand?: number | null;
   coachOpen?: boolean;
+  primaryActionLabel?: string;
+  onPrimaryAction?: () => void;
 };
 
 export function WritingResultsView({
@@ -31,6 +33,8 @@ export function WritingResultsView({
   onBack,
   targetBand = null,
   coachOpen = false,
+  primaryActionLabel,
+  onPrimaryAction,
 }: Props) {
   const feedback = buildWritingFeedback(review, { targetBand });
 
@@ -46,6 +50,8 @@ export function WritingResultsView({
       dashboardHref={dashboardHref}
       onBack={onBack}
       coachOpen={coachOpen}
+      primaryActionLabel={primaryActionLabel}
+      onPrimaryAction={onPrimaryAction}
     />
   );
 }

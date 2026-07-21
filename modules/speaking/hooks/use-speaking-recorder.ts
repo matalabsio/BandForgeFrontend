@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSupportedAudioMimeType } from "@/modules/speaking/lib/media-recorder-support";
+import {
+  getAudioRecordingCapability,
+  getSupportedAudioMimeType,
+} from "@/modules/speaking/lib/media-recorder-support";
 import { playRecordingBeep } from "@/modules/speaking/lib/play-beep";
 
 export type RecorderResult = {
@@ -24,6 +27,7 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
   const { maxDurationSec, onMaxDuration } = options;
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [waveform, setWaveform] = useState<number[]>(() => Array(24).fill(0.08));
   const [lastError, setLastError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -31,32 +35,69 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
   const startRef = useRef<number | null>(null);
   const tickRef = useRef<number | null>(null);
   const resolveStopRef = useRef<((result: RecorderResult | null) => void) | null>(null);
+  const mountedRef = useRef(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserFrameRef = useRef<number | null>(null);
 
   const releaseStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
   }, []);
 
-  const cleanup = useCallback(() => {
+  const cleanup = useCallback((discardRecorder = false) => {
     if (tickRef.current) {
       window.clearInterval(tickRef.current);
       tickRef.current = null;
     }
+    if (analyserFrameRef.current) {
+      cancelAnimationFrame(analyserFrameRef.current);
+      analyserFrameRef.current = null;
+    }
+    const audioContext = audioContextRef.current;
+    audioContextRef.current = null;
+    if (audioContext && audioContext.state !== "closed") void audioContext.close();
+    const recorder = mediaRecorderRef.current;
+    if (discardRecorder && recorder && recorder.state !== "inactive") {
+      recorder.ondataavailable = null;
+      recorder.onerror = null;
+      recorder.onstop = null;
+      try {
+        recorder.stop();
+      } catch {
+        /* recorder already stopped */
+      }
+    }
     releaseStream();
     mediaRecorderRef.current = null;
     startRef.current = null;
-    setRecording(false);
+    if (mountedRef.current) setRecording(false);
   }, [releaseStream]);
 
-  useEffect(() => () => cleanup(), [cleanup]);
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+      cleanup(true);
+      resolveStopRef.current?.(null);
+      resolveStopRef.current = null;
+    },
+    [cleanup],
+  );
 
   const ensureStream = useCallback(async (): Promise<MediaStream> => {
+    const capability = getAudioRecordingCapability();
+    if (!capability.supported) {
+      throw new Error(capability.message);
+    }
     if (streamHasLiveAudio(streamRef.current)) {
       return streamRef.current!;
     }
     releaseStream();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!streamHasLiveAudio(stream)) {
+        stream.getTracks().forEach((track) => track.stop());
+        throw new Error("The selected microphone is not ready. Reconnect it and try again.");
+      }
       streamRef.current = stream;
       return stream;
     } catch (err) {
@@ -97,12 +138,48 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
       }
 
       const stream = await ensureStream();
+      const AudioContextConstructor = window.AudioContext;
+      const audioContext = new AudioContextConstructor();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.72;
+      audioContext.createMediaStreamSource(stream).connect(analyser);
+      audioContextRef.current = audioContext;
+      const samples = new Uint8Array(analyser.frequencyBinCount);
+      let lastPaint = 0;
+      const paintWaveform = (time: number) => {
+        analyser.getByteTimeDomainData(samples);
+        if (time - lastPaint >= 50 && mountedRef.current) {
+          lastPaint = time;
+          const bucketSize = Math.floor(samples.length / 24);
+          setWaveform(
+            Array.from({ length: 24 }, (_, index) => {
+              let peak = 0;
+              for (let i = 0; i < bucketSize; i += 1) {
+                peak = Math.max(peak, Math.abs(samples[index * bucketSize + i] - 128));
+              }
+              return Math.max(0.08, Math.min(1, peak / 64));
+            }),
+          );
+        }
+        analyserFrameRef.current = requestAnimationFrame(paintWaveform);
+      };
+      analyserFrameRef.current = requestAnimationFrame(paintWaveform);
       const mimeType = getSupportedAudioMimeType();
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream);
 
       mediaRecorderRef.current = recorder;
+      stream.getAudioTracks().forEach((track) => {
+        track.onended = () => {
+          if (mediaRecorderRef.current !== recorder || recorder.state === "inactive") return;
+          setLastError("The microphone disconnected. Reconnect it and retry this answer.");
+          cleanup(true);
+          resolveStopRef.current?.(null);
+          resolveStopRef.current = null;
+        };
+      });
       chunksRef.current = [];
       startRef.current = Date.now();
       setSeconds(0);
@@ -113,7 +190,7 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
 
       recorder.onerror = () => {
         setLastError("Recording failed mid-attempt. Please try this question again.");
-        cleanup();
+        cleanup(true);
         resolveStopRef.current?.(null);
         resolveStopRef.current = null;
       };
@@ -162,13 +239,14 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
   ]);
 
   const startRecordingWithBeep = useCallback(async () => {
-    playRecordingBeep();
+    await playRecordingBeep();
     return startRecording();
   }, [startRecording]);
 
   return {
     recording,
     seconds,
+    waveform,
     lastError,
     startRecording,
     startRecordingWithBeep,
