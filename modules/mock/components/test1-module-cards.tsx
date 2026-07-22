@@ -157,8 +157,11 @@ function moduleHref(
   }
 
   // In progress → resume; available → start that module only.
+  // Free access: always set sectionStart so the exam guard does not bounce
+  // the user back to the orchestrator's next_module.
+  const free = isMockFreeModuleAccess();
   const auto = mod.status === "in_progress" || mod.status === "available";
-  const sectionStart = mod.status === "available";
+  const sectionStart = free || mod.status === "available";
 
   let path: string;
   if (key === "listening") {
@@ -213,6 +216,9 @@ type Props = {
   /** Start/resume a module when there is no attempt yet (testing free access). */
   onStartModule?: (module: ModuleKey) => void | Promise<void>;
   startModuleBusy?: boolean;
+  /** Full mock new attempt, then open this module (required to retake completed modules). */
+  onNewAttempt?: (module: ModuleKey) => void | Promise<void>;
+  newAttemptBusy?: boolean;
 };
 
 export function Test1ModuleCards({
@@ -226,6 +232,8 @@ export function Test1ModuleCards({
   catalogModulesEnabled,
   onStartModule,
   startModuleBusy = false,
+  onNewAttempt,
+  newAttemptBusy = false,
 }: Props) {
   const [sectionFilter, setSectionFilter] = useState<SectionFilter>("all");
   const meta = moduleMeta ?? getMockMeta(mockSlug as MockSlug);
@@ -325,6 +333,13 @@ export function Test1ModuleCards({
               ? moduleHref(mockSlug, mockAttemptId, card.key, mod)
               : null;
           const href = link?.href ?? null;
+          const isCurrent = status === "in_progress";
+          const isDone = status === "completed";
+          const canOfferNewAttempt =
+            isDone &&
+            Boolean(mockAttemptId) &&
+            Boolean(onNewAttempt) &&
+            Boolean(mod?.is_enabled);
           const canBootstrapStart =
             !mockAttemptId &&
             Boolean(onStartModule) &&
@@ -332,8 +347,6 @@ export function Test1ModuleCards({
             status === "available" &&
             Boolean(mod?.is_enabled);
           const isInteractive = Boolean(href) || canBootstrapStart;
-          const isCurrent = status === "in_progress";
-          const isDone = status === "completed";
 
           const Icon = MODULE_ICONS[card.key];
           const progress = moduleProgress(status);
@@ -390,9 +403,15 @@ export function Test1ModuleCards({
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              {isInteractive ? (
+              {isInteractive || canOfferNewAttempt ? (
                 <p className="mt-2 text-[11px] font-bold text-[var(--exam-accent)]">
-                  {isDone ? "Open →" : isCurrent ? "Resume →" : "Start →"}
+                  {isDone
+                    ? canOfferNewAttempt
+                      ? "Open · New attempt →"
+                      : "Open →"
+                    : isCurrent
+                      ? "Resume →"
+                      : "Start →"}
                 </p>
               ) : (
                 <p className="mt-2 text-[10px] text-[var(--exam-ink-muted)]">
@@ -412,7 +431,36 @@ export function Test1ModuleCards({
 
           return (
             <li key={card.key}>
-              {href ? (
+              {href && canOfferNewAttempt && mockAttemptId ? (
+                <div className="flex h-full flex-col gap-1.5">
+                  <Link
+                    href={href}
+                    className="block min-h-0 flex-1"
+                    onClick={() => {
+                      if (!link) return;
+                      prepareExamModuleNavigation(mockSlug, card.key, {
+                        mockAttemptId,
+                        auto: link.nav.auto,
+                        sectionStart: link.nav.sectionStart,
+                      });
+                    }}
+                  >
+                    {inner}
+                  </Link>
+                  <button
+                    type="button"
+                    disabled={newAttemptBusy || startModuleBusy}
+                    className="inline-flex min-h-[36px] cursor-pointer items-center justify-center rounded-xl border border-[var(--exam-border)] bg-white px-3 text-[11px] font-semibold text-[var(--exam-ink-muted)] hover:border-[var(--exam-accent)] hover:text-[var(--exam-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void onNewAttempt?.(card.key);
+                    }}
+                  >
+                    {newAttemptBusy ? "Starting…" : "New attempt"}
+                  </button>
+                </div>
+              ) : href ? (
                 <Link
                   href={href}
                   className="block h-full"

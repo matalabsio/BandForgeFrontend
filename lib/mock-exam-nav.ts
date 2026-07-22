@@ -13,6 +13,7 @@ import {
   mockTestIdForNumber,
   testNumberForMockId,
 } from "@/lib/mock-catalog";
+import { isMockFreeModuleAccess } from "@/modules/mock/lib/mock-progress";
 
 type Router = {
   replace: (url: string) => void;
@@ -154,6 +155,19 @@ export function syncExamRoute(
     "status" | "next_module" | "next_part"
   >,
 ): boolean {
+  // Free-access testing: allow opening any module from hub cards without
+  // forcing the sequential next_module path. Still bounce completed mocks
+  // to the band report.
+  if (isMockFreeModuleAccess()) {
+    if (progress.status === "completed") {
+      navigateToExamPath(router, slug, mockPathFromProgress(slug, mockAttemptId, progress), {
+        replace: true,
+        mockAttemptId,
+      });
+      return true;
+    }
+    return false;
+  }
   const redirect = examRedirectIfMismatch(slug, mockAttemptId, current, progress);
   if (redirect) {
     navigateToExamPath(router, slug, redirect, {

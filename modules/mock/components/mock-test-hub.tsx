@@ -75,12 +75,13 @@ export function MockTestHub({
   mockTestId,
   title,
   hubMeta,
-  testNumber = 1,
+  testNumber: testNumberProp,
   catalogSlots,
   initialProgress = null,
   variant = "embedded",
   requiresSubscription = false,
 }: Props) {
+  const resolvedTestNumber = testNumberProp ?? testNumberForMockId(mockTestId);
   const legacyMeta = hubMeta ? null : getMockMeta(mockSlug as MockSlug);
   const meta = hubMeta ?? legacyMeta!;
   const displayLabel = title ?? meta.displayLabel;
@@ -185,6 +186,38 @@ export function MockTestHub({
     }
   };
 
+  /** Card "New attempt": fresh mock run, then open that section (not Listening by default). */
+  const handleNewAttemptForModule = useCallback(
+    async (module: MockModuleKey) => {
+      if (subscriptionLocked) return;
+      try {
+        clearMockExamLocalData(mockTestId);
+        const res = await start(true);
+        const attemptId = res.mock_attempt_id;
+        if (!attemptId) return;
+        persistMockAttemptId(mockTestId, attemptId);
+        navigateToModuleExam({ push, replace }, resolvedTestNumber, module, {
+          part: 1,
+          passage: 1,
+          auto: true,
+          sectionStart: true,
+          mockAttemptId: attemptId,
+          replace: true,
+        });
+      } catch {
+        /* error surfaced via hook */
+      }
+    },
+    [
+      mockTestId,
+      push,
+      replace,
+      resolvedTestNumber,
+      start,
+      subscriptionLocked,
+    ],
+  );
+
   const handleStartModule = useCallback(
     async (module: MockModuleKey) => {
       if (subscriptionLocked) return;
@@ -196,7 +229,7 @@ export function MockTestHub({
         }
         if (!attemptId) return;
         persistMockAttemptId(mockTestId, attemptId);
-        navigateToModuleExam({ push, replace }, testNumber, module, {
+        navigateToModuleExam({ push, replace }, resolvedTestNumber, module, {
           part: 1,
           passage: 1,
           auto: true,
@@ -212,9 +245,9 @@ export function MockTestHub({
       mockTestId,
       push,
       replace,
+      resolvedTestNumber,
       start,
       subscriptionLocked,
-      testNumber,
     ],
   );
 
@@ -222,7 +255,10 @@ export function MockTestHub({
     showReadiness && status !== "completed" && status !== "in_progress";
   const primaryDisabled =
     busy || subscriptionLocked || (primaryNeedsReadiness && !readinessReady);
-  const newAttemptDisabled = busy || subscriptionLocked || !readinessReady;
+  // Only gate on readiness when the checklist is visible (fresh start / completed).
+  // During in_progress the checklist is hidden — New attempt must stay clickable.
+  const newAttemptDisabled =
+    busy || subscriptionLocked || (showReadiness && !readinessReady);
 
   const flowDescription =
     meta.flowHint ||
@@ -393,6 +429,8 @@ export function MockTestHub({
         catalogModulesEnabled={hubMeta?.modulesEnabled}
         onStartModule={handleStartModule}
         startModuleBusy={busy}
+        onNewAttempt={handleNewAttemptForModule}
+        newAttemptBusy={busy}
       />
 
       {hasAttempt ? (
@@ -413,7 +451,7 @@ export function MockTestHub({
 
   return (
     <MockTestHubShell
-      activeNumber={testNumber}
+      activeNumber={resolvedTestNumber}
       title={examTitle}
       catalogSlots={catalogSlots}
     >

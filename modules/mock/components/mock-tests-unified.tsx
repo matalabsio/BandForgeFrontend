@@ -50,6 +50,7 @@ export function MockTestsUnified({
           mockTestId={selectedSlot.id}
           title={selectedSlot.displayLabel}
           hubMeta={slotToHubMeta(selectedSlot)}
+          testNumber={activeNumber}
           initialProgress={initialProgress}
           variant="embedded"
           requiresSubscription={selectedSlot.requiresSubscription}
