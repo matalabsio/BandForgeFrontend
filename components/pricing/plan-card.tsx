@@ -27,6 +27,52 @@ export type PlanCardCopy = {
 };
 
 export const PLAN_COPY: Record<string, PlanCardCopy> = {
+  "writing-sprint": {
+    tagline: "Fix the IELTS Writing section that's costing you marks.",
+    features: [
+      "12 structured Writing tasks over 90 days",
+      "AI evaluation instantly on every task",
+      "Band 9-trained human review within 48 hours",
+      "1 full mock test unlocked on completion",
+      "Completion Guarantee — extend free if no improvement",
+    ],
+    cta: "Buy Writing Sprint",
+  },
+  "speaking-sprint": {
+    tagline: "Real cue-card answers with AI plus human band-descriptor feedback.",
+    features: [
+      "12 recorded Speaking tasks over 90 days",
+      "AI analysis of fluency, grammar, and pronunciation",
+      "Band 9-trained human review within 48 hours",
+      "1 full mock test unlocked on completion",
+      "Completion Guarantee — extend free if no improvement",
+    ],
+    cta: "Buy Speaking Sprint",
+  },
+  "dual-sprint": {
+    tagline: "Writing and Speaking together — the two skills coaches can't batch-fix.",
+    features: [
+      "12 tasks across Writing and Speaking over 90 days",
+      "AI evaluation instantly on every task",
+      "Band 9-trained human review within 48 hours",
+      "1 full mock test unlocked on completion",
+      "Completion Guarantee — extend free if no improvement",
+    ],
+    cta: "Buy Dual Sprint",
+    badge: "Most popular",
+  },
+  "all-skills-sprint": {
+    tagline: "Listening, Reading, Writing, and Speaking in one focused program.",
+    features: [
+      "12 tasks across all four IELTS skills over 90 days",
+      "AI practice plus Band 9 human review within 48 hours",
+      "1 full mock test unlocked on completion",
+      "Completion Guarantee — extend free if no improvement",
+      "Best value for full-band improvement",
+    ],
+    cta: "Buy All Skills Sprint",
+    badge: "Best value",
+  },
   starter_monthly: {
     tagline: "Get started with focused mock practice.",
     features: [

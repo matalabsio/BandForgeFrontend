@@ -24,6 +24,15 @@ if (process.env.VERCEL === "1" && !process.env.NEXT_PUBLIC_API_URL) {
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  async redirects() {
+    return [
+      {
+        source: "/vs-coaching",
+        destination: "/vs-coaching-centres",
+        permanent: true,
+      },
+    ];
+  },
   // Admin listening MP3 uploads proxy through /api/admin — default 10MB truncates part audio.
   experimental: {
     proxyClientMaxBodySize: "50mb",

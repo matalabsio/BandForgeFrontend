@@ -4,12 +4,12 @@ import { DiagnosticStartExperience } from "@/components/diagnostic/diagnostic-st
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import { fetchSubscription } from "@/lib/payments-server";
 import { pageMetadata } from "@/lib/seo/metadata";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Free IELTS Diagnostic Test — 15 Minutes | BandForge",
-  description:
-    "Take BandForge's free 15-minute IELTS diagnostic. Section-wise band scores for Listening, Reading, Writing, and Speaking. No payment. No spam.",
+  title: PAGE_SEO_COPY.diagnostic.title,
+  description: PAGE_SEO_COPY.diagnostic.description,
   path: "/diagnostic",
 });
 

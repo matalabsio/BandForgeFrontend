@@ -5,6 +5,7 @@ import { BfSectionHeading } from "@/components/bandforge/ui/bf-section-heading";
 import { BfDiagnosticCtaBand } from "@/components/seo/bf-diagnostic-cta-band";
 import { BfSeoLeadAnswer } from "@/components/seo/bf-seo-lead-answer";
 import { OPERATOR_NAME } from "@/lib/seo/claims";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 const relatedLinks = [
   { href: "/telugu", label: "IELTS for Telugu speakers" },
@@ -21,8 +22,8 @@ export function HyderabadLandingExperience() {
     <BandForgeRouteShell
       activeHref="/hyderabad"
       eyebrow="Hyderabad"
-      title="Online IELTS coaching from Hyderabad — without the centre commute."
-      description="BandForge is built by MATA Labs in Gachibowli, Hyderabad. Free diagnostic, skill sprints from ₹999, and Band 9-trained review — for TG and AP students who want flexible online prep."
+      title={PAGE_SEO_COPY.hyderabad.h1}
+      description={PAGE_SEO_COPY.hyderabad.description}
       afterHero={
         <BfDiagnosticCtaBand headline="Hyderabad student? Take the free 15-minute diagnostic." />
       }

@@ -25,6 +25,7 @@ import { getSubscription } from "@/lib/payments";
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import { loginPathWithNext } from "@/lib/auth";
 import { readDiagnosticResults } from "@/lib/diagnostic-session";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 function WhatsAppNote() {
   return (
@@ -136,11 +137,10 @@ export function DiagnosticStartExperience() {
               Free diagnostic · No sign-up to start
             </span>
             <h1 className="mt-4 text-[31px] leading-[1.06] font-bold tracking-[-0.025em] text-balance text-navy sm:text-4xl">
-              Your real IELTS band, in 15 minutes. Free.
+              {PAGE_SEO_COPY.diagnostic.h1}
             </h1>
             <p className="mt-3.5 text-[15px] leading-relaxed font-light text-[#5A6B82]">
-              A free 4-section diagnostic. Calibrated to Band 9. Section-wise
-              scores in 15 minutes.
+              {PAGE_SEO_COPY.diagnostic.description}
             </p>
             <div className="mt-6">
               <DiagnosticSectionGrid />

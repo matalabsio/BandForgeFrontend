@@ -1,8 +1,11 @@
-/** Site-wide FAQ for /faq — AEO-first answers (lead sentence ≤50 words). */
+/** Site-wide FAQ for /faq — Playbook Section 5 (H2 questions; ≤50-word lead, detail after). */
 
 export type FaqItem = {
   question: string;
-  answer: string;
+  /** ≤50 words — featured snippet / FAQPage schema lead. */
+  leadAnswer: string;
+  /** Supporting detail shown after the lead paragraph. */
+  detail?: string;
 };
 
 export const FAQ_LAST_UPDATED = "22 July 2026";
@@ -10,67 +13,84 @@ export const FAQ_LAST_UPDATED = "22 July 2026";
 export const SITE_FAQ: FaqItem[] = [
   {
     question: "What is BandForge?",
-    answer:
-      "BandForge is an online IELTS preparation platform built for Telugu- and Urdu-speaking students in Telangana and Andhra Pradesh. You start with a free 15-minute diagnostic, then choose targeted skill sprints from ₹999 with AI practice and Band 9-trained human review.",
+    leadAnswer:
+      "BandForge is an online IELTS preparation platform built for Telugu- and Urdu-speaking students in Telangana and Andhra Pradesh.",
+    detail:
+      "It starts with a free 15-minute diagnostic showing section-wise band scores, followed by targeted skill sprints from ₹999 with AI practice and human evaluation.",
   },
   {
     question: "Is the IELTS diagnostic really free?",
-    answer:
-      "Yes. The BandForge diagnostic is completely free — no payment or subscription required. You get section-wise band scores in about 15 minutes so you know your real level before spending on coaching.",
+    leadAnswer:
+      "Yes. The 15-minute diagnostic is completely free — no payment details, no trial that converts.",
+    detail:
+      "You get section-wise band estimates for Writing, Speaking, Reading and Listening, and a report showing where you're losing marks.",
   },
   {
-    question: "How long does the free diagnostic take?",
-    answer:
-      "The diagnostic takes 15 minutes. It covers Listening, Reading, Writing, and Speaking sections and gives you section-wise band scores — not just an overall guess.",
+    question: "How accurate is the diagnostic?",
+    leadAnswer:
+      "The diagnostic estimates your band using the official IELTS band descriptors, with AI evaluation calibrated against human-scored samples.",
+    detail:
+      "It's an estimate, not an official score — but it's designed to be honest, including when the news isn't what you hoped.",
   },
   {
-    question: "What is an IELTS skill sprint?",
-    answer:
-      "A sprint is a focused 90-day plan for one or more IELTS skills. Each sprint includes 12 practice tasks, AI feedback, and Band 9-trained human review within 48 hours. Complete all tasks to unlock one full mock test.",
-  },
-  {
-    question: "How much do BandForge sprints cost?",
-    answer:
-      "Writing Sprint and Speaking Sprint are ₹999 each. Dual Sprint (Writing + Speaking) is ₹1,799. All Skills Sprint is ₹2,999. The diagnostic is always free regardless of which sprint you choose.",
-  },
-  {
-    question: "How long do I have access to a sprint?",
-    answer:
-      "Sprint access lasts 90 days from activation. You get 12 tasks during that period. If you finish all 12 tasks with no band improvement, the Completion Guarantee gives you a free extension.",
-  },
-  {
-    question: "How fast is human writing and speaking review?",
-    answer:
-      "Band 9-trained evaluators review your writing and speaking submissions within 48 hours. AI practice feedback is instant on objective sections like Reading and Listening.",
+    question: "What is a skill sprint?",
+    leadAnswer:
+      "A focused program targeting one IELTS section: 12 structured tasks over 90 days of access, each evaluated by AI instantly and reviewed by a Band 9-trained evaluator within 48 hours.",
+    detail:
+      "A full mock test unlocks on completion. Writing ₹999, Speaking ₹999, Dual ₹1,799, All Skills ₹2,999.",
   },
   {
     question: "What is the Completion Guarantee?",
-    answer:
-      "Finish all 12 sprint tasks with no measurable band improvement and BandForge extends your access for free. This applies to paid sprints — terms are in our refund policy.",
+    leadAnswer:
+      "If you complete all 12 tasks in a sprint and your score doesn't improve, your sprint is extended free.",
+    detail:
+      "It exists because the sprints are built to work when the work is done — and we back that.",
   },
   {
-    question: "Is BandForge only for Telugu and Urdu speakers?",
-    answer:
-      "BandForge is built primarily for Telugu- and Urdu-speaking students in AP, Telangana, and Hyderabad. The platform, support, and study paths are tuned for Indian test takers targeting Band 7+.",
+    question: "Do you teach in Telugu or Urdu?",
+    leadAnswer:
+      "Coaching is in English — IELTS is an English exam and immersion matters.",
+    detail:
+      "But the platform is built for Telugu and Urdu speakers: examples from AP, Telangana and Hyderabad, and lessons targeting the specific mistakes speakers of these languages make in IELTS.",
   },
   {
-    question: "Can I prepare on my phone?",
-    answer:
-      "Yes. BandForge works on mobile browsers with thumb-friendly controls and readable passages. Take the diagnostic or practice whenever you have focus time — no classroom schedule required.",
+    question: "Is BandForge for Academic or General Training IELTS?",
+    leadAnswer:
+      "BandForge focuses on IELTS Academic today — the format used for university admissions and most study-abroad routes.",
+    detail:
+      "General Training support is on our roadmap. Contact support@bandforge.study if you need GT prep today.",
   },
   {
-    question: "Where is BandForge based?",
-    answer:
-      "BandForge is operated by MATA Labs OPC Private Limited from Hyderabad, Telangana, India. We serve students across Telangana, Andhra Pradesh, and online learners from Hyderabad and beyond.",
+    question: "How is BandForge different from a coaching centre?",
+    leadAnswer:
+      "Coaching centres sell you a full course before anyone measures where you actually stand.",
+    detail:
+      "BandForge measures first — free — then sells you only the training you need, online, from ₹999, with feedback on your individual work rather than batch lectures.",
   },
   {
-    question: "How do payments work?",
-    answer:
-      "Payments are processed securely via Razorpay. Your sprint activates immediately after payment is verified. For refund and cancellation terms, see our refund policy or contact support@bandforge.study.",
+    question: "How is my Speaking evaluated?",
+    leadAnswer:
+      "You record real answers to real cue cards. AI analyses fluency, pronunciation, grammar and vocabulary instantly.",
+    detail:
+      "A human evaluator reviews your responses and adds band-descriptor feedback. You get both perspectives.",
+  },
+  {
+    question: "How long does it take to improve by 0.5–1 band?",
+    leadAnswer:
+      "It depends on your starting point and section — which is why the diagnostic comes first.",
+    detail:
+      "A sprint gives you 90 days of access and 12 evaluated tasks; how fast you move through them is your pace. Students working consistently typically target a 0.5 band improvement in one section within a single sprint — and the Completion Guarantee backs the format.",
+  },
+  {
+    question: "What is the refund policy?",
+    leadAnswer:
+      "Purchases are final once you access a sprint or evaluation begins — standard for digital learning products.",
+    detail:
+      "Refunds apply only for duplicate charges, failed payments, or total non-delivery. See our refund policy or email support@bandforge.study.",
   },
 ];
 
-/** First sentence of an answer — used for AEO lead blocks and schema snippets. */
+/** @deprecated Use `item.leadAnswer` directly. Kept for callers that pass a combined string. */
 export function faqLeadAnswer(answer: string): string {
   const match = answer.match(/^[^.!?]+[.!?]/);
   return match ? match[0].trim() : answer;

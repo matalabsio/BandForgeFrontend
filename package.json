@@ -32,7 +32,8 @@
     "test:speaking-transcripts": "node --experimental-strip-types modules/speaking/lib/speaking-transcript-groups.test.mjs",
     "test:mock-results": "node --experimental-strip-types modules/mock/lib/mock-result-presentation.test.mjs",
     "build:diagnostic-pack": "node ../scripts/build-diagnostic-pack.mjs",
-    "audit:cwv": "node scripts/audit-cwv.mjs"
+    "audit:cwv": "node scripts/audit-cwv.mjs",
+    "verify:seo": "node scripts/verify-seo.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

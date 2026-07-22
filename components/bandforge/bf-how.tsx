@@ -4,7 +4,7 @@ import {
   BfSectionHeading,
   BfStepIndicator,
 } from "@/components/bandforge/ui";
-import { BRAND_HOW_STEPS, BRAND_HOW_STEPS_MOBILE } from "@/lib/brand-mock-data";
+import { PLAYBOOK_HOW_STEPS } from "@/lib/seo/marketing-pricing";
 
 export function BandForgeHow() {
   return (
@@ -17,9 +17,9 @@ export function BandForgeHow() {
           </BfSectionEyebrow>
           <BfSectionHeading>Six steps, start to band score</BfSectionHeading>
         </div>
-        <BfMarketingStepTimeline steps={BRAND_HOW_STEPS_MOBILE} />
+        <BfMarketingStepTimeline steps={PLAYBOOK_HOW_STEPS} />
         <div className="hidden lg:block">
-          <BfStepIndicator steps={BRAND_HOW_STEPS} />
+          <BfStepIndicator steps={PLAYBOOK_HOW_STEPS} />
         </div>
       </div>
     </section>

@@ -1,7 +1,7 @@
 const stats = [
-  { valueMobile: "Band 9", valueDesktop: "Band 9.0", label: "Trainer" },
-  { valueMobile: "AI-Evaluated", valueDesktop: "AI-Evaluated", label: "Writing" },
-  { valueMobile: "10,000+", valueDesktop: "10,000+", label: "Questions" },
+  { valueMobile: "15 min", valueDesktop: "15 minutes", label: "Free diagnostic" },
+  { valueMobile: "48 hrs", valueDesktop: "48 hours", label: "Band 9 review" },
+  { valueMobile: "From ₹999", valueDesktop: "From ₹999", label: "Skill sprints" },
 ] as const;
 
 /** Full-width stats strip below the hero. */

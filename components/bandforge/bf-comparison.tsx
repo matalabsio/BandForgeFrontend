@@ -1,15 +1,15 @@
 const traditional = [
-  "High fees for classroom bundles",
-  "Feedback delayed by days or batches",
-  "Generic practice sheets for everyone",
-  "Limited full-length mock opportunities",
+  "Sell a full course before measuring where you stand",
+  "Batch lectures with delayed, generic feedback",
+  "High fees for classroom bundles you may not need",
+  "Limited individual work review on Writing and Speaking",
 ] as const;
 
 const bandforge = [
-  "Instant evaluation on objective sections",
-  "Data-driven weak-area maps after every mock",
-  "Exam-faithful environment — timing & UX",
-  "Accessible on mobile whenever you have focus time",
+  "Free 15-minute diagnostic first — section-wise bands",
+  "Targeted sprints from ₹999 for the skill that leaks marks",
+  "AI instantly plus Band 9 human review within 48 hours",
+  "12 tasks over 90 days, mock on completion, Completion Guarantee",
 ] as const;
 
 export function BandForgeComparison() {
@@ -21,7 +21,7 @@ export function BandForgeComparison() {
             Why BandForge
           </p>
           <h2 className="font-display mt-3 text-[1.625rem] leading-[1.1] font-bold tracking-[-0.025em] text-balance text-navy sm:text-[2rem] sm:leading-[1.08] sm:tracking-[-0.03em] lg:text-[2.375rem]">
-            Built for students who cannot rely on expensive coaching alone.
+            Measure first. Train only what you need.
           </h2>
         </div>
 

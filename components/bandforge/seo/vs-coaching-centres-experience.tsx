@@ -7,6 +7,7 @@ import {
   HUMAN_REVIEW_SLA,
   formatPriceInr,
 } from "@/lib/seo/claims";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 type ComparisonRow = {
   factor: string;
@@ -52,8 +53,8 @@ export function VsCoachingCentresExperience() {
     <BandForgeRouteShell
       activeHref="/vs-coaching-centres"
       eyebrow="Honest comparison"
-      title="BandForge vs traditional IELTS coaching centres."
-      description="A straightforward look at cost, feedback speed, and flexibility — so you can decide whether online sprints or classroom coaching fits your timeline and budget."
+      title={PAGE_SEO_COPY.vsCoachingCentres.h1}
+      description={PAGE_SEO_COPY.vsCoachingCentres.description}
     >
       <section className="bf-section bg-white/70">
         <div className="bf-container max-w-3xl">

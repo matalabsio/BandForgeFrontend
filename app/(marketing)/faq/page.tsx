@@ -3,12 +3,12 @@ import { FaqExperience } from "@/components/bandforge/seo/faq-experience";
 import { JsonLd } from "@/components/seo/json-ld";
 import { SITE_FAQ } from "@/lib/seo/faq-content";
 import { pageMetadata } from "@/lib/seo/metadata";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 import { faqPageSchema } from "@/lib/seo/schema";
 
 export const metadata: Metadata = pageMetadata({
-  title: "BandForge FAQ — Diagnostic, Sprints, Pricing",
-  description:
-    "Answers about BandForge's free 15-minute IELTS diagnostic, skill sprints from ₹999, 90-day access, human review within 48 hours, and Completion Guarantee.",
+  title: PAGE_SEO_COPY.faq.title,
+  description: PAGE_SEO_COPY.faq.description,
   path: "/faq",
 });
 

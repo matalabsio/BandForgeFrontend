@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import type { PricingTierId } from "@/lib/brand-mock-data";
 
 type Props = {
-  id: PricingTierId;
+  id: string;
   name: string;
   price: string;
   period?: string;

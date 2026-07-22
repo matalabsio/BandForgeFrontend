@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -20,6 +21,8 @@ import { PlanCard } from "@/components/pricing/plan-card";
 import { PRICING_FAQ } from "@/components/pricing/pricing-faq";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
+import { FREE_DIAGNOSTIC_TIER, sprintPlansToFallbackPlans } from "@/lib/seo/marketing-pricing";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 type OverlayState = null | "creating" | "verifying";
 type StatusModal =
@@ -117,7 +120,10 @@ export function PricingClient() {
     };
   }, []);
 
-  const hasPlans = !loadingPlans && plans.length > 0 && !loadError;
+  const fallbackPlans = sprintPlansToFallbackPlans();
+  const displayPlans = plans.length > 0 ? plans : fallbackPlans;
+  const hasPlans = !loadingPlans && displayPlans.length > 0;
+  const usingFallbackPlans = !loadingPlans && plans.length === 0 && !loadError;
   const checkoutAvailable = paymentsEnabled;
 
   function redirectSessionExpired() {
@@ -243,11 +249,10 @@ export function PricingClient() {
           Plans &amp; pricing
         </p>
         <h1 className="font-display mt-2 text-3xl font-extrabold text-navy sm:text-4xl">
-          Simple pricing. Diagnostic always free.
+          {PAGE_SEO_COPY.pricing.h1}
         </h1>
         <p className="mt-3 text-sm text-muted">
-          Unlock full IELTS mocks, score insights, and examiner-reviewed Writing &amp;
-          Speaking.
+          {PAGE_SEO_COPY.pricing.description}
         </p>
         <p className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-light">
           <LockIcon /> Secure payments powered by Razorpay
@@ -326,6 +331,31 @@ export function PricingClient() {
         </div>
       ) : null}
 
+      {/* free diagnostic */}
+      <div className="mx-auto mt-10 max-w-3xl">
+        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-border-soft bg-surface px-5 py-5 sm:flex-row sm:items-center">
+          <div>
+            <p className="font-display text-base font-bold text-navy">
+              {FREE_DIAGNOSTIC_TIER.name}
+            </p>
+            <p className="mt-1 text-sm text-muted">{FREE_DIAGNOSTIC_TIER.description}</p>
+          </div>
+          <Link
+            href={FREE_DIAGNOSTIC_TIER.href}
+            prefetch
+            className="inline-flex shrink-0 cursor-pointer rounded-xl border border-cyan px-4 py-2 text-sm font-semibold text-cyan transition-colors hover:bg-cyan-soft"
+          >
+            {FREE_DIAGNOSTIC_TIER.cta}
+          </Link>
+        </div>
+      </div>
+
+      {usingFallbackPlans ? (
+        <p className="mx-auto mt-4 max-w-3xl text-center text-xs text-muted-light">
+          Live checkout plans could not be loaded — showing reference sprint pricing below.
+        </p>
+      ) : null}
+
       {/* plans grid */}
       <div className="mt-10">
         {loadingPlans ? (
@@ -337,7 +367,7 @@ export function PricingClient() {
               />
             ))}
           </div>
-        ) : loadError ? (
+        ) : loadError && plans.length === 0 ? (
           <p className="text-center text-sm text-danger">{loadError}</p>
         ) : !hasPlans ? (
           <p className="text-center text-sm text-muted">
@@ -346,8 +376,8 @@ export function PricingClient() {
               : "Payments are temporarily unavailable. Please try again later."}
           </p>
         ) : (
-          <div className="grid items-stretch gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {plans.map((plan) => (
+          <div className="grid items-stretch gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+            {displayPlans.map((plan) => (
               <PlanCard
                 key={plan.id}
                 plan={plan}
@@ -374,6 +404,25 @@ export function PricingClient() {
           with Razorpay. Your mock scores, diagnostic results, and study progress stay
           private in BandForge.
         </p>
+      </div>
+
+      {/* sprint FAQ pointer */}
+      <div className="mx-auto mt-12 max-w-3xl rounded-2xl border border-border-soft bg-white px-6 py-5">
+        <h2 className="font-display text-lg font-bold text-navy">
+          About sprints and the Completion Guarantee
+        </h2>
+        <p className="mt-2 text-[13px] leading-relaxed text-muted">
+          Every sprint includes 12 evaluated tasks over 90 days, AI plus Band 9 human
+          review within 48 hours, and a mock test on completion. Finish all 12 tasks
+          with no score improvement and your sprint is extended free.
+        </p>
+        <Link
+          href="/faq"
+          prefetch
+          className="mt-3 inline-flex cursor-pointer text-sm font-semibold text-cyan hover:underline"
+        >
+          Read all FAQs →
+        </Link>
       </div>
 
       {/* FAQ */}

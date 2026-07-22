@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
-import { BfSectionHeading } from "@/components/bandforge/ui/bf-section-heading";
 import { BfEmptyState } from "@/components/bandforge/ui/bf-empty-state";
 import { BLOG_POSTS } from "@/lib/seo/blog-posts";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 export function BlogIndexExperience() {
   return (
     <BandForgeRouteShell
       activeHref="/blog"
       eyebrow="Blog"
-      title="IELTS guides for Telugu and Urdu speakers."
-      description="Study tips, band-score strategies, and preparation advice for students in AP, Telangana, and Hyderabad. New articles added regularly."
+      title={PAGE_SEO_COPY.blog.h1}
+      description={PAGE_SEO_COPY.blog.description}
     >
       <section className="bf-section">
         <div className="bf-container max-w-3xl">

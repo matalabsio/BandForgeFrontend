@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { siteUrl } from "@/lib/site";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 /** Playbook Section 3 / 9.1 — sitewide defaults (≤60 / ≤155). */
-export const SITE_DEFAULT_TITLE =
-  "BandForge — IELTS Prep for Telugu & Urdu Speakers";
+export const SITE_DEFAULT_TITLE = PAGE_SEO_COPY.home.title;
 
-export const SITE_DEFAULT_DESCRIPTION =
-  "Find your real IELTS band in a free 15-minute diagnostic. Section-wise scores, targeted skill sprints from ₹999. Built in Hyderabad for AP & TG students.";
+export const SITE_DEFAULT_DESCRIPTION = PAGE_SEO_COPY.home.description;
 
 /** Canonical entity blurb for footer and future schema (playbook Section 9.1). */
 export const SITE_ENTITY_DESCRIPTION =

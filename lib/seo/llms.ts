@@ -10,6 +10,7 @@ import {
   SPRINT_TASK_COUNT,
   formatPriceInr,
 } from "@/lib/seo/claims";
+import { buildKeywordMapLlmsSection } from "@/lib/seo/keyword-map";
 import { siteUrl } from "@/lib/site";
 
 type LlmsLink = {
@@ -155,6 +156,8 @@ export function buildLlmsTxt(): string {
         description: "Refund and cancellation terms for digital learning products.",
       },
     ]),
+    "",
+    buildKeywordMapLlmsSection(),
   ];
 
   return `${body.join("\n")}\n`;

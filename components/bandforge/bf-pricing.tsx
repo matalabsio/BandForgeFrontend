@@ -1,6 +1,6 @@
 import { BfPricingCard, BfSectionEyebrow, BfSectionHeading } from "@/components/bandforge/ui";
-import { BRAND_PRICING_TIERS } from "@/lib/brand-mock-data";
-import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links";
+import { HOMEPAGE_PRICING_TIERS } from "@/lib/seo/marketing-pricing";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 export function BandForgePricing() {
   return (
@@ -11,14 +11,16 @@ export function BandForgePricing() {
       <div className="bf-container">
         <div className="mb-6 lg:mx-auto lg:mb-[54px] lg:max-w-3xl lg:text-center">
           <BfSectionEyebrow className="mb-3">Pricing</BfSectionEyebrow>
-          <BfSectionHeading>Start free, upgrade when ready</BfSectionHeading>
+          <BfSectionHeading>{PAGE_SEO_COPY.pricing.h1}</BfSectionHeading>
+          <p className="mt-3 text-sm leading-relaxed text-muted lg:text-base">
+            {PAGE_SEO_COPY.pricing.description}
+          </p>
         </div>
-        <div className="flex flex-col gap-3.5 md:grid md:grid-cols-2 lg:grid-cols-3 lg:items-start lg:gap-[22px]">
-          {BRAND_PRICING_TIERS.map((tier) => (
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-[22px]">
+          {HOMEPAGE_PRICING_TIERS.map((tier) => (
             <BfPricingCard
               key={tier.id}
               {...tier}
-              href={tier.id === "free" ? marketingAppHref() : "/pricing"}
             />
           ))}
         </div>

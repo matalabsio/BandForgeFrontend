@@ -1,6 +1,5 @@
 import type { BlogPost } from "@/lib/seo/blog-posts";
 import type { FaqItem } from "@/lib/seo/faq-content";
-import { faqLeadAnswer } from "@/lib/seo/faq-content";
 import { SITE_ENTITY_DESCRIPTION } from "@/lib/seo/metadata";
 import { SPRINT_PLANS } from "@/lib/seo/claims";
 import { siteUrl } from "@/lib/site";
@@ -162,7 +161,7 @@ export function faqPageSchema(faq: FaqItem[]): JsonLdObject {
       name: item.question,
       acceptedAnswer: {
         "@type": "Answer",
-        text: faqLeadAnswer(item.answer),
+        text: item.detail ? `${item.leadAnswer} ${item.detail}` : item.leadAnswer,
       },
     })),
   };

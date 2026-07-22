@@ -1,14 +1,27 @@
 import type { Metadata } from "next";
 import { UrduLandingExperience } from "@/components/bandforge/seo/urdu-landing-experience";
+import { JsonLd } from "@/components/seo/json-ld";
 import { pageMetadata } from "@/lib/seo/metadata";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
+import { webPageSchema } from "@/lib/seo/schema";
 
 export const metadata: Metadata = pageMetadata({
-  title: "IELTS for Urdu Speakers — Hyderabad's Own Platform",
-  description:
-    "IELTS preparation for Urdu-speaking students in Hyderabad and Telangana. Free diagnostic, sprints from ₹999, AI plus Band 9 human review within 48 hours.",
+  title: PAGE_SEO_COPY.urdu.title,
+  description: PAGE_SEO_COPY.urdu.description,
   path: "/urdu",
 });
 
 export default function UrduPage() {
-  return <UrduLandingExperience />;
+  return (
+    <>
+      <JsonLd
+        data={webPageSchema({
+          name: PAGE_SEO_COPY.urdu.title,
+          description: PAGE_SEO_COPY.urdu.description,
+          path: "/urdu",
+        })}
+      />
+      <UrduLandingExperience />
+    </>
+  );
 }

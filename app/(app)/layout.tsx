@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppAuthShell } from "@/components/bandforge/app-auth-shell";
 import { DashboardSidebarNav } from "@/components/bandforge/dashboard/dashboard-sidebar-nav";
@@ -14,6 +15,10 @@ import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cach
 import { formatUserDisplayName } from "@/lib/user-display";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function BandforgeAppLayout({
   children,

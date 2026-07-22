@@ -4,6 +4,7 @@ import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { BfSectionHeading } from "@/components/bandforge/ui/bf-section-heading";
 import { BfDiagnosticCtaBand } from "@/components/seo/bf-diagnostic-cta-band";
 import { BfSeoLeadAnswer } from "@/components/seo/bf-seo-lead-answer";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 const relatedLinks = [
   { href: "/urdu", label: "IELTS for Urdu speakers" },
@@ -17,8 +18,8 @@ export function TeluguLandingExperience() {
     <BandForgeRouteShell
       activeHref="/telugu"
       eyebrow="Telugu speakers"
-      title="IELTS prep built for Telugu speakers in AP and Telangana."
-      description="BandForge is designed for students who think in Telugu and test in English. Start with a free 15-minute diagnostic, then train with skill sprints from ₹999 — online, from Hyderabad."
+      title={PAGE_SEO_COPY.telugu.h1}
+      description={PAGE_SEO_COPY.telugu.description}
       afterHero={
         <BfDiagnosticCtaBand headline="Telugu speaker? Know your band in 15 minutes — free." />
       }

@@ -4,6 +4,7 @@ import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { BfSectionHeading } from "@/components/bandforge/ui/bf-section-heading";
 import { BfDiagnosticCtaBand } from "@/components/seo/bf-diagnostic-cta-band";
 import { BfSeoLeadAnswer } from "@/components/seo/bf-seo-lead-answer";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 const relatedLinks = [
   { href: "/telugu", label: "IELTS for Telugu speakers" },
@@ -17,8 +18,8 @@ export function UrduLandingExperience() {
     <BandForgeRouteShell
       activeHref="/urdu"
       eyebrow="Urdu speakers"
-      title="Hyderabad's own IELTS platform for Urdu speakers."
-      description="BandForge supports Urdu-speaking students preparing for IELTS with a free 15-minute diagnostic and skill sprints from ₹999 — built by MATA Labs in Hyderabad."
+      title={PAGE_SEO_COPY.urdu.h1}
+      description={PAGE_SEO_COPY.urdu.description}
       afterHero={
         <BfDiagnosticCtaBand headline="Urdu speaker in Hyderabad? Start with a free diagnostic." />
       }

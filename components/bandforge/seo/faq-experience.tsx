@@ -2,39 +2,37 @@ import { BandForgeFinalCta } from "@/components/bandforge/bf-final-cta";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { BfSectionHeading } from "@/components/bandforge/ui/bf-section-heading";
 import { BfSeoLeadAnswer } from "@/components/seo/bf-seo-lead-answer";
-import { FAQ_LAST_UPDATED, SITE_FAQ, faqLeadAnswer } from "@/lib/seo/faq-content";
+import { FAQ_LAST_UPDATED, SITE_FAQ } from "@/lib/seo/faq-content";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 export function FaqExperience() {
   return (
     <BandForgeRouteShell
       activeHref="/faq"
       eyebrow="FAQ"
-      title="Answers about BandForge diagnostics, sprints, and pricing."
-      description="Clear answers on the free 15-minute diagnostic, sprint plans from ₹999, 90-day access, human review timelines, and who BandForge is built for."
+      title={PAGE_SEO_COPY.faq.h1}
+      description={PAGE_SEO_COPY.faq.description}
       lastUpdated={FAQ_LAST_UPDATED}
     >
       <section className="bf-section">
         <div className="bf-container max-w-3xl">
-          <div className="space-y-4">
+          <div className="space-y-8">
             {SITE_FAQ.map((item) => (
-              <details
-                key={item.question}
-                className="group bf-min-card overflow-hidden"
-              >
-                <summary className="cursor-pointer list-none p-5 font-display text-base font-semibold text-navy marker:content-none sm:p-6 sm:text-lg [&::-webkit-details-marker]:hidden">
+              <article key={item.question} className="bf-min-card overflow-hidden">
+                <h2 className="border-b border-border/60 p-5 font-display text-base font-semibold text-navy sm:p-6 sm:text-lg">
                   {item.question}
-                </summary>
-                <div className="border-t border-border/60 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+                </h2>
+                <div className="px-5 py-4 sm:px-6 sm:py-5">
                   <BfSeoLeadAnswer className="text-sm sm:text-base">
-                    {faqLeadAnswer(item.answer)}
+                    {item.leadAnswer}
                   </BfSeoLeadAnswer>
-                  {faqLeadAnswer(item.answer) !== item.answer ? (
+                  {item.detail ? (
                     <p className="mt-3 text-sm leading-relaxed text-ink/70 sm:text-base">
-                      {item.answer.slice(faqLeadAnswer(item.answer).length).trim()}
+                      {item.detail}
                     </p>
                   ) : null}
                 </div>
-              </details>
+              </article>
             ))}
           </div>
         </div>

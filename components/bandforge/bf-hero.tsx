@@ -2,6 +2,7 @@ import { Clock } from "lucide-react";
 import { BfHeroActions } from "@/components/bandforge/bf-hero-actions";
 import { BfHeroDiagnosticCardDeferred } from "@/components/bandforge/bf-hero-diagnostic-card-deferred";
 import { BfSectionEyebrow } from "@/components/bandforge/ui";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 export function BandForgeHero() {
   return (
@@ -22,11 +23,10 @@ export function BandForgeHero() {
               id="bf-hero-heading"
               className="mb-4 text-[1.875rem] leading-[1.1] font-bold tracking-[-0.03em] text-balance text-navy sm:mb-[18px] sm:text-[2.125rem] sm:leading-[1.08] lg:mb-6 lg:text-[3.5rem] lg:tracking-[-0.035em]"
             >
-              Know your real IELTS band — before exam day.
+              {PAGE_SEO_COPY.home.h1}
             </h1>
             <p className="mb-0 text-[0.9375rem] leading-[1.6] text-muted sm:text-base lg:max-w-[46ch] lg:text-[1.1875rem]">
-              A free diagnostic that tells you exactly where you stand — across all
-              four sections — in 15 minutes.
+              {PAGE_SEO_COPY.home.heroDescription}
             </p>
             <BfHeroActions />
           </div>

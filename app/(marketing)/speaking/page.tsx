@@ -2,23 +2,24 @@ import type { Metadata } from "next";
 import { SpeakingSprintExperience } from "@/components/bandforge/seo/speaking-sprint-experience";
 import { JsonLd } from "@/components/seo/json-ld";
 import { pageMetadata } from "@/lib/seo/metadata";
+import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 import { sprintPageSchemaGraph } from "@/lib/seo/schema";
 
 export const metadata: Metadata = pageMetadata({
-  title: "IELTS Speaking Sprint — AI + Band 9 Review | ₹999",
-  description:
-    "90-day IELTS Speaking sprint: 12 tasks, AI fluency analysis, and Band 9-trained human review within 48 hours. Free diagnostic included. From ₹999.",
+  title: PAGE_SEO_COPY.speaking.title,
+  description: PAGE_SEO_COPY.speaking.description,
   path: "/speaking",
 });
 
 export default function SpeakingPage() {
+  const copy = PAGE_SEO_COPY.speaking;
+
   return (
     <>
       <JsonLd
         data={sprintPageSchemaGraph("speaking-sprint", {
-          name: "IELTS Speaking Sprint — AI + Band 9 Review | ₹999",
-          description:
-            "90-day IELTS Speaking sprint with 12 tasks, AI analysis, and Band 9-trained human review within 48 hours.",
+          name: copy.title,
+          description: copy.description,
           path: "/speaking",
         })}
       />

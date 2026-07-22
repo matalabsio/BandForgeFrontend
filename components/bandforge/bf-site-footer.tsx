@@ -17,8 +17,13 @@ const mobileLinks = [
   { href: "/diagnostic", label: "Diagnostic" },
   { href: "/pricing", label: "Pricing" },
   { href: "/faq", label: "FAQ" },
+  { href: "/writing", label: "Writing" },
+  { href: "/speaking", label: "Speaking" },
   { href: "/telugu", label: "Telugu" },
+  { href: "/urdu", label: "Urdu" },
   { href: "/hyderabad", label: "Hyderabad" },
+  { href: "/vs-coaching-centres", label: "vs Coaching" },
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ] as const;
