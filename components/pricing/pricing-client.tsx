@@ -243,7 +243,7 @@ export function PricingClient() {
           Plans &amp; pricing
         </p>
         <h1 className="font-display mt-2 text-3xl font-extrabold text-navy sm:text-4xl">
-          Choose your BandForge plan
+          Simple pricing. Diagnostic always free.
         </h1>
         <p className="mt-3 text-sm text-muted">
           Unlock full IELTS mocks, score insights, and examiner-reviewed Writing &amp;

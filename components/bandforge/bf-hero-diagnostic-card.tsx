@@ -20,7 +20,7 @@ export function BfHeroDiagnosticCard({ className }: Props) {
         <p className="font-mono text-[0.625rem] tracking-[0.1em] text-muted-light uppercase sm:text-[0.6875rem]">
           Diagnostic Report
         </p>
-        <span className="font-mono text-[0.625rem] text-cyan sm:text-[0.6875rem]">90:00</span>
+        <span className="font-mono text-[0.625rem] text-cyan sm:text-[0.6875rem]">15:00</span>
       </div>
 
       <div className="mb-5 flex items-end gap-3 sm:mb-[26px] sm:gap-[18px]">

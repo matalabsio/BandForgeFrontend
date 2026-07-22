@@ -15,12 +15,14 @@ import {
   BfLegalSection,
 } from "@/components/bandforge/bf-legal-primitives";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
+import { pageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Privacy Policy — BandForge",
   description:
     "How BandForge collects, uses, and protects your personal data on the Platform.",
-  alternates: { canonical: "/privacy-policy" },
-};
+  path: "/privacy-policy",
+});
 
 export default function PrivacyPolicyPage() {
   return (

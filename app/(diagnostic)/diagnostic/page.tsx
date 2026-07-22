@@ -3,13 +3,15 @@ import type { Metadata } from "next";
 import { DiagnosticStartExperience } from "@/components/diagnostic/diagnostic-start-experience";
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import { fetchSubscription } from "@/lib/payments-server";
+import { pageMetadata } from "@/lib/seo/metadata";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 
-export const metadata: Metadata = {
-  title: "Free Diagnostic · BandForge",
+export const metadata: Metadata = pageMetadata({
+  title: "Free IELTS Diagnostic Test — 15 Minutes | BandForge",
   description:
-    "Take the free BandForge diagnostic — Listening, Reading, Writing, and Speaking with band scores in under 50 minutes. No account required.",
-};
+    "Take BandForge's free 15-minute IELTS diagnostic. Section-wise band scores for Listening, Reading, Writing, and Speaking. No payment. No spam.",
+  path: "/diagnostic",
+});
 
 export const dynamic = "force-dynamic";
 

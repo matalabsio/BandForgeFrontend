@@ -3,6 +3,12 @@ export const CANONICAL_SITE_URL =
   process.env.NEXT_PUBLIC_OAUTH_SITE_URL?.replace(/\/$/, "") ||
   "https://bandforge-web.vercel.app";
 
+/** Absolute public URL for a path (e.g. siteUrl("/diagnostic")). */
+export function siteUrl(path = ""): string {
+  if (!path || path === "/") return CANONICAL_SITE_URL;
+  return `${CANONICAL_SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 /** Extra production hostnames (comma-separated). Vercel team aliases are included by default. */
 const EXTRA_PRODUCTION_HOSTS = (process.env.NEXT_PUBLIC_PRODUCTION_HOSTS ?? "")
   .split(",")

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { BandForgeFeatures } from "@/components/bandforge/bf-features";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Features",
+export const metadata: Metadata = pageMetadata({
+  title: "BandForge Features — IELTS Mocks & AI Feedback",
   description:
     "Explore BandForge features for realistic IELTS mocks, AI evaluation, speaking analysis, and personalised practice.",
-};
+  path: "/features",
+});
 
 export default function FeaturesPage() {
   return (

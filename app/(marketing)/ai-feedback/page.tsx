@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { BfSectionSkeleton } from "@/components/bandforge/bf-section-skeleton";
+import { pageMetadata } from "@/lib/seo/metadata";
 
 const BandForgePreviewsGallery = dynamic(
   () =>
@@ -19,11 +20,12 @@ const BandForgeAiShowcase = dynamic(
   { loading: () => <BfSectionSkeleton /> },
 );
 
-export const metadata: Metadata = {
-  title: "AI Feedback",
+export const metadata: Metadata = pageMetadata({
+  title: "BandForge AI Feedback — Writing & Speaking",
   description:
     "See BandForge AI evaluation previews for IELTS writing, speaking, band reports, and weak-area recommendations.",
-};
+  path: "/ai-feedback",
+});
 
 export default function AiFeedbackPage() {
   return (

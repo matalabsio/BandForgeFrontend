@@ -6,6 +6,7 @@ import {
 } from "@/components/bandforge/bf-marketing-auth-links";
 import { getMarketingSessionUser } from "@/lib/marketing-auth-server";
 import { isAuthEnabled } from "@/lib/flags";
+import { SITE_ENTITY_DESCRIPTION } from "@/lib/seo/metadata";
 
 async function footerNavLinks() {
   const user = await getMarketingSessionUser();
@@ -86,8 +87,8 @@ export async function BandForgeSiteFooter() {
             Band<span className="text-cyan">Forge</span>
           </p>
         </div>
-        <p className="mb-[22px] max-w-[30ch] text-[0.8125rem] leading-normal text-[#7e93ad]">
-          Forging your band score — craft and precision.
+        <p className="mb-[22px] max-w-[42ch] text-[0.8125rem] leading-normal text-[#7e93ad]">
+          {SITE_ENTITY_DESCRIPTION}
         </p>
         <div className="flex flex-wrap gap-x-6 gap-y-[18px] text-[0.8125rem] text-slate">
           {mobileLinks.map((l) => (
@@ -116,8 +117,8 @@ export async function BandForgeSiteFooter() {
                 Band<span className="text-cyan">Forge</span>
               </p>
             </div>
-            <p className="mt-3.5 max-w-[30ch] text-sm leading-relaxed text-slate">
-              Forging your band score — craft and precision.
+            <p className="mt-3.5 max-w-[42ch] text-sm leading-relaxed text-slate">
+              {SITE_ENTITY_DESCRIPTION}
             </p>
           </div>
           <FooterColumn title="Product" links={product} />

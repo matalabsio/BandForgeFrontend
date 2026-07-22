@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { BandForgeTestimonials } from "@/components/bandforge/bf-testimonials";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Student Stories",
+export const metadata: Metadata = pageMetadata({
+  title: "Student Stories — BandForge IELTS Learners",
   description:
     "Student stories and testimonials from IELTS learners using realistic mocks and actionable feedback.",
-};
+  path: "/stories",
+});
 
 export default function StoriesPage() {
   return (

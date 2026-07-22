@@ -132,11 +132,11 @@ export function DiagnosticStartExperience() {
               Free diagnostic · No sign-up to start
             </span>
             <h1 className="mt-4 font-display text-[31px] leading-[1.06] font-bold tracking-[-0.025em] text-balance text-navy sm:text-4xl">
-              Find Out Your Real IELTS Band.
+              Your real IELTS band, in 15 minutes. Free.
             </h1>
             <p className="mt-3.5 text-[15px] leading-relaxed font-light text-[#5A6B82]">
-              A full 4-section diagnostic. Calibrated to Band 9. Results in under
-              90 minutes.
+              A free 4-section diagnostic. Calibrated to Band 9. Section-wise
+              scores in 15 minutes.
             </p>
             <div className="mt-6">
               <DiagnosticSectionGrid />
@@ -150,7 +150,7 @@ export function DiagnosticStartExperience() {
                 Start your free diagnostic
               </h2>
               <p className="mt-1 text-[13.5px] font-light text-[#5A6B82]">
-                Takes under 90 minutes. No payment to begin.
+                Takes about 15 minutes. No payment to begin.
               </p>
 
               <div className="mt-5">

@@ -16,12 +16,14 @@ import {
   BfLegalSection,
 } from "@/components/bandforge/bf-legal-primitives";
 
-export const metadata: Metadata = {
-  title: "Terms of Service",
+import { pageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Terms of Service — BandForge",
   description:
     "Terms governing your access to and use of the BandForge Platform and Services.",
-  alternates: { canonical: "/terms" },
-};
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

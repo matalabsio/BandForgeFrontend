@@ -3,13 +3,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { ContactForm } from "@/components/landing/contact-form";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Contact",
+export const metadata: Metadata = pageMetadata({
+  title: "Contact BandForge — IELTS Prep Support",
   description:
-    "Get in touch with MATA Labs for partnerships, product enquiries, or early access.",
-  alternates: { canonical: "/contact" },
-};
+    "Get in touch with MATA Labs for partnerships, product enquiries, or early access to BandForge IELTS prep.",
+  path: "/contact",
+});
 
 function ContactFormSkeleton() {
   return (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { BfSectionSkeleton } from "@/components/bandforge/bf-section-skeleton";
+import { pageMetadata } from "@/lib/seo/metadata";
 
 const BandForgeComparison = dynamic(
   () =>
@@ -19,11 +20,12 @@ const BandForgeTestimonials = dynamic(
   { loading: () => <BfSectionSkeleton /> },
 );
 
-export const metadata: Metadata = {
-  title: "Why BandForge",
+export const metadata: Metadata = pageMetadata({
+  title: "Why BandForge — IELTS Without Coaching Dependency",
   description:
     "Why BandForge is built for students who need realistic IELTS practice without relying only on expensive coaching.",
-};
+  path: "/why",
+});
 
 export default function WhyBandForgePage() {
   return (

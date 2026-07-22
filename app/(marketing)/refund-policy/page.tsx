@@ -15,12 +15,14 @@ import {
   BfLegalSection,
 } from "@/components/bandforge/bf-legal-primitives";
 
-export const metadata: Metadata = {
-  title: "Refund & Cancellation Policy",
+import { pageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Refund & Cancellation Policy — BandForge",
   description:
     "BandForge refund and cancellation terms for digital learning products and evaluation services.",
-  alternates: { canonical: "/refund-policy" },
-};
+  path: "/refund-policy",
+});
 
 export default function RefundPolicyPage() {
   return (

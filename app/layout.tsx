@@ -2,7 +2,15 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, DM_Mono, DM_Sans } from "next/font/google";
 import { AppRoot } from "@/components/bandforge/app-root";
 import { PwaRoot } from "@/components/pwa/pwa-root";
+import { JsonLd } from "@/components/seo/json-ld";
 import { GOOGLE_FONTS_STYLESHEET_HREF } from "@/lib/google-fonts";
+import {
+  SITE_DEFAULT_DESCRIPTION,
+  SITE_DEFAULT_TITLE,
+  defaultOgImage,
+} from "@/lib/seo/metadata";
+import { sitewideSchemaGraph } from "@/lib/seo/schema";
+import { CANONICAL_SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -26,16 +34,17 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 
+const ogImage = defaultOgImage();
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bandforge-web.vercel.app"),
+  metadataBase: new URL(CANONICAL_SITE_URL),
   applicationName: "BandForge",
   manifest: "/manifest.webmanifest",
   title: {
-    default: "BandForge | AI-first IELTS preparation",
+    default: SITE_DEFAULT_TITLE,
     template: "%s | BandForge",
   },
-  description:
-    "Real IELTS-style mocks, AI writing evaluation, speaking insights, and instant Reading & Listening scores — built for Telugu-speaking students targeting Band 7+.",
+  description: SITE_DEFAULT_DESCRIPTION,
   alternates: {
     canonical: "/",
   },
@@ -45,12 +54,18 @@ export const metadata: Metadata = {
     title: "BandForge",
   },
   openGraph: {
-    title: "BandForge | AI-first IELTS preparation",
-    description:
-      "Realistic IELTS simulations, AI-powered feedback, and personalised practice — by MATA Labs.",
+    title: SITE_DEFAULT_TITLE,
+    description: SITE_DEFAULT_DESCRIPTION,
     url: "/",
     siteName: "BandForge",
     type: "website",
+    images: [ogImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_DEFAULT_TITLE,
+    description: SITE_DEFAULT_DESCRIPTION,
+    images: [ogImage.url],
   },
   robots: {
     index: true,
@@ -92,6 +107,7 @@ export default function RootLayout({
         <link href={GOOGLE_FONTS_STYLESHEET_HREF} rel="stylesheet" />
       </head>
       <body className="min-h-dvh font-sans" suppressHydrationWarning>
+        <JsonLd data={sitewideSchemaGraph()} />
         <PwaRoot>
           <AppRoot>{children}</AppRoot>
         </PwaRoot>

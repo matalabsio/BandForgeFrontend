@@ -1,76 +1,34 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/site";
 
-const base = "https://bandforge-web.vercel.app";
+const LIVE_PATHS: Array<{
+  path: string;
+  changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
+  priority: number;
+}> = [
+  { path: "/", changeFrequency: "weekly", priority: 1 },
+  { path: "/diagnostic", changeFrequency: "weekly", priority: 0.95 },
+  { path: "/pricing", changeFrequency: "weekly", priority: 0.9 },
+  { path: "/about", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/contact", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/features", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/ai-feedback", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/how-it-works", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/why", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/mobile", changeFrequency: "monthly", priority: 0.6 },
+  { path: "/stories", changeFrequency: "monthly", priority: 0.6 },
+  { path: "/demo", changeFrequency: "monthly", priority: 0.6 },
+  { path: "/privacy-policy", changeFrequency: "yearly", priority: 0.4 },
+  { path: "/terms", changeFrequency: "yearly", priority: 0.4 },
+  { path: "/refund-policy", changeFrequency: "yearly", priority: 0.4 },
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
-  return [
-    { url: base, lastModified, changeFrequency: "weekly", priority: 1 },
-    {
-      url: `${base}/features`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/ai-feedback`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/how-it-works`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${base}/why`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${base}/mobile`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${base}/stories`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${base}/demo`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${base}/contact`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/privacy-policy`,
-      lastModified,
-      changeFrequency: "yearly",
-      priority: 0.4,
-    },
-    {
-      url: `${base}/terms`,
-      lastModified,
-      changeFrequency: "yearly",
-      priority: 0.4,
-    },
-    {
-      url: `${base}/refund-policy`,
-      lastModified,
-      changeFrequency: "yearly",
-      priority: 0.4,
-    },
-  ];
+  return LIVE_PATHS.map(({ path, changeFrequency, priority }) => ({
+    url: siteUrl(path),
+    lastModified,
+    changeFrequency,
+    priority,
+  }));
 }
