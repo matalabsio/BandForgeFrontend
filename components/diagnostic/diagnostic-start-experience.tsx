@@ -135,7 +135,7 @@ export function DiagnosticStartExperience() {
             <span className="inline-flex items-center rounded-full border border-teal/18 bg-[#E6F6F8] px-3 py-1.5 font-mono text-[11px] tracking-[0.14em] text-teal uppercase">
               Free diagnostic · No sign-up to start
             </span>
-            <h1 className="mt-4 font-display text-[31px] leading-[1.06] font-bold tracking-[-0.025em] text-balance text-navy sm:text-4xl">
+            <h1 className="mt-4 text-[31px] leading-[1.06] font-bold tracking-[-0.025em] text-balance text-navy sm:text-4xl">
               Your real IELTS band, in 15 minutes. Free.
             </h1>
             <p className="mt-3.5 text-[15px] leading-relaxed font-light text-[#5A6B82]">

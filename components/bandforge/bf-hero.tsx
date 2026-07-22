@@ -1,7 +1,23 @@
+import dynamic from "next/dynamic";
 import { Clock } from "lucide-react";
 import { BfHeroActions } from "@/components/bandforge/bf-hero-actions";
-import { BfHeroDiagnosticCard } from "@/components/bandforge/bf-hero-diagnostic-card";
 import { BfSectionEyebrow } from "@/components/bandforge/ui";
+
+const BfHeroDiagnosticCard = dynamic(
+  () =>
+    import("@/components/bandforge/bf-hero-diagnostic-card").then(
+      (m) => m.BfHeroDiagnosticCard,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="min-h-[17.5rem] w-full max-w-[min(100%,19rem)] rounded-[1.125rem] border border-[#e9edf2] bg-white sm:min-h-[19rem] sm:max-w-md lg:max-w-lg"
+        aria-hidden
+      />
+    ),
+  },
+);
 
 export function BandForgeHero() {
   return (
