@@ -8,7 +8,8 @@ import {
   writingTaskPath,
   writingTestHubPath,
 } from "@/lib/writing-test";
-import { mockHubPath } from "@/lib/mock-catalog";
+import { testNumberForMockId, mockApiId } from "@/lib/mock-catalog";
+import { mockResultsPathForTest } from "@/lib/module-review-paths";
 import { WritingFeedbackPrompt } from "@/modules/writing/components/writing-feedback-prompt";
 import { TutorChatPanel } from "@/modules/writing/components/tutor-chat-panel";
 import {
@@ -69,7 +70,12 @@ export function WritingFeedbackView({
 
   const resolvedBack =
     backHref ??
-    (mockAttemptId ? mockHubPath(mockSlug, mockAttemptId) : writingTestHubPath());
+    (mockAttemptId
+      ? mockResultsPathForTest(
+          testNumberForMockId(mockApiId(mockSlug)),
+          mockAttemptId,
+        )
+      : writingTestHubPath());
 
   const nextHref = showContinueTask2
     ? writingTaskPath(2, {
@@ -77,11 +83,13 @@ export function WritingFeedbackView({
         mockAttemptId: mockAttemptId ?? undefined,
         auto: true,
       })
-    : writingTestHubPath();
+    : resolvedBack;
 
   const nextLabel = showContinueTask2
     ? "Begin Next Writing Test"
-    : "Practice Writing Again";
+    : mockAttemptId
+      ? "Back to scores"
+      : "Practice Writing Again";
 
   const handleBack = useCallback(() => {
     if (onBack) {
@@ -112,10 +120,10 @@ export function WritingFeedbackView({
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-semibold text-muted transition-colors hover:bg-surface-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+            className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-border-soft bg-surface-alt text-navy transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+            aria-label="Back to scores"
           >
             <ChevronLeft className="size-5" aria-hidden />
-            <span className="hidden sm:inline">Back</span>
           </button>
 
           <h1 className="font-display truncate text-center text-base font-bold tracking-tight text-navy sm:text-[1.0625rem]">
@@ -281,7 +289,7 @@ export function WritingFeedbackView({
             {isDiagnostic ? (
               <FeedbackCtaFooter
                 primaryHref={resolvedBack}
-                primaryLabel="Back to results"
+                primaryLabel="Back to scores"
                 secondaryHref={dashboardHref}
                 secondaryLabel="Back to Dashboard"
                 onPrimaryClick={onBack}

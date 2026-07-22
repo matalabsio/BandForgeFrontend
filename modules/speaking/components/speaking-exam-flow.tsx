@@ -25,6 +25,7 @@ import {
   speakingFlowReducer,
   type SpeakingSubPhase,
 } from "@/modules/speaking/lib/speaking-flow-state";
+import { SPEAKING_PART1_MAX_RECORD_SEC } from "@/modules/speaking/lib/speaking-timing";
 
 type SubPhase = SpeakingSubPhase;
 
@@ -119,14 +120,25 @@ export function SpeakingExamFlow({
     : 0;
   const prepSec = part2Timing?.prepSeconds ?? current?.prepSec ?? 60;
   const recordSec = part2Timing?.maxResponseSeconds ?? current?.recordSec ?? 120;
-  const currentRecordLimit = isPart2 ? recordSec : current?.maxRecordSec;
+  const part1RecordSec = Math.max(
+    current?.maxRecordSec ?? 0,
+    SPEAKING_PART1_MAX_RECORD_SEC,
+  );
+  const currentRecordLimit = isPart2
+    ? recordSec
+    : current?.part === 1
+      ? part1RecordSec
+      : (current?.maxRecordSec ?? SPEAKING_PART1_MAX_RECORD_SEC);
   const isLastStep = stepIndex >= steps.length - 1;
 
   const [clockNow, setClockNow] = useState(0);
   const prepRemaining = secondsUntilDeadline(flow.prepDeadlineMs, clockNow);
 
   const recorder = useSpeakingRecorder();
-  const recordRemaining = Math.max(0, recordSec - recorder.seconds);
+  const recordRemaining = Math.max(
+    0,
+    (isPart2 ? recordSec : (currentRecordLimit ?? recordSec)) - recorder.seconds,
+  );
 
   useEffect(() => {
     const serverMs = part2Timing?.serverTime ? Date.parse(part2Timing.serverTime) : Number.NaN;
@@ -202,7 +214,10 @@ export function SpeakingExamFlow({
       partLabel,
       subPhase,
       prepRemaining: subPhase === "part2_prep" ? prepRemaining : null,
-      recordRemaining: subPhase === "part2_record" ? recordRemaining : null,
+      recordRemaining:
+        subPhase === "part2_record" || subPhase === "record"
+          ? recordRemaining
+          : null,
       showFooter,
       footerLabel: nextLabel,
       footerDisabled,
@@ -310,9 +325,25 @@ export function SpeakingExamFlow({
   const handleTimedRecordEnd = useCallback(async () => {
     if (part2AutoStopRef.current) return;
     part2AutoStopRef.current = true;
-    const ok = await stopAndValidate();
-    if (ok && isPart2) advanceStep();
-  }, [advanceStep, isPart2, stopAndValidate]);
+
+    const result = await recorder.stopRecording();
+    if (!result || isShortOrSilentResponse(result.durationSec, result.blob)) {
+      if (isPart2) {
+        setShowRetry(true);
+        dispatchFlow({ type: "retry", isPart2: true });
+        autoStartedRef.current = false;
+        part2StartRef.current = false;
+        part2AutoStopRef.current = false;
+        return;
+      }
+      // Part 1: no usable answer within the time window → next question.
+      advanceStep();
+      return;
+    }
+
+    saveRecording(result.blob, result.durationSec);
+    if (isPart2) advanceStep();
+  }, [advanceStep, isPart2, recorder, saveRecording]);
 
   useEffect(() => {
     if (subPhase === "part2_prep" && prepRemaining === 0) {
@@ -337,6 +368,19 @@ export function SpeakingExamFlow({
     recorder.seconds,
     subPhase,
   ]);
+
+  // Part 1 wall-clock: even if mic never starts, advance after the limit.
+  useEffect(() => {
+    if (subPhase !== "record" || isPart2 || currentRecordLimit == null) return;
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      const elapsed = (Date.now() - startedAt) / 1000;
+      if (elapsed < currentRecordLimit) return;
+      window.clearInterval(timer);
+      void handleTimedRecordEnd();
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [currentRecordLimit, handleTimedRecordEnd, isPart2, stepIndex, subPhase]);
 
   useEffect(() => {
     autoStartedRef.current = false;
@@ -496,7 +540,7 @@ export function SpeakingExamFlow({
               <p className="mt-3 text-sm text-[#5A6B82]" role="status">
                 {subPhase === "part2_record"
                   ? `Recording is starting automatically · up to ${recordSec} seconds`
-                  : "Recording is starting automatically after the question."}
+                  : `Recording is starting automatically · up to ${Math.round((currentRecordLimit ?? SPEAKING_PART1_MAX_RECORD_SEC) / 60)} min`}
               </p>
             ) : null}
 
@@ -505,7 +549,11 @@ export function SpeakingExamFlow({
                 phase={recordingControlPhase}
                 seconds={recorder.seconds}
                 waveform={recorder.waveform}
-                countdownSec={subPhase === "part2_record" ? recordSec : null}
+                countdownSec={
+                  subPhase === "part2_record" || subPhase === "record"
+                    ? (currentRecordLimit ?? recordSec)
+                    : null
+                }
                 answerBlob={captured ? answerBlob : null}
                 onStop={handleStop}
                 onRerecord={() => undefined}
@@ -513,7 +561,7 @@ export function SpeakingExamFlow({
                 showStop={subPhase === "record" || subPhase === "part2_record"}
                 stopLabel={isPart2 ? "Finish long turn" : "Complete answer"}
                 hideElapsed={false}
-                className="mt-5 flex-1 lg:mt-auto"
+                className="mt-5"
               />
             ) : null}
 
@@ -660,7 +708,8 @@ export function SpeakingExamFlow({
     <div
       className={cn(
         "flex min-h-0 flex-1 flex-col overflow-hidden bg-white",
-        !isDiagnostic && "min-h-[620px] rounded-[20px] border border-navy/10 shadow-[0_20px_50px_rgba(13,31,60,0.10)]",
+        !isDiagnostic &&
+          "rounded-[20px] border border-navy/10 shadow-[0_20px_50px_rgba(13,31,60,0.10)]",
       )}
     >
       <SpeakingProgressHeader
@@ -671,8 +720,11 @@ export function SpeakingExamFlow({
         part={current.part}
         partLabel={partLabel}
       />
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">
-        <div className="mx-auto w-full max-w-[1200px] px-4 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-8">
+      <div
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
+        data-speaking-scroll-region
+      >
+        <div className="mx-auto w-full max-w-[1200px] px-4 py-5 pb-8 sm:px-6 sm:py-7 lg:px-10 lg:py-8">
           {content}
         </div>
       </div>

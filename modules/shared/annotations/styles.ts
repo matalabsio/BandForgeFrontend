@@ -1,7 +1,29 @@
 import type { AnnotationKind } from "@/modules/shared/annotations/types";
 
 /** Visual classes for inline marks (underline / background). */
-export function annotationMarkClass(kind: AnnotationKind): string {
+export function annotationMarkClass(
+  kind: AnnotationKind,
+  theme: "light" | "dark" = "light",
+): string {
+  if (theme === "dark") {
+    switch (kind) {
+      case "strong":
+      case "evidence_strength":
+        return "rounded-sm border-b-2 border-cyan bg-cyan/15 text-[#D8E1EE] decoration-transparent";
+      case "improve":
+      case "grammar":
+      case "spelling":
+      case "evidence_weakness":
+        return "rounded-sm border-b-2 border-[#E8583A] bg-[#E8583A]/20 text-[#D8E1EE] decoration-transparent";
+      case "pronunciation":
+        return "rounded-sm border-b-2 border-teal bg-teal/15 text-[#D8E1EE] decoration-transparent";
+      case "fluency_pause":
+        return "rounded-sm border-b-2 border-dotted border-cyan/70 bg-cyan/10 text-[#D8E1EE] decoration-transparent";
+      default:
+        return "rounded-sm border-b-2 border-white/30 text-[#D8E1EE] decoration-transparent";
+    }
+  }
+
   switch (kind) {
     case "strong":
       return "decoration-cyan bg-cyan/5 text-[#0D1F3C]";

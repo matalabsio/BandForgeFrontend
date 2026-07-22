@@ -1,79 +1,42 @@
 import { AlertCircle } from "lucide-react";
+import { CriteriaVsTargetBars } from "@/modules/speaking/components/report/criteria-vs-target-bars";
 import type { SpeakingFeedback } from "@/modules/speaking/types";
 
 type Props = {
   feedback: SpeakingFeedback;
 };
 
-function deltaLabel(delta: number | null): string {
-  if (delta == null) return "Target unavailable";
-  if (delta <= 0) return "On target";
-  return `−${delta.toFixed(1)} to target`;
+function metricDisplay(
+  key: string,
+  value: number | string | boolean | null | undefined,
+): string {
+  if (value == null) return "—";
+  if (key === "total_speaking_seconds" && typeof value === "number") {
+    const minutes = Math.floor(value / 60);
+    const seconds = Math.round(value % 60);
+    return minutes > 0 ? `${minutes}:${String(seconds).padStart(2, "0")}` : `${seconds}s`;
+  }
+  return String(value);
 }
 
 export function ReportSummaryRail({ feedback }: Props) {
-  const targetPosition =
-    feedback.targetBand == null
-      ? null
-      : `${Math.min(100, Math.max(0, (feedback.targetBand / 9) * 100))}%`;
-
   return (
     <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start" aria-label="Score summary">
       <section aria-labelledby="criteria-heading">
         <h2 id="criteria-heading" className="font-mono text-[11px] tracking-[0.12em] text-muted-light uppercase">
           Criteria vs target
         </h2>
-        <div className="mt-3 space-y-5 rounded-2xl border border-border-soft bg-white p-4 shadow-soft sm:p-5">
-          {feedback.criteria.map((criterion) => (
-            <div key={criterion.key}>
-              <div className="mb-2 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="font-mono text-[10px] font-semibold text-teal" aria-hidden="true">
-                    {criterion.shortLabel}
-                  </span>
-                  <span className="ml-2 text-xs font-semibold text-navy">
-                    {criterion.label}
-                  </span>
-                </div>
-                <div className="shrink-0 text-right font-mono text-[11px] tabular-nums">
-                  <strong className="text-sm font-semibold text-navy">{criterion.band.toFixed(1)}</strong>
-                  <span className={criterion.targetGap != null && criterion.targetGap > 0 ? "ml-1.5 text-warning" : "ml-1.5 text-success"}>
-                    {deltaLabel(criterion.targetGap)}
-                  </span>
-                </div>
-              </div>
-              <div
-                className="relative h-2.5 overflow-visible rounded-full bg-slate-100"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={9}
-                aria-valuenow={criterion.band}
-                aria-label={`${criterion.label}, Band ${criterion.band.toFixed(1)}${feedback.targetBand == null ? "" : `, target Band ${feedback.targetBand.toFixed(1)}`}`}
-              >
-                <span
-                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-teal to-cyan"
-                  style={{ width: `${Math.min(100, Math.max(0, (criterion.band / 9) * 100))}%` }}
-                  aria-hidden="true"
-                />
-                {targetPosition ? (
-                  <span
-                    className="pointer-events-none absolute -top-1 h-[18px] w-0.5 -translate-x-1/2 rounded-full bg-amber-500"
-                    style={{ left: targetPosition }}
-                    aria-hidden="true"
-                  />
-                ) : null}
-              </div>
-            </div>
-          ))}
-          {feedback.targetBand != null ? (
-            <p className="flex items-center gap-2 text-[11px] text-muted">
-              <span className="h-0.5 w-3 rounded-full bg-amber-500" aria-hidden="true" />
-              Target Band {feedback.targetBand.toFixed(1)}
-            </p>
-          ) : (
-            <p className="text-[11px] text-muted">No target band was set for this report.</p>
-          )}
-        </div>
+        <CriteriaVsTargetBars
+          className="mt-3"
+          targetBand={feedback.targetBand}
+          criteria={feedback.criteria.map((criterion) => ({
+            key: criterion.key,
+            shortLabel: criterion.shortLabel,
+            label: criterion.label,
+            band: criterion.band,
+            targetGap: criterion.targetGap,
+          }))}
+        />
       </section>
 
       {feedback.biggestGap ? (
@@ -87,6 +50,44 @@ export function ReportSummaryRail({ feedback }: Props) {
           </p>
         </section>
       ) : null}
+
+      <section aria-labelledby="fluency-heading">
+        <h2 id="fluency-heading" className="font-mono text-[11px] tracking-[0.12em] text-muted-light uppercase">
+          Fluency stats
+        </h2>
+        {(() => {
+          const overall = feedback.fluencySummary.overall;
+          const attempted =
+            overall?.response_count != null && overall?.questions_asked != null
+              ? `${overall.response_count}/${overall.questions_asked}`
+              : "—";
+          const items = [
+            ["WPM · P1", metricDisplay("words_per_minute", feedback.fluencySummary.parts["1"]?.words_per_minute)],
+            ["WPM · P2", metricDisplay("words_per_minute", feedback.fluencySummary.parts["2"]?.words_per_minute)],
+            ["WPM · P3", metricDisplay("words_per_minute", feedback.fluencySummary.parts["3"]?.words_per_minute)],
+            ["Total speaking", metricDisplay("total_speaking_seconds", overall?.total_speaking_seconds)],
+            ["Pauses >2s", metricDisplay("long_pauses", overall?.long_pauses)],
+            ["Attempted", attempted],
+          ] as const;
+          return (
+            <dl className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {items.map(([label, value]) => (
+                <div
+                  key={label}
+                  className="rounded-xl border border-border-soft bg-white p-3 text-center shadow-soft"
+                >
+                  <dt className="text-[10px] font-semibold tracking-wide text-muted-light uppercase">
+                    {label}
+                  </dt>
+                  <dd className="mt-1 font-mono text-lg font-medium tabular-nums text-navy">
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          );
+        })()}
+      </section>
 
       <section aria-labelledby="parts-heading">
         <h2 id="parts-heading" className="font-mono text-[11px] tracking-[0.12em] text-muted-light uppercase">

@@ -117,12 +117,12 @@ export function SpeakingRecordingControls({
   }, [isHearing, playbackUrl]);
 
   const label =
-    countdownSec != null
-      ? `Recording… ${seconds}s / ${countdownSec}s`
+    countdownSec != null && recording
+      ? `Recording… ${formatAudioDuration(seconds)} · ${formatAudioDuration(Math.max(0, countdownSec - seconds))} left`
       : recording
         ? hideElapsed
           ? "Recording…"
-          : `Recording… ${seconds}s`
+          : `Recording… ${formatAudioDuration(seconds)}`
         : captured
           ? `Answer captured · ${formatAudioDuration(playbackDuration || seconds)}`
           : "Waiting to record";

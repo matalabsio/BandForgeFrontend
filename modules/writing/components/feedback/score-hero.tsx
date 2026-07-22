@@ -45,15 +45,6 @@ export function ScoreHero({
           <h2 className="font-display text-lg leading-snug font-bold text-navy">
             {taskTitle}
           </h2>
-          <p className="mt-1 text-[0.8125rem] text-muted">
-            {feedback.evaluated_label}
-            {feedback.confidence_label ? (
-              <span className="text-muted-light">
-                {" "}
-                · {feedback.confidence_label}
-              </span>
-            ) : null}
-          </p>
         </div>
       </div>
 

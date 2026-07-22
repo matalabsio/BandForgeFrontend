@@ -8,6 +8,7 @@ import {
 } from "@/lib/mock-catalog";
 import { prepareExamModuleNavigation } from "@/lib/mock-exam-nav";
 import type { ModuleProgress } from "@/modules/mock/services/mock-api";
+import { withFreeModuleAccess } from "@/modules/mock/lib/mock-progress";
 import { cn } from "@/lib/utils";
 
 type StepKey = "listening" | "reading" | "writing" | "results";
@@ -79,12 +80,13 @@ export function Test1FlowStepper({
 }: Props) {
   const mockComplete = mockStatus === "completed";
   const steps = buildSteps(mockSlug);
+  const accessModules = withFreeModuleAccess(modules);
 
   return (
     <ol className="space-y-0">
       {steps.map((step, index) => {
-        const status = stepStatus(step.key, modules, mockComplete);
-        const mod = modules.find((m) => m.module === step.key);
+        const status = stepStatus(step.key, accessModules, mockComplete);
+        const mod = accessModules.find((m) => m.module === step.key);
         const part = mod?.part ?? 1;
         const canNavigate =
           mockAttemptId &&

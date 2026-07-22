@@ -5,6 +5,7 @@ import {
   computeMockProgressPercent,
   defaultModuleProgress,
   sortModules,
+  withFreeModuleAccess,
 } from "@/modules/mock/lib/mock-progress";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +43,9 @@ export function ModuleProgressChips({
   showProgressBar = true,
   className,
 }: Props) {
-  const rows = sortModules(modules?.length ? modules : defaultModuleProgress());
+  const rows = sortModules(
+    withFreeModuleAccess(modules?.length ? modules : defaultModuleProgress()),
+  );
   const percent = computeMockProgressPercent(rows);
 
   return (

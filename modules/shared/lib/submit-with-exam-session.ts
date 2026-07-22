@@ -11,6 +11,10 @@ export function formatExamSubmitError(e: unknown): string {
     if (e.status === 401) return EXAM_SESSION_EXPIRED_MESSAGE;
     return e.message;
   }
+  if (e instanceof Error && e.name === "AbortError") {
+    return "Request timed out. If your answers already uploaded, open results or try submit again.";
+  }
+  if (e instanceof Error && e.message.trim()) return e.message;
   return "Submit failed.";
 }
 

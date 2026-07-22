@@ -117,8 +117,14 @@ export function shortModuleResultsPath(
 export function shortModuleWritingResultsPath(
   testNumber: number,
   attemptId: string,
+  opts?: { mockAttemptId?: string | null; part?: number | null },
 ): string {
   const params = new URLSearchParams({ attempt: attemptId });
+  const mockAttemptId = opts?.mockAttemptId?.trim();
+  if (mockAttemptId) params.set("mock_attempt", mockAttemptId);
+  if (opts?.part != null && Number.isFinite(opts.part) && opts.part >= 1) {
+    params.set("part", String(opts.part));
+  }
   return `/test/${testNumber}/writing/results?${params.toString()}`;
 }
 
@@ -131,8 +137,11 @@ export function writingModuleLabel(part?: number | null): string {
 export function shortModuleSpeakingPendingPath(
   testNumber: number,
   attemptId: string,
+  opts?: { mockAttemptId?: string | null },
 ): string {
   const params = new URLSearchParams({ attempt: attemptId });
+  const mockAttemptId = opts?.mockAttemptId?.trim();
+  if (mockAttemptId) params.set("mock_attempt", mockAttemptId);
   return `/test/${testNumber}/speaking/pending?${params.toString()}`;
 }
 
@@ -639,9 +648,9 @@ export const MOCK_DISPLAY_FLOW_HINT =
 
 export const MOCK2_DISPLAY_LABEL = "Test 2";
 export const MOCK2_DISPLAY_SUBTITLE =
-  "Test 2 — Listening (Parts 1-4 · 30 min) → Reading (Passages 1-3 · 30 min) → Writing (Tasks 1-2 · 60 min) → Score";
+  "Test 2 — Listening (Parts 1-4 · 30 min) → Reading (Passages 1-3 · 30 min) → Writing (Tasks 1-2 · 60 min) → Speaking Parts 1–3 → Score";
 export const MOCK2_DISPLAY_FLOW_HINT =
-  "Listening has 4 parts · reading has 3 passages · writing has 2 tasks · submit each section to unlock the next · overall band on results";
+  "Listening has 4 parts · reading has 3 passages · writing has 2 tasks · speaking Parts 1–3 · same evaluation flow as Test 1";
 
 export const MOCK_CATALOG: Record<MockSlug, MockMeta> = {
   m01: buildMockMeta(
@@ -656,7 +665,7 @@ export const MOCK_CATALOG: Record<MockSlug, MockMeta> = {
     MOCK2_DISPLAY_LABEL,
     MOCK2_DISPLAY_SUBTITLE,
     MOCK2_DISPLAY_FLOW_HINT,
-    { readingPassageCount: 3 },
+    { readingPassageCount: 3, speakingMinutes: 14 },
   ),
 };
 

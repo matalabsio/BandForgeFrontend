@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Clock3, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,11 +11,12 @@ import {
   testHubPath,
   writingModuleLabel,
 } from "@/lib/mock-catalog";
+import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { writingApi } from "@/modules/writing/services/writing-api";
 import type { WritingSessionTask } from "@/modules/writing/types";
 import { TestShell } from "@/modules/shared";
 
-const POLL_MS = 30_000;
+const POLL_MS = 5_000;
 
 type Props = {
   attemptId: string;
@@ -31,6 +33,8 @@ function aiPending(status: string | null | undefined): boolean {
 }
 
 export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props) {
+  const router = useRouter();
+  const mockAttemptId = useResolvedMockAttemptId(mockTestId);
   const [message, setMessage] = useState<string | null>(null);
   const [humanBand, setHumanBand] = useState<number | null>(null);
   const [aiStatus, setAiStatus] = useState<string | null>(null);
@@ -77,6 +81,23 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
   const aiFailed = !scored && aiStatus === "ai_failed";
   const sortedTasks = [...sessionTasks].toSorted((a, b) => a.part - b.part);
   const showTaskList = sortedTasks.length > 1;
+
+  useEffect(() => {
+    if (sessionTasks.length < 2) return;
+    const sorted = [...sessionTasks].toSorted((a, b) => a.part - b.part);
+    const allReady = sorted.every(
+      (task) => task.human_band != null || aiReady(task.ai_status),
+    );
+    if (!allReady) return;
+    const preferred = sorted.find((task) => task.part === 2) ?? sorted[0];
+    if (!preferred) return;
+    router.replace(
+      shortModuleWritingResultsPath(testNumber, preferred.attempt_id, {
+        mockAttemptId,
+        part: preferred.part,
+      }),
+    );
+  }, [mockAttemptId, router, sessionTasks, testNumber]);
 
   const title = scored
     ? `Your Writing band is ${humanBand!.toFixed(1)}`
@@ -188,6 +209,7 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
                             href={shortModuleWritingResultsPath(
                               testNumber,
                               task.attempt_id,
+                              { mockAttemptId, part: task.part },
                             )}
                             className={`mt-2 inline-flex min-h-[40px] w-full cursor-pointer items-center justify-center rounded-lg px-4 py-2 text-[13px] font-semibold ${
                               isCurrent

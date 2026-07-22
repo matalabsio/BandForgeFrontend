@@ -13,13 +13,21 @@ type Props = {
   testNumber: number;
   currentAttemptId: string;
   tasks: WritingSessionTask[];
+  mockAttemptId?: string | null;
   className?: string;
 };
+
+function taskBand(task: WritingSessionTask): number | null {
+  if (task.human_band != null) return task.human_band;
+  if (task.ai_band != null) return task.ai_band;
+  return null;
+}
 
 export function WritingTaskTabs({
   testNumber,
   currentAttemptId,
   tasks,
+  mockAttemptId = null,
   className,
 }: Props) {
   const router = useRouter();
@@ -34,7 +42,11 @@ export function WritingTaskTabs({
     >
       {sorted.map((task) => {
         const active = task.attempt_id === currentAttemptId;
-        const href = shortModuleWritingResultsPath(testNumber, task.attempt_id);
+        const band = taskBand(task);
+        const href = shortModuleWritingResultsPath(testNumber, task.attempt_id, {
+          mockAttemptId,
+          part: task.part,
+        });
         return (
           <Link
             key={task.attempt_id}
@@ -52,10 +64,8 @@ export function WritingTaskTabs({
             aria-current={active ? "page" : undefined}
           >
             {writingModuleLabel(task.part).replace("Writing · ", "")}
-            {task.human_band != null ? (
-              <span className="ml-2 tabular-nums opacity-90">
-                {task.human_band.toFixed(1)}
-              </span>
+            {band != null ? (
+              <span className="ml-2 tabular-nums opacity-90">{band.toFixed(1)}</span>
             ) : (
               <span className="ml-2 text-[11px] font-medium opacity-75">
                 Review

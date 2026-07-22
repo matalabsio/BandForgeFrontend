@@ -1,4 +1,7 @@
-import type { ModuleProgress } from "@/modules/mock/services/mock-api";
+import type {
+  ModuleProgress,
+  ModuleProgressStatus,
+} from "@/modules/mock/services/mock-api";
 
 export const MOCK_MODULE_ORDER = [
   "listening",
@@ -21,6 +24,34 @@ const DEFAULT_PRESTART_MODULES: MockModuleKey[] = [
   "reading",
   "writing",
 ];
+
+/**
+ * Testing mode: any enabled module is startable (no sequential lock UI).
+ * Set NEXT_PUBLIC_MOCK_FREE_MODULE_ACCESS=0 to restore exam-order locks.
+ */
+export function isMockFreeModuleAccess(): boolean {
+  const raw = (process.env.NEXT_PUBLIC_MOCK_FREE_MODULE_ACCESS ?? "1")
+    .trim()
+    .toLowerCase();
+  return raw !== "0" && raw !== "false" && raw !== "no" && raw !== "off";
+}
+
+/** Map API `locked` → `available` while free module access is on. */
+export function effectiveModuleStatus(
+  status: ModuleProgressStatus,
+): ModuleProgressStatus {
+  if (isMockFreeModuleAccess() && status === "locked") return "available";
+  return status;
+}
+
+export function withFreeModuleAccess(
+  modules: ModuleProgress[],
+): ModuleProgress[] {
+  if (!isMockFreeModuleAccess()) return modules;
+  return modules.map((m) =>
+    m.status === "locked" ? { ...m, status: "available" as const } : m,
+  );
+}
 
 /** Enabled module keys from progress API, catalog, or L+R+W default. */
 export function resolveEnabledModuleKeys(
@@ -60,6 +91,7 @@ export function isModuleEnabledInCatalog(
 
 /** Default module rows when no mock_attempt exists yet. */
 export function defaultModuleProgress(): ModuleProgress[] {
+  const open = isMockFreeModuleAccess();
   return [
     {
       module: "listening",
@@ -74,7 +106,7 @@ export function defaultModuleProgress(): ModuleProgress[] {
     {
       module: "reading",
       sequence_order: 2,
-      status: "locked",
+      status: open ? "available" : "locked",
       duration_minutes: 30,
       is_enabled: true,
       band: null,
@@ -84,7 +116,7 @@ export function defaultModuleProgress(): ModuleProgress[] {
     {
       module: "writing",
       sequence_order: 3,
-      status: "locked",
+      status: open ? "available" : "locked",
       duration_minutes: 60,
       is_enabled: false,
       band: null,
@@ -94,7 +126,7 @@ export function defaultModuleProgress(): ModuleProgress[] {
     {
       module: "speaking",
       sequence_order: 4,
-      status: "locked",
+      status: open ? "available" : "locked",
       duration_minutes: 14,
       is_enabled: false,
       band: null,
@@ -102,6 +134,24 @@ export function defaultModuleProgress(): ModuleProgress[] {
       part: null,
     },
   ];
+}
+
+/** Preview rows before a mock attempt exists — all startable in free-access mode. */
+export function previewModulesForKeys(
+  enabledKeys: readonly MockModuleKey[],
+): ModuleProgress[] {
+  const open = isMockFreeModuleAccess();
+  return enabledKeys.map((key, index) => ({
+    module: key,
+    sequence_order: index + 1,
+    status: open || index === 0 ? ("available" as const) : ("locked" as const),
+    duration_minutes:
+      key === "writing" ? 60 : key === "speaking" ? 14 : 30,
+    is_enabled: true,
+    band: null,
+    test_attempt_id: null,
+    part: 1,
+  }));
 }
 
 /** Percent of enabled modules marked completed (0–100). */

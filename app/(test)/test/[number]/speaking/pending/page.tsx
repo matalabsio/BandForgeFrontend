@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ attempt?: string }>;
+  searchParams: Promise<{ attempt?: string; mock_attempt?: string }>;
 };
 
 export default async function TestSpeakingPendingPage({ params, searchParams }: Props) {
@@ -35,7 +35,10 @@ export default async function TestSpeakingPendingPage({ params, searchParams }: 
   }
 
   const mockTestId = mockTestIdForNumber(testNumber);
-  const returnPath = shortModuleSpeakingPendingPath(testNumber, attemptId);
+  const mockAttemptId = sp.mock_attempt?.trim() || null;
+  const returnPath = shortModuleSpeakingPendingPath(testNumber, attemptId, {
+    mockAttemptId,
+  });
 
   const cookieHeader = await getCachedCookieHeader();
   await guardMockModulePage(cookieHeader, returnPath);

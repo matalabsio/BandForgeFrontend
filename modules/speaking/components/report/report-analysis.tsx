@@ -5,7 +5,6 @@ import { AnnotatedText } from "@/modules/shared/annotations";
 import type {
   SpeakingFluencyMetrics,
   SpeakingPartReport,
-  SpeakingReportFluency,
   SpeakingResponseReport,
 } from "@/modules/speaking/types";
 import {
@@ -68,52 +67,6 @@ function Metrics({ metrics }: { metrics?: SpeakingFluencyMetrics | null }) {
   );
 }
 
-function AttemptFluencySummary({ fluency }: { fluency: SpeakingReportFluency }) {
-  const overall = fluency.overall;
-  const attempted =
-    overall?.response_count != null && overall?.questions_asked != null
-      ? `${overall.response_count}/${overall.questions_asked}`
-      : "Not available";
-  const items = [
-    ["Part 1", metricDisplay("words_per_minute", fluency.parts["1"]?.words_per_minute), "WPM"],
-    ["Part 2", metricDisplay("words_per_minute", fluency.parts["2"]?.words_per_minute), "WPM"],
-    ["Part 3", metricDisplay("words_per_minute", fluency.parts["3"]?.words_per_minute), "WPM"],
-    ["Speaking time", metricDisplay("total_speaking_seconds", overall?.total_speaking_seconds), null],
-    ["Long pauses", metricDisplay("long_pauses", overall?.long_pauses), null],
-    ["Attempted", attempted, null],
-  ] as const;
-  const hasMetrics = items.some(([, value]) => value !== "Not available");
-
-  return (
-    <div>
-      {!hasMetrics ? (
-        <p className="mb-3 rounded-xl border border-border-soft bg-surface-alt p-3 text-xs text-muted" role="status">
-          Attempt-level fluency metrics are unavailable for this report.
-        </p>
-      ) : null}
-      <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-        {items.map(([label, value, unit]) => (
-          <div key={label} className="rounded-xl border border-border-soft bg-white p-3 text-center shadow-soft">
-            <dt className="text-[10px] font-semibold tracking-wide text-muted-light uppercase">
-              {label}
-            </dt>
-            <dd className={`mt-1 font-mono text-lg font-medium tabular-nums ${
-              value === "Not available" ? "text-muted-light" : "text-navy"
-            }`}>
-              {value}
-              {value !== "Not available" && unit ? ` ${unit}` : ""}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <p className="mt-2 text-[11px] text-muted">
-        Response-derived fluency metrics
-        {!fluency.complete ? " · partial metric coverage" : ""}
-      </p>
-    </div>
-  );
-}
-
 function ResponseAnalysis({ response }: { response: SpeakingResponseReport }) {
   const annotations = useMemo(() => responseAnnotations(response), [response]);
   return (
@@ -148,12 +101,13 @@ function ResponseAnalysis({ response }: { response: SpeakingResponseReport }) {
         </p>
       )}
 
-      <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6">
         {response.transcript?.trim() ? (
           <AnnotatedText
             text={response.transcript}
             annotations={annotations}
-            className="text-[14px] leading-8 text-[#D8E1EE]"
+            theme="dark"
+            className="text-[15px] leading-[2] font-light"
           />
         ) : (
           <p className="text-xs text-[#9FB0C8]" aria-live="polite">
@@ -244,10 +198,8 @@ function PrintableAnalysis({ parts }: { parts: SpeakingPartReport[] }) {
 
 export function ReportAnalysis({
   parts,
-  fluency,
 }: {
   parts: SpeakingPartReport[];
-  fluency: SpeakingReportFluency;
 }) {
   const partNumbers = parts.map((part) => part.part);
   const [activePart, setActivePart] = useState(partNumbers[0] ?? 1);
@@ -337,18 +289,6 @@ export function ReportAnalysis({
       </section>
 
       <PrintableAnalysis parts={parts} />
-
-      <section className="speaking-report-interactive-hint mt-7" aria-labelledby="fluency-heading">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="fluency-heading" className="font-display text-lg font-bold text-navy">
-            Fluency summary
-          </h2>
-          <span className="font-mono text-[10px] tracking-[0.1em] text-muted-light uppercase">
-            Response-derived metrics
-          </span>
-        </div>
-        <AttemptFluencySummary fluency={fluency} />
-      </section>
     </>
   );
 }

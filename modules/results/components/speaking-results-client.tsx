@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import {
   persistModuleResultAttempt,
+  readMockAttemptId,
   readModuleResultAttempt,
 } from "@/lib/exam-session-storage";
+import { mockTestIdForNumber } from "@/lib/mock-catalog";
+import {
+  resolveSectionResultsBackFallbackHref,
+  resolveSectionResultsBackHref,
+} from "@/lib/section-results-back";
 import { speakingApi } from "@/modules/speaking/services/speaking-api";
 import { SpeakingFeedbackView } from "@/modules/speaking/components/speaking-feedback-view";
 import { SpeakingAiEstimateView } from "@/modules/speaking/components/speaking-ai-estimate-view";
@@ -29,6 +35,11 @@ type Props = {
   testNumber: number;
   attemptFromQuery?: string;
   targetBand?: number | null;
+  mockAttemptId?: string | null;
+  primaryActionLabel?: string;
+  onPrimaryAction?: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
 };
 
 const subscribeToHydration = () => () => {};
@@ -37,6 +48,11 @@ export function SpeakingResultsClient({
   testNumber,
   attemptFromQuery,
   targetBand = null,
+  mockAttemptId = null,
+  primaryActionLabel,
+  onPrimaryAction,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: Props) {
   const router = useRouter();
   const queryAttempt = attemptFromQuery?.trim() || null;
@@ -50,11 +66,32 @@ export function SpeakingResultsClient({
     () => readModuleResultAttempt(testNumber, "speaking"),
     () => null,
   );
+  const storedMockAttempt = useSyncExternalStore(
+    subscribeToHydration,
+    () => readMockAttemptId(mockTestIdForNumber(testNumber)),
+    () => null,
+  );
   const attemptId = queryAttempt || storedAttempt;
   const [pending, setPending] = useState<SpeakingPendingPayload | null>(null);
   const [report, setReport] = useState<SpeakingReportPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const resolvedMockAttemptId =
+    mockAttemptId?.trim() ||
+    report?.attempt?.mock_attempt_id?.trim() ||
+    storedMockAttempt ||
+    null;
+
+  const backNav = useMemo(
+    () =>
+      resolveSectionResultsBackHref({
+        testNumber,
+        mockAttemptId: resolvedMockAttemptId,
+      }),
+    [resolvedMockAttemptId, testNumber],
+  );
+  const fallbackHref = resolveSectionResultsBackFallbackHref(testNumber);
 
   useEffect(() => {
     if (attemptId) {
@@ -155,6 +192,13 @@ export function SpeakingResultsClient({
           testNumber={testNumber}
           payload={pending}
           targetBand={targetBand}
+          primaryActionLabel={primaryActionLabel}
+          onPrimaryAction={onPrimaryAction}
+          secondaryActionLabel={secondaryActionLabel}
+          onSecondaryAction={onSecondaryAction}
+          backHref={backNav.href}
+          backLabel={backNav.label}
+          fallbackHref={fallbackHref}
         />
       );
     }
@@ -204,5 +248,17 @@ export function SpeakingResultsClient({
       </div>
     );
   }
-  return <SpeakingFeedbackView testNumber={testNumber} feedback={feedback} />;
+  return (
+    <SpeakingFeedbackView
+      testNumber={testNumber}
+      feedback={feedback}
+      primaryActionLabel={primaryActionLabel}
+      onPrimaryAction={onPrimaryAction}
+      secondaryActionLabel={secondaryActionLabel}
+      onSecondaryAction={onSecondaryAction}
+      backHref={backNav.href}
+      backLabel={backNav.label}
+      fallbackHref={fallbackHref}
+    />
+  );
 }

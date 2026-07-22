@@ -20,6 +20,7 @@ import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch
 import { mockApi } from "@/modules/mock/services/mock-api";
 import { SpeakingExamFlow } from "@/modules/speaking/components/speaking-exam-flow";
 import { SpeakingMicCheck } from "@/modules/speaking/components/speaking-mic-check";
+import { speakingPendingPath } from "@/modules/speaking/lib/speaking-status-routing";
 import {
   readMicCheckPassed,
   writeMicCheckPassed,
@@ -465,7 +466,34 @@ export function SpeakingPage({
       recordings.forEach((recording) => recordingsRef.current.set(recording.questionId, recording));
       setBusy(true);
       setError(null);
+
+      const goToResults = (resultAttemptId: string) => {
+        const wake = wakeLockRef.current;
+        wakeLockRef.current = null;
+        if (wake) void wake.release();
+        try {
+          clearSpeakingSessionRecordings(micScope);
+        } catch {
+          /* best-effort */
+        }
+        void clearSpeakingResponseMetadata(micScope).catch(() => undefined);
+        persistModuleResultAttempt(testNumber, "speaking", resultAttemptId);
+        // Pending status while AI / human score is processing.
+        router.replace(
+          speakingPendingPath(testNumber, resultAttemptId, mockAttemptId),
+        );
+      };
+
       try {
+        // Trust the server for what is already confirmed (local refs can lag).
+        try {
+          const recovery = await speakingApi.responses(attemptId);
+          const accepted = acceptedRecoveredQuestionIds(recovery);
+          accepted.forEach((id) => uploadedQuestionIdsRef.current.add(id));
+        } catch {
+          /* keep local upload set */
+        }
+
         const missingBeforeRetry = missingExpectedResponseIds(
           expectedResponses,
           uploadedQuestionIdsRef.current,
@@ -516,29 +544,22 @@ export function SpeakingPage({
 
         if (!manifestHash) throw new Error("The speaking manifest could not be verified.");
         const result = await speakingApi.finalize(attemptId, { manifestHash });
-        const wake = wakeLockRef.current;
-        wakeLockRef.current = null;
-        if (wake) void wake.release();
-        clearSpeakingSessionRecordings(micScope);
-        await clearSpeakingResponseMetadata(micScope);
-        persistModuleResultAttempt(testNumber, "speaking", result.attempt_id);
-        if (mockAttemptId) {
-          router.replace(
-            sectionResultsPathForMockSubmit(mockTestId, "speaking", {
-              attempt: result.attempt_id,
-              part: 1,
-              mockAttemptId,
-            }),
-          );
-          return;
-        }
-        router.replace(
-          sectionResultsPathForMockSubmit(mockTestId, "speaking", {
-            attempt: result.attempt_id,
-            part: 1,
-          }),
-        );
+        goToResults(result.attempt_id);
       } catch (e) {
+        // Finalize (or a prior attempt) may have already completed on the server.
+        try {
+          const recovery = await speakingApi.responses(attemptId);
+          const accepted = acceptedRecoveredQuestionIds(recovery);
+          if (
+            expectedResponses.length > 0 &&
+            missingExpectedResponseIds(expectedResponses, accepted).length === 0
+          ) {
+            goToResults(attemptId);
+            return;
+          }
+        } catch {
+          /* fall through to error */
+        }
         setError(formatExamSubmitError(e));
       } finally {
         setBusy(false);
@@ -614,11 +635,12 @@ export function SpeakingPage({
 
   return (
     <TestShell
+      fillViewport
       header={<TestHeader timer={<TestTimer remainingSeconds={remaining} />} />}
     >
-      <main className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col overflow-y-auto p-3 sm:p-5 md:p-8 lg:p-10">
+      <main className="mx-auto flex min-h-0 w-full max-w-[1360px] flex-1 flex-col overflow-hidden p-3 sm:p-5 md:p-8 lg:p-10">
         {studentName ? (
-          <div className="mb-4 inline-flex items-center gap-2 self-start rounded-full border border-border bg-surface px-3 py-1.5 text-meta text-ink/75">
+          <div className="mb-3 inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-border bg-surface px-3 py-1.5 text-meta text-ink/75 sm:mb-4">
             <UserRound className="size-3.5 text-teal" aria-hidden />
             <span>
               Recording as <span className="font-semibold text-navy">{studentName}</span>
@@ -641,12 +663,12 @@ export function SpeakingPage({
         />
 
         {error ? (
-          <p className="mt-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger" role="alert">
+          <p className="mt-3 shrink-0 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger" role="alert">
             {error}
           </p>
         ) : null}
 
-        <p className="mt-4 text-center text-meta text-ink/55">
+        <p className="mt-3 shrink-0 text-center text-meta text-ink/55">
           Your Speaking band will be available within 24 hours after examiner review.
         </p>
       </main>

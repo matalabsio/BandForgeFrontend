@@ -49,6 +49,7 @@ type Props = {
   annotations: AnnotationSpan[];
   className?: string;
   emptyFallback?: ReactNode;
+  theme?: "light" | "dark";
 };
 
 export function AnnotatedText({
@@ -56,6 +57,7 @@ export function AnnotatedText({
   annotations,
   className,
   emptyFallback,
+  theme = "light",
 }: Props) {
   const baseId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -135,7 +137,8 @@ export function AnnotatedText({
     return (
       <div
         className={cn(
-          "whitespace-pre-wrap text-[14px] leading-[1.75] text-[#334155]",
+          "whitespace-pre-wrap text-[14px] leading-[1.75]",
+          theme === "dark" ? "text-[#D8E1EE]" : "text-[#334155]",
           className,
         )}
       >
@@ -167,7 +170,7 @@ export function AnnotatedText({
         type="button"
         className={cn(
           "inline cursor-pointer rounded-sm underline decoration-2 underline-offset-[3px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
-          annotationMarkClass(ann.kind),
+          annotationMarkClass(ann.kind, theme),
         )}
         aria-expanded={isOpen}
         aria-describedby={isOpen ? tipId : undefined}
@@ -204,7 +207,8 @@ export function AnnotatedText({
       <div
         ref={rootRef}
         className={cn(
-          "whitespace-pre-wrap text-[14px] leading-[1.75] text-[#334155]",
+          "whitespace-pre-wrap text-[14px] leading-[1.75]",
+          theme === "dark" ? "text-[#D8E1EE]" : "text-[#334155]",
           className,
         )}
       >

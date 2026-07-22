@@ -19,8 +19,12 @@ import {
   type MockSlug,
 } from "@/lib/mock-catalog";
 import { prepareExamModuleNavigation } from "@/lib/mock-exam-nav";
+import { shortSectionResultsPath } from "@/lib/section-results-path";
 import {
   resolveEnabledModuleKeys,
+  previewModulesForKeys,
+  withFreeModuleAccess,
+  isMockFreeModuleAccess,
   type MockModuleKey,
 } from "@/modules/mock/lib/mock-progress";
 import type { ModuleProgress } from "@/modules/mock/services/mock-api";
@@ -118,9 +122,41 @@ function moduleHref(
   key: ModuleKey,
   mod: ModuleProgress,
 ): { href: string; nav: { auto?: boolean; sectionStart?: boolean } } | null {
+  // `locked` is remapped to `available` via withFreeModuleAccess before call.
   if (!mod.is_enabled || mod.status === "locked") return null;
 
+  const testNumber = testNumberForMockId(mockApiId(mockSlug));
   const part = mod.part ?? 1;
+
+  // Completed → section results (or pending while AI / human score is pending).
+  // Do not reopen the exam for a finished module.
+  if (mod.status === "completed") {
+    if (!mod.test_attempt_id) return null;
+    if (key === "speaking" && mod.band == null) {
+      return {
+        href: shortModuleSpeakingPendingPath(testNumber, mod.test_attempt_id, {
+          mockAttemptId,
+        }),
+        nav: {},
+      };
+    }
+    if (key === "writing" && mod.band == null) {
+      return {
+        href: shortModuleWritingPendingPath(testNumber, mod.test_attempt_id),
+        nav: {},
+      };
+    }
+    return {
+      href: shortSectionResultsPath(testNumber, key, {
+        attempt: mod.test_attempt_id,
+        part: mod.part ?? undefined,
+        mockAttempt: mockAttemptId,
+      }),
+      nav: {},
+    };
+  }
+
+  // In progress → resume; available → start that module only.
   const auto = mod.status === "in_progress" || mod.status === "available";
   const sectionStart = mod.status === "available";
 
@@ -130,19 +166,9 @@ function moduleHref(
   } else if (key === "reading") {
     path = mockModulePath(mockSlug, "reading", { passage: part });
   } else if (key === "writing") {
-    if (mod.status === "completed" && mod.test_attempt_id && mod.band == null) {
-      const testNumber = testNumberForMockId(mockApiId(mockSlug));
-      path = shortModuleWritingPendingPath(testNumber, mod.test_attempt_id);
-    } else {
-      path = mockModulePath(mockSlug, "writing", { part });
-    }
+    path = mockModulePath(mockSlug, "writing", { part });
   } else {
-    if (mod.status === "completed" && mod.test_attempt_id) {
-      const testNumber = testNumberForMockId(mockApiId(mockSlug));
-      path = shortModuleSpeakingPendingPath(testNumber, mod.test_attempt_id);
-    } else {
-      path = mockModulePath(mockSlug, "speaking");
-    }
+    path = mockModulePath(mockSlug, "speaking");
   }
 
   return {
@@ -184,6 +210,9 @@ type Props = {
   showSectionFilters?: boolean;
   previewWhenLocked?: boolean;
   catalogModulesEnabled?: readonly string[];
+  /** Start/resume a module when there is no attempt yet (testing free access). */
+  onStartModule?: (module: ModuleKey) => void | Promise<void>;
+  startModuleBusy?: boolean;
 };
 
 export function Test1ModuleCards({
@@ -195,6 +224,8 @@ export function Test1ModuleCards({
   showSectionFilters = false,
   previewWhenLocked = false,
   catalogModulesEnabled,
+  onStartModule,
+  startModuleBusy = false,
 }: Props) {
   const [sectionFilter, setSectionFilter] = useState<SectionFilter>("all");
   const meta = moduleMeta ?? getMockMeta(mockSlug as MockSlug);
@@ -205,6 +236,14 @@ export function Test1ModuleCards({
     () => resolveEnabledModuleKeys(modules, catalogModulesEnabled),
     [modules, catalogModulesEnabled],
   );
+
+  const accessModules = useMemo(() => {
+    const source =
+      modules.length > 0
+        ? modules
+        : previewModulesForKeys(enabledModuleKeys);
+    return withFreeModuleAccess(source);
+  }, [enabledModuleKeys, modules]);
 
   const enabledCards = useMemo(
     () => MODULE_CARDS.filter((card) => enabledModuleKeys.includes(card.key)),
@@ -279,13 +318,20 @@ export function Test1ModuleCards({
         )}
       >
         {visibleCards.map((card) => {
-          const mod = modules.find((m) => m.module === card.key);
+          const mod = accessModules.find((m) => m.module === card.key);
           const status = mod?.status ?? "locked";
           const link =
             mod && mockAttemptId
               ? moduleHref(mockSlug, mockAttemptId, card.key, mod)
               : null;
           const href = link?.href ?? null;
+          const canBootstrapStart =
+            !mockAttemptId &&
+            Boolean(onStartModule) &&
+            isMockFreeModuleAccess() &&
+            status === "available" &&
+            Boolean(mod?.is_enabled);
+          const isInteractive = Boolean(href) || canBootstrapStart;
           const isCurrent = status === "in_progress";
           const isDone = status === "completed";
 
@@ -296,8 +342,9 @@ export function Test1ModuleCards({
             <article
               className={cn(
                 "flex h-full min-h-[168px] flex-col rounded-2xl border border-[var(--exam-accent)]/30 border-t-[3px] border-t-[var(--exam-accent)] bg-white p-3.5 shadow-sm transition-shadow sm:p-4",
-                status === "locked" && "cursor-not-allowed opacity-65",
-                href && "hover:shadow-md",
+                status === "locked" && !canBootstrapStart && "cursor-not-allowed opacity-65",
+                isInteractive && "hover:shadow-md",
+                startModuleBusy && canBootstrapStart && "opacity-70",
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -343,7 +390,7 @@ export function Test1ModuleCards({
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              {href ? (
+              {isInteractive ? (
                 <p className="mt-2 text-[11px] font-bold text-[var(--exam-accent)]">
                   {isDone ? "Open →" : isCurrent ? "Resume →" : "Start →"}
                 </p>
@@ -380,6 +427,17 @@ export function Test1ModuleCards({
                 >
                   {inner}
                 </Link>
+              ) : canBootstrapStart ? (
+                <button
+                  type="button"
+                  className="block h-full w-full cursor-pointer text-left disabled:cursor-wait"
+                  disabled={startModuleBusy}
+                  onClick={() => {
+                    void onStartModule?.(card.key);
+                  }}
+                >
+                  {inner}
+                </button>
               ) : (
                 inner
               )}

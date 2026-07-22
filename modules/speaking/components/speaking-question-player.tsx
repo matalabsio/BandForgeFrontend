@@ -54,7 +54,7 @@ function ExaminerPanel({
   }
 
   return (
-    <div className="relative flex min-h-[240px] overflow-hidden rounded-[20px] border border-cyan/40 bg-[#0B1B32] shadow-[0_20px_44px_rgba(13,31,60,0.22)] sm:min-h-[300px] lg:min-h-[430px]">
+    <div className="relative flex min-h-[180px] overflow-hidden rounded-[20px] border border-cyan/40 bg-[#0B1B32] shadow-[0_20px_44px_rgba(13,31,60,0.22)] sm:min-h-[260px] lg:min-h-[380px]">
       <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full border border-slate-400/30 bg-slate-950/50 px-3 py-1.5 backdrop-blur-sm">
         <span
           className={cn(

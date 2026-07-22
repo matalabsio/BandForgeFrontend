@@ -32,6 +32,7 @@ export function TestWritingView() {
 
   return (
     <TestShell
+      fillViewport
       header={<TestHeader timer={<TestTimer remainingSeconds={remaining} />} />}
     >
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -66,7 +67,7 @@ export function TestWritingView() {
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 lg:flex-row lg:p-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:flex-row lg:p-6">
           <section
             className="lg:w-2/5 lg:overflow-y-auto"
             aria-label="Task prompt"

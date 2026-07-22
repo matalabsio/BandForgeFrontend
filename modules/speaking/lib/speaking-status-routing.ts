@@ -12,8 +12,15 @@ type SpeakingReviewStatus = Pick<
   };
 };
 
-export function speakingPendingPath(testNumber: number, attemptId: string): string {
-  return `/test/${testNumber}/speaking/pending?attempt=${encodeURIComponent(attemptId)}`;
+export function speakingPendingPath(
+  testNumber: number,
+  attemptId: string,
+  mockAttemptId?: string | null,
+): string {
+  const params = new URLSearchParams({ attempt: attemptId });
+  const mockAttempt = mockAttemptId?.trim();
+  if (mockAttempt) params.set("mock_attempt", mockAttempt);
+  return `/test/${testNumber}/speaking/pending?${params.toString()}`;
 }
 
 export function speakingReportPath(testNumber: number, attemptId: string): string {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { persistModuleResultAttempt, readModuleResultAttempt } from "@/lib/exam-session-storage";
 import { writingTestHubPath } from "@/lib/writing-test";
@@ -10,6 +10,7 @@ import { WritingResultsView } from "@/modules/writing/components/writing-results
 import { WritingTaskTabs } from "@/modules/writing/components/writing-task-tabs";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { mockTestIdForNumber } from "@/lib/mock-catalog";
+import { resolveSectionResultsBackHref } from "@/lib/section-results-back";
 
 type Props = {
   testNumber: number;
@@ -71,6 +72,34 @@ export function WritingResultsClient({
     };
   }, [attemptId]);
 
+  const aiPending =
+    review != null &&
+    review.band_source !== "human" &&
+    review.band_source !== "module_score" &&
+    review.ai_status !== "ai_complete" &&
+    review.ai_status !== "ai_stub" &&
+    review.ai_status !== "ai_failed";
+
+  useEffect(() => {
+    if (!attemptId || !aiPending) return;
+    const timer = window.setInterval(() => {
+      void writingApi
+        .review(attemptId)
+        .then((data) => setReview(data))
+        .catch(() => undefined);
+    }, 5_000);
+    return () => window.clearInterval(timer);
+  }, [aiPending, attemptId]);
+
+  const backNav = useMemo(
+    () =>
+      resolveSectionResultsBackHref({
+        testNumber,
+        mockAttemptId,
+      }),
+    [mockAttemptId, testNumber],
+  );
+
   if (loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center p-8 text-sm text-ink/60">
@@ -106,6 +135,7 @@ export function WritingResultsClient({
             testNumber={testNumber}
             currentAttemptId={attemptId}
             tasks={sessionTasks}
+            mockAttemptId={mockAttemptId}
           />
         </div>
       ) : null}
@@ -115,6 +145,7 @@ export function WritingResultsClient({
         showContinueTask2={showContinueTask2}
         targetBand={targetBand}
         coachOpen={coachOpen}
+        backHref={backNav.href}
       />
     </div>
   );

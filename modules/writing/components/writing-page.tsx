@@ -438,10 +438,33 @@ export function WritingPage({
           }
         }
         if (!isDiagnostic) {
+          const testNum = testNumberForMockId(mockTestId);
+          persistModuleResultAttempt(testNum, "writing", result.attempt_id);
+
+          const continueToTask2 =
+            !result.mock_writing_complete &&
+            part === 1 &&
+            (result.next_part === 2 ||
+              result.mock_next_part === 2 ||
+              result.mock_next_module === "writing") &&
+            mockMeta.writingTaskCount > 1;
+
+          if (continueToTask2) {
+            const path = mockModulePath(mockSlug, "writing", { part: 2 });
+            navigateToExamPath(router, mockSlug, path, {
+              replace: true,
+              mockAttemptId,
+              auto: true,
+              sectionStart: true,
+            });
+            return;
+          }
+
+          // Both tasks done → combined Task 1 / Task 2 results with AI.
           router.replace(
             sectionResultsPathForMockSubmit(mockSlug, "writing", {
               attempt: result.attempt_id,
-              part,
+              part: result.part ?? part,
               mockAttemptId,
             }),
           );

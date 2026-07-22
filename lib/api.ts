@@ -93,7 +93,7 @@ export function requireApiUrl(): string {
 }
 
 export type ApiErrorBody = {
-  detail?: string | { msg?: string }[];
+  detail?: string | { msg?: string }[] | { message?: string };
   error?: string;
   message?: string;
 };
@@ -111,6 +111,15 @@ export function parseApiError(body: ApiErrorBody, status: number): string {
   if (typeof body.detail === "string") return body.detail;
   if (Array.isArray(body.detail) && body.detail[0]?.msg) {
     return body.detail[0].msg;
+  }
+  if (
+    body.detail &&
+    typeof body.detail === "object" &&
+    !Array.isArray(body.detail) &&
+    "message" in body.detail &&
+    typeof (body.detail as { message?: unknown }).message === "string"
+  ) {
+    return (body.detail as { message: string }).message;
   }
   const fallback = body.error ?? body.message ?? `Request failed (${status})`;
   if (status === 500 && fallback === "Internal Server Error") {

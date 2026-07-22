@@ -1,7 +1,10 @@
 import type {
   MockAttemptSummary,
   MockModuleResultSource,
+  SectionScore,
 } from "@/modules/mock/services/mock-api";
+import { shortSectionResultsPath } from "@/lib/section-results-path";
+import { testNumberForMockId } from "@/lib/mock-catalog";
 
 export type MockResultModule =
   | "listening"
@@ -90,4 +93,37 @@ export function overallResultPresentation(summary: MockAttemptSummary): {
       "An overall band cannot be calculated from the available results.",
     official: false,
   };
+}
+
+function pickModuleSection(
+  summary: MockAttemptSummary,
+  module: MockResultModule,
+): SectionScore | null {
+  const sections = summary.sections.filter((s) => s.module === module);
+  if (sections.length === 0) return null;
+  return [...sections].toSorted((a, b) => (b.part ?? 0) - (a.part ?? 0))[0] ?? null;
+}
+
+/**
+ * Deep-link from overall mock results → per-module score / AI result page.
+ */
+export function moduleSectionResultsHref(
+  mockTestId: string,
+  mockAttemptId: string,
+  module: MockResultModule,
+  summary: MockAttemptSummary,
+): string | null {
+  const testNumber = testNumberForMockId(mockTestId);
+  const section = pickModuleSection(summary, module);
+  const mod = summary.modules.find((m) => m.module === module);
+  const attemptId =
+    section?.test_attempt_id?.trim() || mod?.test_attempt_id?.trim() || null;
+  if (!attemptId) return null;
+
+  const part = section?.part ?? mod?.part ?? undefined;
+  return shortSectionResultsPath(testNumber, module, {
+    attempt: attemptId,
+    part: part ?? undefined,
+    mockAttempt: mockAttemptId,
+  });
 }

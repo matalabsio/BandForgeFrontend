@@ -8,11 +8,13 @@ import { ClockIcon } from "@/components/bandforge/dashboard/icons";
 import {
   getMockMeta,
   mockResultsPath,
+  testNumberForMockId,
   type MockSlug,
 } from "@/lib/mock-catalog";
 import {
   navigateAfterMockStart,
   navigateFromProgress,
+  navigateToModuleExam,
 } from "@/lib/mock-exam-nav";
 import type { MockCatalogSlot } from "@/lib/mock-catalog-api";
 import { MockTestHubShell } from "@/modules/mock/components/mock-test-hub-shell";
@@ -24,6 +26,7 @@ import { computeMockProgressPercent, formatModuleAbbrev, resolveEnabledModuleKey
 import { Test1ModuleCards } from "@/modules/mock/components/test1-module-cards";
 import { Test1ReadinessChecklist } from "@/modules/mock/components/test1-readiness-checklist";
 import type { MockAttemptProgress } from "@/modules/mock/services/mock-api";
+import type { MockModuleKey } from "@/modules/mock/lib/mock-progress";
 import { cn } from "@/lib/utils";
 
 const MockAttemptHistory = dynamic(
@@ -181,6 +184,39 @@ export function MockTestHub({
       /* error surfaced via hook */
     }
   };
+
+  const handleStartModule = useCallback(
+    async (module: MockModuleKey) => {
+      if (subscriptionLocked) return;
+      try {
+        let attemptId = activeAttemptId;
+        if (!attemptId) {
+          const res = await start(false);
+          attemptId = res.mock_attempt_id;
+        }
+        if (!attemptId) return;
+        persistMockAttemptId(mockTestId, attemptId);
+        navigateToModuleExam({ push, replace }, testNumber, module, {
+          part: 1,
+          passage: 1,
+          auto: true,
+          sectionStart: true,
+          mockAttemptId: attemptId,
+        });
+      } catch {
+        /* error surfaced via hook */
+      }
+    },
+    [
+      activeAttemptId,
+      mockTestId,
+      push,
+      replace,
+      start,
+      subscriptionLocked,
+      testNumber,
+    ],
+  );
 
   const primaryNeedsReadiness =
     showReadiness && status !== "completed" && status !== "in_progress";
@@ -355,6 +391,8 @@ export function MockTestHub({
         showSectionFilters
         previewWhenLocked={!hasAttempt}
         catalogModulesEnabled={hubMeta?.modulesEnabled}
+        onStartModule={handleStartModule}
+        startModuleBusy={busy}
       />
 
       {hasAttempt ? (
