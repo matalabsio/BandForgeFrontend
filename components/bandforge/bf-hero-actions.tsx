@@ -3,7 +3,7 @@ import { ShieldCheck } from "lucide-react";
 import { BfHeroStartCta } from "@/components/bandforge/bf-hero-start-cta";
 
 const startClassName =
-  "flex w-full items-center justify-center gap-2 rounded-full bg-cyan px-6 py-[17px] font-display text-[1.0625rem] font-semibold text-white no-underline shadow-[0_8px_20px_rgb(0_151_167/0.26)] transition-colors hover:bg-brand-sky-hover lg:inline-flex lg:w-auto lg:px-[30px] lg:py-[18px] lg:shadow-[0_10px_26px_rgb(0_151_167/0.26)]";
+  "flex w-full items-center justify-center gap-2 rounded-full bg-cyan px-6 py-[17px] text-[1.0625rem] font-semibold text-white no-underline shadow-[0_8px_20px_rgb(0_151_167/0.26)] transition-colors hover:bg-brand-sky-hover lg:inline-flex lg:w-auto lg:px-[30px] lg:py-[18px] lg:shadow-[0_10px_26px_rgb(0_151_167/0.26)]";
 
 /** Hero CTAs — full-width on mobile, inline on desktop. */
 export function BfHeroActions() {
