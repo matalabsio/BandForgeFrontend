@@ -7,7 +7,7 @@ const bricolage = Bricolage_Grotesque({
   weight: ["700"],
   display: "optional",
   adjustFontFallback: true,
-  preload: true,
+  preload: false,
 });
 
 const dmSans = DM_Sans({
