@@ -19,10 +19,11 @@ export type MarketingNavItem = {
 };
 
 export const BF_MARKETING_NAV: readonly MarketingNavItem[] = [
-  { href: "/#how", label: "How it works", icon: "route" },
-  { href: "/#modules", label: "Modules", icon: "layout-grid" },
+  { href: "/diagnostic", label: "Free diagnostic", icon: "play-circle" },
+  { href: "/pricing", label: "Pricing", icon: "tag" },
+  { href: "/faq", label: "FAQ", icon: "message-square" },
+  { href: "/how-it-works", label: "How it works", icon: "route" },
   { href: "/about", label: "About", icon: "users" },
-  { href: "/#pricing", label: "Pricing", icon: "tag" },
 ] as const;
 
 export const BF_MARKETING_NAV_LEGAL: readonly MarketingNavItem[] = [

@@ -71,6 +71,18 @@ export function buildLlmsTxt(): string {
         description:
           "Writing, Speaking, Dual, and All Skills sprints. Diagnostic always free.",
       },
+      {
+        title: "IELTS Writing Sprint",
+        path: "/writing",
+        description:
+          "90-day Writing sprint with 12 tasks and Band 9 human review within 48 hours. From ₹999.",
+      },
+      {
+        title: "IELTS Speaking Sprint",
+        path: "/speaking",
+        description:
+          "90-day Speaking sprint with AI analysis and Band 9 human review within 48 hours. From ₹999.",
+      },
     ]),
     "",
     linkSection("Learn more", [
@@ -78,6 +90,36 @@ export function buildLlmsTxt(): string {
         title: "About BandForge",
         path: "/about",
         description: "Online IELTS platform from MATA Labs in Hyderabad for AP and TG students.",
+      },
+      {
+        title: "IELTS for Telugu Speakers",
+        path: "/telugu",
+        description: "IELTS coaching built for Telugu-speaking students in AP and Telangana.",
+      },
+      {
+        title: "IELTS for Urdu Speakers",
+        path: "/urdu",
+        description: "Hyderabad-built IELTS platform for Urdu-speaking test takers.",
+      },
+      {
+        title: "IELTS Coaching in Hyderabad",
+        path: "/hyderabad",
+        description: "Online IELTS prep from Gachibowli, Hyderabad — sprints from ₹999.",
+      },
+      {
+        title: "BandForge FAQ",
+        path: "/faq",
+        description: "Answers on diagnostics, sprints, pricing, and the Completion Guarantee.",
+      },
+      {
+        title: "BandForge vs Coaching Centres",
+        path: "/vs-coaching-centres",
+        description: "Honest comparison of BandForge online sprints vs traditional coaching.",
+      },
+      {
+        title: "BandForge Blog",
+        path: "/blog",
+        description: "IELTS tips and guides for Telugu- and Urdu-speaking students.",
       },
       {
         title: "BandForge Features",

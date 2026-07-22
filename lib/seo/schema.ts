@@ -1,3 +1,6 @@
+import type { BlogPost } from "@/lib/seo/blog-posts";
+import type { FaqItem } from "@/lib/seo/faq-content";
+import { faqLeadAnswer } from "@/lib/seo/faq-content";
 import { SITE_ENTITY_DESCRIPTION } from "@/lib/seo/metadata";
 import { SPRINT_PLANS } from "@/lib/seo/claims";
 import { siteUrl } from "@/lib/site";
@@ -84,5 +87,142 @@ export function pricingSchemaGraph(): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@graph": pricingProductSchemas(),
+  };
+}
+
+function sprintPlanBySlug(slug: string) {
+  const plan = SPRINT_PLANS.find((entry) => entry.slug === slug);
+  if (!plan) {
+    throw new Error(`Unknown sprint slug: ${slug}`);
+  }
+  return plan;
+}
+
+export function webPageSchema({
+  name,
+  description,
+  path,
+}: {
+  name: string;
+  description: string;
+  path: string;
+}): JsonLdObject {
+  const url = siteUrl(path);
+  return {
+    "@type": "WebPage",
+    "@id": `${url}/#webpage`,
+    name,
+    description,
+    url,
+    isPartOf: { "@id": `${siteUrl()}/#website` },
+  };
+}
+
+export function sprintProductSchema(slug: string): JsonLdObject {
+  const plan = sprintPlanBySlug(slug);
+  const pagePath = slug === "writing-sprint" ? "/writing" : "/speaking";
+  const pageUrl = siteUrl(pagePath);
+  const orgRef = { "@id": organizationId() };
+
+  return {
+    "@type": "Product",
+    "@id": `${pageUrl}/#${plan.slug}`,
+    name: plan.name,
+    description: plan.schemaDescription,
+    url: pageUrl,
+    brand: orgRef,
+    seller: orgRef,
+    offers: {
+      "@type": "Offer",
+      url: pageUrl,
+      priceCurrency: "INR",
+      price: String(plan.priceInr),
+      availability: "https://schema.org/InStock",
+      seller: orgRef,
+    },
+  };
+}
+
+export function sprintPageSchemaGraph(
+  slug: "writing-sprint" | "speaking-sprint",
+  page: { name: string; description: string; path: string },
+): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [webPageSchema(page), sprintProductSchema(slug)],
+  };
+}
+
+export function faqPageSchema(faq: FaqItem[]): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faqLeadAnswer(item.answer),
+      },
+    })),
+  };
+}
+
+export function localBusinessSchema(): JsonLdObject {
+  const url = siteUrl("/hyderabad");
+  return {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "@id": `${url}/#localbusiness`,
+    name: "BandForge — IELTS Coaching in Hyderabad",
+    description: SITE_ENTITY_DESCRIPTION,
+    url,
+    image: siteUrl("/icon-512.png"),
+    priceRange: "₹999–₹2,999",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Gachibowli",
+      addressLocality: "Hyderabad",
+      addressRegion: "Telangana",
+      postalCode: "500032",
+      addressCountry: "IN",
+    },
+    areaServed: [
+      { "@type": "State", name: "Telangana" },
+      { "@type": "State", name: "Andhra Pradesh" },
+    ],
+    parentOrganization: { "@id": organizationId() },
+  };
+}
+
+export function blogCollectionSchema(): JsonLdObject {
+  const url = siteUrl("/blog");
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${url}/#collection`,
+    name: "BandForge IELTS Blog",
+    description:
+      "IELTS preparation guides, band-score tips, and study advice for Telugu- and Urdu-speaking students in AP and Telangana.",
+    url,
+    isPartOf: { "@id": `${siteUrl()}/#website` },
+    publisher: { "@id": organizationId() },
+  };
+}
+
+export function blogPostingSchema(post: BlogPost): JsonLdObject {
+  const url = siteUrl(`/blog/${post.slug}`);
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `${url}/#article`,
+    headline: post.title,
+    description: post.description,
+    url,
+    datePublished: post.publishedAt,
+    dateModified: post.updatedAt,
+    author: { "@id": organizationId() },
+    publisher: { "@id": organizationId() },
+    mainEntityOfPage: { "@id": `${url}/#webpage` },
   };
 }
