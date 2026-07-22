@@ -21,8 +21,7 @@ import { PlanCard } from "@/components/pricing/plan-card";
 import { PRICING_FAQ } from "@/components/pricing/pricing-faq";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
-import { FREE_DIAGNOSTIC_TIER, sprintPlansToFallbackPlans } from "@/lib/seo/marketing-pricing";
-import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
+import { sprintPlansToFallbackPlans } from "@/lib/seo/marketing-pricing";
 
 type OverlayState = null | "creating" | "verifying";
 type StatusModal =
@@ -242,24 +241,7 @@ export function PricingClient() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-4 py-10 sm:py-14">
-      {/* header */}
-      <div className="mx-auto max-w-2xl text-center">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan">
-          Plans &amp; pricing
-        </p>
-        <h1 className="font-display mt-2 text-3xl font-extrabold text-navy sm:text-4xl">
-          {PAGE_SEO_COPY.pricing.h1}
-        </h1>
-        <p className="mt-3 text-sm text-muted">
-          {PAGE_SEO_COPY.pricing.description}
-        </p>
-        <p className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-light">
-          <LockIcon /> Secure payments powered by Razorpay
-        </p>
-      </div>
-
-      {/* already subscribed banner */}
+    <div className="mx-auto w-full max-w-[1100px] px-4 pb-10 sm:pb-14">
       {subscription?.is_active ? (
         <div className="mx-auto mt-8 flex max-w-3xl flex-col items-start justify-between gap-3 rounded-2xl border border-border-soft bg-surface px-5 py-4 sm:flex-row sm:items-center">
           <div className="text-sm text-ink">
@@ -331,24 +313,9 @@ export function PricingClient() {
         </div>
       ) : null}
 
-      {/* free diagnostic */}
-      <div className="mx-auto mt-10 max-w-3xl">
-        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-border-soft bg-surface px-5 py-5 sm:flex-row sm:items-center">
-          <div>
-            <p className="font-display text-base font-bold text-navy">
-              {FREE_DIAGNOSTIC_TIER.name}
-            </p>
-            <p className="mt-1 text-sm text-muted">{FREE_DIAGNOSTIC_TIER.description}</p>
-          </div>
-          <Link
-            href={FREE_DIAGNOSTIC_TIER.href}
-            prefetch
-            className="inline-flex shrink-0 cursor-pointer rounded-xl border border-cyan px-4 py-2 text-sm font-semibold text-cyan transition-colors hover:bg-cyan-soft"
-          >
-            {FREE_DIAGNOSTIC_TIER.cta}
-          </Link>
-        </div>
-      </div>
+      <p className="mx-auto max-w-2xl text-center font-mono text-[11px] text-muted-light">
+        <LockIcon /> Secure payments powered by Razorpay
+      </p>
 
       {usingFallbackPlans ? (
         <p className="mx-auto mt-4 max-w-3xl text-center text-xs text-muted-light">
@@ -357,10 +324,10 @@ export function PricingClient() {
       ) : null}
 
       {/* plans grid */}
-      <div className="mt-10">
+      <div className="mt-6">
         {loadingPlans ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[0, 1, 2].map((i) => (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
                 className="h-[420px] animate-pulse rounded-[18px] border border-border-soft bg-surface"
