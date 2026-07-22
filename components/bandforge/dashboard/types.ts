@@ -35,6 +35,7 @@ export type DashboardRecentAttempt = {
   completed_at: string | null;
   status: string;
   band: number | null;
+  score_source?: "module_score" | "human" | "ai_estimate" | "unavailable";
   raw_score: number | null;
   total_questions: number | null;
   part?: number | null;

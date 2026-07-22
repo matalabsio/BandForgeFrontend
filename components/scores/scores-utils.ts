@@ -141,14 +141,26 @@ export function speakingReviewState(
 ): SpeakingReviewState {
   const attempt = latestAttemptForModule(recent, "speaking");
   if (!attempt) return "none";
-  if (attempt.band != null && attempt.band > 0) return "scored";
+  if (
+    attempt.band != null &&
+    attempt.band > 0 &&
+    attempt.score_source !== "ai_estimate"
+  ) {
+    return "scored";
+  }
   return "under_review";
 }
 
 function writingReviewState(recent: DashboardRecentAttempt[]): SpeakingReviewState {
   const attempt = latestAttemptForModule(recent, "writing");
   if (!attempt) return "none";
-  if (attempt.band != null && attempt.band > 0) return "scored";
+  if (
+    attempt.band != null &&
+    attempt.band > 0 &&
+    attempt.score_source !== "ai_estimate"
+  ) {
+    return "scored";
+  }
   return "under_review";
 }
 
@@ -171,7 +183,11 @@ export function moduleBandLabel(
   reviewState: SpeakingReviewState,
   live: boolean,
 ): string {
-  if (band != null && band > 0) return band.toFixed(1);
+  if (band != null && band > 0) {
+    return reviewState === "under_review"
+      ? `AI ${band.toFixed(1)}`
+      : band.toFixed(1);
+  }
   if (reviewState === "under_review") return "Under review";
   return live ? "—" : "Soon";
 }
@@ -185,7 +201,7 @@ export function dashboardModuleBands(
     const reviewState = moduleReviewState(recent, module);
     const rollup = rollupBandForModule(latestMock, module);
     let band = rollup;
-    if (band == null && module === "speaking") {
+    if (band == null) {
       band = normalizeBand(latest?.band);
     }
     const testNumber = latest

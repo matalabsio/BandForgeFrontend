@@ -44,7 +44,7 @@ function aggregatePartialBand(snapshot: DiagnosticResultsSnapshot): number {
     snapshot.listening_band,
     snapshot.reading_band,
     snapshot.writingEvaluation?.writing_band ?? snapshot.writing_band,
-    null,
+    snapshot.speaking_band,
   );
   return partial ?? 0;
 }
@@ -120,8 +120,8 @@ export function DiagnosticResultsExperience() {
     writingBandFromSnapshot ?? progressWritingFallbackBand;
   const effectiveSpeakingBand = snapshot?.speaking_band ?? null;
   const writingPending = pendingHuman && effectiveWritingBand == null;
-  const speakingPending = pendingHuman;
-  const speakingBandForDisplay = speakingPending ? null : effectiveSpeakingBand;
+  const speakingPending = pendingHuman && effectiveSpeakingBand == null;
+  const speakingBandForDisplay = effectiveSpeakingBand;
 
   const skillBands: SkillBands = useMemo(
     () => ({
@@ -229,9 +229,7 @@ export function DiagnosticResultsExperience() {
     (snapshot?.writingEvaluation ? aggregatePartialBand(snapshot) : 0);
 
   const heroBand = pendingHuman
-    ? snapshot?.writingEvaluation
-      ? bandLabel(aggregatePartialBand(snapshot) || null)
-      : "—"
+    ? bandLabel(aggregatePartialBand(snapshot) || null)
     : bandLabel(snapshot?.aggregate_band);
 
   const leadPhone = lead?.phone;
@@ -339,7 +337,7 @@ export function DiagnosticResultsExperience() {
                   ((key === "writing" &&
                     effectiveWritingBand == null &&
                     !hasWritingEval) ||
-                    key === "speaking");
+                    (key === "speaking" && effectiveSpeakingBand == null));
                 const band = skillBands[key];
 
                 return (
@@ -380,7 +378,9 @@ export function DiagnosticResultsExperience() {
                   </p>
                 ) : activeReviewSkill === "speaking" ? (
                   <p className="text-sm leading-relaxed text-[#5A6B82]">
-                    Speaking answer transcript and examiner notes are not available yet while review is pending.
+                    {effectiveSpeakingBand != null
+                      ? `Your provisional Speaking estimate is Band ${effectiveSpeakingBand.toFixed(1)}. A certified examiner is reviewing the recording before the final score and detailed notes are released.`
+                      : "Speaking analysis is still processing. The estimate will appear here automatically when it is ready, while detailed examiner notes remain under review."}
                   </p>
                 ) : activeReviewItems.length === 0 ? (
                   <p className="text-sm leading-relaxed text-[#5A6B82]">

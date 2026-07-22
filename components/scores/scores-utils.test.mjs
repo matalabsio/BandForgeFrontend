@@ -27,14 +27,23 @@ function dashboardModuleBands(recent, latestMock) {
   const modules = ["listening", "reading", "writing", "speaking"];
   return modules.map((module) => {
     const rollupKey = `${module}_band`;
-    const band =
+    const rollup =
       latestMock && latestMock[rollupKey] != null && latestMock[rollupKey] > 0
         ? latestMock[rollupKey]
         : null;
     const latest = recent.find((a) => a.module === module);
+    const band =
+      rollup ??
+      (latest?.band != null && latest.band > 0 ? latest.band : null);
     return {
       module,
       band,
+      reviewState:
+        (module === "writing" || module === "speaking") &&
+        latest &&
+        latest.score_source === "ai_estimate"
+          ? "under_review"
+          : "none",
       mockAttemptId: latest?.mock_attempt_id ?? latestMock?.mock_attempt_id ?? null,
     };
   });
@@ -64,4 +73,40 @@ test("dashboardModuleBands always returns four modules", () => {
   assert.equal(bands.length, 4);
   assert.equal(bands[0].band, 6.5);
   assert.equal(bands[0].mockAttemptId, "mock-1");
+});
+
+test("dashboardModuleBands exposes provisional AI writing and speaking bands", () => {
+  const recent = [
+    {
+      id: "speaking-attempt",
+      module: "speaking",
+      status: "completed",
+      completed_at: "2026-07-21T10:00:00Z",
+      band: 6.5,
+      score_source: "ai_estimate",
+    },
+    {
+      id: "writing-attempt",
+      module: "writing",
+      status: "completed",
+      completed_at: "2026-07-21T09:00:00Z",
+      band: 7,
+      score_source: "ai_estimate",
+    },
+  ];
+  const bands = dashboardModuleBands(recent, {
+    mock_attempt_id: "mock-1",
+    writing_band: null,
+    speaking_band: null,
+  });
+
+  assert.equal(bands.find((row) => row.module === "writing").band, 7);
+  assert.equal(
+    bands.find((row) => row.module === "speaking").band,
+    6.5,
+  );
+  assert.equal(
+    bands.find((row) => row.module === "speaking").reviewState,
+    "under_review",
+  );
 });

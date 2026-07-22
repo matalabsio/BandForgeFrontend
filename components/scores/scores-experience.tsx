@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PerformanceChartLazy } from "@/components/bandforge/dashboard/performance-chart-lazy";
 import type { DashboardSummary } from "@/components/bandforge/dashboard/types";
 import { ScoresCompletionFocus } from "@/components/scores/scores-completion-focus";
@@ -30,7 +34,22 @@ export function ScoresExperience({
   recommendations = [],
   topWeaknesses = [],
 }: Props) {
+  const router = useRouter();
   const moduleBands = dashboardModuleBands(summary.recent, summary.latest_mock);
+  const hasPendingAiBand = moduleBands.some(
+    (row) =>
+      (row.module === "writing" || row.module === "speaking") &&
+      row.reviewState === "under_review" &&
+      row.band == null,
+  );
+
+  useEffect(() => {
+    if (!hasPendingAiBand) return;
+    const interval = window.setInterval(() => {
+      router.refresh();
+    }, 10_000);
+    return () => window.clearInterval(interval);
+  }, [hasPendingAiBand, router]);
 
   return (
     <div className="space-y-6">

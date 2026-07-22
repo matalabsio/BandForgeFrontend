@@ -174,7 +174,6 @@ export function DiagnosticPlanRevealExperience() {
   const targetBand = lead?.targetBand ?? 7.0;
   const examDate = lead?.examDate ?? "";
 
-  const pendingHuman = snapshot?.review_status === "pending_human";
   const effectiveWritingBand =
     snapshot?.writingEvaluation?.writing_band ?? snapshot?.writing_band ?? null;
 
@@ -183,9 +182,9 @@ export function DiagnosticPlanRevealExperience() {
       listening: snapshot?.listening_band ?? null,
       reading: snapshot?.reading_band ?? null,
       writing: effectiveWritingBand,
-      speaking: pendingHuman ? null : (snapshot?.speaking_band ?? null),
+      speaking: snapshot?.speaking_band ?? null,
     }),
-    [snapshot, effectiveWritingBand, pendingHuman],
+    [snapshot, effectiveWritingBand],
   );
 
   const planPreview = useMemo(() => {
