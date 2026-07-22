@@ -20,7 +20,7 @@ export function BandForgeHero() {
             </div>
             <h1
               id="bf-hero-heading"
-              className="font-display mb-4 text-[1.875rem] leading-[1.1] font-bold tracking-[-0.03em] text-balance text-navy sm:mb-[18px] sm:text-[2.125rem] sm:leading-[1.08] lg:mb-6 lg:text-[3.5rem] lg:tracking-[-0.035em]"
+              className="mb-4 text-[1.875rem] leading-[1.1] font-bold tracking-[-0.03em] text-balance text-navy sm:mb-[18px] sm:text-[2.125rem] sm:leading-[1.08] lg:mb-6 lg:text-[3.5rem] lg:tracking-[-0.035em]"
             >
               Know your real IELTS band — before exam day.
             </h1>

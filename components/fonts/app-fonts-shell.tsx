@@ -26,7 +26,7 @@ const dmMono = DM_Mono({
 export function AppFontsShell({ children }: { children: ReactNode }) {
   return (
     <div
-      className={`${bricolage.variable} ${dmSans.variable} ${dmMono.variable} contents`}
+      className={`${bricolage.variable} ${dmSans.variable} ${dmMono.variable} min-h-dvh`}
     >
       {children}
     </div>
