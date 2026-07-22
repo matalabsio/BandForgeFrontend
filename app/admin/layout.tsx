@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { AppFontsShell } from "@/components/fonts/app-fonts-shell";
 import { requireAdminSession } from "@/lib/admin-auth";
 
 export default async function AdminLayout({
@@ -10,5 +11,5 @@ export default async function AdminLayout({
   if (pathname !== "/admin/login") {
     await requireAdminSession(pathname || "/admin");
   }
-  return children;
+  return <AppFontsShell>{children}</AppFontsShell>;
 }

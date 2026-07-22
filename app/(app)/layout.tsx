@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AppAuthShell } from "@/components/bandforge/app-auth-shell";
 import { DashboardSidebarNav } from "@/components/bandforge/dashboard/dashboard-sidebar-nav";
 import { DashboardShell } from "@/components/bandforge/dashboard/dashboard-shell";
+import { AppFontsShell } from "@/components/fonts/app-fonts-shell";
 import {
   bandforgeHideShellHeader,
   getBandforgePathname,
@@ -40,23 +41,25 @@ export default async function BandforgeAppLayout({
   const showPremiumCta = !hasFullSkillProgram(subscription);
 
   return (
-    <AppAuthShell serverAuthenticated>
-      <DashboardShell
-        displayName={shellDisplayName}
-        avatarUrl={shellAvatarUrl}
-        pathname={pathname}
-        hideHeader={hideHeader}
-        sidebar={
-          <DashboardSidebarNav
-            pathname={pathname}
-            displayName={formatUserDisplayName(user)}
-            avatarUrl={user.avatar_display_url}
-            showPremiumCta={showPremiumCta}
-          />
-        }
-      >
-        {children}
-      </DashboardShell>
-    </AppAuthShell>
+    <AppFontsShell>
+      <AppAuthShell serverAuthenticated>
+        <DashboardShell
+          displayName={shellDisplayName}
+          avatarUrl={shellAvatarUrl}
+          pathname={pathname}
+          hideHeader={hideHeader}
+          sidebar={
+            <DashboardSidebarNav
+              pathname={pathname}
+              displayName={formatUserDisplayName(user)}
+              avatarUrl={user.avatar_display_url}
+              showPremiumCta={showPremiumCta}
+            />
+          }
+        >
+          {children}
+        </DashboardShell>
+      </AppAuthShell>
+    </AppFontsShell>
   );
 }

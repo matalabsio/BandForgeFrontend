@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, DM_Mono, DM_Sans } from "next/font/google";
 import { AppRoot } from "@/components/bandforge/app-root";
 import { PwaRoot } from "@/components/pwa/pwa-root";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -11,29 +10,6 @@ import {
 import { sitewideSchemaGraph } from "@/lib/seo/schema";
 import { CANONICAL_SITE_URL } from "@/lib/site";
 import "./globals.css";
-
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
-  subsets: ["latin"],
-  weight: ["700", "800"],
-  // optional: LCP text uses fallback quickly on slow 4G instead of waiting for swap
-  display: "optional",
-  adjustFontFallback: true,
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  display: "swap",
-});
-
-const dmMono = DM_Mono({
-  variable: "--font-dm-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  display: "swap",
-});
 
 const ogImage = defaultOgImage();
 
@@ -95,7 +71,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${bricolage.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+      className="h-full antialiased"
       suppressHydrationWarning
     >
       <body className="min-h-dvh font-sans" suppressHydrationWarning>

@@ -1,4 +1,5 @@
 import { Bitter, Lora } from "next/font/google";
+import { MarketingFontsShell } from "@/components/fonts/marketing-fonts-shell";
 
 const bitter = Bitter({
   variable: "--font-bitter-loaded",
@@ -20,8 +21,10 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`${bitter.variable} ${lora.variable} min-h-dvh`}>
-      {children}
-    </div>
+    <MarketingFontsShell>
+      <div className={`${bitter.variable} ${lora.variable} min-h-dvh`}>
+        {children}
+      </div>
+    </MarketingFontsShell>
   );
 }

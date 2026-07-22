@@ -1,3 +1,5 @@
+import { MarketingFontsShell } from "@/components/fonts/marketing-fonts-shell";
+
 /** Shared marketing route group — one compile chunk for public BandForge pages. */
 export const revalidate = 300;
 
@@ -6,5 +8,5 @@ export default function MarketingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <MarketingFontsShell>{children}</MarketingFontsShell>;
 }
