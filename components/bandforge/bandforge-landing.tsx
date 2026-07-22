@@ -1,14 +1,51 @@
 import dynamic from "next/dynamic";
 import { BandForgeHeaderMarketing } from "@/components/bandforge/bf-header-marketing";
 import { BandForgeHero } from "@/components/bandforge/bf-hero";
-import { BandForgeStatsBar } from "@/components/bandforge/bf-stats-bar";
-import { BandForgeHow } from "@/components/bandforge/bf-how";
-import { BandForgeModules } from "@/components/bandforge/bf-modules";
-import { BandForgePricing } from "@/components/bandforge/bf-pricing";
-import { BandForgeFeatures } from "@/components/bandforge/bf-features";
-import { BandForgeAiShowcase } from "@/components/bandforge/bf-ai-showcase";
 import { BandForgeSiteFooter } from "@/components/bandforge/bf-site-footer";
 import { BfSectionSkeleton } from "@/components/bandforge/bf-section-skeleton";
+
+const BandForgeStatsBar = dynamic(
+  () =>
+    import("@/components/bandforge/bf-stats-bar").then(
+      (m) => m.BandForgeStatsBar,
+    ),
+  { loading: () => <BfSectionSkeleton className="min-h-[120px]" /> },
+);
+
+const BandForgeHow = dynamic(
+  () => import("@/components/bandforge/bf-how").then((m) => m.BandForgeHow),
+  { loading: () => <BfSectionSkeleton /> },
+);
+
+const BandForgeModules = dynamic(
+  () =>
+    import("@/components/bandforge/bf-modules").then((m) => m.BandForgeModules),
+  { loading: () => <BfSectionSkeleton /> },
+);
+
+const BandForgeFeatures = dynamic(
+  () =>
+    import("@/components/bandforge/bf-features").then(
+      (m) => m.BandForgeFeatures,
+    ),
+  { loading: () => <BfSectionSkeleton /> },
+);
+
+const BandForgeAiShowcase = dynamic(
+  () =>
+    import("@/components/bandforge/bf-ai-showcase").then(
+      (m) => m.BandForgeAiShowcase,
+    ),
+  { loading: () => <BfSectionSkeleton /> },
+);
+
+const BandForgePricing = dynamic(
+  () =>
+    import("@/components/bandforge/bf-pricing").then(
+      (m) => m.BandForgePricing,
+    ),
+  { loading: () => <BfSectionSkeleton /> },
+);
 
 const BandForgeComparison = dynamic(
   () =>

@@ -16,7 +16,9 @@ const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
   subsets: ["latin"],
   weight: ["700", "800"],
-  display: "swap",
+  // optional: LCP text uses fallback quickly on slow 4G instead of waiting for swap
+  display: "optional",
+  adjustFontFallback: true,
 });
 
 const dmSans = DM_Sans({
