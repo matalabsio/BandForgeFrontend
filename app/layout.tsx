@@ -3,7 +3,6 @@ import { Bricolage_Grotesque, DM_Mono, DM_Sans } from "next/font/google";
 import { AppRoot } from "@/components/bandforge/app-root";
 import { PwaRoot } from "@/components/pwa/pwa-root";
 import { JsonLd } from "@/components/seo/json-ld";
-import { GOOGLE_FONTS_STYLESHEET_HREF } from "@/lib/google-fonts";
 import {
   SITE_DEFAULT_DESCRIPTION,
   SITE_DEFAULT_TITLE,
@@ -97,15 +96,6 @@ export default function RootLayout({
       className={`${bricolage.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link href={GOOGLE_FONTS_STYLESHEET_HREF} rel="stylesheet" />
-      </head>
       <body className="min-h-dvh font-sans" suppressHydrationWarning>
         <JsonLd data={sitewideSchemaGraph()} />
         <PwaRoot>

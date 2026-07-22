@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { BfMarketingDarkCta } from "@/components/bandforge/ui/bf-marketing-dark-cta";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 
@@ -26,21 +25,12 @@ export function BandForgeFinalCta() {
       headline="If you took the IELTS today, what would your band be?"
       className="scroll-mt-20"
     >
-      <Suspense
-        fallback={
-          <div
-            className="mx-auto h-14 w-full max-w-sm animate-pulse rounded-full bg-white/10 lg:w-64"
-            aria-hidden
-          />
-        }
-      >
-        <div className="lg:hidden">
-          <FinalCtaButton mobile />
-        </div>
-        <div className="hidden lg:block">
-          <FinalCtaButton />
-        </div>
-      </Suspense>
+      <div className="lg:hidden">
+        <FinalCtaButton mobile />
+      </div>
+      <div className="hidden lg:block">
+        <FinalCtaButton />
+      </div>
       <p className="mt-3.5 text-[0.8125rem] text-[#7e93ad] lg:mt-4 lg:text-sm">
         No account needed to start. Results in minutes.
       </p>

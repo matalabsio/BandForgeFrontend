@@ -33,10 +33,10 @@
   --font-mono: var(--font-dm-mono), ui-monospace, monospace;
 
   --font-arvo: "Arvo", Georgia, serif;
-  --font-bitter: "Bitter", ui-serif, Georgia, serif;
+  --font-bitter: var(--font-bitter-loaded, "Bitter"), ui-serif, Georgia, serif;
   --font-exo-2: "Exo 2", ui-sans-serif, system-ui, sans-serif;
   --font-libre-baskerville: "Libre Baskerville", ui-serif, Georgia, serif;
-  --font-lora: "Lora", ui-serif, Georgia, serif;
+  --font-lora: var(--font-lora-loaded, "Lora"), ui-serif, Georgia, serif;
   --font-love-ya: "Love Ya Like A Sister", "Comic Sans MS", cursive;
   --font-pt-serif: "PT Serif", ui-serif, Georgia, serif;
   --font-quicksand: "Quicksand", ui-sans-serif, system-ui, sans-serif;

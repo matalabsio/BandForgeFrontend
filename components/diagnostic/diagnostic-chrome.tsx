@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { BfMarketingWordmark } from "@/components/bandforge/bf-marketing-wordmark";
+import { DiagnosticExamFonts } from "@/components/diagnostic/diagnostic-exam-fonts";
 import { DiagnosticExamViewport } from "@/components/diagnostic/diagnostic-exam-viewport";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,12 @@ export function DiagnosticChrome({
     variant ?? (step === "results" ? "report" : "marketing");
 
   if (resolved === "exam") {
-    return <DiagnosticExamViewport>{children}</DiagnosticExamViewport>;
+    return (
+      <>
+        <DiagnosticExamFonts />
+        <DiagnosticExamViewport>{children}</DiagnosticExamViewport>
+      </>
+    );
   }
 
   return (

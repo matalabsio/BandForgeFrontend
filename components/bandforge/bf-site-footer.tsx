@@ -4,58 +4,50 @@ import {
   marketingAppHref,
   marketingSignInHref,
 } from "@/components/bandforge/bf-marketing-auth-links";
-import { getMarketingSessionUser } from "@/lib/marketing-auth-server";
 import { isAuthEnabled } from "@/lib/flags";
 import { SITE_ENTITY_DESCRIPTION } from "@/lib/seo/metadata";
-
-async function footerNavLinks() {
-  const user = await getMarketingSessionUser();
-  const mobileLinks = [
-    { href: "/diagnostic", label: "Diagnostic" },
-    { href: "/pricing", label: "Pricing" },
-    { href: "/faq", label: "FAQ" },
-    { href: "/telugu", label: "Telugu" },
-    { href: "/hyderabad", label: "Hyderabad" },
-    { href: "/about", label: "About" },
-    { href: "/contact", label: "Contact" },
-  ];
-
-  const product = [
-    { href: "/diagnostic", label: "Free diagnostic" },
-    { href: "/pricing", label: "Pricing" },
-    { href: "/writing", label: "Writing Sprint" },
-    { href: "/speaking", label: "Speaking Sprint" },
-    {
-      href: user || !isAuthEnabled() ? "/dashboard" : marketingAppHref(),
-      label: "Practice",
-    },
-    { href: "/test", label: "Mock tests" },
-  ] as const;
-
-  const ieltsPrep = [
-    { href: "/telugu", label: "Telugu speakers" },
-    { href: "/urdu", label: "Urdu speakers" },
-    { href: "/hyderabad", label: "Hyderabad" },
-    { href: "/faq", label: "FAQ" },
-    { href: "/vs-coaching-centres", label: "vs Coaching" },
-    { href: "/blog", label: "Blog" },
-  ] as const;
-
-  const company = [
-    { href: "/about", label: "About" },
-    { href: "/contact", label: "Contact" },
-    ...(user
-      ? [{ href: "/dashboard", label: "Dashboard" }]
-      : [{ href: marketingSignInHref(), label: "Sign in" }]),
-  ];
-
-  return { product, ieltsPrep, company, mobileLinks };
-}
 
 const legal = [
   { href: "/privacy-policy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/refund-policy", label: "Refunds" },
+] as const;
+
+const mobileLinks = [
+  { href: "/diagnostic", label: "Diagnostic" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/telugu", label: "Telugu" },
+  { href: "/hyderabad", label: "Hyderabad" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
+] as const;
+
+const ieltsPrep = [
+  { href: "/telugu", label: "Telugu speakers" },
+  { href: "/urdu", label: "Urdu speakers" },
+  { href: "/hyderabad", label: "Hyderabad" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/vs-coaching-centres", label: "vs Coaching" },
+  { href: "/blog", label: "Blog" },
+] as const;
+
+const productLinks = [
+  { href: "/diagnostic", label: "Free diagnostic" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/writing", label: "Writing Sprint" },
+  { href: "/speaking", label: "Speaking Sprint" },
+  {
+    href: !isAuthEnabled() ? "/dashboard" : marketingAppHref(),
+    label: "Practice",
+  },
+  { href: "/test", label: "Mock tests" },
+] as const;
+
+const companyLinks = [
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
+  { href: marketingSignInHref(), label: "Sign in" },
 ] as const;
 
 function FooterColumn({
@@ -70,7 +62,7 @@ function FooterColumn({
       <p className="font-display text-sm font-semibold text-white">{title}</p>
       <ul className="mt-4 space-y-2.5">
         {links.map((l) => (
-          <li key={l.href}>
+          <li key={`${title}-${l.href}-${l.label}`}>
             <Link
               href={l.href}
               prefetch
@@ -85,12 +77,10 @@ function FooterColumn({
   );
 }
 
-export async function BandForgeSiteFooter() {
-  const { product, ieltsPrep, company, mobileLinks } = await footerNavLinks();
-
+/** Site footer — static links so marketing routes can ISR without cookie reads. */
+export function BandForgeSiteFooter() {
   return (
     <footer className="border-t border-white/7 bg-navy-deep text-white">
-      {/* Mobile footer */}
       <div className="px-5 py-8 sm:px-6 sm:py-[34px] sm:pb-10 lg:hidden">
         <div className="mb-3 flex items-center gap-[9px]">
           <BfBrandBars size="footer" />
@@ -118,7 +108,6 @@ export async function BandForgeSiteFooter() {
         </p>
       </div>
 
-      {/* Desktop footer */}
       <div className="mx-auto hidden w-full max-w-[1200px] px-8 py-12 lg:block xl:px-10">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
           <div>
@@ -132,9 +121,9 @@ export async function BandForgeSiteFooter() {
               {SITE_ENTITY_DESCRIPTION}
             </p>
           </div>
-          <FooterColumn title="Product" links={product} />
+          <FooterColumn title="Product" links={productLinks} />
           <FooterColumn title="IELTS prep" links={ieltsPrep} />
-          <FooterColumn title="Company" links={company} />
+          <FooterColumn title="Company" links={companyLinks} />
           <FooterColumn title="Legal" links={legal} />
         </div>
 

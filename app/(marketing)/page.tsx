@@ -12,9 +12,6 @@ export const metadata: Metadata = pageMetadata({
   path: "/",
 });
 
-/** Fresh session check for hero/header CTAs (avoid stale ISR auth). */
-export const dynamic = "force-dynamic";
-
 /** BandForge marketing landing at `/`. */
 export default function Home() {
   return <BandForgeLanding />;

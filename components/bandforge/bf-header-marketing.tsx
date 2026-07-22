@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { BfHeaderMobileMenu } from "@/components/bandforge/bf-header-mobile-menu";
 import { BfMarketingWordmark } from "@/components/bandforge/bf-marketing-wordmark";
 import { BfMarketingNavIcon } from "@/components/bandforge/bf-marketing-nav-icon";
@@ -45,29 +44,11 @@ export function BandForgeHeaderMarketing({ activeHref }: Props) {
               );
             })}
           </nav>
-          <Suspense
-            fallback={
-              <span
-                className="inline-flex h-10 w-[6.5rem] animate-pulse rounded-full bg-gray-100"
-                aria-hidden
-              />
-            }
-          >
-            <BfHeaderAuthCta />
-          </Suspense>
+          <BfHeaderAuthCta />
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
-          <Suspense
-            fallback={
-              <span
-                className="inline-flex h-8 w-[4.5rem] animate-pulse rounded-full bg-gray-100"
-                aria-hidden
-              />
-            }
-          >
-            <BfHeaderAuthCta compact />
-          </Suspense>
+          <BfHeaderAuthCta compact />
           <BfHeaderMobileMenu items={BF_MARKETING_NAV} />
         </div>
       </div>

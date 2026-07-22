@@ -11,7 +11,7 @@ export function BfHeroDiagnosticCard({ className }: Props) {
   return (
     <div
       className={cn(
-        "rounded-[1.125rem] border border-[#e9edf2] bg-white p-5 shadow-[0_20px_48px_rgb(13_31_60/0.1)] sm:rounded-[1.25rem] sm:p-7 lg:shadow-[0_30px_60px_rgb(13_31_60/0.12)]",
+        "min-h-[17.5rem] rounded-[1.125rem] border border-[#e9edf2] bg-white p-5 shadow-[0_20px_48px_rgb(13_31_60/0.1)] sm:min-h-[19rem] sm:rounded-[1.25rem] sm:p-7 lg:shadow-[0_30px_60px_rgb(13_31_60/0.12)]",
         className,
       )}
       aria-hidden
