@@ -11,7 +11,7 @@ const BfHeroDiagnosticCard = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="min-h-[17.5rem] w-full rounded-[1.125rem] border border-[#e9edf2] bg-white sm:min-h-[19rem]"
+        className="min-h-[17.5rem] w-[90%] max-w-md rounded-[1.125rem] border border-[#e9edf2] bg-white sm:min-h-[19rem] lg:w-full lg:max-w-lg"
         aria-hidden
       />
     ),

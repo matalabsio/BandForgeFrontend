@@ -1,9 +1,21 @@
+import type { CSSProperties } from "react";
 import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
 import { BRAND_DIAGNOSTIC_SECTIONS } from "@/lib/brand-mock-data";
 import { cn } from "@/lib/utils";
 
 type Props = {
   className?: string;
+};
+
+/** Distinct fill per skill — aligned with hero / brand palette. */
+const SECTION_BAR_COLORS: Record<
+  (typeof BRAND_DIAGNOSTIC_SECTIONS)[number]["label"],
+  string
+> = {
+  Listening: "#0097a7",
+  Reading: "#00bcd4",
+  Writing: "#DC143C",
+  Speaking: "#0d1f3c",
 };
 
 /** Hero visual — sample diagnostic report card. */
@@ -20,7 +32,7 @@ export function BfHeroDiagnosticCard({ className }: Props) {
         <p className="font-mono text-[0.625rem] tracking-[0.1em] text-muted-light uppercase sm:text-[0.6875rem]">
           Diagnostic Report
         </p>
-        <span className="font-mono text-[0.625rem] text-cyan sm:text-[0.6875rem]">15:00</span>
+        <span className="font-mono text-[0.625rem] text-cyan sm:text-[0.6875rem]">90:00</span>
       </div>
 
       <div className="mb-5 flex items-end gap-3 sm:mb-[26px] sm:gap-[18px]">
@@ -33,17 +45,23 @@ export function BfHeroDiagnosticCard({ className }: Props) {
         </div>
       </div>
 
-      <ul className="flex flex-col gap-3 sm:gap-3.5">
-        {BRAND_DIAGNOSTIC_SECTIONS.map((row) => (
+      <ul className="flex flex-col gap-3.5 sm:gap-4">
+        {BRAND_DIAGNOSTIC_SECTIONS.map((row, index) => (
           <li key={row.label}>
-            <div className="mb-1 flex items-center justify-between text-xs sm:mb-1.5 sm:text-[0.8125rem]">
+            <div className="mb-1.5 flex items-center justify-between text-xs sm:text-[0.8125rem]">
               <span className="font-medium text-[#3f4f63]">{row.label}</span>
               <span className="font-mono text-navy">{row.score}</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded bg-[#eef2f6] sm:h-[7px]">
+            <div className="h-1 overflow-hidden rounded-full bg-[#eef2f6]">
               <div
-                className="h-full rounded bg-cyan"
-                style={{ width: row.width }}
+                className="bf-hero-bar-fill h-full rounded-full"
+                style={
+                  {
+                    width: row.width,
+                    backgroundColor: SECTION_BAR_COLORS[row.label],
+                    "--bf-bar-delay": `${0.18 + index * 0.1}s`,
+                  } as CSSProperties
+                }
               />
             </div>
           </li>

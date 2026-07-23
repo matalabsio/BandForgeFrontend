@@ -11,10 +11,8 @@ import {
 import { adminLoginPath } from "@/lib/admin-roles";
 import { isAuthEnabled } from "@/lib/flags";
 import {
-  ACCESS_COOKIE,
-  getRefreshToken,
   hasLikelyClientSession,
-  REFRESH_COOKIE,
+  hasSessionHintCookie,
 } from "@/lib/session";
 
 function safeNextPath(raw: string | null): string {
@@ -25,14 +23,7 @@ function safeNextPath(raw: string | null): string {
 const SESSION_RESTORE_TIMEOUT_MS = 5_000;
 
 function hadPriorSession(): boolean {
-  if (typeof document === "undefined") return false;
-  const hasCookie = document.cookie
-    .split(";")
-    .some((c) => {
-      const name = c.trim().split("=")[0];
-      return name === ACCESS_COOKIE || name === REFRESH_COOKIE;
-    });
-  return hasCookie || Boolean(getRefreshToken());
+  return hasSessionHintCookie();
 }
 
 function loginRedirectPath(next: string, sessionExpired: boolean): string {

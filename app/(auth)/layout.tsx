@@ -1,19 +1,5 @@
-import { Bitter, Lora } from "next/font/google";
+import { AuthFontsShell } from "@/components/fonts/auth-fonts-shell";
 import { MarketingFontsShell } from "@/components/fonts/marketing-fonts-shell";
-
-const bitter = Bitter({
-  variable: "--font-bitter-loaded",
-  subsets: ["latin"],
-  weight: ["400", "700", "800"],
-  display: "swap",
-});
-
-const lora = Lora({
-  variable: "--font-lora-loaded",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
 
 export default function AuthLayout({
   children,
@@ -22,9 +8,7 @@ export default function AuthLayout({
 }) {
   return (
     <MarketingFontsShell>
-      <div className={`${bitter.variable} ${lora.variable} min-h-dvh`}>
-        {children}
-      </div>
+      <AuthFontsShell>{children}</AuthFontsShell>
     </MarketingFontsShell>
   );
 }

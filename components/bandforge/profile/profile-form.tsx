@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfile, uploadProfileAvatar } from "@/lib/profile";
 import type { AuthUser } from "@/lib/session";
@@ -9,6 +9,8 @@ import { normalizeIndiaMobile, formatIndiaDisplay } from "@/lib/india-mobile";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
 
 const BAND_OPTIONS = [5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9] as const;
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 type Props = {
   user: AuthUser;
@@ -23,6 +25,7 @@ function phoneForInput(phone: string | null): string {
 export function ProfileForm({ user }: Props) {
   const { refresh } = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
   const [fullName, setFullName] = useState(user.full_name ?? "");
   const [phone, setPhone] = useState(phoneForInput(user.phone));
   const [targetBand, setTargetBand] = useState<number | "">(
@@ -38,6 +41,15 @@ export function ProfileForm({ user }: Props) {
 
   const initial = (fullName || user.email || "B").trim().charAt(0).toUpperCase();
 
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+  }, []);
+
   const onPickAvatar = useCallback(() => {
     fileRef.current?.click();
   }, []);
@@ -47,9 +59,23 @@ export function ProfileForm({ user }: Props) {
       const file = e.target.files?.[0];
       if (!file) return;
       setError(null);
+      if (file.size > MAX_AVATAR_BYTES) {
+        setError("Image must be 2 MB or smaller.");
+        if (fileRef.current) fileRef.current.value = "";
+        return;
+      }
+      if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
+        setError("Use JPEG, PNG, or WebP.");
+        if (fileRef.current) fileRef.current.value = "";
+        return;
+      }
       setUploading(true);
       try {
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+        }
         const preview = URL.createObjectURL(file);
+        objectUrlRef.current = preview;
         setAvatarPreview(preview);
         const updated = await uploadProfileAvatar(file);
         setAvatarPreview(updated.avatar_display_url ?? preview);

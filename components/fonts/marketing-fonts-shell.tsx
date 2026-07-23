@@ -5,9 +5,11 @@ const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
   subsets: ["latin"],
   weight: ["700"],
+  // Preload so Bricolage is available in the optional short block window;
+  // avoid swap (late webfont paint can extend LCP).
   display: "optional",
   adjustFontFallback: true,
-  preload: false,
+  preload: true,
 });
 
 const dmSans = DM_Sans({
@@ -16,7 +18,8 @@ const dmSans = DM_Sans({
   weight: ["400", "600"],
   display: "optional",
   adjustFontFallback: true,
-  preload: true,
+  // Body face — do not compete with Bricolage preload for H1 LCP.
+  preload: false,
 });
 
 /** Marketing typography — Bricolage + DM Sans only (no mono preload). */

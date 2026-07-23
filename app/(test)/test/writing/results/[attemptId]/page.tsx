@@ -1,6 +1,9 @@
 import { LegacyModuleResultRedirect } from "@/modules/results/components/legacy-module-result-redirect";
 
-export const metadata = { title: "Writing Feedback · BandForge" };
+export const metadata = {
+  title: "Writing Feedback · BandForge",
+  robots: { index: false, follow: false },
+};
 
 type PageProps = { params: Promise<{ attemptId: string }> };
 

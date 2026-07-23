@@ -1,5 +1,7 @@
 export const ACCESS_COOKIE = "bf_access";
 export const REFRESH_COOKIE = "bf_refresh";
+/** Readable by JS — signals httpOnly auth cookies may exist (no token value). */
+export const SESSION_HINT_COOKIE = "bf_has_session";
 
 /** localStorage keys — survives browser restarts (unlike in-memory session). */
 export const LS_ACCESS_TOKEN = "bf_access_token";
@@ -28,25 +30,29 @@ export function getAccessToken(): string | null {
 }
 
 export function setRefreshToken(token: string | null): void {
+  // Refresh JWTs must not live in localStorage (XSS). Only allow clear for migration.
   if (!canUseStorage()) return;
-  if (token) {
-    window.localStorage.setItem(LS_REFRESH_TOKEN, token);
-  } else {
-    window.localStorage.removeItem(LS_REFRESH_TOKEN);
-  }
+  if (token) return;
+  window.localStorage.removeItem(LS_REFRESH_TOKEN);
 }
 
+/** Legacy LS refresh — read for one-shot cookie restore migration only. */
 export function getRefreshToken(): string | null {
   if (!canUseStorage()) return null;
   return window.localStorage.getItem(LS_REFRESH_TOKEN);
 }
 
+export function clearLegacyRefreshToken(): void {
+  setRefreshToken(null);
+}
+
 export function persistAuthTokens(
   accessToken: string,
-  refreshToken?: string | null,
+  _refreshToken?: string | null,
 ): void {
   setAccessToken(accessToken);
-  if (refreshToken) setRefreshToken(refreshToken);
+  // Never persist refresh to localStorage — httpOnly bf_refresh + BFF only.
+  clearLegacyRefreshToken();
 }
 
 export function clearAccessToken(): void {
@@ -57,17 +63,26 @@ export function clearAccessToken(): void {
 
 export function clearAuthStorage(): void {
   clearAccessToken();
-  setRefreshToken(null);
+  clearLegacyRefreshToken();
+}
+
+/** True when document.cookie contains the non-httpOnly session hint. */
+export function hasSessionHintCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split(";").some((c) => {
+    const name = c.trim().split("=")[0];
+    return name === SESSION_HINT_COOKIE;
+  });
 }
 
 /** True when the browser may have a restorable session (avoids noisy /api/auth calls on login). */
 export function hasLikelyClientSession(): boolean {
   if (typeof document === "undefined") return false;
-  const hasCookie = document.cookie.split(";").some((c) => {
-    const name = c.trim().split("=")[0];
-    return name === ACCESS_COOKIE || name === REFRESH_COOKIE;
-  });
-  return hasCookie || Boolean(getRefreshToken()) || Boolean(getAccessToken());
+  return (
+    hasSessionHintCookie() ||
+    Boolean(getRefreshToken()) || // legacy migrate-once
+    Boolean(getAccessToken())
+  );
 }
 
 export type AuthUser = {

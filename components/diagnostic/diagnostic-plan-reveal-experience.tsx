@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, Sparkles, Target } from "lucide-react";
 import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
 import { DiagnosticBandGapCard } from "@/components/diagnostic/ui/diagnostic-band-gap-card";
@@ -43,6 +43,8 @@ import {
   getSubscription,
   openRazorpayCheckout,
   paymentTraceLog,
+  pendingVerifyPayloadFromReceipt,
+  readCheckoutReceiptContext,
   saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
@@ -169,6 +171,7 @@ export function DiagnosticPlanRevealExperience() {
     null,
   );
   const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const checkoutInFlightRef = useRef(false);
 
   const lead = readDiagnosticLead();
   const targetBand = lead?.targetBand ?? 7.0;
@@ -231,16 +234,22 @@ export function DiagnosticPlanRevealExperience() {
   }, [router, snapshot]);
 
   const handleCheckout = useCallback(async () => {
-    if (checkoutBusy || hasSubscription) return;
+    if (checkoutInFlightRef.current || checkoutBusy || hasSubscription) return;
+    checkoutInFlightRef.current = true;
     setCheckoutBusy(true);
     setOverlay("creating");
+
+    const clearBusy = () => {
+      checkoutInFlightRef.current = false;
+      setCheckoutBusy(false);
+    };
 
     try {
       const session = await ensureSession();
       const user = session ? await getMe().catch(() => null) : null;
       if (!session || !isFullAccountUser(user?.role)) {
         setOverlay(null);
-        setCheckoutBusy(false);
+        clearBusy();
         router.push(loginPathWithNext(diagnosticPaths.planReveal));
         return;
       }
@@ -253,6 +262,14 @@ export function DiagnosticPlanRevealExperience() {
       const opened = await openRazorpayCheckout({
         order,
         onSuccess: async (response) => {
+          saveCheckoutReceiptContext({
+            order_id: response.razorpay_order_id,
+            payment_id: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+            plan_name: order.plan_name,
+            amount: order.amount,
+            currency: order.currency,
+          });
           setOverlay("verifying");
           try {
             paymentTraceLog("CHECKOUT_SUCCESS", {
@@ -261,13 +278,6 @@ export function DiagnosticPlanRevealExperience() {
             });
             const result = await verifyPayment(response);
             if (hasFullSkillProgram(result.subscription)) {
-              saveCheckoutReceiptContext({
-                order_id: response.razorpay_order_id,
-                payment_id: response.razorpay_payment_id,
-                plan_name: order.plan_name,
-                amount: order.amount,
-                currency: order.currency,
-              });
               router.replace("/checkout/success");
               return;
             }
@@ -287,17 +297,17 @@ export function DiagnosticPlanRevealExperience() {
               setStatusModal("verify_failed");
             }
           } finally {
-            setCheckoutBusy(false);
+            clearBusy();
           }
         },
         onDismiss: () => {
           setOverlay(null);
-          setCheckoutBusy(false);
+          clearBusy();
           setStatusModal("cancelled");
         },
         onFailed: (message) => {
           setOverlay(null);
-          setCheckoutBusy(false);
+          clearBusy();
           setPaymentFailureMessage(message);
           setStatusModal("payment_failed");
         },
@@ -305,12 +315,12 @@ export function DiagnosticPlanRevealExperience() {
 
       if (!opened) {
         setOverlay(null);
-        setCheckoutBusy(false);
+        clearBusy();
         setStatusModal("checkout_unavailable");
       }
     } catch (e) {
       setOverlay(null);
-      setCheckoutBusy(false);
+      clearBusy();
       if (e instanceof ApiError && e.status === 401) {
         router.push(loginPathWithNext(diagnosticPaths.planReveal, true));
       } else if (e instanceof ApiError && e.status === 503) {
@@ -320,6 +330,46 @@ export function DiagnosticPlanRevealExperience() {
       }
     }
   }, [checkoutBusy, hasSubscription, lead, router, snapshot]);
+
+  const handleVerifyRetry = useCallback(async () => {
+    const pending = readCheckoutReceiptContext();
+    const payload = pending ? pendingVerifyPayloadFromReceipt(pending) : null;
+    if (!payload) {
+      setPaymentFailureMessage(null);
+      setStatusModal(null);
+      return;
+    }
+    setPaymentFailureMessage(null);
+    setStatusModal(null);
+    checkoutInFlightRef.current = true;
+    setCheckoutBusy(true);
+    setOverlay("verifying");
+    try {
+      const result = await verifyPayment(payload);
+      if (hasFullSkillProgram(result.subscription)) {
+        router.replace("/checkout/success");
+        return;
+      }
+      setOverlay(null);
+      setPaymentFailureMessage(
+        "Payment was received but the subscription was not activated.",
+      );
+      setStatusModal("verify_failed");
+    } catch (e) {
+      setOverlay(null);
+      if (e instanceof ApiError && e.status === 401) {
+        router.push(loginPathWithNext("/checkout/success"));
+      } else {
+        setPaymentFailureMessage(
+          e instanceof ApiError ? e.message : "Could not verify payment.",
+        );
+        setStatusModal("verify_failed");
+      }
+    } finally {
+      checkoutInFlightRef.current = false;
+      setCheckoutBusy(false);
+    }
+  }, [router]);
 
   const studentName = lead?.fullName ?? "Student";
   const initials = initialsFromName(studentName);
@@ -422,6 +472,10 @@ export function DiagnosticPlanRevealExperience() {
               : null
           }
           onRetry={() => {
+            if (statusModal === "verify_failed") {
+              void handleVerifyRetry();
+              return;
+            }
             setPaymentFailureMessage(null);
             setStatusModal(null);
           }}

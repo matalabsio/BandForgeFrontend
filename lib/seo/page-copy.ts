@@ -17,10 +17,10 @@ export const PAGE_SEO_COPY = {
   home: {
     title: "BandForge — IELTS Prep for Telugu & Urdu Speakers",
     description:
-      "Find your real IELTS band in a free 15-minute diagnostic. Section-wise scores, targeted skill sprints from ₹999. Built in Hyderabad for AP & TG students.",
-    h1: "Know your real IELTS band — before exam day.",
+      "Find your real IELTS band in a free 90-minute diagnostic. Section-wise scores across Listening, Reading, Writing, and Speaking. Results in 24 hours.",
+    h1: "If you took the IELTS today, what would your band be?",
     heroDescription:
-      "A free diagnostic that tells you exactly where you stand — across all four sections — in 15 minutes.",
+      "A free diagnostic test that tells you exactly where you stand — across all four sections — in 90 minutes.",
   },
   diagnostic: {
     title: "Free IELTS Diagnostic Test — 15 Minutes | BandForge",

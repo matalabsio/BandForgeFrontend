@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 type AutoMarqueeProps = {
   "aria-label": string;
@@ -12,6 +18,11 @@ type AutoMarqueeProps = {
   mobileLoopDuration?: string;
 };
 
+/**
+ * Auto-scrolling marquee. SSR renders the track once; after mount, clones
+ * track children so desktop scrollLeft / mobile CSS `-50%` loops stay seamless
+ * without doubling HTML in the initial document.
+ */
 export function BfAutoMarquee({
   "aria-label": ariaLabel,
   children,
@@ -29,6 +40,18 @@ export function BfAutoMarquee({
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
+
+    const track = scroller.querySelector<HTMLElement>(".bf-marquee-track");
+    if (track && track.dataset.looped !== "1") {
+      const originals = Array.from(track.children);
+      for (const node of originals) {
+        const clone = node.cloneNode(true) as HTMLElement;
+        clone.setAttribute("aria-hidden", "true");
+        clone.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
+        track.appendChild(clone);
+      }
+      track.dataset.looped = "1";
+    }
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reduceMotion.matches) return;

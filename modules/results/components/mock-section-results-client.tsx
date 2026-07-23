@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { BrainCircuit, CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
+import { BrainCircuit, CheckCircle2, Clock3, Loader2, ShieldCheck } from "lucide-react";
 import {
   canonicalMockSlug,
   mockTestIdForNumber,
@@ -372,59 +372,67 @@ export function MockSectionResultsClient({
       );
     }
 
-    const promptShort = writingReview.prompt?.trim() ?? "";
-    const short =
-      promptShort.length > 40
-        ? `${promptShort.slice(0, 37).trim()}…`
-        : promptShort;
-    const subtitle = `${writingModuleLabel(writingReview.part)}${short ? ` · ${short}` : ""}`;
-    const stats = [
-      { value: String(writingReview.word_count), label: "Words written" },
-      {
-        value: String(writingReview.part),
-        label: "Task submitted",
-      },
-    ];
     const writingFailed = writingReview.ai_status === "ai_failed";
+    const analyzingLabel = showCombinedShell
+      ? "Evaluating Task 1 and Task 2…"
+      : `Analyzing ${writingModuleLabel(writingReview.part)}…`;
+
+    // Keep a full-page loader until AI (or human) band is ready — no
+    // "section submitted" confirmation with empty stats.
+    if (!writingFailed) {
+      return (
+        <SectionResultsShell centered card={false}>
+          <div
+            className="flex w-full max-w-md flex-col items-center px-4 text-center"
+            aria-busy
+            aria-live="polite"
+          >
+            <div className="flex size-20 items-center justify-center rounded-full border border-teal/20 bg-cyan-soft">
+              <Loader2 className="size-9 animate-spin text-teal" aria-hidden />
+            </div>
+            <p className="mt-6 text-meta font-semibold uppercase tracking-[0.14em] text-teal">
+              Writing submitted
+            </p>
+            <h2 className="mt-2 font-display text-[22px] font-bold tracking-tight text-navy sm:text-[28px]">
+              {analyzingLabel}
+            </h2>
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
+              Your essay is saved. We&apos;re generating your full AI band and
+              feedback — this usually takes under a minute. This page will open
+              your results automatically.
+            </p>
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm text-ink/70">
+              <Loader2 className="size-4 animate-spin text-teal" aria-hidden />
+              <span>Waiting for complete AI result…</span>
+            </div>
+          </div>
+        </SectionResultsShell>
+      );
+    }
 
     return (
-      <div className="h-full min-h-0 overflow-y-auto overscroll-y-contain">
-        {showCombinedShell ? (
-          <div className="border-b border-ink/8 bg-white px-4 py-4 md:px-8">
-            <WritingTaskTabs
-              testNumber={testNumber}
-              currentAttemptId={writingReview.attempt_id}
-              tasks={sessionTasks}
-              mockAttemptId={mockAttemptId}
+      <SectionResultsShell
+        centered
+        showBrandBar
+        logoHref={mockTestNumberPath(testNumber)}
+        footer={
+          continueAction ? (
+            <SectionResultsCtaBar
+              primaryLabel={continueAction.label}
+              onPrimary={handleContinue}
             />
-          </div>
-        ) : null}
-        <SectionResultsShell
-          centered
-          showBrandBar
-          logoHref={mockTestNumberPath(testNumber)}
-          footer={
-            continueAction ? (
-              <SectionResultsCtaBar
-                primaryLabel={continueAction.label}
-                onPrimary={handleContinue}
-              />
-            ) : null
-          }
-        >
-          <SectionSubmissionConfirmation
-            subtitle={subtitle}
-            stats={stats}
-            infoMessage={
-              writingFailed
-                ? "AI feedback could not finish, but your essay is safe and remains queued for examiner review."
-                : showCombinedShell
-                  ? "AI is evaluating Task 1 and Task 2. Toggle above when each score is ready — this page updates automatically."
-                  : "AI is evaluating your essay now. This page updates automatically when your provisional result is ready."
-            }
-          />
-        </SectionResultsShell>
-      </div>
+          ) : null
+        }
+      >
+        <SectionSubmissionConfirmation
+          subtitle={writingModuleLabel(writingReview.part)}
+          stats={[
+            { value: String(writingReview.word_count), label: "Words written" },
+            { value: String(writingReview.part), label: "Task submitted" },
+          ]}
+          infoMessage="AI feedback could not finish, but your essay is safe and remains queued for examiner review."
+        />
+      </SectionResultsShell>
     );
   }
 

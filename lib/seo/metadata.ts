@@ -11,14 +11,14 @@ export const SITE_DEFAULT_DESCRIPTION = PAGE_SEO_COPY.home.description;
 export const SITE_ENTITY_DESCRIPTION =
   "BandForge is an online IELTS preparation platform built for Telugu- and Urdu-speaking students in Telangana and Andhra Pradesh. Free 15-minute diagnostic with section-wise band scores; targeted skill sprints from ₹999 with AI practice and human evaluation. Based in Hyderabad.";
 
-export const OG_IMAGE_PATH = "/icon-512.png";
+export const OG_IMAGE_PATH = "/og-default.png";
 
 export function defaultOgImage() {
   return {
     url: siteUrl(OG_IMAGE_PATH),
-    width: 512,
-    height: 512,
-    alt: "BandForge",
+    width: 1200,
+    height: 630,
+    alt: "BandForge — Free 15-minute IELTS diagnostic",
   };
 }
 

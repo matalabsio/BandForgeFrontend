@@ -9,7 +9,7 @@ const BandForgeStatsBar = dynamic(
     import("@/components/bandforge/bf-stats-bar").then(
       (m) => m.BandForgeStatsBar,
     ),
-  { loading: () => <BfSectionSkeleton className="min-h-[120px]" /> },
+  { loading: () => <BfSectionSkeleton className="min-h-[56px] sm:min-h-[88px]" /> },
 );
 
 const BandForgeHow = dynamic(
@@ -23,49 +23,9 @@ const BandForgeModules = dynamic(
   { loading: () => <BfSectionSkeleton /> },
 );
 
-const BandForgeFeatures = dynamic(
-  () =>
-    import("@/components/bandforge/bf-features").then(
-      (m) => m.BandForgeFeatures,
-    ),
-  { loading: () => <BfSectionSkeleton /> },
-);
-
-const BandForgeAiShowcase = dynamic(
-  () =>
-    import("@/components/bandforge/bf-ai-showcase").then(
-      (m) => m.BandForgeAiShowcase,
-    ),
-  { loading: () => <BfSectionSkeleton /> },
-);
-
 const BandForgePricing = dynamic(
   () =>
-    import("@/components/bandforge/bf-pricing").then(
-      (m) => m.BandForgePricing,
-    ),
-  { loading: () => <BfSectionSkeleton /> },
-);
-
-const BandForgeComparison = dynamic(
-  () =>
-    import("@/components/bandforge/bf-comparison").then(
-      (m) => m.BandForgeComparison,
-    ),
-  { loading: () => <BfSectionSkeleton /> },
-);
-
-const BandForgeTestimonials = dynamic(
-  () =>
-    import("@/components/bandforge/bf-testimonials").then(
-      (m) => m.BandForgeTestimonials,
-    ),
-  { loading: () => <BfSectionSkeleton /> },
-);
-
-const BandForgeTrust = dynamic(
-  () =>
-    import("@/components/bandforge/bf-trust").then((m) => m.BandForgeTrust),
+    import("@/components/bandforge/bf-pricing").then((m) => m.BandForgePricing),
   { loading: () => <BfSectionSkeleton /> },
 );
 
@@ -87,11 +47,6 @@ export function BandForgeLanding() {
         <BandForgeStatsBar />
         <BandForgeHow />
         <BandForgeModules />
-        <BandForgeFeatures />
-        <BandForgeAiShowcase />
-        <BandForgeComparison />
-        <BandForgeTestimonials />
-        <BandForgeTrust />
         <BandForgePricing />
         <BandForgeFinalCta />
       </main>

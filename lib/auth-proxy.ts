@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   applyAuthCookiesToResponse,
   applyAuthTokensToResponse,
+  clearSessionHintOnResponse,
   collectSetCookieHeaders,
 } from "@/lib/auth-cookies";
 import type { AuthResponse } from "@/lib/auth";
@@ -145,6 +146,7 @@ export async function proxyAuthRequest(
       secure,
       sameSite: "lax",
     });
+    clearSessionHintOnResponse(res);
   }
 
   return res;

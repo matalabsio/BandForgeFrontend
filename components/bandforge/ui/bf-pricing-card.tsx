@@ -40,7 +40,7 @@ export function BfPricingCard({
       )}
     >
       {recommended ? (
-        <span className="absolute -top-[11px] left-[22px] rounded-full bg-cyan px-3 py-1 font-mono text-[0.625rem] tracking-[0.1em] text-white uppercase lg:left-1/2 lg:-translate-x-1/2 lg:px-4 lg:text-[0.6875rem]">
+        <span className="absolute -top-[11px] left-1/2 -translate-x-1/2 rounded-full bg-cyan px-3 py-1 font-mono text-[0.625rem] tracking-[0.1em] text-white uppercase lg:px-4 lg:text-[0.6875rem]">
           Recommended
         </span>
       ) : null}

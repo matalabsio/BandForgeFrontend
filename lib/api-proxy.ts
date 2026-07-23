@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getApiUrl, isApiUrlConfiguredForVercel } from "@/lib/api";
 import type { AuthResponse } from "@/lib/auth";
 import { logAuthMetric } from "@/lib/auth-metrics";
-import { applyAuthCookiesToResponse, DEFAULT_MAX_AGE } from "@/lib/auth-cookies";
+import { applyAuthCookiesToResponse, DEFAULT_MAX_AGE, setSessionHintOnResponse } from "@/lib/auth-cookies";
 import { refreshAuthSession } from "@/lib/auth-server";
 import { accessTokenExpired } from "@/lib/jwt-expiry";
 import { isPerfEnabled, perfLog } from "@/lib/performance";
@@ -286,6 +286,9 @@ export async function proxyToBackend(
           maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
         });
       }
+      if (refreshAuth.access_token || refreshAuth.refresh_token) {
+        setSessionHintOnResponse(response);
+      }
     }
     console.info(
       JSON.stringify({
@@ -355,6 +358,9 @@ export async function proxyToBackend(
         path: "/",
         maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
       });
+    }
+    if (refreshAuth.access_token || refreshAuth.refresh_token) {
+      setSessionHintOnResponse(response);
     }
   }
 

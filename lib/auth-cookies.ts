@@ -1,11 +1,16 @@
 import type { NextResponse } from "next/server";
 import type { AuthResponse } from "@/lib/auth";
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+import {
+  ACCESS_COOKIE,
+  REFRESH_COOKIE,
+  SESSION_HINT_COOKIE,
+} from "@/lib/session";
 
 /** Default max-age when backend Set-Cookie omits Max-Age (seconds). */
 export const DEFAULT_MAX_AGE: Record<string, number> = {
   [ACCESS_COOKIE]: 15 * 60,
   [REFRESH_COOKIE]: 30 * 24 * 60 * 60,
+  [SESSION_HINT_COOKIE]: 30 * 24 * 60 * 60,
 };
 
 export type ParsedSetCookie = {
@@ -44,12 +49,39 @@ export function parseSetCookieHeader(header: string): ParsedSetCookie | null {
   return parsed;
 }
 
+/** Non-httpOnly hint so client JS can detect an auth session without reading tokens. */
+export function setSessionHintOnResponse(
+  res: NextResponse,
+  maxAge: number = DEFAULT_MAX_AGE[SESSION_HINT_COOKIE],
+): void {
+  const secure = process.env.NODE_ENV === "production";
+  res.cookies.set(SESSION_HINT_COOKIE, "1", {
+    httpOnly: false,
+    secure,
+    sameSite: "lax",
+    path: "/",
+    maxAge,
+  });
+}
+
+export function clearSessionHintOnResponse(res: NextResponse): void {
+  const secure = process.env.NODE_ENV === "production";
+  res.cookies.set(SESSION_HINT_COOKIE, "", {
+    httpOnly: false,
+    secure,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+}
+
 /** Apply backend Set-Cookie headers onto a Next.js response for the site origin. */
 export function applyAuthCookiesToResponse(
   res: NextResponse,
   setCookieHeaders: string[],
 ): void {
   const secure = process.env.NODE_ENV === "production";
+  let applied = false;
 
   for (const raw of setCookieHeaders) {
     const c = parseSetCookieHeader(raw);
@@ -62,7 +94,10 @@ export function applyAuthCookiesToResponse(
       path: "/",
       maxAge: c.maxAge ?? DEFAULT_MAX_AGE[c.name],
     });
+    applied = true;
   }
+
+  if (applied) setSessionHintOnResponse(res);
 }
 
 export function collectSetCookieHeaders(headers: Headers): string[] {
@@ -83,6 +118,7 @@ export function applyAuthTokensToResponse(
 ): void {
   applyAuthCookiesToResponse(res, setCookieHeaders);
   const secure = process.env.NODE_ENV === "production";
+  let applied = false;
   if (auth.access_token) {
     res.cookies.set(ACCESS_COOKIE, auth.access_token, {
       httpOnly: true,
@@ -91,6 +127,7 @@ export function applyAuthTokensToResponse(
       path: "/",
       maxAge: DEFAULT_MAX_AGE[ACCESS_COOKIE],
     });
+    applied = true;
   }
   if (auth.refresh_token) {
     res.cookies.set(REFRESH_COOKIE, auth.refresh_token, {
@@ -100,5 +137,7 @@ export function applyAuthTokensToResponse(
       path: "/",
       maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
     });
+    applied = true;
   }
+  if (applied) setSessionHintOnResponse(res);
 }

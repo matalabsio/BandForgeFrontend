@@ -68,7 +68,7 @@ export function WritingTaskTabs({
               <span className="ml-2 tabular-nums opacity-90">{band.toFixed(1)}</span>
             ) : (
               <span className="ml-2 text-[11px] font-medium opacity-75">
-                Review
+                Analyzing…
               </span>
             )}
           </Link>

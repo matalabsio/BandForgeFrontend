@@ -1,6 +1,9 @@
 import { LegacyModuleResultRedirect } from "@/modules/results/components/legacy-module-result-redirect";
 
-export const metadata = { title: "Reading result" };
+export const metadata = {
+  title: "Reading result",
+  robots: { index: false, follow: false },
+};
 
 type PageProps = { params: Promise<{ attemptId: string }> };
 

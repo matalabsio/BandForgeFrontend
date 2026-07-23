@@ -143,6 +143,7 @@ export function WritingPage({
   const bootedRef = useRef(false);
   const needsConsentGateRef = useRef(false);
   const expiryFiredRef = useRef(false);
+  const submitInFlightRef = useRef(false);
   const mockMeta = useMemo(
     () => mockMetaProp ?? getMockMeta(mockSlug),
     [mockMetaProp, mockSlug],
@@ -382,7 +383,7 @@ export function WritingPage({
   }, [essay, attemptId, task, phase]);
 
   const submitTask = useCallback(async (opts?: { onExpiry?: boolean }) => {
-    if (!attemptId || !task || busy) return;
+    if (!attemptId || !task || busy || submitInFlightRef.current) return;
     if (task.part !== part) {
       setError(null);
       bootedRef.current = false;
@@ -394,6 +395,7 @@ export function WritingPage({
       setError("Please write your response before submitting.");
       return;
     }
+    submitInFlightRef.current = true;
     setBusy(true);
     setError(null);
     autosaveBlockedRef.current = true;
@@ -524,6 +526,7 @@ export function WritingPage({
       autosaveBlockedRef.current = false;
       setError(formatExamSubmitError(e));
     } finally {
+      submitInFlightRef.current = false;
       setBusy(false);
     }
   }, [

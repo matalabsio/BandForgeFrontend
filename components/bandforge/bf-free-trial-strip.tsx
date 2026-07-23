@@ -9,7 +9,6 @@ export function BandForgeFreeTrialStrip() {
     "Speaking feedback with AI + human review",
     "Sign in only when you start a mock or save progress",
   ] as const;
-  const loop = [...items, ...items];
 
   return (
     <section
@@ -22,9 +21,9 @@ export function BandForgeFreeTrialStrip() {
         mobileLoopDuration="30s"
       >
         <ul className="bf-marquee-track gap-2.5 pr-2.5 sm:gap-3 sm:pr-3">
-          {loop.map((t, index) => (
+          {items.map((t) => (
             <li
-              key={`${t}-${index}`}
+              key={t}
               className="flex max-w-[min(88vw,320px)] shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-white px-3.5 py-2 text-[0.75rem] font-medium text-ink/70 shadow-[var(--shadow-soft)] sm:max-w-none sm:px-4 sm:text-body"
             >
               <span

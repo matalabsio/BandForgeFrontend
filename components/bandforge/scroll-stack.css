@@ -1,0 +1,63 @@
+.scroll-stack-scroller {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: clip;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.scroll-stack-scroller--window {
+  height: auto;
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+
+.scroll-stack-inner {
+  padding: 12vh 0 40vh;
+  min-height: 100vh;
+}
+
+.scroll-stack-scroller--window .scroll-stack-inner {
+  padding: 4vh 0 28vh;
+  min-height: 0;
+}
+
+.scroll-stack-card {
+  transform-origin: top center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  /* Avoid preserve-3d + filter — major flicker source on mobile */
+  box-shadow: 0 12px 40px rgb(13 31 60 / 0.1);
+  min-height: 13.5rem;
+  height: auto;
+  width: 100%;
+  margin: 20px 0;
+  padding: 1.75rem 1.5rem;
+  border-radius: 1.5rem;
+  box-sizing: border-box;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e4e9f0;
+  border-top: 3px solid #00bcd4;
+  /* Promote to own compositor layer */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  contain: layout paint;
+}
+
+.scroll-stack-end {
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-stack-card {
+    will-change: auto;
+  }
+}

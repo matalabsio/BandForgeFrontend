@@ -123,6 +123,7 @@ export function SpeakingPage({
   const uploadedQuestionIdsRef = useRef(new Set<string>());
   const uploadPromisesRef = useRef(new Map<string, Promise<void>>());
   const idempotencyKeysRef = useRef(new Map<string, string>());
+  const finalizeInFlightRef = useRef(false);
   const uploadWorkerRef = useRef<SpeakingUploadWorker | null>(null);
 
   useEffect(() => {
@@ -462,7 +463,8 @@ export function SpeakingPage({
 
   const handleExamComplete = useCallback(
     async (recordings: SpeakingSessionRecording[]) => {
-      if (!attemptId || busy) return;
+      if (!attemptId || busy || finalizeInFlightRef.current) return;
+      finalizeInFlightRef.current = true;
       recordings.forEach((recording) => recordingsRef.current.set(recording.questionId, recording));
       setBusy(true);
       setError(null);
@@ -562,6 +564,7 @@ export function SpeakingPage({
         }
         setError(formatExamSubmitError(e));
       } finally {
+        finalizeInFlightRef.current = false;
         setBusy(false);
       }
     },

@@ -9,13 +9,13 @@ import { getServerAuth, getServerSession as resolveServerSession } from "@/lib/a
 import { isAuthEnabled } from "@/lib/flags";
 import { accessTokenExpired } from "@/lib/jwt-expiry";
 import {
-  ACCESS_COOKIE,
   clearAuthStorage,
+  clearLegacyRefreshToken,
   getAccessToken,
   getRefreshToken,
   GUEST_USER,
+  hasSessionHintCookie,
   persistAuthTokens,
-  REFRESH_COOKIE,
   type AuthUser,
   type SessionUser,
 } from "@/lib/session";
@@ -80,7 +80,8 @@ async function authFetch<T>(
 }
 
 function storeAuthFromResponse(data: AuthResponse): void {
-  persistAuthTokens(data.access_token, data.refresh_token);
+  // Access only in LS; refresh stays httpOnly via BFF Set-Cookie.
+  persistAuthTokens(data.access_token);
 }
 
 export async function register(input: {
@@ -155,7 +156,10 @@ export async function refreshSession(): Promise<AuthResponse> {
   });
 }
 
-/** Restore session from localStorage refresh token when cookies were cleared. */
+/**
+ * One-shot migrate: if a legacy LS refresh exists, restore cookies then clear LS.
+ * New sessions never write refresh to localStorage.
+ */
 export async function restoreSessionFromStorage(): Promise<AuthResponse | null> {
   const refresh = getRefreshToken();
   if (!refresh) return null;
@@ -166,38 +170,35 @@ export async function restoreSessionFromStorage(): Promise<AuthResponse | null> 
       body: JSON.stringify({ refresh_token: refresh }),
     });
     storeAuthFromResponse(data);
+    clearLegacyRefreshToken();
     return data;
   } catch {
+    clearLegacyRefreshToken();
     return null;
   }
 }
 
 function hasBrowserAuthCookies(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.cookie
-    .split(";")
-    .some((c) => {
-      const name = c.trim().split("=")[0];
-      return name === ACCESS_COOKIE || name === REFRESH_COOKIE;
-    });
+  return hasSessionHintCookie();
 }
 
 /**
- * On app load: restore JWT from localStorage into cookies when needed, then refresh.
- * Avoids server-side refresh (rotates tokens without updating browser cookies).
+ * On app load: migrate legacy LS refresh if needed, then refresh via httpOnly cookies.
  */
 export async function ensureSession(): Promise<AuthResponse | null> {
-  const storedRefresh = getRefreshToken();
+  const legacyRefresh = getRefreshToken();
 
-  if (!hasBrowserAuthCookies() && storedRefresh) {
+  if (!hasBrowserAuthCookies() && legacyRefresh) {
     const restored = await restoreSessionFromStorage();
     if (restored) return restored;
+  } else if (legacyRefresh) {
+    clearLegacyRefreshToken();
   }
 
   try {
     return await refreshSession();
   } catch (err) {
-    if (err instanceof ApiError && err.status === 401 && storedRefresh) {
+    if (err instanceof ApiError && err.status === 401 && legacyRefresh) {
       const restored = await restoreSessionFromStorage();
       if (restored) return restored;
       await logout();

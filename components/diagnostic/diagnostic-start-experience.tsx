@@ -76,7 +76,7 @@ export function DiagnosticStartExperience() {
       })();
     };
 
-    // Defer subscription check until after first paint (server already redirects authed users).
+    // Defer subscription check until after first paint so H1 can win LCP.
     if (typeof requestAnimationFrame === "function") {
       const frame = requestAnimationFrame(runCheck);
       return () => {
@@ -136,7 +136,7 @@ export function DiagnosticStartExperience() {
             <span className="inline-flex items-center rounded-full border border-teal/18 bg-[#E6F6F8] px-3 py-1.5 font-mono text-[11px] tracking-[0.14em] text-teal uppercase">
               Free diagnostic · No sign-up to start
             </span>
-            <h1 className="mt-4 text-[31px] leading-[1.06] font-bold tracking-[-0.025em] text-balance text-navy sm:text-4xl">
+            <h1 className="font-display mt-4 text-[31px] leading-[1.06] font-bold tracking-[-0.025em] text-balance text-navy sm:text-4xl">
               {PAGE_SEO_COPY.diagnostic.h1}
             </h1>
             <p className="mt-3.5 text-[15px] leading-relaxed font-light text-[#5A6B82]">

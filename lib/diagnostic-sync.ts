@@ -1,6 +1,6 @@
 import { refreshSession } from "@/lib/auth";
 import type { DiagnosticResultsSnapshot } from "@/lib/diagnostic-session";
-import { getAccessToken, getRefreshToken } from "@/lib/session";
+import { getAccessToken, hasSessionHintCookie } from "@/lib/session";
 
 type DiagnosticCompleteBody = {
   client_attempt_id: string;
@@ -83,8 +83,8 @@ export async function syncDiagnosticToServer(
 
   let access = getAccessToken();
   if (!isLikelyFullAccountToken(access)) {
-    // Stale/missing access — try restore via refresh before deciding guest.
-    if (!getRefreshToken()) return false;
+    // Stale/missing access — try cookie refresh before deciding guest.
+    if (!hasSessionHintCookie() && !access) return false;
     try {
       await refreshSession();
       access = getAccessToken();

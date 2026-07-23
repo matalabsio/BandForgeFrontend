@@ -340,6 +340,65 @@ html {
     animation: bf-fade-up 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  /* Soft drifting wash behind landing sections */
+  .bf-ambient {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .bf-ambient::before,
+  .bf-ambient::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(48px);
+    will-change: transform;
+  }
+
+  .bf-ambient::before {
+    width: min(70vw, 520px);
+    height: min(70vw, 520px);
+    top: -18%;
+    left: -12%;
+    background: rgb(0 188 212 / 0.14);
+    animation: bf-ambient-drift 22s ease-in-out infinite;
+  }
+
+  .bf-ambient::after {
+    width: min(60vw, 440px);
+    height: min(60vw, 440px);
+    right: -10%;
+    bottom: -22%;
+    background: rgb(0 151 167 / 0.12);
+    animation: bf-ambient-drift 28s ease-in-out infinite reverse;
+  }
+
+  .bf-ambient > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .bf-section-head {
+    margin-inline: auto;
+    max-width: 48rem;
+    text-align: center;
+  }
+
+  @keyframes bf-ambient-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    33% {
+      transform: translate3d(4%, 6%, 0) scale(1.06);
+    }
+    66% {
+      transform: translate3d(-5%, 3%, 0) scale(0.96);
+    }
+  }
+
   .bf-parallax-slow {
     animation: bf-float-slow 8s ease-in-out infinite;
   }
@@ -377,6 +436,21 @@ html {
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  @keyframes bf-hero-bar-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .bf-hero-bar-fill {
+    transform-origin: left center;
+    animation: bf-hero-bar-fill 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--bf-bar-delay, 0.2s);
   }
 
   @keyframes bf-float-slow {
@@ -423,13 +497,46 @@ html {
   }
 
   .bf-delay-1 {
-    animation-delay: 0.06s;
+    animation-delay: 0.1s;
   }
   .bf-delay-2 {
-    animation-delay: 0.12s;
+    animation-delay: 0.2s;
   }
   .bf-delay-3 {
-    animation-delay: 0.18s;
+    animation-delay: 0.32s;
+  }
+  .bf-delay-4 {
+    animation-delay: 0.44s;
+  }
+
+  /* Supporting hero copy — fade + rise */
+  .bf-hero-text {
+    animation: bf-hero-text 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes bf-hero-text {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 14px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  /* Headline — transform only so LCP stays painted */
+  .bf-hero-title {
+    animation: bf-hero-title 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes bf-hero-title {
+    from {
+      transform: translate3d(0, 12px, 0);
+    }
+    to {
+      transform: translate3d(0, 0, 0);
+    }
   }
 
   @keyframes bf-modal-up {
@@ -446,6 +553,11 @@ html {
   @media (prefers-reduced-motion: reduce) {
     .bf-fade-up,
     .bf-reveal,
+    .bf-hero-text,
+    .bf-hero-title,
+    .bf-hero-bar-fill,
+    .bf-ambient::before,
+    .bf-ambient::after,
     .bf-marquee.bf-marquee--auto-loop .bf-marquee-track,
     .bf-marquee-track,
     .bf-parallax-slow,

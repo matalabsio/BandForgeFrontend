@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
-import { BandForgeHow } from "@/components/bandforge/bf-how";
-import { BandForgeDemo } from "@/components/bandforge/bf-demo";
+import { BfSectionSkeleton } from "@/components/bandforge/bf-section-skeleton";
 import { pageMetadata } from "@/lib/seo/metadata";
+
+const BandForgeHow = dynamic(
+  () => import("@/components/bandforge/bf-how").then((m) => m.BandForgeHow),
+  { loading: () => <BfSectionSkeleton /> },
+);
+
+const BandForgeDemo = dynamic(
+  () => import("@/components/bandforge/bf-demo").then((m) => m.BandForgeDemo),
+  { loading: () => <BfSectionSkeleton /> },
+);
 
 export const metadata: Metadata = pageMetadata({
   title: "How BandForge Works — Mock, Feedback, Practice",

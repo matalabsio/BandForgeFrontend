@@ -110,7 +110,7 @@ export async function ensureDiagnosticGuestSession(): Promise<AuthResponse> {
       }
       const auth = body as AuthResponse;
       if (auth.access_token) {
-        persistAuthTokens(auth.access_token, auth.refresh_token ?? null);
+        persistAuthTokens(auth.access_token);
       }
       return auth;
     } finally {

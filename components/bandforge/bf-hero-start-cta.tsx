@@ -9,8 +9,13 @@ type Props = {
 /** Hero primary CTA — free diagnostic (no login required). */
 export function BfHeroStartCta({ className }: Props) {
   return (
-    <Link href={diagnosticPaths.landing} prefetch className={className}>
-      Take the Free Diagnostic Test
+    <Link
+      href={diagnosticPaths.landing}
+      prefetch
+      className={className}
+      aria-label="Start free diagnostic"
+    >
+      Start free
       <ArrowRight className="size-[1.125rem] shrink-0" strokeWidth={2.25} aria-hidden />
     </Link>
   );

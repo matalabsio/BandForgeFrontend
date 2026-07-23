@@ -13,21 +13,15 @@ import {
 } from "@/lib/auth-site";
 import { isPhoneOtpEnabled } from "@/lib/flags";
 import {
-  ACCESS_COOKIE,
   clearAuthStorage,
-  getRefreshToken,
-  REFRESH_COOKIE,
+  hasSessionHintCookie,
 } from "@/lib/session";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { readDiagnosticResults } from "@/lib/diagnostic-session";
 import { resolvePostLoginDestination } from "@/lib/post-login-destination";
 
 function hasAuthCookies(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.cookie.split(";").some((c) => {
-    const name = c.trim().split("=")[0];
-    return name === ACCESS_COOKIE || name === REFRESH_COOKIE;
-  });
+  return hasSessionHintCookie();
 }
 
 function LoginTrustRow() {
@@ -116,11 +110,9 @@ function LoginForm() {
       Boolean(readDiagnosticResults()),
     );
 
-    if (getRefreshToken() && !hasAuthCookies()) {
-      if (!escalatedToBootstrap.current) {
-        escalatedToBootstrap.current = true;
-        router.replace(authBootstrapPath(dest));
-      }
+    if (hasAuthCookies() && !isAuthenticated && !escalatedToBootstrap.current) {
+      escalatedToBootstrap.current = true;
+      router.replace(authBootstrapPath(dest));
       return;
     }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
@@ -14,6 +14,8 @@ import {
   getSubscription,
   openRazorpayCheckout,
   paymentTraceLog,
+  pendingVerifyPayloadFromReceipt,
+  readCheckoutReceiptContext,
   saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
@@ -88,6 +90,7 @@ export function PricingClient() {
   const [checkoutTestMode, setCheckoutTestMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isMobileCheckout, setIsMobileCheckout] = useState(false);
+  const checkoutInFlightRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -123,7 +126,7 @@ export function PricingClient() {
   const displayPlans = plans.length > 0 ? plans : fallbackPlans;
   const hasPlans = !loadingPlans && displayPlans.length > 0;
   const usingFallbackPlans = !loadingPlans && plans.length === 0 && !loadError;
-  const checkoutAvailable = paymentsEnabled;
+  const checkoutAvailable = paymentsEnabled && !usingFallbackPlans;
 
   function redirectSessionExpired() {
     router.push(loginPathWithNext("/pricing", true));
@@ -133,15 +136,66 @@ export function PricingClient() {
     router.push(loginPathWithNext("/checkout/success", true));
   }
 
+  function clearCheckoutBusy() {
+    checkoutInFlightRef.current = false;
+    setBusySlug(null);
+  }
+
+  async function runVerifyFromPayload(response: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) {
+    const orderId = response.razorpay_order_id;
+    const paymentId = response.razorpay_payment_id;
+    setOverlay("verifying");
+    try {
+      paymentTraceLog("VERIFY_REQUEST", {
+        order: orderId,
+        payment: paymentId,
+        signature_present: Boolean(response.razorpay_signature),
+      });
+      const result = await verifyPayment(response);
+      if (result.subscription.is_active) {
+        router.push("/checkout/success");
+        return;
+      }
+      setOverlay(null);
+      setPaymentFailureMessage(
+        "Payment was received but the subscription was not activated. Contact support with your payment reference.",
+      );
+      setStatusModal("verify_failed");
+    } catch (e) {
+      setOverlay(null);
+      if (e instanceof ApiError && e.status === 401) {
+        paymentTraceLog("VERIFY_AUTH_FAILED", {
+          order: orderId,
+          payment: paymentId,
+        });
+        setPaymentFailureMessage(
+          `Payment may have succeeded. Sign in again to activate your plan. Order: ${orderId}`,
+        );
+        setStatusModal("verify_failed");
+        redirectVerifyAuthFailed();
+      } else {
+        setPaymentFailureMessage(verifyFailureDetail(e));
+        setStatusModal("verify_failed");
+      }
+    } finally {
+      clearCheckoutBusy();
+    }
+  }
+
   async function handleBuy(slug: string) {
-    if (busySlug) return;
+    if (checkoutInFlightRef.current || busySlug) return;
+    checkoutInFlightRef.current = true;
     setBusySlug(slug);
     setOverlay("creating");
     try {
       const session = await ensureSession();
       if (!session) {
         setOverlay(null);
-        setBusySlug(null);
+        clearCheckoutBusy();
         setStatusModal("session_expired");
         return;
       }
@@ -150,84 +204,46 @@ export function PricingClient() {
       const opened = await openRazorpayCheckout({
         order,
         onSuccess: async (response) => {
-          setOverlay("verifying");
-          const orderId = response.razorpay_order_id;
-          const paymentId = response.razorpay_payment_id;
-          try {
-            paymentTraceLog("CHECKOUT_SUCCESS", {
-              order: orderId,
-              payment: paymentId,
-            });
-            // Do not call ensureSession() here — on failure it can logout and
-            // clear cookies, abandoning a paid order. BFF proxy refreshes on 401.
-            paymentTraceLog("SESSION_REFRESH_SKIPPED_POST_CHECKOUT", {
-              order: orderId,
-              payment: paymentId,
-              reason: "fulfillment_first",
-            });
-            paymentTraceLog("VERIFY_REQUEST", {
-              order: orderId,
-              payment: paymentId,
-              signature_present: Boolean(response.razorpay_signature),
-            });
-            const result = await verifyPayment(response);
-            if (result.subscription.is_active) {
-              saveCheckoutReceiptContext({
-                order_id: orderId,
-                payment_id: paymentId,
-                plan_name: order.plan_name,
-                amount: order.amount,
-                currency: order.currency,
-              });
-              router.push("/checkout/success");
-              return;
-            }
-            setOverlay(null);
-            setPaymentFailureMessage(
-              "Payment was received but the subscription was not activated. Contact support with your payment reference.",
-            );
-            setStatusModal("verify_failed");
-          } catch (e) {
-            setOverlay(null);
-            if (e instanceof ApiError && e.status === 401) {
-              paymentTraceLog("VERIFY_AUTH_FAILED", {
-                order: orderId,
-                payment: paymentId,
-              });
-              setPaymentFailureMessage(
-                `Payment may have succeeded. Sign in again to activate your plan. Order: ${orderId}`,
-              );
-              setStatusModal("verify_failed");
-              redirectVerifyAuthFailed();
-            } else {
-              setPaymentFailureMessage(verifyFailureDetail(e));
-              setStatusModal("verify_failed");
-            }
-          } finally {
-            setBusySlug(null);
-          }
+          saveCheckoutReceiptContext({
+            order_id: response.razorpay_order_id,
+            payment_id: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+            plan_name: order.plan_name,
+            amount: order.amount,
+            currency: order.currency,
+          });
+          paymentTraceLog("CHECKOUT_SUCCESS", {
+            order: response.razorpay_order_id,
+            payment: response.razorpay_payment_id,
+          });
+          paymentTraceLog("SESSION_REFRESH_SKIPPED_POST_CHECKOUT", {
+            order: response.razorpay_order_id,
+            payment: response.razorpay_payment_id,
+            reason: "fulfillment_first",
+          });
+          await runVerifyFromPayload(response);
         },
         onDismiss: () => {
           setOverlay(null);
-          setBusySlug(null);
+          clearCheckoutBusy();
           setPaymentFailureMessage(null);
           setStatusModal("cancelled");
         },
         onFailed: (message) => {
           setOverlay(null);
-          setBusySlug(null);
+          clearCheckoutBusy();
           setPaymentFailureMessage(paymentFailureDetail(message));
           setStatusModal("payment_failed");
         },
       });
       if (!opened) {
         setOverlay(null);
-        setBusySlug(null);
+        clearCheckoutBusy();
         setStatusModal("checkout_unavailable");
       }
     } catch (e) {
       setOverlay(null);
-      setBusySlug(null);
+      clearCheckoutBusy();
       if (e instanceof ApiError && e.status === 401) {
         redirectSessionExpired();
       } else if (e instanceof ApiError && e.status === 503) {
@@ -238,6 +254,20 @@ export function PricingClient() {
         setStatusModal("verify_failed");
       }
     }
+  }
+
+  async function handleVerifyRetry() {
+    const pending = readCheckoutReceiptContext();
+    const payload = pending ? pendingVerifyPayloadFromReceipt(pending) : null;
+    if (!payload) {
+      setPaymentFailureMessage(null);
+      setStatusModal(null);
+      return;
+    }
+    setPaymentFailureMessage(null);
+    setStatusModal(null);
+    checkoutInFlightRef.current = true;
+    await runVerifyFromPayload(payload);
   }
 
   return (
@@ -417,6 +447,10 @@ export function PricingClient() {
               : null
           }
           onRetry={() => {
+            if (statusModal === "verify_failed") {
+              void handleVerifyRetry();
+              return;
+            }
             setPaymentFailureMessage(null);
             setStatusModal(null);
           }}

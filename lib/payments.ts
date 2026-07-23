@@ -53,9 +53,11 @@ export type RazorpayHandlerResponse = {
   razorpay_signature: string;
 };
 
+/** Pending fulfillment + receipt: saved as soon as Razorpay handler fires. */
 export type CheckoutReceiptContext = {
   order_id: string;
   payment_id: string;
+  signature: string;
   plan_name?: string | null;
   amount?: number;
   currency?: string;
@@ -77,7 +79,9 @@ export function readCheckoutReceiptContext(): CheckoutReceiptContext | null {
   try {
     const raw = sessionStorage.getItem(CHECKOUT_RECEIPT_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as CheckoutReceiptContext;
+    const parsed = JSON.parse(raw) as CheckoutReceiptContext;
+    if (!parsed?.order_id || !parsed?.payment_id) return null;
+    return parsed;
   } catch {
     return null;
   }
@@ -90,6 +94,18 @@ export function clearCheckoutReceiptContext(): void {
   } catch {
     /* ignore */
   }
+}
+
+/** Re-run verify from the pending sessionStorage payload (requires signature). */
+export function pendingVerifyPayloadFromReceipt(
+  ctx: CheckoutReceiptContext,
+): RazorpayHandlerResponse | null {
+  if (!ctx.signature) return null;
+  return {
+    razorpay_order_id: ctx.order_id,
+    razorpay_payment_id: ctx.payment_id,
+    razorpay_signature: ctx.signature,
+  };
 }
 
 async function paymentsCall<T>(path: string, init?: RequestInit): Promise<T> {
@@ -283,15 +299,51 @@ export function loadRazorpayScript(): Promise<boolean> {
       `script[src="${RAZORPAY_SCRIPT}"]`,
     );
     if (existing) {
-      existing.addEventListener("load", () => resolve(true));
-      existing.addEventListener("error", () => resolve(false));
+      const marker = existing.dataset.bfRzp;
+      if (marker === "ready") {
+        resolve(Boolean(window.Razorpay));
+        return;
+      }
+      if (marker === "error") {
+        resolve(false);
+        return;
+      }
+      // Already loaded without our marker (e.g. cached) — do not hang on load.
+      if (window.Razorpay) {
+        existing.dataset.bfRzp = "ready";
+        resolve(true);
+        return;
+      }
+      // Mid-load: wait for one-shot load/error (do not resolve false immediately).
+      const onLoad = () => {
+        existing.dataset.bfRzp = "ready";
+        cleanup();
+        resolve(Boolean(window.Razorpay));
+      };
+      const onError = () => {
+        existing.dataset.bfRzp = "error";
+        cleanup();
+        resolve(false);
+      };
+      const cleanup = () => {
+        existing.removeEventListener("load", onLoad);
+        existing.removeEventListener("error", onError);
+      };
+      existing.addEventListener("load", onLoad);
+      existing.addEventListener("error", onError);
       return;
     }
     const script = document.createElement("script");
     script.src = RAZORPAY_SCRIPT;
     script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    script.onload = () => {
+      script.dataset.bfRzp = "ready";
+      resolve(true);
+    };
+    script.onerror = () => {
+      script.dataset.bfRzp = "error";
+      resolve(false);
+    };
     document.body.appendChild(script);
   });
 }
@@ -372,7 +424,19 @@ export async function openRazorpayCheckout(opts: {
   const ok = await loadRazorpayScript();
   if (!ok || !window.Razorpay) return false;
 
-  const options = buildRazorpayCheckoutOptions(opts);
+  // Success/fail settles checkout; dismiss must not show "cancelled" after pay.
+  let settled = false;
+  const options = buildRazorpayCheckoutOptions({
+    order: opts.order,
+    onSuccess: (response) => {
+      settled = true;
+      opts.onSuccess(response);
+    },
+    onDismiss: () => {
+      if (settled) return;
+      opts.onDismiss();
+    },
+  });
   if (process.env.NODE_ENV === "development") {
     console.info("[bandforge/razorpay-checkout]", {
       remember_customer: options.remember_customer,
@@ -384,6 +448,7 @@ export async function openRazorpayCheckout(opts: {
   }
   const rzp = new window.Razorpay(options);
   rzp.on("payment.failed", (response) => {
+    settled = true;
     const message =
       response.error?.description ?? "Payment failed. Please try again.";
     opts.onFailed?.(message);

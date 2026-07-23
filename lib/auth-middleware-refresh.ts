@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   applyAuthCookiesToResponse,
   DEFAULT_MAX_AGE,
+  setSessionHintOnResponse,
 } from "@/lib/auth-cookies";
 import { accessTokenExpired, refreshAuthSession } from "@/lib/auth-server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
@@ -28,6 +29,7 @@ export async function middlewareRefreshAuth(
     }
 
     const secure = process.env.NODE_ENV === "production";
+    let applied = false;
     if (refreshed.auth.access_token) {
       response.cookies.set(ACCESS_COOKIE, refreshed.auth.access_token, {
         httpOnly: true,
@@ -36,6 +38,7 @@ export async function middlewareRefreshAuth(
         path: "/",
         maxAge: DEFAULT_MAX_AGE[ACCESS_COOKIE],
       });
+      applied = true;
     }
     if (refreshed.auth.refresh_token) {
       response.cookies.set(REFRESH_COOKIE, refreshed.auth.refresh_token, {
@@ -45,7 +48,9 @@ export async function middlewareRefreshAuth(
         path: "/",
         maxAge: DEFAULT_MAX_AGE[REFRESH_COOKIE],
       });
+      applied = true;
     }
+    if (applied) setSessionHintOnResponse(response);
 
     return response;
   } catch {

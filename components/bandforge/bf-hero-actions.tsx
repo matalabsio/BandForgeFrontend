@@ -1,23 +1,13 @@
-import { ShieldCheck } from "lucide-react";
-
 import { BfHeroStartCta } from "@/components/bandforge/bf-hero-start-cta";
 
 const startClassName =
-  "flex w-full items-center justify-center gap-2 rounded-full bg-cyan px-6 py-[17px] text-[1.0625rem] font-semibold text-white no-underline shadow-[0_8px_20px_rgb(0_151_167/0.26)] transition-colors hover:bg-brand-sky-hover lg:inline-flex lg:w-auto lg:px-[30px] lg:py-[18px] lg:shadow-[0_10px_26px_rgb(0_151_167/0.26)]";
+  "pointer-events-auto flex w-full items-center justify-center gap-2 rounded-full bg-cyan px-6 py-[17px] text-[1.0625rem] font-semibold text-white no-underline shadow-[0_8px_20px_rgb(0_151_167/0.26)] transition-colors hover:bg-brand-sky-hover sm:w-auto lg:inline-flex lg:px-[30px] lg:py-[18px] lg:shadow-[0_10px_26px_rgb(0_151_167/0.26)]";
 
-/** Hero CTAs — full-width on mobile, inline on desktop. */
+/** Hero CTA — single Start free button → dashboard (auth). */
 export function BfHeroActions() {
   return (
-    <div className="mt-[30px] lg:mt-9 lg:flex lg:flex-wrap lg:items-center lg:gap-[18px]">
+    <div className="mt-[30px] flex justify-center lg:mt-9 lg:justify-start">
       <BfHeroStartCta className={startClassName} />
-      <p className="mt-3.5 flex items-start gap-2 text-[0.8125rem] text-muted-light lg:mt-0 lg:max-w-[20ch] lg:text-sm">
-        <ShieldCheck
-          className="mt-0.5 size-4 shrink-0 text-teal/75"
-          strokeWidth={2}
-          aria-hidden
-        />
-        No account needed to start. Results in minutes.
-      </p>
     </div>
   );
 }

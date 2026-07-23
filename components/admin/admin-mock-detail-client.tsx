@@ -74,6 +74,19 @@ export function AdminMockDetailClient({ mockId }: Props) {
     }
   };
 
+  const toggleFree = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await adminApi.patchMock(mock.id, { is_free: !mock.is_free });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Access update failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -93,6 +106,14 @@ export function AdminMockDetailClient({ mockId }: Props) {
           </Link>
           <button
             type="button"
+            disabled={busy}
+            onClick={() => void toggleFree()}
+            className={cn(adminBtnSecondary, "w-full sm:w-auto")}
+          >
+            {mock.is_free ? "Mark as paid" : "Mark as free"}
+          </button>
+          <button
+            type="button"
             disabled={busy || (!canPublish && mock.status !== "published")}
             onClick={() => void togglePublished()}
             className={cn(adminBtnPrimary, "w-full sm:w-auto")}
@@ -101,6 +122,13 @@ export function AdminMockDetailClient({ mockId }: Props) {
           </button>
         </div>
       </div>
+
+      <p className={cn(adminMeta)}>
+        Access:{" "}
+        <span className="font-medium text-black">
+          {mock.is_free ? "Free (no subscription)" : "Paid (subscription required)"}
+        </span>
+      </p>
 
       <AdminMockEditForm mock={mock} onSaved={() => void load()} />
 

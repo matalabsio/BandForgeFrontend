@@ -1,7 +1,39 @@
 import { NextResponse } from "next/server";
-import { applyAuthCookiesToResponse } from "@/lib/auth-cookies";
+import {
+  applyAuthCookiesToResponse,
+  setSessionHintOnResponse,
+} from "@/lib/auth-cookies";
 import { exchangeGoogleCode } from "@/lib/auth-google";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+
+function applyOAuthAuthCookies(
+  res: NextResponse,
+  setCookies: string[],
+  data: { access_token?: string; refresh_token?: string | null },
+): void {
+  applyAuthCookiesToResponse(res, setCookies);
+
+  const secure = process.env.NODE_ENV === "production";
+  if (setCookies.length === 0 && data.access_token) {
+    res.cookies.set(ACCESS_COOKIE, data.access_token, {
+      httpOnly: true,
+      secure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 15 * 60,
+    });
+    if (data.refresh_token) {
+      res.cookies.set(REFRESH_COOKIE, data.refresh_token, {
+        httpOnly: true,
+        secure,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60,
+      });
+    }
+    setSessionHintOnResponse(res);
+  }
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -32,7 +64,9 @@ export async function GET(request: Request) {
     if (data.pending_verification) {
       const bootstrapUrl = new URL("/auth/bootstrap", request.url);
       bootstrapUrl.searchParams.set("next", safeNext);
-      return NextResponse.redirect(bootstrapUrl);
+      const res = NextResponse.redirect(bootstrapUrl);
+      applyOAuthAuthCookies(res, setCookies, data);
+      return res;
     }
 
     // Fresh OAuth cookies are applied here. The client continuation can then
@@ -41,28 +75,7 @@ export async function GET(request: Request) {
     const continueUrl = new URL("/auth/continue", request.url);
     continueUrl.searchParams.set("next", safeNext);
     const res = NextResponse.redirect(continueUrl);
-    applyAuthCookiesToResponse(res, setCookies);
-
-    const secure = process.env.NODE_ENV === "production";
-    if (setCookies.length === 0 && data.access_token) {
-      res.cookies.set(ACCESS_COOKIE, data.access_token, {
-        httpOnly: true,
-        secure,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 15 * 60,
-      });
-      if (data.refresh_token) {
-        res.cookies.set(REFRESH_COOKIE, data.refresh_token, {
-          httpOnly: true,
-          secure,
-          sameSite: "lax",
-          path: "/",
-          maxAge: 30 * 24 * 60 * 60,
-        });
-      }
-    }
-
+    applyOAuthAuthCookies(res, setCookies, data);
     return res;
   } catch (e) {
     const loginUrl = new URL("/login", request.url);

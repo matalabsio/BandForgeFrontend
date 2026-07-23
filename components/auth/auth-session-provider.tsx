@@ -13,7 +13,11 @@ import {
 import { ensureSession, getMe } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { isAuthEnabled } from "@/lib/flags";
-import { hasLikelyClientSession, type AuthUser } from "@/lib/session";
+import {
+  hasLikelyClientSession,
+  hasSessionHintCookie,
+  type AuthUser,
+} from "@/lib/session";
 
 type AuthSessionContextValue = {
   user: AuthUser | null;
@@ -24,11 +28,8 @@ type AuthSessionContextValue = {
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 
-const ACCESS_COOKIE = "bf_access";
-
 function hasAccessCookie(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.cookie.split(";").some((c) => c.trim().startsWith(`${ACCESS_COOKIE}=`));
+  return hasSessionHintCookie();
 }
 
 type ProviderProps = {
@@ -81,16 +82,30 @@ export function AuthSessionProvider({
 
     if (serverAuthenticated && hasAccessCookie()) {
       let cancelled = false;
-      void getMe()
-        .then((me) => {
+      void (async () => {
+        try {
+          const me = await getMe();
           if (!cancelled) setUser(me);
-        })
-        .catch(() => {
+        } catch (err) {
+          if (
+            !cancelled &&
+            err instanceof ApiError &&
+            err.status === 401
+          ) {
+            try {
+              await ensureSession();
+              const me = await getMe();
+              if (!cancelled) setUser(me);
+              return;
+            } catch {
+              /* fall through */
+            }
+          }
           if (!cancelled) setUser(null);
-        })
-        .finally(() => {
+        } finally {
           if (!cancelled) setLoading(false);
-        });
+        }
+      })();
       return () => {
         cancelled = true;
       };

@@ -8,7 +8,10 @@ import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { MockSectionResultsClient } from "@/modules/results/components/mock-section-results-client";
 import { WritingResultsClient } from "@/modules/results/components/writing-results-client";
 
-export const metadata = { title: "Writing Feedback · BandForge" };
+export const metadata = {
+  title: "Writing Feedback · BandForge",
+  robots: { index: false, follow: false },
+};
 
 type PageProps = {
   params: Promise<{ number: string }>;

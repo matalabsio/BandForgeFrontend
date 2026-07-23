@@ -6,7 +6,7 @@ Next.js **16** (App Router) + **React 19** + **Tailwind CSS 4** for **BandForge*
 |---|---|
 | **Local URL** | http://localhost:3000 |
 | **Backend (proxy target)** | http://127.0.0.1:8000 — see [`../backend/README.md`](../backend/README.md) |
-| **Monorepo root** | [`../README.md`](../README.md) · progress: [`../done.md`](../done.md) · tasks: [`../todo.md`](../todo.md) |
+| **Monorepo root** | [`../README.md`](../README.md) |
 
 **Deploy:** Host must use **`frontend`** as the project root (not the repo root). Build: `npm install && npm run build`. Start: `npm run start`.
 
@@ -355,9 +355,8 @@ npm run lint         # ESLint (eslint-config-next)
 | Doc | Content |
 |-----|---------|
 | [`../done.md`](../done.md) | What’s built, mock IDs, flows |
-| [`../todo.md`](../todo.md) | Phase A v1 scope + backlog |
 | [`../ielts-architecture.md`](../ielts-architecture.md) | IELTS module data model |
-| [`setup.md`](../setup.md) | Founder build manual (A1–A5) |
+| [`../setup.md`](../setup.md) | Founder build manual (A1–A5) |
 
 ---
 

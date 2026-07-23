@@ -197,6 +197,7 @@ export type AdminMockListItem = {
   description: string | null;
   status: "draft" | "published" | "archived";
   is_published: boolean;
+  is_free?: boolean;
   catalog_number: number | null;
   created_at: string;
   total_questions: number;
@@ -670,6 +671,7 @@ export const adminApi = {
       listening_parts?: number;
       reading_passages?: number;
       writing_tasks?: number;
+      is_free?: boolean;
     },
   ) {
     return adminCall<AdminMockListItem>(`/mocks/${id}`, {

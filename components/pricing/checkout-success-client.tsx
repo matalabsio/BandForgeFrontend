@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download } from "lucide-react";
 
+import { ApiError } from "@/lib/api";
 import { getMe } from "@/lib/auth";
 import {
   type PaymentHistoryItem,
@@ -11,7 +12,9 @@ import {
   clearCheckoutReceiptContext,
   getPaymentHistory,
   getSubscription,
+  pendingVerifyPayloadFromReceipt,
   readCheckoutReceiptContext,
+  verifyPayment,
 } from "@/lib/payments";
 
 const REDIRECT_DELAY_S = 12;
@@ -102,9 +105,11 @@ export function CheckoutSuccessClient() {
   const [userName, setUserName] = useState("Student");
   const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(REDIRECT_DELAY_S);
   const [receiptDownloaded, setReceiptDownloaded] = useState(false);
   const downloadedRef = useRef(false);
+  const reverifyAttemptedRef = useRef(false);
 
   const doDownloadReceipt = useCallback(
     (
@@ -125,15 +130,45 @@ export function CheckoutSuccessClient() {
 
   useEffect(() => {
     let active = true;
+    let receiptTimer: number | undefined;
 
     (async () => {
       try {
         const receiptCtx = readCheckoutReceiptContext();
-        const [sub, history, me] = await Promise.all([
+        const [subInitial, history, me] = await Promise.all([
           getSubscription(),
           getPaymentHistory().catch(() => ({ payments: [] })),
           getMe().catch(() => null),
         ]);
+
+        if (!active) return;
+
+        let sub = subInitial;
+
+        // After login redirect mid-verify: re-verify once from pending payload.
+        if (
+          !sub.is_active &&
+          receiptCtx &&
+          !reverifyAttemptedRef.current
+        ) {
+          const payload = pendingVerifyPayloadFromReceipt(receiptCtx);
+          if (payload) {
+            reverifyAttemptedRef.current = true;
+            try {
+              const result = await verifyPayment(payload);
+              sub = result.subscription;
+            } catch (e) {
+              if (!active) return;
+              setLoadError(
+                e instanceof ApiError
+                  ? e.message
+                  : "Could not verify your payment. Try again from pricing or contact support.",
+              );
+              setLoading(false);
+              return;
+            }
+          }
+        }
 
         if (!active) return;
 
@@ -163,12 +198,18 @@ export function CheckoutSuccessClient() {
         if (latestPaid) setPayment(latestPaid);
 
         if (!sub.is_active) {
-          router.replace("/pricing");
+          if (!receiptCtx?.signature) {
+            router.replace("/pricing");
+            return;
+          }
+          setLoadError(
+            "Payment is still pending activation. Contact support with your payment reference if this persists.",
+          );
+          setLoading(false);
           return;
         }
 
-        // Auto-download receipt once data is ready
-        window.setTimeout(() => {
+        receiptTimer = window.setTimeout(() => {
           if (active) doDownloadReceipt(sub, latestPaid, name, email);
         }, 800);
       } catch {
@@ -180,6 +221,7 @@ export function CheckoutSuccessClient() {
 
     return () => {
       active = false;
+      if (receiptTimer !== undefined) window.clearTimeout(receiptTimer);
     };
   }, [router, doDownloadReceipt]);
 
@@ -198,6 +240,24 @@ export function CheckoutSuccessClient() {
     if (loading || !subscription?.is_active || countdown > 0) return;
     router.replace("/dashboard");
   }, [countdown, loading, subscription, router]);
+
+  if (loadError) {
+    return (
+      <div className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 text-center">
+        <h1 className="font-display text-2xl font-extrabold text-navy">
+          Activating your plan
+        </h1>
+        <p className="mt-3 text-sm text-muted">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => router.replace("/pricing")}
+          className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep"
+        >
+          Back to pricing
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 text-center">
