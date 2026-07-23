@@ -46,16 +46,6 @@ function isIosDevice(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-function isMobileDevice(): boolean {
-  if (typeof navigator === "undefined") return false;
-  return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-}
-
-function wasDismissedThisSession(): boolean {
-  if (typeof sessionStorage === "undefined") return false;
-  return sessionStorage.getItem(DISMISS_KEY) === "1";
-}
-
 const BLOCKED_PREFIXES = [
   "/test",
   "/mock",
@@ -75,13 +65,11 @@ export function InstallPromptProvider({ children }: { children: ReactNode }) {
     useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIos, setIsIos] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     setIsInstalled(isStandaloneDisplay());
     setIsIos(isIosDevice());
-    setIsMobile(isMobileDevice());
 
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
@@ -104,26 +92,13 @@ export function InstallPromptProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const canInstall = Boolean(deferredPrompt) && !isInstalled;
-  const canShowIosGuide = isIos && isMobile && !isInstalled;
 
+  // Auto install popup disabled for now — use InstallPromptButton on /mobile only.
   useEffect(() => {
-    if (isInstalled || wasDismissedThisSession() || isBlockedRoute(pathname)) {
+    if (isInstalled || isBlockedRoute(pathname)) {
       setIsModalOpen(false);
-      return;
     }
-
-    if (!canInstall && !canShowIosGuide) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      if (!wasDismissedThisSession() && !isBlockedRoute(pathname)) {
-        setIsModalOpen(true);
-      }
-    }, 800);
-
-    return () => window.clearTimeout(timer);
-  }, [canInstall, canShowIosGuide, isInstalled, pathname]);
+  }, [isInstalled, pathname]);
 
   const dismissModal = useCallback(() => {
     sessionStorage.setItem(DISMISS_KEY, "1");
