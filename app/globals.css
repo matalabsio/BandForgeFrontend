@@ -550,12 +550,83 @@ html {
     }
   }
 
+  @keyframes bf-how-step-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes bf-how-line-in {
+    from {
+      transform: scaleX(0);
+      opacity: 0;
+    }
+    to {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+  }
+
+  .bf-how-reveal .bf-how-head,
+  .bf-how-reveal .bf-how-step,
+  .bf-how-reveal .bf-how-line {
+    opacity: 0;
+  }
+
+  .bf-how-reveal.is-inview .bf-how-head {
+    animation: bf-hero-text 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .bf-how-reveal.is-inview .bf-how-line {
+    transform-origin: left center;
+    animation: bf-how-line-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+  }
+
+  .bf-how-reveal.is-inview .bf-how-step {
+    animation: bf-how-step-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .bf-how-reveal.is-inview .bf-how-step:nth-child(1) {
+    animation-delay: 0.12s;
+  }
+  .bf-how-reveal.is-inview .bf-how-step:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .bf-how-reveal.is-inview .bf-how-step:nth-child(3) {
+    animation-delay: 0.28s;
+  }
+  .bf-how-reveal.is-inview .bf-how-step:nth-child(4) {
+    animation-delay: 0.36s;
+  }
+  .bf-how-reveal.is-inview .bf-how-step:nth-child(5) {
+    animation-delay: 0.44s;
+  }
+  .bf-how-reveal.is-inview .bf-how-step:nth-child(6) {
+    animation-delay: 0.52s;
+  }
+
+  .bf-how-progress-fill {
+    transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .bf-fade-up,
     .bf-reveal,
     .bf-hero-text,
     .bf-hero-title,
     .bf-hero-bar-fill,
+    .bf-how-reveal .bf-how-head,
+    .bf-how-reveal .bf-how-step,
+    .bf-how-reveal .bf-how-line,
+    .bf-how-reveal.is-inview .bf-how-head,
+    .bf-how-reveal.is-inview .bf-how-step,
+    .bf-how-reveal.is-inview .bf-how-line,
+    .bf-how-progress-fill,
     .bf-ambient::before,
     .bf-ambient::after,
     .bf-marquee.bf-marquee--auto-loop .bf-marquee-track,
@@ -566,6 +637,7 @@ html {
       animation: none;
       opacity: 1;
       transform: none;
+      transition: none;
     }
   }
 }
