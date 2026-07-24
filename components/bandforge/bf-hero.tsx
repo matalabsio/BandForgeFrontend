@@ -14,8 +14,9 @@ export function BandForgeHero() {
 
       {/* Top band ~5–10px under nav — circle centered on Pricing↔Dashboard gap, +10px right */}
       <div className="pointer-events-none absolute inset-x-0 top-[5px] z-20">
-        <div className="relative mx-auto flex min-h-[84px] w-full max-w-[1200px] items-start px-4 sm:min-h-[96px] sm:px-5 lg:min-h-[108px] lg:px-10">
-          <BfSectionEyebrow className="bf-hero-text absolute top-1 left-1/2 z-10 w-max max-w-[min(100%,20rem)] -translate-x-1/2 rounded-full border border-cyan/20 bg-cyan-soft/80 px-3.5 py-1.5 text-center shadow-[0_1px_2px_rgb(0_151_167/0.06)] backdrop-blur-[6px] sm:top-1.5 sm:max-w-none sm:px-4 sm:py-2">
+        <div className="relative mx-auto flex min-h-[9.75rem] w-full max-w-[1200px] items-start px-4 sm:min-h-[10.5rem] sm:px-5 lg:min-h-[108px] lg:px-10">
+          {/* Mobile/tablet: eyebrow below circle so they don’t collide. Desktop: beside circle. */}
+          <BfSectionEyebrow className="bf-hero-text absolute top-[5.5rem] left-1/2 z-10 w-max max-w-[min(100%,20rem)] -translate-x-1/2 rounded-full border border-cyan/20 bg-cyan-soft/80 px-3.5 py-1.5 text-center shadow-[0_1px_2px_rgb(0_151_167/0.06)] backdrop-blur-[6px] sm:top-[6.25rem] sm:max-w-none sm:px-4 sm:py-2 lg:top-1.5">
             IELTS Diagnostic · 90 minutes
           </BfSectionEyebrow>
 
@@ -46,20 +47,22 @@ export function BandForgeHero() {
             </span>
           </div>
 
-          {/* Mobile / tablet fallback — under right CTA area */}
-          <div className="pointer-events-auto absolute top-0 right-[4.75rem] sm:right-[5.75rem] lg:hidden">
-            <CircularText
-              text="BUILT BY A GOLD MEDALLIST • "
-              onHover="speedUp"
-              spinDuration={22}
-              className="text-navy"
-            />
+          {/* Mobile / tablet — under hamburger; +30px right, +15px down from base */}
+          <div className="pointer-events-auto absolute top-[15px] right-[calc(1rem+24px-10px-30px)] origin-top-right scale-[0.78] sm:right-[calc(2em+28px-10px-30px)] sm:scale-[0.82] lg:hidden">
+            <div className="-translate-x-1/2">
+              <CircularText
+                text="BUILT BY A GOLD MEDALLIST • "
+                onHover="speedUp"
+                spinDuration={22}
+                className="text-navy"
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Copy sits just under the circle / eyebrow band */}
-      <div className="bf-container pointer-events-none relative z-10 w-full pt-[5.75rem] sm:pt-[6.5rem] lg:pt-[7.25rem]">
+      <div className="bf-container pointer-events-none relative z-10 w-full pt-[11.25rem] sm:pt-[12.25rem] lg:pt-[7.25rem]">
         <div className="mx-auto max-w-2xl text-center">
           <h1
             id="bf-hero-heading"
