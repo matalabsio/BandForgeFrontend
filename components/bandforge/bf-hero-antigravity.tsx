@@ -9,12 +9,12 @@ const Antigravity = dynamic(() => import("@/components/bandforge/antigravity"), 
 
 const HERO_COLORS = ["#0097a7", "#00bcd4", "#0d1f3c"] as const;
 
-const DESKTOP_CAPSULES = 250;
-const DESKTOP_SPHERES = 100;
+const DESKTOP_CAPSULES = 200;
+const DESKTOP_SPHERES = 70;
 
-/** ~30% fewer particles on small screens for performance. */
-const SMALL_CAPSULES = Math.round(DESKTOP_CAPSULES * 0.7);
-const SMALL_SPHERES = Math.round(DESKTOP_SPHERES * 0.7);
+/** 20% fewer particles on small screens than desktop. */
+const SMALL_CAPSULES = Math.round(DESKTOP_CAPSULES * 0.8);
+const SMALL_SPHERES = Math.round(DESKTOP_SPHERES * 0.8);
 
 const SMALL_SCREEN_MQ = "(max-width: 767px)";
 
@@ -49,16 +49,16 @@ export function BfHeroAntigravity() {
         sphereCount={sphereCount}
         magnetRadius={11}
         ringRadius={7}
-        waveSpeed={0.28}
-        waveAmplitude={1.2}
+        waveSpeed={0.18}
+        waveAmplitude={0.85}
         particleSize={0.8}
-        lerpSpeed={0.035}
+        lerpSpeed={0.022}
         colors={[...HERO_COLORS]}
         autoAnimate
-        particleVariance={0.5}
-        pulseSpeed={1.8}
+        particleVariance={0.35}
+        pulseSpeed={1.2}
         fieldStrength={5}
-        rotationSpeed={0.08}
+        rotationSpeed={0.05}
       />
     </div>
   );

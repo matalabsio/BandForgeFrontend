@@ -1,5 +1,6 @@
 import { BfHeroActions } from "@/components/bandforge/bf-hero-actions";
 import { BfHeroAntigravity } from "@/components/bandforge/bf-hero-antigravity";
+import CircularText from "@/components/bandforge/circular-text";
 import { BfSectionEyebrow } from "@/components/bandforge/ui";
 import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
@@ -10,6 +11,19 @@ export function BandForgeHero() {
       aria-labelledby="bf-hero-heading"
     >
       <BfHeroAntigravity />
+
+      <div className="pointer-events-none absolute inset-x-0 top-[5px] z-20">
+        <div className="mx-auto flex w-full max-w-[1200px] justify-end px-4 sm:px-5 lg:px-10">
+          <div className="pointer-events-auto mr-6 sm:mr-10 lg:mr-14">
+            <CircularText
+              text="BUILT BY A GOLD MEDALLIST • "
+              onHover="speedUp"
+              spinDuration={22}
+              className="text-navy"
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="bf-container pointer-events-none relative z-10 pb-8 sm:pb-12 lg:pb-16">
         <div className="mx-auto max-w-2xl text-center">

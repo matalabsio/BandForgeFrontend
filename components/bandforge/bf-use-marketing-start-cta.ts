@@ -10,13 +10,14 @@ export type MarketingStartCta = {
   ariaLabel: string;
 };
 
-/** Client CTA: Dashboard when session hint exists, otherwise login → dashboard. */
+/**
+ * Client CTA: Dashboard when session hint exists, otherwise login → dashboard.
+ * Always starts as guest on SSR + first paint to avoid hydration mismatch.
+ */
 export function useMarketingStartCta(
   next = "/dashboard",
 ): MarketingStartCta {
-  const [signedIn, setSignedIn] = useState(() =>
-    typeof document !== "undefined" ? hasSessionHintCookie() : false,
-  );
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     setSignedIn(hasSessionHintCookie());
