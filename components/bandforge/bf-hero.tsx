@@ -1,24 +1,18 @@
 import { BfHeroActions } from "@/components/bandforge/bf-hero-actions";
 import { BfHeroAntigravity } from "@/components/bandforge/bf-hero-antigravity";
 import CircularText from "@/components/bandforge/circular-text";
-import { BfSectionEyebrow } from "@/components/bandforge/ui";
-import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
 
 export function BandForgeHero() {
   return (
     <section
-      className="bf-ambient bf-ambient-from-top relative flex min-h-[calc(100dvh-4.75rem)] flex-col overflow-hidden bg-surface !pt-0 !pb-5 sm:!pb-8 lg:min-h-dvh lg:-mt-[4.75rem] lg:!pt-[4.75rem] lg:!pb-16"
+      className="bf-ambient bf-ambient-from-top relative flex min-h-[calc(100dvh-4.75rem)] flex-col overflow-hidden bg-surface !pt-0 !pb-3 sm:!pb-4 lg:min-h-dvh lg:-mt-[4.75rem] lg:!pt-[4.75rem] lg:!pb-4"
       aria-labelledby="bf-hero-heading"
     >
       <BfHeroAntigravity />
 
-      {/* Desktop top band — below sticky nav */}
-      <div className="pointer-events-none absolute inset-x-0 top-[calc(4.75rem+5px)] z-20 hidden lg:block">
-        <div className="relative mx-auto flex min-h-[108px] w-full max-w-[1200px] items-start px-10">
-          <BfSectionEyebrow className="bf-hero-text absolute top-1.5 left-1/2 z-10 w-max -translate-x-1/2 rounded-full border border-cyan/20 bg-cyan-soft/80 px-4 py-2 text-center shadow-[0_1px_2px_rgb(0_151_167/0.06)] backdrop-blur-[6px]">
-            IELTS Diagnostic · 90 minutes
-          </BfSectionEyebrow>
-
+      {/* Desktop circular loop — under Pricing↔Dashboard gap */}
+      <div className="pointer-events-none absolute inset-x-0 top-[calc(4.75rem+8px)] z-20 hidden lg:block">
+        <div className="relative mx-auto flex w-full max-w-[1200px] items-start px-10">
           <div className="ml-auto flex items-start" aria-hidden>
             <div className="invisible flex items-center gap-7 text-[0.9375rem] font-medium">
               <span className="inline-flex items-center gap-2">
@@ -55,53 +49,60 @@ export function BandForgeHero() {
         </div>
       </div>
 
-      {/*
-        Mobile stack (100vh): eyebrow + title → avatar mid → copy → CTA bottom
-        Desktop: centered copy column under nav band
-      */}
-      <div className="bf-container pointer-events-none relative z-20 flex w-full flex-1 flex-col lg:block lg:flex-none lg:pt-[7.25rem]">
-        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col text-center lg:block lg:flex-none">
-          {/* Top: eyebrow + headline */}
-          <div className="flex shrink-0 flex-col items-center px-1 pt-12 sm:pt-14 lg:block lg:pt-0">
-            <BfSectionEyebrow className="bf-hero-text mb-2.5 inline-flex w-max max-w-[min(100%,17.5rem)] rounded-full border border-cyan/20 bg-cyan-soft/80 px-3.5 py-1.5 text-center shadow-[0_1px_2px_rgb(0_151_167/0.06)] backdrop-blur-[6px] sm:mb-3.5 sm:max-w-none sm:px-4 sm:py-2 lg:hidden">
-              IELTS Diagnostic · 90 minutes
-            </BfSectionEyebrow>
-
+      <div className="bf-container pointer-events-none relative z-20 flex w-full flex-1 flex-col">
+        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col text-center lg:max-w-3xl">
+          {/* Top: headline — 3 lines on mobile, 2 lines on desktop */}
+          <div className="flex shrink-0 flex-col items-center px-1 pt-12 sm:pt-14 lg:pt-8">
             <h1
               id="bf-hero-heading"
-              className="bf-hero-title bf-delay-1 relative z-20 font-display mb-0 max-w-[18.5ch] pr-2 text-[1.5rem] leading-[1.26] font-bold tracking-[-0.03em] text-balance text-navy sm:max-w-none sm:pr-0 sm:text-[2.125rem] sm:leading-[1.24] lg:mb-5 lg:max-w-none lg:text-[3.5rem] lg:leading-[1.18] lg:tracking-[-0.035em]"
+              className="bf-hero-title bf-delay-1 relative z-20 font-display mb-0 text-[1.625rem] leading-[1.28] font-bold tracking-[-0.03em] text-navy sm:text-[2.125rem] sm:leading-[1.24] lg:text-[3.25rem] lg:leading-[1.15] lg:tracking-[-0.035em]"
             >
-              {PAGE_SEO_COPY.home.h1}
+              <span className="lg:hidden">
+                <span className="block">
+                  If you took the <span className="text-cyan">IELTS</span>
+                </span>
+                <span className="block">today, what would</span>
+                <span className="block">
+                  your <span className="text-cyan">band</span> be?
+                </span>
+              </span>
+              <span className="hidden lg:block">
+                <span className="block">
+                  If you took the{" "}
+                  <span className="text-cyan">IELTS</span> today,
+                </span>
+                <span className="block">
+                  what would your <span className="text-cyan">band</span> be?
+                </span>
+              </span>
             </h1>
           </div>
 
-          {/* Mid: avatar (mobile) */}
-          <div className="bf-hero-text bf-delay-2 flex min-h-0 flex-1 items-center justify-center py-4 lg:hidden">
+          {/* Spacer pushes bottom cluster down */}
+          <div className="min-h-0 flex-1" aria-hidden />
+
+          {/* Bottom: avatar → description just over button → CTA */}
+          <div className="mt-auto flex w-full shrink-0 flex-col items-center pb-[max(0.25rem,env(safe-area-inset-bottom))] lg:pb-0">
             <div
-              className="relative flex size-[6.75rem] shrink-0 items-center justify-center rounded-full bg-[linear-gradient(145deg,#e8f7f9_0%,#ffffff_55%,#e0f7fa_100%)] shadow-[0_14px_32px_-14px_rgb(0_151_167/0.4)] ring-2 ring-[#c9a227]/50 ring-offset-2 ring-offset-surface sm:size-[8rem]"
+              className="bf-hero-text bf-delay-2 relative mb-4 flex size-[6.75rem] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(145deg,#e8f7f9_0%,#ffffff_55%,#e0f7fa_100%)] shadow-[0_14px_32px_-14px_rgb(0_151_167/0.4)] ring-2 ring-[#c9a227]/50 ring-offset-2 ring-offset-surface sm:mb-5 sm:size-[8rem] lg:mb-6 lg:size-[9rem]"
               aria-hidden
             >
-              <svg
-                viewBox="0 0 80 80"
-                className="size-[3.75rem] text-navy/50 sm:size-[4.5rem]"
-                fill="currentColor"
-              >
-                <circle cx="40" cy="28" r="14" />
-                <path d="M12 70c0-15.5 12.5-28 28-28s28 12.5 28 28" />
-              </svg>
-              <span className="absolute right-0.5 bottom-0.5 flex size-6 items-center justify-center rounded-full bg-[#c9a227] text-[0.5625rem] font-bold text-white shadow-sm sm:size-7 sm:text-[0.625rem]">
-                ★
-              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/ison.png"
+                alt=""
+                width={120}
+                height={120}
+                className="size-[78%] object-contain object-center"
+              />
             </div>
-          </div>
 
-          {/* Copy + CTA */}
-          <div className="flex w-full shrink-0 flex-col items-center gap-5 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:gap-6 lg:gap-0 lg:pb-0">
-            <p className="bf-hero-text bf-delay-2 relative z-20 mx-auto mb-0 max-w-[40ch] px-1 text-[0.875rem] leading-[1.6] text-muted sm:max-w-[46ch] sm:text-base sm:leading-[1.75] lg:text-[1.1875rem] lg:leading-[1.75]">
-              {PAGE_SEO_COPY.home.heroDescription}
+            <p className="bf-hero-text bf-delay-2 relative z-20 mx-auto mt-4 mb-3 max-w-[40ch] px-1 text-[0.875rem] leading-[1.6] text-muted sm:mt-5 sm:mb-4 sm:max-w-[46ch] sm:text-base sm:leading-[1.75] lg:mt-6 lg:mb-4 lg:max-w-[42ch] lg:text-[1.125rem] lg:leading-[1.7]">
+              A free diagnostic test that tells you exactly where you stand —
+              across all four sections — in 90 minutes.
             </p>
 
-            <div className="bf-hero-text bf-delay-3 w-full lg:mt-8">
+            <div className="bf-hero-text bf-delay-3 w-full lg:w-auto">
               <BfHeroActions />
             </div>
           </div>
