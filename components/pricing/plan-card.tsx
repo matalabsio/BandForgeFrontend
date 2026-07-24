@@ -1,23 +1,8 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { type Plan, formatInr } from "@/lib/payments";
-
-const CheckIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="16"
-    height="16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className="mt-0.5 shrink-0 text-cyan"
-  >
-    <path d="M20 6 9 17l-5-5" />
-  </svg>
-);
+import { cn } from "@/lib/utils";
 
 export type PlanCardCopy = {
   tagline: string;
@@ -50,7 +35,7 @@ export const PLAN_COPY: Record<string, PlanCardCopy> = {
     cta: "Buy Speaking Sprint",
   },
   "dual-sprint": {
-    tagline: "Writing and Speaking together — the two skills coaches can't batch-fix.",
+    tagline: "Writing and Speaking together — the two skills coaches can't batch-test.",
     features: [
       "12 tasks across Writing and Speaking over 90 days",
       "AI evaluation instantly on every task",
@@ -132,43 +117,54 @@ export function PlanCard({
   const durationLabel = `${plan.duration_days} days`;
 
   return (
-    <div
-      className={[
-        "relative flex flex-col rounded-[18px] border bg-white p-7 transition-shadow duration-200",
+    <article
+      className={cn(
+        "relative flex h-full flex-col rounded-[1.25rem] border bg-white p-5 transition-[border-color,box-shadow] duration-200 sm:p-6 lg:p-7",
         featured
-          ? "border-cyan shadow-[0_12px_32px_-12px_rgba(0,188,212,0.35)] lg:scale-[1.03]"
-          : "border-border-soft shadow-soft hover:shadow-elevated",
-      ].join(" ")}
+          ? "border-cyan shadow-[0_18px_40px_-20px_rgb(0_188_212/0.45)] ring-1 ring-cyan/20"
+          : "border-border-soft shadow-[0_10px_28px_-22px_rgb(13_31_60/0.35)] hover:border-cyan/30 hover:shadow-[0_14px_32px_-22px_rgb(13_31_60/0.4)]",
+      )}
     >
       {copy.badge ? (
         <span
-          className={[
-            "absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.12em]",
+          className={cn(
+            "absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-mono text-[0.625rem] font-bold tracking-[0.12em] uppercase",
             copy.badge === "Most popular"
-              ? "bg-cyan text-navy"
+              ? "bg-cyan text-white"
               : "bg-navy text-white",
-          ].join(" ")}
+          )}
         >
           {copy.badge}
         </span>
       ) : null}
 
-      <h3 className="font-display text-lg font-bold text-navy">{plan.name}</h3>
-      <p className="mt-1 min-h-[2.5rem] text-[13px] leading-snug text-muted">
+      <h3 className="font-display text-lg font-bold tracking-tight text-navy sm:text-[1.125rem]">
+        {plan.name}
+      </h3>
+      <p className="mt-1.5 min-h-[2.75rem] text-[0.8125rem] leading-snug text-muted sm:text-[0.84375rem]">
         {copy.tagline}
       </p>
 
-      <div className="mt-4 flex items-baseline gap-1.5">
-        <span className="font-display text-[2rem] font-extrabold leading-none text-navy">
+      <div className="mt-5 flex items-baseline gap-1.5">
+        <span className="font-display text-[2rem] leading-none font-extrabold tracking-[-0.03em] text-navy sm:text-[2.125rem]">
           {formatInr(plan.amount)}
         </span>
-        <span className="font-mono text-xs text-muted-light">/ {durationLabel}</span>
+        <span className="font-mono text-[0.6875rem] text-muted-light sm:text-xs">
+          / {durationLabel}
+        </span>
       </div>
 
-      <ul className="mt-6 flex-1 space-y-2.5">
+      <ul className="mt-6 flex flex-1 flex-col gap-2.5">
         {copy.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2 text-[13px] text-ink">
-            <CheckIcon />
+          <li
+            key={feature}
+            className="flex items-start gap-2.5 text-[0.8125rem] leading-snug text-[#3f4f63] sm:text-[0.84375rem]"
+          >
+            <Check
+              className="mt-0.5 size-4 shrink-0 text-cyan"
+              strokeWidth={2.5}
+              aria-hidden
+            />
             <span>{feature}</span>
           </li>
         ))}
@@ -178,16 +174,15 @@ export function PlanCard({
         type="button"
         disabled={disabled || isCurrent}
         onClick={() => onBuy(plan.slug)}
-        className={[
-          "mt-7 inline-flex h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors duration-200",
+        className={cn(
+          "mt-7 inline-flex h-11 w-full items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2",
           isCurrent
             ? "cursor-default border border-border-soft bg-surface text-muted"
             : featured
-              ? "bg-cyan text-navy hover:bg-brand-sky-hover"
-              : "bg-navy text-white hover:bg-navy-deep",
+              ? "cursor-pointer bg-cyan text-white hover:bg-brand-sky-hover"
+              : "cursor-pointer bg-navy text-white hover:bg-navy-deep",
           disabled && !isCurrent ? "cursor-not-allowed opacity-50" : "",
-          !disabled && !isCurrent ? "cursor-pointer" : "",
-        ].join(" ")}
+        )}
       >
         {isCurrent
           ? "Current plan"
@@ -198,9 +193,9 @@ export function PlanCard({
               : copy.cta}
       </button>
 
-      <p className="mt-2 text-center font-mono text-[10px] text-muted-light">
-        Prices in INR
+      <p className="mt-2.5 text-center font-mono text-[0.625rem] text-muted-light">
+        Prices in INR · Secure Razorpay checkout
       </p>
-    </div>
+    </article>
   );
 }

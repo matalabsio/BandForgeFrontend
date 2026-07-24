@@ -7,16 +7,11 @@ const Antigravity = dynamic(() => import("@/components/bandforge/antigravity"), 
   ssr: false,
 });
 
-const HERO_COLORS = [
-  "#0097a7",
-  "#ffffff",
-  "#0097a7",
-  "#DC143C",
-  "#252525",
-] as const;
+const HERO_COLORS = ["#0097a7", "#00bcd4", "#0d1f3c"] as const;
 
 const DESKTOP_CAPSULES = 250;
 const DESKTOP_SPHERES = 100;
+
 /** ~30% fewer particles on small screens for performance. */
 const SMALL_CAPSULES = Math.round(DESKTOP_CAPSULES * 0.7);
 const SMALL_SPHERES = Math.round(DESKTOP_SPHERES * 0.7);

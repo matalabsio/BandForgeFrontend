@@ -271,11 +271,11 @@ export function PricingClient() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-4 pb-10 sm:pb-14">
+    <div id="plans" className="bf-container mx-auto w-full max-w-[1120px] scroll-mt-24 px-5 pb-14 sm:px-6 sm:pb-16 lg:px-10 lg:pb-20">
       {subscription?.is_active ? (
-        <div className="mx-auto mt-8 flex max-w-3xl flex-col items-start justify-between gap-3 rounded-2xl border border-border-soft bg-surface px-5 py-4 sm:flex-row sm:items-center">
+        <div className="mx-auto mt-8 flex max-w-3xl flex-col items-start justify-between gap-3 rounded-[1.125rem] border border-cyan/20 bg-[#e0f7fa]/50 px-5 py-4 sm:flex-row sm:items-center">
           <div className="text-sm text-ink">
-            You're on the{" "}
+            You&apos;re on the{" "}
             <span className="font-semibold text-navy">
               {subscription.plan_name ?? "active"}
             </span>{" "}
@@ -284,17 +284,16 @@ export function PricingClient() {
           <button
             type="button"
             onClick={() => router.push("/profile/billing")}
-            className="cursor-pointer rounded-lg border border-border-soft bg-white px-3 py-1.5 text-xs font-semibold text-navy transition-colors duration-200 hover:bg-surface-alt"
+            className="cursor-pointer rounded-full border border-border-soft bg-white px-4 py-2 text-xs font-semibold text-navy transition-colors duration-200 hover:bg-white hover:border-cyan/40"
           >
             Manage plan
           </button>
         </div>
       ) : null}
 
-      {/* checkout unavailable banner */}
       {hasPlans && !checkoutAvailable ? (
         <div
-          className="mx-auto mt-8 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950"
+          className="mx-auto mt-8 max-w-3xl rounded-[1.125rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950"
           role="status"
         >
           <p className="font-semibold">Checkout is not available right now</p>
@@ -314,7 +313,7 @@ export function PricingClient() {
 
       {mounted && hasPlans && checkoutAvailable && checkoutTestMode ? (
         <div
-          className="mx-auto mt-8 max-w-3xl rounded-2xl border border-cyan/30 bg-cyan-soft/40 px-5 py-4 text-sm text-navy"
+          className="mx-auto mt-8 max-w-3xl rounded-[1.125rem] border border-cyan/25 bg-white px-5 py-4 text-sm text-navy shadow-sm"
           role="note"
         >
           <p className="font-semibold">Test checkout (Razorpay sandbox)</p>
@@ -343,24 +342,24 @@ export function PricingClient() {
         </div>
       ) : null}
 
-      <p className="mx-auto max-w-2xl text-center font-mono text-[11px] text-muted-light">
-        <LockIcon /> Secure payments powered by Razorpay
-      </p>
-
-      {usingFallbackPlans ? (
-        <p className="mx-auto mt-4 max-w-3xl text-center text-xs text-muted-light">
-          Live checkout plans could not be loaded — showing reference sprint pricing below.
+      <div className="mt-10 flex flex-col items-center gap-2 sm:mt-12">
+        <p className="inline-flex items-center gap-1.5 font-mono text-[0.6875rem] text-muted-light">
+          <LockIcon /> Secure payments powered by Razorpay
         </p>
-      ) : null}
+        {usingFallbackPlans ? (
+          <p className="max-w-xl text-center text-xs text-muted-light">
+            Live checkout plans could not be loaded — showing reference sprint pricing below.
+          </p>
+        ) : null}
+      </div>
 
-      {/* plans grid */}
-      <div className="mt-6">
+      <div className="mt-6 sm:mt-8">
         {loadingPlans ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
             {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-[420px] animate-pulse rounded-[18px] border border-border-soft bg-surface"
+                className="h-[26rem] animate-pulse rounded-[1.25rem] border border-border-soft bg-surface"
               />
             ))}
           </div>
@@ -373,7 +372,7 @@ export function PricingClient() {
               : "Payments are temporarily unavailable. Please try again later."}
           </p>
         ) : (
-          <div className="grid items-stretch gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+          <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
             {displayPlans.map((plan) => (
               <PlanCard
                 key={plan.id}
@@ -389,26 +388,15 @@ export function PricingClient() {
         )}
       </div>
 
-      <p className="mt-6 text-center text-xs text-muted-light">
-        You will complete payment in Razorpay's secure window.
+      <p className="mt-5 text-center text-xs text-muted-light">
+        You will complete payment in Razorpay&apos;s secure window.
       </p>
 
-      {/* trust & privacy */}
-      <div className="mx-auto mt-12 max-w-3xl rounded-2xl border border-border-soft bg-surface-alt px-6 py-5">
-        <p className="text-[13px] leading-relaxed text-muted">
-          Payments are processed by Razorpay. BandForge only shares your{" "}
-          <span className="font-semibold text-navy">name, phone, email, and transaction amount</span>{" "}
-          with Razorpay. Your mock scores, diagnostic results, and study progress stay
-          private in BandForge.
-        </p>
-      </div>
-
-      {/* sprint FAQ pointer */}
-      <div className="mx-auto mt-12 max-w-3xl rounded-2xl border border-border-soft bg-white px-6 py-5">
-        <h2 className="font-display text-lg font-bold text-navy">
+      <div className="mx-auto mt-14 max-w-3xl rounded-[1.25rem] border border-border-soft bg-surface-alt/80 px-5 py-6 sm:px-7 sm:py-7">
+        <h2 className="font-display text-lg font-bold text-navy sm:text-xl">
           About sprints and the Completion Guarantee
         </h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-muted">
+        <p className="mt-2.5 text-sm leading-relaxed text-muted sm:text-[0.9375rem]">
           Every sprint includes 12 evaluated tasks over 90 days, AI plus Band 9 human
           review within 48 hours, and a mock test on completion. Finish all 12 tasks
           with no score improvement and your sprint is extended free.
@@ -416,25 +404,76 @@ export function PricingClient() {
         <Link
           href="/faq"
           prefetch
-          className="mt-3 inline-flex cursor-pointer text-sm font-semibold text-cyan hover:underline"
+          className="mt-4 inline-flex cursor-pointer text-sm font-semibold text-cyan transition-colors duration-200 hover:text-brand-sky-hover"
         >
           Read all FAQs →
         </Link>
       </div>
 
-      {/* FAQ */}
-      <div className="mx-auto mt-12 max-w-3xl">
-        <h2 className="font-display text-lg font-bold text-navy">
+      <div className="mx-auto mt-10 max-w-3xl rounded-[1.25rem] border border-border-soft bg-white px-5 py-5 sm:px-6">
+        <p className="text-sm leading-relaxed text-muted">
+          Payments are processed by Razorpay. BandForge only shares your{" "}
+          <span className="font-semibold text-navy">
+            name, phone, email, and transaction amount
+          </span>{" "}
+          with Razorpay. Your mock scores, diagnostic results, and study progress stay
+          private in BandForge.
+        </p>
+      </div>
+
+      <section className="mx-auto mt-14 max-w-3xl" aria-labelledby="pricing-faq-heading">
+        <h2
+          id="pricing-faq-heading"
+          className="font-display text-center text-xl font-bold text-navy sm:text-2xl"
+        >
           Frequently asked questions
         </h2>
-        <dl className="mt-4 divide-y divide-border-soft">
+        <div className="mt-6 divide-y divide-border-soft rounded-[1.25rem] border border-border-soft bg-white px-4 sm:px-5">
           {PRICING_FAQ.map((item) => (
-            <div key={item.q} className="py-4">
-              <dt className="text-sm font-semibold text-navy">{item.q}</dt>
-              <dd className="mt-1 text-[13px] text-muted">{item.a}</dd>
-            </div>
+            <details
+              key={item.q}
+              className="group py-1 [&_summary::-webkit-details-marker]:hidden"
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-4 text-left text-sm font-semibold text-navy transition-colors duration-200 hover:text-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/30">
+                <span>{item.q}</span>
+                <span
+                  className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border-soft text-muted transition-transform duration-200 group-open:rotate-45 group-open:border-cyan/40 group-open:text-cyan"
+                  aria-hidden
+                >
+                  +
+                </span>
+              </summary>
+              <p className="pb-4 text-[0.8125rem] leading-relaxed text-muted sm:text-sm">
+                {item.a}
+              </p>
+            </details>
           ))}
-        </dl>
+        </div>
+      </section>
+
+      <div className="mx-auto mt-14 max-w-2xl rounded-[1.25rem] bg-navy px-6 py-9 text-center sm:px-10 sm:py-11">
+        <h2 className="font-display text-xl font-bold text-white sm:text-2xl">
+          Not sure where to start?
+        </h2>
+        <p className="mx-auto mt-2.5 max-w-[36ch] text-sm leading-relaxed text-white/70">
+          Take the free diagnostic first. Then pick the sprint that matches your weakest
+          section.
+        </p>
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/diagnostic"
+            prefetch
+            className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-full bg-cyan px-6 text-sm font-semibold text-white no-underline transition-colors duration-200 hover:bg-brand-sky-hover sm:w-auto"
+          >
+            Take free diagnostic
+          </Link>
+          <a
+            href="#plans"
+            className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-full border border-white/25 px-6 text-sm font-semibold text-white no-underline transition-colors duration-200 hover:border-white/50 hover:bg-white/5 sm:w-auto"
+          >
+            Compare plans
+          </a>
+        </div>
       </div>
 
       {overlay ? <ProcessingOverlay variant={overlay} /> : null}

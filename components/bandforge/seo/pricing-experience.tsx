@@ -5,9 +5,9 @@ import { PricingClient } from "@/components/pricing/pricing-client";
 
 export function PricingExperience() {
   return (
-    <div className="min-h-dvh text-ink">
+    <div className="min-h-dvh overflow-x-hidden bg-white text-ink">
       <BandForgeHeaderMarketing activeHref="/pricing" />
-      <main className="bf-page-shell bg-white">
+      <main>
         <PricingStaticOverview />
         <PricingClient />
       </main>

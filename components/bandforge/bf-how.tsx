@@ -66,7 +66,17 @@ function HowDesktopSteps({ activeStep }: { activeStep: number }) {
   );
 }
 
-export function BandForgeHow() {
+type BandForgeHowProps = {
+  /** Hide the in-section heading when the page already has a hero. */
+  hideHeading?: boolean;
+  /** Override section id (home uses `how`). */
+  sectionId?: string;
+};
+
+export function BandForgeHow({
+  hideHeading = false,
+  sectionId = "how",
+}: BandForgeHowProps = {}) {
   const sectionRef = useRef<HTMLElement>(null);
   const [inView, setInView] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
@@ -135,17 +145,20 @@ export function BandForgeHow() {
   return (
     <section
       ref={sectionRef}
-      id="how"
+      id={sectionId}
       className={cn(
         "bf-ambient bf-section bf-how-reveal scroll-mt-20 bg-white",
         inView && "is-inview",
+        hideHeading && "!pt-8 sm:!pt-10 lg:!pt-12",
       )}
     >
       <div className="bf-container">
-        <div className="bf-how-head bf-section-head mb-7 lg:mb-[54px]">
-          <BfSectionEyebrow className="mb-3">How it works</BfSectionEyebrow>
-          <BfSectionHeading>Six steps, start to band score</BfSectionHeading>
-        </div>
+        {!hideHeading ? (
+          <div className="bf-how-head bf-section-head mb-7 lg:mb-[54px]">
+            <BfSectionEyebrow className="mb-3">How it works</BfSectionEyebrow>
+            <BfSectionHeading>Six steps, start to band score</BfSectionHeading>
+          </div>
+        ) : null}
 
         <div className="hidden lg:block">
           <HowDesktopSteps activeStep={activeStep} />

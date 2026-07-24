@@ -26,7 +26,7 @@ export type MarketingNavItem = {
 /** Primary marketing nav — landing section anchors + Start free → dashboard (auth). */
 export const BF_MARKETING_NAV: readonly MarketingNavItem[] = [
   {
-    href: "/#how",
+    href: "/how-it-works",
     label: "How it works",
     ariaLabel: "How it works",
     icon: "route",
@@ -42,7 +42,7 @@ export const BF_MARKETING_NAV: readonly MarketingNavItem[] = [
     hoverStyles: { bgColor: "#00bcd4", textColor: "#ffffff" },
   },
   {
-    href: "/#pricing",
+    href: "/pricing",
     label: "Pricing",
     ariaLabel: "Pricing",
     icon: "tag",

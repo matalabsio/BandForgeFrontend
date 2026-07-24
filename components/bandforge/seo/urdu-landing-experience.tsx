@@ -1,91 +1,34 @@
-import Link from "next/link";
-import { BandForgeFinalCta } from "@/components/bandforge/bf-final-cta";
-import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
-import { BfSectionHeading } from "@/components/bandforge/ui/bf-section-heading";
-import { BfDiagnosticCtaBand } from "@/components/seo/bf-diagnostic-cta-band";
-import { BfSeoLeadAnswer } from "@/components/seo/bf-seo-lead-answer";
+import { SeoAudienceLanding } from "@/components/bandforge/seo/seo-audience-landing";
 import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
-
-const relatedLinks = [
-  { href: "/telugu", label: "IELTS for Telugu speakers" },
-  { href: "/hyderabad", label: "IELTS coaching in Hyderabad" },
-  { href: "/writing", label: "Writing Sprint" },
-  { href: "/speaking", label: "Speaking Sprint" },
-] as const;
 
 export function UrduLandingExperience() {
   return (
-    <BandForgeRouteShell
+    <SeoAudienceLanding
       activeHref="/urdu"
       eyebrow="Urdu speakers"
       title={PAGE_SEO_COPY.urdu.h1}
       description={PAGE_SEO_COPY.urdu.description}
-      afterHero={
-        <BfDiagnosticCtaBand headline="Urdu speaker in Hyderabad? Start with a free diagnostic." />
-      }
-    >
-        <section className="bf-section bg-white/70">
-          <div className="bf-container max-w-3xl">
-            <BfSectionHeading as="h2">
-              Is BandForge good for Urdu-speaking IELTS students?
-            </BfSectionHeading>
-            <div className="mt-4">
-              <BfSeoLeadAnswer>
-                Yes — BandForge is built in Hyderabad for Urdu- and Telugu-speaking
-                students who need section-wise band clarity before paying for coaching.
-              </BfSeoLeadAnswer>
-            </div>
-            <p className="mt-4 text-base leading-relaxed text-ink/70">
-              You get realistic mocks, AI evaluation on objective sections, and
-              human Band 9 review on Writing and Speaking — without commuting to a
-              coaching centre or waiting for batch feedback.
-            </p>
-          </div>
-        </section>
-
-        <section className="bf-section">
-          <div className="bf-container">
-            <BfSectionHeading as="h2">How BandForge helps Urdu speakers</BfSectionHeading>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-              {[
-                "Free diagnostic — know your band before you pay",
-                "Clear feedback on Writing and Speaking blockers",
-                "Practice on mobile between work or college hours",
-                "Sprints from ₹999 with 90 days and 12 tasks",
-                "Human review within 48 hours on submissions",
-                "Online from Hyderabad — no classroom lock-in",
-              ].map((item) => (
-                <li
-                  key={item}
-                  className="bf-min-card p-4 text-sm leading-relaxed text-ink/75 sm:p-5 sm:text-base"
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="bf-section bg-white/70">
-          <div className="bf-container max-w-3xl">
-            <BfSectionHeading as="h2">Explore more</BfSectionHeading>
-            <ul className="mt-6 flex flex-wrap gap-3">
-              {relatedLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    prefetch
-                    className="inline-flex cursor-pointer rounded-full border border-border bg-white px-4 py-2 text-sm font-medium text-navy no-underline transition-colors hover:border-teal/40 hover:text-teal"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <BandForgeFinalCta />
-    </BandForgeRouteShell>
+      diagnosticHeadline="Urdu speaker? Know your band in 15 minutes — free."
+      whyHeading="Why do Urdu speakers choose BandForge?"
+      leadAnswer="BandForge helps Urdu-speaking students in Hyderabad and beyond find their real IELTS band before exam day — with a free diagnostic and targeted sprints from ₹999."
+      body="Whether you are aiming for the UK, Canada, or the US, BandForge starts with a free section-wise diagnostic, then targets the skill that is holding your score — with AI practice plus Band 9 human review on Writing and Speaking."
+      benefitsHeading="What you get"
+      benefits={[
+        "Free 15-minute diagnostic with section-wise bands",
+        "Writing and Speaking sprints from ₹999",
+        "Band 9-trained human review within 48 hours",
+        "90 days access, 12 tasks, 1 mock on completion",
+        "Built for Hyderabad and diaspora study-abroad routes",
+        "Mobile-friendly practice anytime",
+      ]}
+      relatedLinks={[
+        { href: "/telugu", label: "IELTS for Telugu speakers" },
+        { href: "/hyderabad", label: "IELTS coaching in Hyderabad" },
+        { href: "/writing", label: "Writing Sprint" },
+        { href: "/speaking", label: "Speaking Sprint" },
+        { href: "/faq", label: "FAQ" },
+        { href: "/vs-coaching-centres", label: "vs Coaching centres" },
+      ]}
+    />
   );
 }

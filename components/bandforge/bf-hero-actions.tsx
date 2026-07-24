@@ -6,7 +6,7 @@ const startClassName =
 /** Hero CTA — single Start free button → dashboard (auth). */
 export function BfHeroActions() {
   return (
-    <div className="mt-[30px] flex justify-center lg:mt-9 lg:justify-start">
+    <div className="mt-[30px] flex justify-center lg:mt-9">
       <BfHeroStartCta className={startClassName} />
     </div>
   );

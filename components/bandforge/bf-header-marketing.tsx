@@ -59,9 +59,7 @@ export function BandForgeHeaderMarketing({ activeHref }: Props) {
           <div className="flex items-center gap-6">
             <nav className="flex items-center gap-7" aria-label="Primary">
               {desktopLinks.map((item) => {
-                const active =
-                  activeHref === item.href ||
-                  (activeHref === "/pricing" && item.href === "/#pricing");
+                const active = activeHref === item.href;
 
                 return (
                   <Link
