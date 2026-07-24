@@ -23,7 +23,7 @@ const navLinkLabelActive =
 
 
 const startCtaClass =
-  "group relative inline-flex min-h-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#00bcd4_0%,#00a8bf_55%,#0097a7_100%)] bg-[length:160%_160%] bg-[position:0%_50%] px-[22px] py-2.5 text-[0.9375rem] font-semibold text-white no-underline shadow-[0_6px_16px_rgb(0_151_167/0.22)] transition-[transform,box-shadow,background-position] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-[45%] before:-translate-x-[140%] before:skew-x-[-20deg] before:bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.28),transparent)] before:transition-transform before:duration-700 before:ease-out hover:-translate-y-0.5 hover:bg-[position:100%_50%] hover:shadow-[0_10px_22px_rgb(0_151_167/0.38)] hover:before:translate-x-[280%] active:translate-y-0 active:shadow-[0_6px_16px_rgb(0_151_167/0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2";
+  "group relative inline-flex min-h-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-cyan/25 bg-[#e0f7fa] px-[22px] py-2.5 text-[0.9375rem] font-semibold text-cyan no-underline shadow-[0_4px_12px_rgb(0_151_167/0.1)] transition-[transform,box-shadow,border-color,color] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] before:pointer-events-none before:absolute before:inset-0 before:origin-left before:scale-x-0 before:rounded-full before:bg-[linear-gradient(90deg,#00bcd4_0%,#00a8bf_50%,#0097a7_100%)] before:transition-transform before:duration-700 before:ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-transparent hover:text-white hover:shadow-[0_10px_22px_rgb(0_151_167/0.38)] hover:before:scale-x-100 active:translate-y-0 active:shadow-[0_4px_12px_rgb(0_151_167/0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2";
 
 
 type Props = {
@@ -97,7 +97,7 @@ export function BandForgeHeaderMarketing({ activeHref, overHero }: Props) {
               className={startCtaClass}
               aria-label={startCta.ariaLabel}
             >
-              {startCta.label}
+              <span className="relative z-[1]">{startCta.label}</span>
             </Link>
           </div>
         </div>

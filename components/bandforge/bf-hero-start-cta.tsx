@@ -15,9 +15,9 @@ export function BfHeroStartCta({ className }: Props) {
       className={className}
       aria-label="Free diagnostic — take the 90-minute IELTS test"
     >
-      Free diagnostic
+      <span className="relative z-[1]">Free diagnostic</span>
       <ArrowRight
-        className="size-[1.125rem] shrink-0 transition-transform duration-300 ease-out group-hover:translate-x-1"
+        className="relative z-[1] size-[1.125rem] shrink-0 transition-[transform,color] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1"
         strokeWidth={2.25}
         aria-hidden
       />

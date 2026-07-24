@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { BookOpen } from "lucide-react";
 import { motion, useAnimation, useMotionValue } from "motion/react";
 
 import "./circular-text.css";
@@ -14,7 +13,7 @@ type CircularTextProps = {
   spinDuration?: number;
   onHover?: HoverMode;
   className?: string;
-  /** Static center content (does not rotate with the ring). Defaults to a gold open book. */
+  /** Static center content (does not rotate with the ring). Defaults to medallist seal image. */
   center?: ReactNode;
   showCenter?: boolean;
 };
@@ -41,10 +40,14 @@ const getTransition = (duration: number, from: number) => ({
   },
 });
 
-const GoldOpenBook = () => (
-  <BookOpen
+const CenterSealImage = () => (
+  // eslint-disable-next-line @next/next/no-img-element -- seal asset
+  <img
+    src="/ison.png"
+    alt=""
+    width={40}
+    height={40}
     className="circular-text-book"
-    strokeWidth={2.15}
     aria-hidden
   />
 );
@@ -146,7 +149,7 @@ export default function CircularText({
 
       {showCenter ? (
         <div className="circular-text-center" aria-hidden>
-          {center ?? <GoldOpenBook />}
+          {center ?? <CenterSealImage />}
         </div>
       ) : null}
     </div>
