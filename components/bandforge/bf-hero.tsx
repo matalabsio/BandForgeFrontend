@@ -52,7 +52,7 @@ export function BandForgeHero() {
       <div className="bf-container pointer-events-none relative z-20 flex w-full flex-1 flex-col">
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col text-center lg:max-w-3xl">
           {/* Top: headline — 3 lines on mobile, 2 lines on desktop */}
-          <div className="flex shrink-0 flex-col items-center px-1 pt-12 sm:pt-14 lg:pt-8">
+          <div className="flex shrink-0 flex-col items-center px-1 pt-12 sm:pt-14 lg:pt-[97px]">
             <h1
               id="bf-hero-heading"
               className="bf-hero-title bf-delay-1 relative z-20 font-display mb-0 text-[1.625rem] leading-[1.28] font-bold tracking-[-0.03em] text-navy sm:text-[2.125rem] sm:leading-[1.24] lg:text-[3.25rem] lg:leading-[1.15] lg:tracking-[-0.035em]"

@@ -43,8 +43,8 @@
   place-items: center;
   place-self: center;
   pointer-events: none;
-  width: 62%;
-  height: 62%;
+  width: 70%;
+  height: 70%;
   margin: 0;
   /* Optical center: seal sits a bit higher inside the loop */
   transform: translateY(-4%);
@@ -65,9 +65,9 @@
   }
 
   .circular-text-center {
-    width: 64%;
-    height: 64%;
-    transform: translateY(-5%);
+    width: 72%;
+    height: 72%;
+    transform: translateY(-4%);
   }
 
   .circular-text span {
@@ -82,9 +82,9 @@
   }
 
   .circular-text-center {
-    width: 66%;
-    height: 66%;
-    transform: translateY(-5%);
+    width: 72%;
+    height: 72%;
+    transform: translateY(-4%);
   }
 
   .circular-text span {

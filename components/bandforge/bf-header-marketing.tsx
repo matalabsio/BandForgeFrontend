@@ -64,8 +64,8 @@ export function BandForgeHeaderMarketing({ activeHref, overHero }: Props) {
       <header
         className={
           overHero
-            ? "sticky top-0 z-30 hidden w-full border-b border-transparent bg-transparent backdrop-blur-[8px] lg:block"
-            : "sticky top-0 z-30 hidden w-full border-b border-border-soft bg-white/92 backdrop-blur-[10px] lg:block lg:bg-white/90 lg:backdrop-blur-[12px]"
+            ? "sticky top-0 z-30 hidden w-full border-b border-transparent bg-white/[0.06] backdrop-blur-[1px] lg:block"
+            : "sticky top-0 z-30 hidden w-full border-b border-border-soft bg-white/92 backdrop-blur-[6px] lg:block lg:bg-white/90 lg:backdrop-blur-[8px]"
         }
       >        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-3 px-4 py-3.5 sm:px-5 lg:px-10 lg:py-4">
           <BfMarketingWordmark />
