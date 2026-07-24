@@ -41,7 +41,7 @@ const BandForgeFinalCta = dynamic(
 export function BandForgeLanding() {
   return (
     <div className="min-h-dvh overflow-x-hidden bg-white text-black">
-      <BandForgeHeaderMarketing />
+      <BandForgeHeaderMarketing overHero />
       <main>
         <BandForgeHero />
         <BandForgeStatsBar />

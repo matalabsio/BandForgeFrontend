@@ -43,7 +43,7 @@ export function BfHeroAntigravity() {
   const sphereCount = isSmall ? SMALL_SPHERES : DESKTOP_SPHERES;
 
   return (
-    <div className="absolute inset-0 z-0 motion-reduce:hidden" aria-hidden>
+    <div className="pointer-events-none absolute inset-0 z-0 motion-reduce:hidden" aria-hidden>
       <Antigravity
         capsuleCount={capsuleCount}
         sphereCount={sphereCount}

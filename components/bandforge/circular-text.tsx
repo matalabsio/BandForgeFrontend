@@ -1,6 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect } from "react";
+import { BookOpen } from "lucide-react";
 import { motion, useAnimation, useMotionValue } from "motion/react";
 
 import "./circular-text.css";
@@ -12,6 +14,9 @@ type CircularTextProps = {
   spinDuration?: number;
   onHover?: HoverMode;
   className?: string;
+  /** Static center content (does not rotate with the ring). Defaults to a gold open book. */
+  center?: ReactNode;
+  showCenter?: boolean;
 };
 
 const getRotationTransition = (
@@ -36,11 +41,21 @@ const getTransition = (duration: number, from: number) => ({
   },
 });
 
+const GoldOpenBook = () => (
+  <BookOpen
+    className="circular-text-book"
+    strokeWidth={2.15}
+    aria-hidden
+  />
+);
+
 export default function CircularText({
   text,
   spinDuration = 20,
   onHover = "speedUp",
   className = "",
+  center,
+  showCenter = true,
 }: CircularTextProps) {
   const letters = Array.from(text);
   const controls = useAnimation();
@@ -101,28 +116,39 @@ export default function CircularText({
   };
 
   return (
-    <motion.div
-      className={`circular-text ${className}`.trim()}
-      style={{ rotate: rotation }}
-      initial={{ rotate: 0 }}
-      animate={controls}
-      onMouseEnter={handleHoverStart}
-      onMouseLeave={handleHoverEnd}
-      aria-hidden
-    >
-      {letters.map((letter, i) => {
-        const rotationDeg = (360 / letters.length) * i;
-        const factor = Math.PI / letters.length;
-        const x = factor * i;
-        const y = factor * i;
-        const transform = `rotateZ(${rotationDeg}deg) translate3d(${x}px, ${y}px, 0)`;
+    <div className={`circular-text-wrap ${className}`.trim()}>
+      <motion.div
+        className="circular-text"
+        style={{ rotate: rotation }}
+        initial={{ rotate: 0 }}
+        animate={controls}
+        onMouseEnter={handleHoverStart}
+        onMouseLeave={handleHoverEnd}
+        aria-hidden
+      >
+        {letters.map((letter, i) => {
+          const rotationDeg = (360 / letters.length) * i;
+          const factor = Math.PI / letters.length;
+          const x = factor * i;
+          const y = factor * i;
+          const transform = `rotateZ(${rotationDeg}deg) translate3d(${x}px, ${y}px, 0)`;
 
-        return (
-          <span key={`${letter}-${i}`} style={{ transform, WebkitTransform: transform }}>
-            {letter === " " ? "\u00A0" : letter}
-          </span>
-        );
-      })}
-    </motion.div>
+          return (
+            <span
+              key={`${letter}-${i}`}
+              style={{ transform, WebkitTransform: transform }}
+            >
+              {letter === " " ? "\u00A0" : letter}
+            </span>
+          );
+        })}
+      </motion.div>
+
+      {showCenter ? (
+        <div className="circular-text-center" aria-hidden>
+          {center ?? <GoldOpenBook />}
+        </div>
+      ) : null}
+    </div>
   );
 }

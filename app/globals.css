@@ -366,6 +366,14 @@ html {
     animation: bf-ambient-drift 22s ease-in-out infinite;
   }
 
+  /* Hero under transparent nav — wash begins at the top of the page */
+  .bf-ambient-from-top::before {
+    top: -8%;
+    width: min(85vw, 640px);
+    height: min(70vw, 560px);
+    background: rgb(0 188 212 / 0.16);
+  }
+
   .bf-ambient::after {
     width: min(60vw, 440px);
     height: min(60vw, 440px);
@@ -375,9 +383,13 @@ html {
     animation: bf-ambient-drift 28s ease-in-out infinite reverse;
   }
 
+  /* Stack content above ambient washes without overriding absolute children */
   .bf-ambient > * {
-    position: relative;
     z-index: 1;
+  }
+
+  .bf-ambient > *:not([class*="absolute"]):not([class*="fixed"]) {
+    position: relative;
   }
 
   .bf-section-head {

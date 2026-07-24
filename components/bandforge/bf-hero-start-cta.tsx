@@ -13,10 +13,14 @@ export function BfHeroStartCta({ className }: Props) {
       href={diagnosticPaths.landing}
       prefetch
       className={className}
-      aria-label="Start free diagnostic"
+      aria-label="Free diagnostic — take the 90-minute IELTS test"
     >
-      Start free
-      <ArrowRight className="size-[1.125rem] shrink-0" strokeWidth={2.25} aria-hidden />
+      Free diagnostic
+      <ArrowRight
+        className="size-[1.125rem] shrink-0 transition-transform duration-300 ease-out group-hover:translate-x-1"
+        strokeWidth={2.25}
+        aria-hidden
+      />
     </Link>
   );
 }

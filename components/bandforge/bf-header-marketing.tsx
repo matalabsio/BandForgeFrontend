@@ -12,15 +12,24 @@ import {
 import { useMarketingStartCta } from "@/components/bandforge/bf-use-marketing-start-cta";
 
 const navLink =
-  "inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] font-medium text-muted no-underline transition-colors duration-200 hover:text-navy";
+  "group relative inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] font-medium text-muted no-underline transition-colors duration-200 hover:text-navy";
 const navLinkActive =
-  "inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] font-semibold text-navy no-underline transition-colors duration-200";
+  "group relative inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] font-semibold text-navy no-underline transition-colors duration-200";
+
+const navLinkLabel =
+  "relative inline-block after:pointer-events-none after:absolute after:right-0 after:bottom-[-3px] after:left-0 after:h-[1.5px] after:origin-left after:scale-x-0 after:rounded-full after:bg-cyan after:transition-transform after:duration-300 after:ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:after:scale-x-100";
+const navLinkLabelActive =
+  "relative inline-block after:pointer-events-none after:absolute after:right-0 after:bottom-[-3px] after:left-0 after:h-[1.5px] after:origin-left after:scale-x-100 after:rounded-full after:bg-cyan";
+
 
 const startCtaClass =
-  "inline-flex min-h-10 cursor-pointer items-center justify-center rounded-full bg-cyan px-[22px] py-2.5 text-[0.9375rem] font-semibold text-white no-underline transition-colors hover:bg-brand-sky-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2";
+  "group relative inline-flex min-h-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#00bcd4_0%,#00a8bf_55%,#0097a7_100%)] bg-[length:160%_160%] bg-[position:0%_50%] px-[22px] py-2.5 text-[0.9375rem] font-semibold text-white no-underline shadow-[0_6px_16px_rgb(0_151_167/0.22)] transition-[transform,box-shadow,background-position] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-[45%] before:-translate-x-[140%] before:skew-x-[-20deg] before:bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.28),transparent)] before:transition-transform before:duration-700 before:ease-out hover:-translate-y-0.5 hover:bg-[position:100%_50%] hover:shadow-[0_10px_22px_rgb(0_151_167/0.38)] hover:before:translate-x-[280%] active:translate-y-0 active:shadow-[0_6px_16px_rgb(0_151_167/0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2";
+
 
 type Props = {
   activeHref?: string;
+  /** Transparent glass nav so hero gradient continues from the top of the page. */
+  overHero?: boolean;
 };
 
 const desktopLinks = BF_MARKETING_NAV.filter(
@@ -28,7 +37,7 @@ const desktopLinks = BF_MARKETING_NAV.filter(
 );
 
 /** Desktop: classic sticky nav. Mobile: BubbleMenu. Same routes. */
-export function BandForgeHeaderMarketing({ activeHref }: Props) {
+export function BandForgeHeaderMarketing({ activeHref, overHero }: Props) {
   const startCta = useMarketingStartCta("/dashboard");
 
   const bubbleItems = BF_MARKETING_NAV.map((item) => {
@@ -52,8 +61,13 @@ export function BandForgeHeaderMarketing({ activeHref }: Props) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 hidden w-full border-b border-border-soft bg-white/92 backdrop-blur-[10px] lg:block lg:bg-white/90 lg:backdrop-blur-[12px]">
-        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-3 px-4 py-3.5 sm:px-5 lg:px-10 lg:py-4">
+      <header
+        className={
+          overHero
+            ? "sticky top-0 z-30 hidden w-full border-b border-transparent bg-transparent backdrop-blur-[8px] lg:block"
+            : "sticky top-0 z-30 hidden w-full border-b border-border-soft bg-white/92 backdrop-blur-[10px] lg:block lg:bg-white/90 lg:backdrop-blur-[12px]"
+        }
+      >        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-3 px-4 py-3.5 sm:px-5 lg:px-10 lg:py-4">
           <BfMarketingWordmark />
 
           <div className="flex items-center gap-6">
@@ -70,7 +84,9 @@ export function BandForgeHeaderMarketing({ activeHref }: Props) {
                     aria-current={active ? "page" : undefined}
                   >
                     <BfMarketingNavIcon name={item.icon} />
-                    {item.label}
+                    <span className={active ? navLinkLabelActive : navLinkLabel}>
+                      {item.label}
+                    </span>
                   </Link>
                 );
               })}
