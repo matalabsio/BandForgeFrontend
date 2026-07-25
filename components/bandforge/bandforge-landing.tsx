@@ -1,8 +1,8 @@
 import dynamic from "next/dynamic";
 import { BandForgeHeaderMarketing } from "@/components/bandforge/bf-header-marketing";
 import { BandForgeHero } from "@/components/bandforge/bf-hero";
-import { BandForgeSiteFooter } from "@/components/bandforge/bf-site-footer";
 import { BfLandingHashScroll } from "@/components/bandforge/bf-landing-hash-scroll";
+import { BfSectionDotBridge } from "@/components/bandforge/bf-section-dot-bridge";
 import { BfSectionSeam } from "@/components/bandforge/bf-section-seam";
 import { BfSectionSkeleton } from "@/components/bandforge/bf-section-skeleton";
 
@@ -23,12 +23,16 @@ const BandForgePricing = dynamic(
   { loading: () => <BfSectionSkeleton /> },
 );
 
-const BandForgeFinalCta = dynamic(
+const BandForgeFinishLine = dynamic(
   () =>
-    import("@/components/bandforge/bf-final-cta").then(
-      (m) => m.BandForgeFinalCta,
+    import("@/components/bandforge/bf-finish-line").then(
+      (m) => m.BandForgeFinishLine,
     ),
-  { loading: () => <BfSectionSkeleton className="min-h-[280px]" /> },
+  {
+    loading: () => (
+      <BfSectionSkeleton className="min-h-[480px] bg-[#08172b]" />
+    ),
+  },
 );
 
 /** Marketing home — BandForge IELTS landing at `/`. */
@@ -40,13 +44,21 @@ export function BandForgeLanding() {
       <main>
         <BandForgeHero />
         <BfSectionSeam />
-        <BandForgeHow />
-        <BandForgeModules />
-        <BfSectionSeam />
-        <BandForgePricing />
-        <BandForgeFinalCta />
+        <div className="relative bg-white">
+          <BandForgeHow />
+          {/* How STEP 06 → Skill Practice seam */}
+          <div className="relative h-0 overflow-visible">
+            <BfSectionDotBridge side="left" anchor="seam" offsetY={60} />
+          </div>
+          <div className="relative">
+            <BandForgeModules />
+            {/* Modules → Pricing */}
+            <BfSectionDotBridge side="right" anchor="center" offsetY={60} />
+            <BandForgePricing />
+          </div>
+        </div>
+        <BandForgeFinishLine />
       </main>
-      <BandForgeSiteFooter />
     </div>
   );
 }

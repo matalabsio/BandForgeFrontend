@@ -2,8 +2,18 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { BandForgeHow } from "@/components/bandforge/bf-how";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
+import { GlowCard, type GlowColor } from "@/components/ui/spotlight-card";
 import { BRAND_HOW_STEPS } from "@/lib/brand-mock-data";
 import { PLAYBOOK_HOW_STEPS } from "@/lib/seo/marketing-pricing";
+
+const STEP_GLOW: Record<number, GlowColor> = {
+  1: "teal",
+  2: "cyan",
+  3: "navy",
+  4: "teal",
+  5: "cyan",
+  6: "navy",
+};
 
 function HowItWorksCta() {
   return (
@@ -32,9 +42,9 @@ export function HowItWorksExperience() {
   return (
     <BandForgeRouteShell
       activeHref="/how-it-works"
-      eyebrow="How it works"
-      title="Six steps, start to band score"
-      description="Start with a free diagnostic, get a plan for your weak spots, then practise with AI feedback and Band 9 human review — until your score moves."
+      eyebrow="The BandForge Method"
+      title="No two students prep the same way. A personalised study plan in six steps"
+      description="Built by a Gold Medallist and Band 9 scorer with a decade of training students face to face. Every step below exists because we've watched exactly where students plateau — and built a system that catches it before you waste weeks on the wrong thing."
       heroCta={<HowItWorksCta />}
     >
       <BandForgeHow hideHeading sectionId="how-steps" />
@@ -46,21 +56,35 @@ export function HowItWorksExperience() {
           </h2>
           <ol className="mt-8 space-y-4">
             {BRAND_HOW_STEPS.map((step) => (
-              <li
-                key={step.n}
-                className="flex gap-4 rounded-[1.125rem] border border-border-soft bg-white p-4 sm:gap-5 sm:p-5"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-cyan font-mono text-sm font-semibold text-white">
-                  {step.n}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-display text-base font-bold text-navy">
-                    {step.title}
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-muted">
-                    {step.body}
-                  </p>
-                </div>
+              <li key={step.n}>
+                <GlowCard
+                  glass
+                  inkBorder
+                  customSize
+                  glowColor={STEP_GLOW[step.n] ?? "cyan"}
+                  className="group bf-liquid-glass w-full !rounded-[1.125rem] !p-4 sm:!p-5"
+                >
+                  <div
+                    className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-[inherit]"
+                    aria-hidden
+                  >
+                    <div className="absolute -top-1/3 left-[-10%] h-[70%] w-[120%] rotate-[-8deg] bg-[linear-gradient(180deg,rgb(255_255_255/0.55)_0%,rgb(255_255_255/0.08)_45%,transparent_70%)] opacity-80" />
+                    <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+                  </div>
+                  <div className="relative z-[1] flex gap-4 sm:gap-5">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-cyan font-mono text-sm font-semibold text-white">
+                      {step.n}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-display text-base font-bold text-navy">
+                        {step.title}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-muted">
+                        {step.body}
+                      </p>
+                    </div>
+                  </div>
+                </GlowCard>
               </li>
             ))}
           </ol>

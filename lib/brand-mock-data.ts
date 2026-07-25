@@ -16,59 +16,121 @@ export const BRAND_MODULES: {
   description: string;
   highlights: readonly string[];
   Icon: ModuleIcon;
-  band: string | null;
+  /** Card footer line (replaces estimated band). */
+  footer: string;
 }[] = [
   {
     key: "listening",
     title: "Listening",
-    description: "Timed under real exam audio.",
-    highlights: ["Accent recognition", "Inference", "Note completion"],
+    description: "",
+    highlights: [
+      "Accent recognition — British, Australian, North American, and Indian-English speakers, matching real exam variety",
+      "Inference and note completion across all four sections",
+      "Timed under real exam audio conditions",
+    ],
     Icon: HeadphonesIcon,
-    band: null,
+    footer: "All 4 sections · Academic & General",
   },
   {
     key: "reading",
     title: "Reading",
-    description: "Academic and General under the clock.",
-    highlights: ["Skimming", "Matching", "Detail"],
+    description: "",
+    highlights: [
+      "Skimming, matching, and detail questions across every format the exam uses",
+      "Academic and General passages, timed under the clock",
+    ],
     Icon: BookIcon,
-    band: null,
+    footer: "40+ question types covered",
   },
   {
     key: "writing",
     title: "Writing",
-    description: "Task 1 & 2 on the four official criteria.",
-    highlights: ["AI scoring", "Line-by-line notes", "Band criteria"],
+    description: "",
+    highlights: [
+      "AI scoring line-by-line against the four official band criteria",
+      "Task 1 and Task 2, both test formats",
+    ],
     Icon: PencilIcon,
-    band: null,
+    footer: "Scored on all 4 IELTS criteria",
   },
   {
     key: "speaking",
     title: "Speaking",
-    description: "Full responses with AI feedback.",
-    highlights: ["Fluency", "Range", "Pronunciation"],
+    description: "",
+    highlights: [
+      "Full spoken responses scored for fluency, range, and pronunciation",
+      "All three parts of the speaking test, with AI feedback",
+    ],
     Icon: MicIcon,
-    band: null,
+    footer: "Parts 1, 2 & 3 covered",
   },
 ];
 
 export const BRAND_HOW_STEPS = [
-  { n: 1, title: "Onboard", body: "Set your target band and deadline." },
-  { n: 2, title: "Diagnose", body: "Take the 90-minute diagnostic." },
-  { n: 3, title: "Learn", body: "Get a plan for your weak spots." },
-  { n: 4, title: "Practice", body: "Drill 10,000+ exam questions." },
-  { n: 5, title: "Review", body: "AI feedback on every answer." },
-  { n: 6, title: "Progress", body: "Watch your band climb." },
+  {
+    n: 1,
+    title: "Onboard",
+    body: "Tell us your target band, deadline, and starting level — no two students walk in the same.",
+  },
+  {
+    n: 2,
+    title: "Diagnose",
+    body: "A full diagnostic pinpoints the gap — vocabulary, timing, nerves. Not just a score, a reason.",
+  },
+  {
+    n: 3,
+    title: "Learn",
+    body: "Lessons sequenced to your gap, not a fixed syllabus everyone works through in order.",
+  },
+  {
+    n: 4,
+    title: "Practice",
+    body: "Drills aimed at your weak spot, pulled from real exam question patterns.",
+  },
+  {
+    n: 5,
+    title: "Review",
+    body: "Line-by-line feedback on your writing and speaking — not a generic band descriptor.",
+  },
+  {
+    n: 6,
+    title: "Progress",
+    body: "Track how the gap closes, session by session, so you always know what's left.",
+  },
 ] as const;
 
-/** Mobile landing copy — vertical timeline variant. */
+/** Mobile landing copy — same six steps as desktop. */
 export const BRAND_HOW_STEPS_MOBILE = [
-  { n: 1, title: "Onboard", body: "Tell us your target band and deadline." },
-  { n: 2, title: "Diagnose", body: "Take the full 90-minute diagnostic test." },
-  { n: 3, title: "Personalised Study Plan", body: "Get a plan targeting your weakest skills." },
-  { n: 4, title: "Practice", body: "Drill from 10,000+ exam-grade questions." },
-  { n: 5, title: "Review", body: "AI feedback on every Writing & Speaking answer." },
-  { n: 6, title: "Progress", body: "Watch your band climb, test after test." },
+  {
+    n: 1,
+    title: "Onboard",
+    body: "Tell us your target band, deadline, and starting level — no two students walk in the same.",
+  },
+  {
+    n: 2,
+    title: "Diagnose",
+    body: "A full diagnostic pinpoints the gap — vocabulary, timing, nerves. Not just a score, a reason.",
+  },
+  {
+    n: 3,
+    title: "Learn",
+    body: "Lessons sequenced to your gap, not a fixed syllabus everyone works through in order.",
+  },
+  {
+    n: 4,
+    title: "Practice",
+    body: "Drills aimed at your weak spot, pulled from real exam question patterns.",
+  },
+  {
+    n: 5,
+    title: "Review",
+    body: "Line-by-line feedback on your writing and speaking — not a generic band descriptor.",
+  },
+  {
+    n: 6,
+    title: "Progress",
+    body: "Track how the gap closes, session by session, so you always know what's left.",
+  },
 ] as const;
 
 export type PricingTierId = "free" | "starter" | "standard";
@@ -442,6 +504,39 @@ export const BRAND_ABOUT_CREDENTIALS: {
 export const BRAND_ABOUT_FOUNDER_QUOTES = [
   "I know what it feels like to sit the IELTS with everything riding on it. I also know what it feels like to evaluate thousands of scripts and understand exactly why students fall short of their target band.",
   "BandForge is built on one principle — diagnosis before prescription. No generic practice. No guesswork. Just a precise understanding of where you are and a structured path to where you need to be.",
+] as const;
+
+export const BRAND_TESTIMONIALS = [
+  {
+    quote:
+      "I went from Band 6 to Band 7.5 in six weeks. The diagnostic told me exactly what to fix — no more random practice.",
+    name: "Priya M.",
+    title: "Hyderabad · Overall 7.5",
+  },
+  {
+    quote:
+      "Writing was stuck at 6.0 for months. The sprint tasks + AI feedback finally showed me Task Response was the leak.",
+    name: "Arjun K.",
+    title: "Warangal · Writing 7.0",
+  },
+  {
+    quote:
+      "As a Telugu speaker I kept losing marks on pronunciation. Speaking drills with real timing felt like the actual exam.",
+    name: "Sneha R.",
+    title: "Vijayawada · Speaking 7.5",
+  },
+  {
+    quote:
+      "I didn’t need another full course — I needed one skill fixed. BandForge found it in fifteen minutes.",
+    name: "Mohammed A.",
+    title: "Hyderabad · Overall 7.0",
+  },
+  {
+    quote:
+      "The free diagnostic was honest. My study plan only targeted Listening Section 3 and Writing Task 2. That focus worked.",
+    name: "Ananya P.",
+    title: "Guntur · Overall 8.0",
+  },
 ] as const;
 
 export const BRAND_ABOUT_PILLARS = [

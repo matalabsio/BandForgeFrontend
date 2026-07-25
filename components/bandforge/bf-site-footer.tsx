@@ -1,38 +1,10 @@
 import Link from "next/link";
 import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
-import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links";
+import {
+  BF_FOOTER_COLUMNS,
+  BF_FOOTER_YEAR,
+} from "@/components/bandforge/bf-footer-links";
 import { SITE_ENTITY_DESCRIPTION } from "@/lib/seo/metadata";
-
-const COPYRIGHT_YEAR = 2026;
-
-const productLinks = [
-  { href: "/diagnostic", label: "Free diagnostic" },
-  { href: "/writing", label: "Writing Sprint" },
-  { href: "/speaking", label: "Speaking Sprint" },
-  { href: "/how-it-works", label: "Mock tests" },
-  { href: "/pricing", label: "Pricing" },
-  { href: marketingAppHref(), label: "Practice" },
-] as const;
-
-const ieltsPrepLinks = [
-  { href: "/telugu", label: "Telugu speakers" },
-  { href: "/urdu", label: "Urdu speakers" },
-  { href: "/hyderabad", label: "Hyderabad" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/vs-coaching-centres", label: "vs Coaching" },
-  { href: "/blog", label: "Blog" },
-] as const;
-
-const companyLinks = [
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
-] as const;
-
-const legalLinks = [
-  { href: "/privacy-policy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
-  { href: "/refund-policy", label: "Refunds" },
-] as const;
 
 function FooterColumn({
   title,
@@ -61,7 +33,7 @@ function FooterColumn({
   );
 }
 
-/** Site footer — Product / IELTS prep / Company / Legal, responsive. */
+/** Site footer — Product / Resources / Company / Legal (non-landing pages). */
 export function BandForgeSiteFooter() {
   return (
     <footer className="border-t border-white/7 bg-navy-deep text-white">
@@ -78,14 +50,13 @@ export function BandForgeSiteFooter() {
               {SITE_ENTITY_DESCRIPTION}
             </p>
           </div>
-          <FooterColumn title="Product" links={productLinks} />
-          <FooterColumn title="IELTS prep" links={ieltsPrepLinks} />
-          <FooterColumn title="Company" links={companyLinks} />
-          <FooterColumn title="Legal" links={legalLinks} />
+          {BF_FOOTER_COLUMNS.map((col) => (
+            <FooterColumn key={col.title} title={col.title} links={col.links} />
+          ))}
         </div>
 
         <div className="mt-8 border-t border-white/6 pt-5 text-[0.6875rem] text-[#54647c] lg:mt-10 lg:text-xs">
-          © {COPYRIGHT_YEAR} BandForge · MATA Labs OPC
+          © {BF_FOOTER_YEAR} BandForge · MATA Labs OPC
         </div>
       </div>
     </footer>

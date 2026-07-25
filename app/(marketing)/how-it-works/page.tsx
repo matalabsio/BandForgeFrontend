@@ -3,9 +3,9 @@ import { HowItWorksExperience } from "@/components/bandforge/seo/how-it-works-ex
 import { pageMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = pageMetadata({
-  title: "How BandForge Works — Diagnostic to Band Score",
+  title: "The BandForge Method — Personalised Study Plan in Six Steps",
   description:
-    "Six steps from free diagnostic to targeted sprints: onboard, diagnose, learn, practise, review with AI plus Band 9 feedback, and track progress.",
+    "No two students prep the same way. Built by a Gold Medallist and Band 9 scorer — a personalised study plan in six steps that catches where students plateau.",
   path: "/how-it-works",
 });
 
