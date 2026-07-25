@@ -22,11 +22,10 @@ type Props = {
 };
 
 const pricingCtaClass = cn(
-  "relative inline-flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-full border border-transparent font-display text-sm font-semibold text-white no-underline shadow-[0_8px_22px_rgb(0_151_167/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2",
+  "relative inline-flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-full border border-transparent font-display text-sm font-semibold leading-none text-white no-underline shadow-[0_8px_22px_rgb(0_151_167/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2",
   BF_PRIMARY_CTA_GRADIENT,
   BF_PRIMARY_CTA_HOVER,
-  "mt-auto pt-5 lg:pt-6",
-  "py-3 lg:min-h-[var(--spacing-touch)] lg:text-[0.9375rem]",
+  "min-h-11 px-4 py-3 text-center lg:min-h-[var(--spacing-touch)] lg:text-[0.9375rem]",
 );
 
 export function BfPricingCard({
@@ -94,13 +93,11 @@ export function BfPricingCard({
             {description}
           </p>
 
-          <Link
-            href={href}
-            prefetch
-            className={cn(pricingCtaClass, recommended && "py-[13px]")}
-          >
-            <span className="relative z-[1]">{cta}</span>
-          </Link>
+          <div className="mt-auto pt-5 lg:pt-6">
+            <Link href={href} prefetch className={pricingCtaClass}>
+              <span className="relative z-[1]">{cta}</span>
+            </Link>
+          </div>
         </div>
       </GlowCard>
     </div>

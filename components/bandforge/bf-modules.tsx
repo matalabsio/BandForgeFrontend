@@ -41,14 +41,14 @@ function ModuleCard({
 }: ModuleCardProps) {
   return (
     <div
-      className="h-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform hover:-translate-y-1"
+      className="h-full touch-pan-y transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1"
       data-bf-reveal={CARD_REVEAL[index] ?? "up"}
       data-bf-reveal-delay={String(0.12 + index * 0.09)}
     >
       <GlowCard
         customSize
         glowColor={glowColor}
-        className="group h-full min-h-[280px] w-full"
+        className="group h-full min-h-[260px] w-full sm:min-h-[280px]"
       >
         <div className="relative z-[1] flex h-full flex-col">
           <div className="mb-4 inline-flex size-10 shrink-0 items-center justify-center self-start rounded-xl bg-white/90 text-cyan shadow-[inset_0_1px_0_rgb(255_255_255/0.8)] lg:size-11 lg:rounded-2xl">
@@ -142,7 +142,7 @@ export function BandForgeModules() {
       ref={sectionRef}
       id="modules"
       onMouseMove={onSectionMove}
-      className="bf-modules-section relative z-[2] flex min-h-dvh scroll-mt-20 flex-col overflow-x-clip lg:min-h-dvh"
+      className="bf-modules-section relative z-[2] flex scroll-mt-20 flex-col lg:min-h-dvh"
       style={{
         backgroundImage: [
           "radial-gradient(circle at 12% 18%, rgba(0,151,167,0.035), transparent 40%)",

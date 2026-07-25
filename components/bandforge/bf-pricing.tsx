@@ -36,7 +36,7 @@ export function BandForgePricing() {
     <section
       ref={sectionRef}
       id="pricing"
-      className="relative z-[2] scroll-mt-20 overflow-x-clip bf-section"
+      className="relative z-[2] scroll-mt-20 bf-section"
       style={{
         backgroundImage: [
           "radial-gradient(ellipse 70% 50% at 18% 28%, rgb(0 188 212 / 0.045), transparent 62%)",

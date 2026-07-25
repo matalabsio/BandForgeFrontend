@@ -43,10 +43,10 @@ const getTransition = (duration: number, from: number) => ({
 const CenterSealImage = () => (
   // eslint-disable-next-line @next/next/no-img-element -- seal asset
   <img
-    src="/ison.png"
+    src="/medallist-seal-group83.svg"
     alt=""
-    width={40}
-    height={40}
+    width={56}
+    height={56}
     className="circular-text-book"
     aria-hidden
   />
