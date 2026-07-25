@@ -336,12 +336,20 @@ export function BandForgeHow({
 }: BandForgeHowProps = {}) {
   const sectionRef = useRef<HTMLElement>(null);
   const headRef = useRef<HTMLDivElement>(null);
-  const mobileRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [paused, setPaused] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const reduceMotion = useReducedMotion();
   const headAnimated = useRef(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const node = sectionRef.current;
@@ -387,33 +395,7 @@ export function BandForgeHow({
   }, [inView, reduceMotion]);
 
   useEffect(() => {
-    if (!inView || reduceMotion) return;
-    const mobile = mobileRef.current;
-    if (!mobile) return;
-
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        mobile,
-        { opacity: 0, y: 28 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.85,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: mobile,
-            start: "top 88%",
-            once: true,
-          },
-        },
-      );
-    }, mobile);
-
-    return () => ctx.revert();
-  }, [inView, reduceMotion]);
-
-  useEffect(() => {
-    if (!inView || reduceMotion || paused) return;
+    if (!inView || reduceMotion || paused || !isDesktop) return;
 
     let step = activeStep;
     let cancelled = false;
@@ -446,7 +428,7 @@ export function BandForgeHow({
     };
     // Intentionally omit activeStep — loop owns its own cursor; user picks reset via paused
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView, reduceMotion, paused]);
+  }, [inView, reduceMotion, paused, isDesktop]);
 
   const handleSelect = (n: number) => {
     setPaused(true);
@@ -497,14 +479,8 @@ export function BandForgeHow({
             onSelect={handleSelect}
           />
         </div>
-      </div>
 
-      <div
-        className="lg:hidden"
-        ref={mobileRef}
-        style={reduceMotion ? undefined : { opacity: 0 }}
-      >
-        <div className="bf-container">
+        <div className="lg:hidden">
           <BfHowScrollStack activeStep={activeStep} />
         </div>
       </div>

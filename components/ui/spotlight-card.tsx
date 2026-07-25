@@ -30,6 +30,8 @@ interface GlowCardProps {
   glass?: boolean;
   /** Minimal black hairline on glass cards (How stage, etc.). */
   inkBorder?: boolean;
+  /** Pointer-tracking spotlight. Off on coarse pointers / when false. */
+  spotlight?: boolean;
 }
 
 const glowColorMap: Record<GlowColor, { base: number; spread: number }> = {
@@ -60,11 +62,22 @@ const GlowCard: React.FC<GlowCardProps> = ({
   customSize = false,
   glass = false,
   inkBorder = false,
+  spotlight = true,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!spotlight) return;
+
+    const coarse =
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches;
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (coarse || reduce) return;
+
     const syncPointer = (e: PointerEvent) => {
       const { clientX: x, clientY: y } = e;
 
@@ -84,7 +97,7 @@ const GlowCard: React.FC<GlowCardProps> = ({
 
     document.addEventListener("pointermove", syncPointer);
     return () => document.removeEventListener("pointermove", syncPointer);
-  }, []);
+  }, [spotlight]);
 
   const { base, spread } = glowColorMap[glowColor];
 

@@ -22,9 +22,20 @@ type Options = {
   reduceMotion?: boolean | null;
 };
 
+function forceVisible(els: HTMLElement[]) {
+  gsap.set(els, {
+    clearProps: "transform,filter",
+    opacity: 1,
+    x: 0,
+    y: 0,
+    filter: "none",
+  });
+}
+
 /**
  * Smooth section entrance — mix left / right / up / down / light-up via
  * `data-bf-reveal` + optional `data-bf-reveal-delay` (seconds).
+ * Once-per-load; safety timeout so content never stays hidden.
  */
 export function useBfSectionReveal(
   rootRef: RefObject<HTMLElement | null>,
@@ -42,15 +53,11 @@ export function useBfSectionReveal(
     if (!els.length) return;
 
     if (reduceMotion) {
-      gsap.set(els, {
-        clearProps: "transform,filter,opacity",
-        opacity: 1,
-        x: 0,
-        y: 0,
-        filter: "none",
-      });
+      forceVisible(els);
       return;
     }
+
+    const safety = window.setTimeout(() => forceVisible(els), 1600);
 
     const ctx = gsap.context(() => {
       els.forEach((el) => {
@@ -59,26 +66,36 @@ export function useBfSectionReveal(
         const delay = Number(el.dataset.bfRevealDelay ?? 0) || 0;
         const duration = Number(el.dataset.bfRevealDuration ?? 0.8) || 0.8;
 
+        const rect = el.getBoundingClientRect();
+        const alreadyInView =
+          rect.top < window.innerHeight * 0.92 && rect.bottom > 0;
+
         gsap.set(el, FROM[dir]);
+
         gsap.to(el, {
           opacity: 1,
           x: 0,
           y: 0,
           filter: "none",
           duration,
-          delay,
+          delay: alreadyInView ? Math.min(delay, 0.05) : delay,
           ease: "power3.out",
           overwrite: "auto",
-          scrollTrigger: {
-            trigger: el,
-            start,
-            once: true,
-            toggleActions: "play none none none",
-          },
+          scrollTrigger: alreadyInView
+            ? undefined
+            : {
+                trigger: el,
+                start,
+                once: true,
+                toggleActions: "play none none none",
+              },
         });
       });
     }, root);
 
-    return () => ctx.revert();
+    return () => {
+      window.clearTimeout(safety);
+      ctx.revert();
+    };
   }, [rootRef, start, reduceMotion]);
 }

@@ -33,6 +33,10 @@ const SPEED_PX: Record<"fast" | "normal" | "slow", number> = {
   slow: 0.22,
 };
 
+const AXIS_LOCK_PX = 10;
+
+type AxisLock = "none" | "horizontal" | "vertical";
+
 export function InfiniteMovingCards({
   items,
   direction = "left",
@@ -49,8 +53,13 @@ export function InfiniteMovingCards({
   const halfWidthRef = useRef(0);
   const rafRef = useRef(0);
   const draggingRef = useRef(false);
+  const axisLockRef = useRef<AxisLock>("none");
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
   const lastXRef = useRef(0);
   const pausedRef = useRef(false);
+  const offscreenRef = useRef(false);
+  const activePointerRef = useRef<number | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const glass = variant === "glass";
@@ -96,6 +105,21 @@ export function InfiniteMovingCards({
     };
   }, [measure, items]);
 
+  /* Pause autoplay when offscreen */
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        offscreenRef.current = !(entry?.isIntersecting ?? false);
+      },
+      { rootMargin: "10% 0px", threshold: 0 },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     if (reduceMotion) {
       offsetRef.current = 0;
@@ -107,7 +131,9 @@ export function InfiniteMovingCards({
     const px = SPEED_PX[speed];
 
     const tick = () => {
-      if (!draggingRef.current && !pausedRef.current) {
+      const scrubbing =
+        draggingRef.current || axisLockRef.current === "horizontal";
+      if (!scrubbing && !pausedRef.current && !offscreenRef.current) {
         offsetRef.current += dir * px;
         wrapOffset();
         applyTransform();
@@ -119,15 +145,58 @@ export function InfiniteMovingCards({
     return () => cancelAnimationFrame(rafRef.current);
   }, [direction, speed, reduceMotion, applyTransform, wrapOffset]);
 
+  const resetPointer = (pointerId?: number) => {
+    draggingRef.current = false;
+    axisLockRef.current = "none";
+    activePointerRef.current = null;
+    if (pointerId != null && containerRef.current) {
+      try {
+        containerRef.current.releasePointerCapture(pointerId);
+      } catch {
+        /* already released */
+      }
+    }
+  };
+
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!interactive || reduceMotion) return;
-    draggingRef.current = true;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    activePointerRef.current = e.pointerId;
+    axisLockRef.current = "none";
+    draggingRef.current = false;
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
     lastXRef.current = e.clientX;
-    containerRef.current?.setPointerCapture(e.pointerId);
+    /* Do not capture yet — wait for axis lock */
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current) return;
+    if (activePointerRef.current !== e.pointerId) return;
+
+    const dxTotal = e.clientX - startXRef.current;
+    const dyTotal = e.clientY - startYRef.current;
+
+    if (axisLockRef.current === "none") {
+      const adx = Math.abs(dxTotal);
+      const ady = Math.abs(dyTotal);
+      if (adx < AXIS_LOCK_PX && ady < AXIS_LOCK_PX) return;
+
+      if (adx > ady) {
+        axisLockRef.current = "horizontal";
+        draggingRef.current = true;
+        lastXRef.current = e.clientX;
+        containerRef.current?.setPointerCapture(e.pointerId);
+      } else {
+        axisLockRef.current = "vertical";
+        /* Let the browser scroll the page — never capture */
+        activePointerRef.current = null;
+        return;
+      }
+    }
+
+    if (axisLockRef.current === "vertical") return;
+    if (axisLockRef.current !== "horizontal" || !draggingRef.current) return;
+
     const dx = e.clientX - lastXRef.current;
     lastXRef.current = e.clientX;
     offsetRef.current += dx;
@@ -136,21 +205,18 @@ export function InfiniteMovingCards({
   };
 
   const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-    try {
-      containerRef.current?.releasePointerCapture(e.pointerId);
-    } catch {
-      /* already released */
+    if (activePointerRef.current !== e.pointerId && !draggingRef.current) {
+      return;
     }
+    resetPointer(e.pointerId);
   };
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        "scroller relative z-20 w-full overflow-hidden touch-pan-y select-none [mask-image:linear-gradient(to_right,transparent,white_8%,white_92%,transparent)]",
-        interactive && !reduceMotion && "cursor-grab active:cursor-grabbing touch-manipulation",
+        "scroller relative z-20 w-full overflow-hidden select-none [touch-action:pan-y] [mask-image:linear-gradient(to_right,transparent,white_8%,white_92%,transparent)]",
+        interactive && !reduceMotion && "cursor-grab active:cursor-grabbing",
         className,
       )}
       onPointerDown={onPointerDown}
@@ -158,7 +224,9 @@ export function InfiniteMovingCards({
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={(e) => {
-        if (draggingRef.current) endDrag(e);
+        if (draggingRef.current && axisLockRef.current === "horizontal") {
+          endDrag(e);
+        }
       }}
       onMouseEnter={() => {
         if (pauseOnHover) pausedRef.current = true;
@@ -167,11 +235,11 @@ export function InfiniteMovingCards({
         pausedRef.current = false;
       }}
       role="region"
-      aria-label="Testimonials carousel — drag or swipe to scroll"
+      aria-label="Testimonials carousel — swipe horizontally to scrub, scroll vertically to continue"
     >
       <ul
         ref={scrollerRef}
-        className="flex w-max min-w-full shrink-0 flex-nowrap gap-3 py-2 sm:gap-4 sm:py-3 will-change-transform"
+        className="flex w-max min-w-full shrink-0 flex-nowrap gap-3 py-2 will-change-transform sm:gap-4 sm:py-3"
         style={{ transform: "translate3d(0,0,0)" }}
       >
         {loopItems.map((item, idx) => (
