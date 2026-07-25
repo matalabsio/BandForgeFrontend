@@ -481,7 +481,7 @@ export function BandForgeHow({
         </div>
 
         <div className="lg:hidden">
-          <BfHowScrollStack activeStep={activeStep} />
+          <BfHowScrollStack />
         </div>
       </div>
     </section>

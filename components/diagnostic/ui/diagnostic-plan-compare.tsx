@@ -7,41 +7,40 @@ type Props = {
   planHref: string;
 };
 
-const STARTER_FEATURES = [
-  "30-day access",
-  "3 mock tests",
-  "AI writing feedback",
-  "Diagnostic study plan",
+const DUAL_FEATURES = [
+  "Writing + Speaking",
+  "12 tasks per track",
+  "AI + Band 9 review",
+  "1 mock on completion",
 ];
 
-const STANDARD_FEATURES = [
-  "60-day access",
-  "Full test library",
-  "AI writing feedback",
-  "Diagnostic study plan",
-  "Progress tracking",
-  "Band score projections",
+const ALL_SKILLS_FEATURES = [
+  "All four IELTS skills",
+  "12 structured tasks",
+  "AI + Band 9 review",
+  "1 mock on completion",
+  "Free diagnostic included",
 ];
 
 export function DiagnosticPlanCompare({ planHref }: Props) {
-  const starter = BRAND_PLAN_PAGE_TIERS.find((t) => t.id === "starter");
-  const standard = BRAND_PLAN_PAGE_TIERS.find((t) => t.id === "standard");
+  const dual = BRAND_PLAN_PAGE_TIERS.find((t) => t.id === "dual");
+  const allSkills = BRAND_PLAN_PAGE_TIERS.find((t) => t.id === "all-skills");
 
-  if (!starter || !standard) return null;
+  if (!dual || !allSkills) return null;
 
   return (
     <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-4">
       <PlanCard
-        name="Starter"
-        price={starter.price}
-        features={STARTER_FEATURES}
+        name="Dual"
+        price={dual.price}
+        features={DUAL_FEATURES}
         href={planHref}
         variant="outline"
       />
       <PlanCard
-        name="Standard"
-        price={standard.price}
-        features={STANDARD_FEATURES}
+        name="All Skills"
+        price={allSkills.price}
+        features={ALL_SKILLS_FEATURES}
         href={planHref}
         variant="primary"
         badge="Most Popular"

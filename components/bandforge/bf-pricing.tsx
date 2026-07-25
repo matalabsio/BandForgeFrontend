@@ -12,16 +12,16 @@ import type { GlowColor } from "@/components/ui/spotlight-card";
 import { BRAND_PRICING_TIERS } from "@/lib/brand-mock-data";
 
 const TIER_HREF: Record<string, string> = {
-  free: "/diagnostic",
-  starter: "/pricing",
-  standard: "/pricing",
+  single: "/pricing",
+  dual: "/pricing",
+  "all-skills": "/pricing",
 };
 
 /** Brand glow cycle — teal / cyan / navy */
 const TIER_GLOW: Record<string, GlowColor> = {
-  free: "teal",
-  starter: "cyan",
-  standard: "navy",
+  single: "teal",
+  dual: "cyan",
+  "all-skills": "navy",
 };
 
 /** Alternating entrance — left / up / right */
@@ -55,7 +55,9 @@ export function BandForgePricing() {
             <BfSectionEyebrow className="mb-3">Pricing</BfSectionEyebrow>
           </div>
           <div data-bf-reveal="up" data-bf-reveal-delay="0.1">
-            <BfSectionHeading>Start free, upgrade when ready</BfSectionHeading>
+            <BfSectionHeading>
+              Single skill, dual, or all four
+            </BfSectionHeading>
           </div>
         </div>
 
@@ -63,22 +65,24 @@ export function BandForgePricing() {
           {BRAND_PRICING_TIERS.map((tier, index) => (
             <div
               key={tier.id}
-              className="h-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform hover:-translate-y-1"
+              className="h-full"
               data-bf-reveal={CARD_REVEAL[index] ?? "up"}
               data-bf-reveal-delay={String(0.12 + index * 0.1)}
             >
-              <BfPricingCard
-                id={tier.id}
-                name={tier.name}
-                price={tier.price}
-                period={tier.period}
-                description={tier.description}
-                cta={tier.cta}
-                href={TIER_HREF[tier.id] ?? "/pricing"}
-                recommended={tier.recommended}
-                variant={tier.variant}
-                glowColor={TIER_GLOW[tier.id] ?? "cyan"}
-              />
+              <div className="h-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1">
+                <BfPricingCard
+                  id={tier.id}
+                  name={tier.name}
+                  price={tier.price}
+                  period={tier.period}
+                  description={tier.description}
+                  cta={tier.cta}
+                  href={TIER_HREF[tier.id] ?? "/pricing"}
+                  recommended={tier.recommended}
+                  variant={tier.variant}
+                  glowColor={TIER_GLOW[tier.id] ?? "cyan"}
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -88,7 +92,8 @@ export function BandForgePricing() {
           data-bf-reveal="up"
           data-bf-reveal-delay="0.35"
         >
-          Built by a Gold Medallist, Band 9 scorer, and 10-year IELTS trainer.
+          Free diagnostic first. Built by a Gold Medallist, Band 9 scorer, and
+          10-year IELTS trainer.
         </p>
       </div>
     </section>

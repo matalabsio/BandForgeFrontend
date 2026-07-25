@@ -41,54 +41,56 @@ function ModuleCard({
 }: ModuleCardProps) {
   return (
     <div
-      className="h-full touch-pan-y transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1"
+      className="h-full touch-pan-y"
       data-bf-reveal={CARD_REVEAL[index] ?? "up"}
       data-bf-reveal-delay={String(0.12 + index * 0.09)}
     >
-      <GlowCard
-        customSize
-        glowColor={glowColor}
-        className="group h-full min-h-[260px] w-full sm:min-h-[280px]"
-      >
-        <div className="relative z-[1] flex h-full flex-col">
-          <div className="mb-4 inline-flex size-10 shrink-0 items-center justify-center self-start rounded-xl bg-white/90 text-cyan shadow-[inset_0_1px_0_rgb(255_255_255/0.8)] lg:size-11 lg:rounded-2xl">
-            <Icon className="size-5" strokeWidth={1.85} />
-          </div>
+      <div className="h-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1">
+        <GlowCard
+          customSize
+          glowColor={glowColor}
+          className="group h-full min-h-[260px] w-full sm:min-h-[280px]"
+        >
+          <div className="relative z-[1] flex h-full flex-col">
+            <div className="mb-4 inline-flex size-10 shrink-0 items-center justify-center self-start rounded-xl bg-white/90 text-cyan shadow-[inset_0_1px_0_rgb(255_255_255/0.8)] lg:size-11 lg:rounded-2xl">
+              <Icon className="size-5" strokeWidth={1.85} />
+            </div>
 
-          <h3 className="shrink-0 font-display text-[1.125rem] leading-none font-bold tracking-[-0.02em] text-navy lg:text-[1.25rem]">
-            {title}
-          </h3>
+            <h3 className="shrink-0 font-display text-[1.125rem] leading-none font-bold tracking-[-0.02em] text-navy lg:text-[1.25rem]">
+              {title}
+            </h3>
 
-          <ul className="mt-4 flex shrink-0 flex-col gap-2">
-            {highlights.map((item) => (
-              <li
-                key={item}
-                className="text-[0.8125rem] leading-[1.45] text-muted lg:text-[0.875rem]"
+            <ul className="mt-4 flex shrink-0 flex-col gap-2">
+              {highlights.map((item) => (
+                <li
+                  key={item}
+                  className="text-[0.8125rem] leading-[1.45] text-muted lg:text-[0.875rem]"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            {description ? (
+              <p className="mt-3 shrink-0 text-[0.8125rem] leading-[1.5] text-muted/90 lg:text-[0.875rem]">
+                {description}
+              </p>
+            ) : null}
+
+            <div className="mt-auto flex shrink-0 items-end justify-between gap-2 pt-5">
+              <p className="font-display text-[0.875rem] leading-snug font-semibold text-navy lg:text-[0.9375rem]">
+                {footer}
+              </p>
+              <span
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-navy/10 bg-white/70 text-navy/45 transition-[border-color,color,transform,background-color] duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:border-cyan/35 group-hover:text-cyan"
+                aria-hidden
               >
-                {item}
-              </li>
-            ))}
-          </ul>
-
-          {description ? (
-            <p className="mt-3 shrink-0 text-[0.8125rem] leading-[1.5] text-muted/90 lg:text-[0.875rem]">
-              {description}
-            </p>
-          ) : null}
-
-          <div className="mt-auto flex shrink-0 items-end justify-between gap-2 pt-5">
-            <p className="font-display text-[0.875rem] leading-snug font-semibold text-navy lg:text-[0.9375rem]">
-              {footer}
-            </p>
-            <span
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-navy/10 bg-white/70 text-navy/45 transition-[border-color,color,transform,background-color] duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:border-cyan/35 group-hover:text-cyan"
-              aria-hidden
-            >
-              <ArrowUpRight className="size-3.5" strokeWidth={1.75} />
-            </span>
+                <ArrowUpRight className="size-3.5" strokeWidth={1.75} />
+              </span>
+            </div>
           </div>
-        </div>
-      </GlowCard>
+        </GlowCard>
+      </div>
     </div>
   );
 }

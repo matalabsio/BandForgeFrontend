@@ -133,7 +133,7 @@ export const BRAND_HOW_STEPS_MOBILE = [
   },
 ] as const;
 
-export type PricingTierId = "free" | "starter" | "standard";
+export type PricingTierId = "single" | "dual" | "all-skills";
 
 export const BRAND_PRICING_TIERS: {
   id: PricingTierId;
@@ -146,33 +146,34 @@ export const BRAND_PRICING_TIERS: {
   variant: "outline" | "primary";
 }[] = [
   {
-    id: "free",
-    name: "Free Diagnostic",
-    price: "₹0",
+    id: "single",
+    name: "Writing or Speaking",
+    price: "₹999",
+    period: "/ 90 days",
     description:
-      "The full 90-minute test and your four-section band report.",
-    cta: "Take the test",
+      "Pick one skill — 12 tasks, AI practice, Band 9 human review within 48 hours.",
+    cta: "Get Single Skill",
     variant: "outline",
   },
   {
-    id: "starter",
-    name: "Starter Pack",
-    price: "₹1,499",
-    period: "/ 30 days",
+    id: "dual",
+    name: "Dual",
+    price: "₹1,799",
+    period: "/ 90 days",
     description:
-      "Full practice bank, AI Writing & Speaking review, and a 30-day study plan.",
-    cta: "Get Starter Pack",
+      "Writing + Speaking together — 12 tasks each track, AI plus Band 9 review within 48 hours.",
+    cta: "Get Dual",
     recommended: true,
     variant: "primary",
   },
   {
-    id: "standard",
-    name: "Standard Plan",
-    price: "₹3,499",
-    period: "/ 60 days",
+    id: "all-skills",
+    name: "All Skills",
+    price: "₹2,999",
+    period: "/ 90 days",
     description:
-      "Everything in Starter, doubled — plus mock-test cycles and progress tracking.",
-    cta: "Get Standard Plan",
+      "Listening, Reading, Writing, and Speaking — full prep with AI practice and Band 9 review.",
+    cta: "Get All Skills",
     variant: "outline",
   },
 ];
@@ -291,54 +292,61 @@ export const BRAND_PROFILE_STATS = {
   targetBand: 7.0,
   testsCompleted: 8,
   expectedBand: 6.8,
-  planName: "Starter Pack",
+  planName: "Dual",
   planDaysRemaining: 44,
 } as const;
 
 export const BRAND_PLAN_PAGE_TIERS = [
   {
-    id: "free" as const,
-    name: "Free Diagnostic",
-    price: "₹0",
-    description: "Full diagnostic test and four-section band report.",
-    features: ["90-minute diagnostic", "Band report", "Module breakdown"],
-    cta: "Continue free",
+    id: "single" as const,
+    name: "Writing or Speaking",
+    price: "₹999",
+    period: "/ 90 days",
+    description: "Single-skill sprint — choose Writing or Speaking.",
+    features: [
+      "Pick Writing or Speaking",
+      "12 tasks",
+      "AI practice feedback",
+      "Band 9 human review in 48 hrs",
+      "1 mock on completion",
+    ],
+    cta: "Get Single Skill",
     variant: "outline" as const,
     recommended: false,
   },
   {
-    id: "starter" as const,
-    name: "Starter Pack",
-    price: "₹1,499",
-    period: "/ 30 days",
-    description: "Practice bank, AI review, and 30-day study plan.",
+    id: "dual" as const,
+    name: "Dual",
+    price: "₹1,799",
+    period: "/ 90 days",
+    description: "Writing + Speaking dual sprint — both skills, one plan.",
     features: [
-      "10,000+ practice questions",
-      "AI Writing & Speaking review",
-      "Personalised study plan",
-      "Progress tracking",
+      "Writing + Speaking tracks",
+      "12 tasks per track",
+      "AI + Band 9 review in 48 hrs",
+      "1 mock on completion",
     ],
-    cta: "Get Starter Pack",
-    variant: "outline" as const,
-    recommended: false,
-  },
-  {
-    id: "standard" as const,
-    name: "Standard Plan",
-    price: "₹3,499",
-    period: "/ 60 days",
-    description: "Everything in Starter, plus mock cycles and analytics.",
-    features: [
-      "Everything in Starter",
-      "Full mock test cycles",
-      "Advanced analytics",
-      "Priority support",
-      "WhatsApp coach access",
-    ],
-    cta: "Get Standard Plan",
+    cta: "Get Dual",
     variant: "primary" as const,
     recommended: true,
     navy: true,
+  },
+  {
+    id: "all-skills" as const,
+    name: "All Skills",
+    price: "₹2,999",
+    period: "/ 90 days",
+    description: "Full four-skill sprint — Listening, Reading, Writing, Speaking.",
+    features: [
+      "All four IELTS skills",
+      "12 structured tasks",
+      "AI + Band 9 review in 48 hrs",
+      "1 mock on completion",
+      "Free diagnostic included",
+    ],
+    cta: "Get All Skills",
+    variant: "outline" as const,
+    recommended: false,
   },
 ];
 

@@ -12,7 +12,6 @@ import {
   readDiagnosticResults,
   type DiagnosticResultsSnapshot,
 } from "@/lib/diagnostic-session";
-import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links";
 import { cn } from "@/lib/utils";
 
 function bandLabel(band: number | null | undefined): string {
@@ -171,7 +170,7 @@ export function PlanSelectionExperience() {
               ))}
             </ul>
             <Link
-              href={tier.id === "free" ? marketingAppHref() : "/pricing"}
+              href="/pricing"
               prefetch
               className={cn(
                 "mt-6 flex w-full items-center justify-center rounded-full py-3 font-display text-sm font-semibold transition-colors",
