@@ -542,6 +542,51 @@ html {
     animation: bf-hero-title 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  /* Hero “band” — single focal highlight */
+  .bf-hero-band {
+    position: relative;
+    display: inline-block;
+  }
+
+  .bf-hero-band-fill {
+    background-image: linear-gradient(
+      90deg,
+      #0097a7 0%,
+      #00bcd4 40%,
+      #26c6da 55%,
+      #0097a7 100%
+    );
+    background-size: 300% 100%;
+    background-position: 0% 50%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bf-hero-band-sweep {
+    pointer-events: none;
+    position: absolute;
+    inset: -10% -20%;
+    z-index: 2;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgb(255 255 255 / 0.15) 50%,
+      transparent 65%
+    );
+    mix-blend-mode: soft-light;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-hero-band-fill {
+      background-position: 50% 50%;
+    }
+
+    .bf-hero-band-sweep {
+      display: none;
+    }
+  }
+
   @keyframes bf-hero-title {
     from {
       transform: translate3d(0, 12px, 0);

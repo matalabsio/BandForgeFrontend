@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import BubbleMenu from "@/components/bandforge/bubble-menu";
 import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
@@ -10,6 +11,7 @@ import {
   BF_MARKETING_START_CTA_LABEL,
 } from "@/components/bandforge/bf-marketing-nav";
 import { useMarketingStartCta } from "@/components/bandforge/bf-use-marketing-start-cta";
+import { cn } from "@/lib/utils";
 
 const navLink =
   "group relative inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] font-medium text-muted no-underline transition-colors duration-200 hover:text-navy";
@@ -21,10 +23,8 @@ const navLinkLabel =
 const navLinkLabelActive =
   "relative inline-block after:pointer-events-none after:absolute after:right-0 after:bottom-[-3px] after:left-0 after:h-[1.5px] after:origin-left after:scale-x-100 after:rounded-full after:bg-cyan";
 
-
 const startCtaClass =
-  "group relative inline-flex min-h-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-cyan bg-[linear-gradient(90deg,#00bcd4_0%,#00a8bf_50%,#0097a7_100%)] px-[22px] py-2.5 text-[0.9375rem] font-semibold text-white no-underline shadow-[0_6px_16px_rgb(0_151_167/0.22)] transition-[transform,box-shadow,border-color,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-white/70 hover:shadow-[0_10px_22px_rgb(0_151_167/0.38)] hover:brightness-[1.06] active:translate-y-0 active:shadow-[0_6px_16px_rgb(0_151_167/0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2";
-
+  "group relative inline-flex min-h-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-transparent bg-[linear-gradient(90deg,#0EA5E9_0%,#38BDF8_35%,#7DD3FC_55%,#22D3EE_100%)] bg-[length:200%_100%] bg-left px-[22px] py-2.5 text-[0.9375rem] font-semibold text-white no-underline shadow-[0_6px_16px_rgb(14_165_233/0.22)] transition-[background-position,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-right hover:border-white/40 hover:shadow-[0_12px_26px_rgb(14_165_233/0.36)] active:shadow-[0_6px_16px_rgb(14_165_233/0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2";
 
 type Props = {
   activeHref?: string;
@@ -39,6 +39,15 @@ const desktopLinks = BF_MARKETING_NAV.filter(
 /** Desktop: classic sticky nav. Mobile: BubbleMenu. Same routes. */
 export function BandForgeHeaderMarketing({ activeHref, overHero }: Props) {
   const startCta = useMarketingStartCta("/dashboard");
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!overHero) return;
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [overHero]);
 
   const bubbleItems = BF_MARKETING_NAV.map((item) => {
     if (item.label === BF_MARKETING_START_CTA_LABEL) {
@@ -62,12 +71,16 @@ export function BandForgeHeaderMarketing({ activeHref, overHero }: Props) {
   return (
     <>
       <header
-        className={
+        className={cn(
+          "sticky top-0 z-30 hidden w-full transition-[background-color,backdrop-filter,border-color,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:block",
           overHero
-            ? "sticky top-0 z-30 hidden w-full border-b border-transparent bg-white/[0.06] backdrop-blur-[1px] lg:block"
-            : "sticky top-0 z-30 hidden w-full border-b border-border-soft bg-white/92 backdrop-blur-[6px] lg:block lg:bg-white/90 lg:backdrop-blur-[8px]"
-        }
-      >        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-3 px-4 py-3.5 sm:px-5 lg:px-10 lg:py-4">
+            ? scrolled
+              ? "border-b border-border-soft bg-white/70 shadow-[0_8px_24px_-18px_rgb(13_31_60/0.35)] backdrop-blur-[16px]"
+              : "border-b border-transparent bg-transparent backdrop-blur-none"
+            : "border-b border-border-soft bg-white/92 backdrop-blur-[6px] lg:bg-white/90 lg:backdrop-blur-[8px]",
+        )}
+      >
+        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-3 px-4 py-3.5 sm:px-5 lg:px-10 lg:py-4">
           <BfMarketingWordmark />
 
           <div className="flex items-center gap-6">

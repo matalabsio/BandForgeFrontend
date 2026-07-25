@@ -14,38 +14,39 @@ export const BRAND_MODULES: {
   key: ModuleKey;
   title: string;
   description: string;
+  highlights: readonly string[];
   Icon: ModuleIcon;
   band: string | null;
 }[] = [
   {
     key: "listening",
     title: "Listening",
-    description:
-      "Accent range, note completion and inference — timed under real exam audio.",
+    description: "Timed under real exam audio.",
+    highlights: ["Accent recognition", "Inference", "Note completion"],
     Icon: HeadphonesIcon,
     band: null,
   },
   {
     key: "reading",
     title: "Reading",
-    description:
-      "Skimming, matching and detail under the clock — Academic and General sets.",
+    description: "Academic and General under the clock.",
+    highlights: ["Skimming", "Matching", "Detail"],
     Icon: BookIcon,
     band: null,
   },
   {
     key: "writing",
     title: "Writing",
-    description:
-      "AI scores Task 1 & 2 on the four official criteria, with line-by-line notes.",
+    description: "Task 1 & 2 on the four official criteria.",
+    highlights: ["AI scoring", "Line-by-line notes", "Band criteria"],
     Icon: PencilIcon,
     band: null,
   },
   {
     key: "speaking",
     title: "Speaking",
-    description:
-      "Record full responses; get feedback on fluency, range and pronunciation.",
+    description: "Full responses with AI feedback.",
+    highlights: ["Fluency", "Range", "Pronunciation"],
     Icon: MicIcon,
     band: null,
   },
