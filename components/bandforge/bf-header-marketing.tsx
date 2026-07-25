@@ -10,7 +10,9 @@ import {
   BF_MARKETING_NAV,
   BF_MARKETING_START_CTA_LABEL,
 } from "@/components/bandforge/bf-marketing-nav";
+import { scrollToMarketingHash } from "@/components/bandforge/bf-scroll-to-section";
 import { useMarketingStartCta } from "@/components/bandforge/bf-use-marketing-start-cta";
+import { bfPrimaryCtaNavClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { cn } from "@/lib/utils";
 
 const navLink =
@@ -22,9 +24,6 @@ const navLinkLabel =
   "relative inline-block after:pointer-events-none after:absolute after:right-0 after:bottom-[-3px] after:left-0 after:h-[1.5px] after:origin-left after:scale-x-0 after:rounded-full after:bg-cyan after:transition-transform after:duration-300 after:ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:after:scale-x-100";
 const navLinkLabelActive =
   "relative inline-block after:pointer-events-none after:absolute after:right-0 after:bottom-[-3px] after:left-0 after:h-[1.5px] after:origin-left after:scale-x-100 after:rounded-full after:bg-cyan";
-
-const startCtaClass =
-  "group relative inline-flex min-h-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-transparent bg-[linear-gradient(90deg,#0EA5E9_0%,#38BDF8_35%,#7DD3FC_55%,#22D3EE_100%)] bg-[length:200%_100%] bg-left px-[22px] py-2.5 text-[0.9375rem] font-semibold text-white no-underline shadow-[0_6px_16px_rgb(14_165_233/0.22)] transition-[background-position,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-right hover:border-white/40 hover:shadow-[0_12px_26px_rgb(14_165_233/0.36)] active:shadow-[0_6px_16px_rgb(14_165_233/0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2";
 
 type Props = {
   activeHref?: string;
@@ -95,6 +94,9 @@ export function BandForgeHeaderMarketing({ activeHref, overHero }: Props) {
                     prefetch
                     className={active ? navLinkActive : navLink}
                     aria-current={active ? "page" : undefined}
+                    onClick={(e) => {
+                      scrollToMarketingHash(item.href, e);
+                    }}
                   >
                     <BfMarketingNavIcon name={item.icon} />
                     <span className={active ? navLinkLabelActive : navLinkLabel}>
@@ -107,7 +109,7 @@ export function BandForgeHeaderMarketing({ activeHref, overHero }: Props) {
             <Link
               href={startCta.href}
               prefetch
-              className={startCtaClass}
+              className={bfPrimaryCtaNavClass}
               aria-label={startCta.ariaLabel}
             >
               <span className="relative z-[1]">{startCta.label}</span>

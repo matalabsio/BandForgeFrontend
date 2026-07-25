@@ -271,14 +271,13 @@ export function BandForgeModules() {
       ref={sectionRef}
       id="modules"
       onMouseMove={onSectionMove}
-      className="bf-modules-section relative flex min-h-dvh scroll-mt-20 flex-col overflow-x-hidden border-t border-border-soft lg:min-h-dvh"
+      className="bf-modules-section relative flex min-h-dvh scroll-mt-20 flex-col overflow-x-clip lg:min-h-dvh"
       style={{
-        backgroundColor: "#fafafa",
+        backgroundColor: "#ffffff",
         backgroundImage: [
-          "radial-gradient(circle at 15% 20%, rgba(0,180,255,0.12), transparent 35%)",
-          "radial-gradient(circle at 88% 18%, rgba(0,151,167,0.08), transparent 32%)",
-          "radial-gradient(circle at 90% 70%, rgba(120,120,255,0.08), transparent 30%)",
-          "radial-gradient(circle at 30% 90%, rgba(0,188,212,0.06), transparent 28%)",
+          "radial-gradient(circle at 12% 18%, rgba(0,151,167,0.035), transparent 40%)",
+          "radial-gradient(circle at 88% 22%, rgba(0,188,212,0.028), transparent 38%)",
+          "radial-gradient(circle at 78% 78%, rgba(0,151,167,0.025), transparent 36%)",
         ].join(", "),
       }}
     >
@@ -289,15 +288,15 @@ export function BandForgeModules() {
       >
         <div
           data-blob
-          className="absolute -top-20 left-[6%] size-[240px] rounded-full bg-[rgb(0_180_255/0.14)] blur-[80px] sm:size-[300px]"
+          className="absolute -top-20 left-[6%] size-[240px] rounded-full bg-[rgb(0_151_167/0.04)] blur-[90px] sm:size-[300px]"
         />
         <div
           data-blob
-          className="absolute top-[38%] right-[-8%] size-[260px] rounded-full bg-[rgb(0_151_167/0.12)] blur-[90px] sm:size-[320px]"
+          className="absolute top-[38%] right-[-8%] size-[260px] rounded-full bg-[rgb(0_188_212/0.035)] blur-[100px] sm:size-[320px]"
         />
         <div
           data-blob
-          className="absolute bottom-[-12%] left-[32%] size-[220px] rounded-full bg-[rgb(120_120_255/0.1)] blur-[85px] sm:size-[280px]"
+          className="absolute bottom-[-12%] left-[32%] size-[220px] rounded-full bg-[rgb(0_151_167/0.03)] blur-[95px] sm:size-[280px]"
         />
       </div>
 
@@ -329,7 +328,7 @@ export function BandForgeModules() {
 
       <div className="bf-container relative z-[2] flex flex-1 flex-col justify-center py-10 sm:py-12 lg:py-12">
         <motion.div
-          className="mx-auto mb-8 max-w-3xl shrink-0 text-center sm:mb-9 lg:mb-10"
+          className="bf-section-head mb-8 shrink-0 lg:mb-12"
           initial={reduceMotion ? false : { opacity: 0, y: 32 }}
           animate={inView ? { opacity: 1, y: 0 } : undefined}
           transition={{ duration: 0.75, ease: EASE }}
@@ -346,7 +345,7 @@ export function BandForgeModules() {
           </p>
         </motion.div>
 
-        <div className="mx-auto grid w-full max-w-5xl grid-cols-1 items-stretch gap-4 sm:grid-cols-2 sm:gap-5 lg:gap-6">
+        <div className="mx-auto grid w-full grid-cols-1 items-stretch gap-4 sm:grid-cols-2 sm:gap-5 lg:gap-[22px]">
           {BRAND_MODULES.map((mod, index) => (
             <ModuleCard
               key={mod.key}

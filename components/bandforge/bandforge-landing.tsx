@@ -2,15 +2,9 @@ import dynamic from "next/dynamic";
 import { BandForgeHeaderMarketing } from "@/components/bandforge/bf-header-marketing";
 import { BandForgeHero } from "@/components/bandforge/bf-hero";
 import { BandForgeSiteFooter } from "@/components/bandforge/bf-site-footer";
+import { BfLandingHashScroll } from "@/components/bandforge/bf-landing-hash-scroll";
+import { BfSectionSeam } from "@/components/bandforge/bf-section-seam";
 import { BfSectionSkeleton } from "@/components/bandforge/bf-section-skeleton";
-
-const BandForgeStatsBar = dynamic(
-  () =>
-    import("@/components/bandforge/bf-stats-bar").then(
-      (m) => m.BandForgeStatsBar,
-    ),
-  { loading: () => <BfSectionSkeleton className="min-h-[56px] sm:min-h-[88px]" /> },
-);
 
 const BandForgeHow = dynamic(
   () => import("@/components/bandforge/bf-how").then((m) => m.BandForgeHow),
@@ -41,12 +35,14 @@ const BandForgeFinalCta = dynamic(
 export function BandForgeLanding() {
   return (
     <div className="min-h-dvh overflow-x-hidden bg-white text-black">
+      <BfLandingHashScroll />
       <BandForgeHeaderMarketing overHero />
       <main>
         <BandForgeHero />
-        <BandForgeStatsBar />
+        <BfSectionSeam />
         <BandForgeHow />
         <BandForgeModules />
+        <BfSectionSeam />
         <BandForgePricing />
         <BandForgeFinalCta />
       </main>

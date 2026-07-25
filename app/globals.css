@@ -371,7 +371,17 @@ html {
     top: -8%;
     width: min(85vw, 640px);
     height: min(70vw, 560px);
-    background: rgb(0 188 212 / 0.16);
+    background: rgb(0 188 212 / 0.07);
+  }
+
+  /* Keep bottom wash soft so it doesn't form a hard band at the hero edge */
+  .bf-ambient-from-top::after {
+    bottom: -8%;
+    right: 5%;
+    width: min(50vw, 360px);
+    height: min(40vw, 280px);
+    background: rgb(0 151 167 / 0.04);
+    opacity: 0.5;
   }
 
   .bf-ambient::after {

@@ -11,14 +11,14 @@ export function BandForgePricing() {
   return (
     <section
       id="pricing"
-      className="bf-ambient scroll-mt-20 border-t border-border-soft bg-white bf-section"
+      className="bf-ambient scroll-mt-20 bg-white bf-section"
     >
       <div className="bf-container">
-        <div className="bf-section-head mb-6 lg:mb-[54px]">
+        <div className="bf-section-head mb-8 lg:mb-12">
           <BfSectionEyebrow className="mb-3">Pricing</BfSectionEyebrow>
           <BfSectionHeading>Start free, upgrade when ready</BfSectionHeading>
         </div>
-        <div className="mx-auto grid max-w-5xl gap-3.5 sm:grid-cols-2 lg:max-w-none lg:grid-cols-3 lg:gap-[22px] lg:items-start">
+        <div className="grid w-full gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-[22px] lg:items-start">
           {BRAND_PRICING_TIERS.map((tier) => (
             <BfPricingCard
               key={tier.id}

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { gsap } from "gsap";
+import { scrollToMarketingHash } from "@/components/bandforge/bf-scroll-to-section";
 
 import "./bubble-menu.css";
 
@@ -231,7 +232,10 @@ export default function BubbleMenu({
                   prefetch
                   aria-label={item.ariaLabel || item.label}
                   className="pill-link"
-                  onClick={closeMenu}
+                  onClick={(e) => {
+                    scrollToMarketingHash(item.href, e);
+                    closeMenu();
+                  }}
                   style={
                     {
                       "--item-rot": `${item.rotation ?? 0}deg`,

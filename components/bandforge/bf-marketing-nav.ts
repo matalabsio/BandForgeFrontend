@@ -27,16 +27,16 @@ export type MarketingNavItem = {
 export const BF_MARKETING_NAV: readonly MarketingNavItem[] = [
   {
     href: "/how-it-works",
-    label: "How it works",
-    ariaLabel: "How it works",
+    label: "The Method",
+    ariaLabel: "The Method",
     icon: "route",
     rotation: -8,
     hoverStyles: { bgColor: "#0097a7", textColor: "#ffffff" },
   },
   {
     href: "/#modules",
-    label: "Modules",
-    ariaLabel: "Modules",
+    label: "The Drills",
+    ariaLabel: "The Drills — Four modules",
     icon: "layout-grid",
     rotation: 8,
     hoverStyles: { bgColor: "#00bcd4", textColor: "#ffffff" },

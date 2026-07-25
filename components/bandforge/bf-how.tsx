@@ -125,7 +125,7 @@ function HowDesktopSteps({
   }, [progressPct, reduceMotion]);
 
   return (
-    <div ref={rootRef} className="mx-auto w-full max-w-[1100px]">
+    <div ref={rootRef} className="mx-auto w-full">
       {/* Progress rail + markers */}
       <div className="relative px-3">
         <div

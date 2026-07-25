@@ -196,6 +196,12 @@ export function BandForgeHero() {
     >
       <BfHeroAntigravity />
 
+      {/* Soft dissolve into the next section — tall, low mid-opacity so no hard cut */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[12] h-40 bg-gradient-to-b from-transparent via-white/25 to-white sm:h-44 lg:h-48"
+        aria-hidden
+      />
+
       {/* Cursor spotlight behind content */}
       {!reduceMotion ? (
         <div
@@ -334,7 +340,7 @@ export function BandForgeHero() {
             </div>
           </div>
 
-          <div className="mt-auto flex w-full shrink-0 flex-col items-center pb-[max(0.25rem,env(safe-area-inset-bottom))] lg:pb-0">
+          <div className="mt-auto flex w-full shrink-0 flex-col items-center pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:pb-10 lg:pb-10">
             <p
               ref={descRef}
               className="relative z-20 mx-auto mb-3 max-w-[40ch] px-1 text-[0.875rem] leading-[1.6] text-muted sm:mb-4 sm:max-w-[46ch] sm:text-base sm:leading-[1.75] lg:mb-4 lg:max-w-[42ch] lg:text-[1.125rem] lg:leading-[1.7]"
