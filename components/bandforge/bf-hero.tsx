@@ -104,10 +104,13 @@ export function BandForgeHero() {
         filter: "none",
         scale: 1,
       });
+      gsap.set(content, { y: -40 });
       return;
     }
 
     const ctx = gsap.context(() => {
+      const contentBaseY = -40;
+      gsap.set(content, { y: contentBaseY });
       gsap.set(words, { opacity: 0, y: 40, filter: "blur(8px)" });
       gsap.set([video, desc, cta], { opacity: 0, y: 18 });
 
@@ -174,7 +177,7 @@ export function BandForgeHero() {
           const p = self.progress;
           gsap.set(content, {
             opacity: 1 - p * 0.85,
-            y: p * -36,
+            y: contentBaseY + p * -36,
             scale: 1 - p * 0.04,
           });
         },
@@ -254,6 +257,7 @@ export function BandForgeHero() {
       <div
         ref={contentRef}
         className="bf-container pointer-events-none relative z-20 flex w-full flex-1 flex-col will-change-transform"
+        style={{ transform: "translateY(-40px)" }}
       >
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col text-center lg:max-w-3xl">
           <div className="flex shrink-0 flex-col items-center px-1 pt-12 sm:pt-14 lg:pt-[97px]">
