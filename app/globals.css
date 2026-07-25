@@ -552,8 +552,8 @@ html {
     background-image: linear-gradient(
       90deg,
       #0097a7 0%,
-      #00bcd4 40%,
-      #26c6da 55%,
+      #00bcd4 35%,
+      #0d1f3c 70%,
       #0097a7 100%
     );
     background-size: 300% 100%;

@@ -43,7 +43,7 @@ function ModuleCard({
   className,
   reduceMotion,
 }: ModuleCardProps) {
-  const cardRef = useRef<HTMLArticleElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const shineRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
