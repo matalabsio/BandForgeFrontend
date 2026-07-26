@@ -2,9 +2,10 @@ import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links
 
 export const BF_FOOTER_PRODUCT = [
   { href: "/diagnostic", label: "Free diagnostic" },
+  { href: "/drills", label: "The Drills" },
   { href: "/writing", label: "Writing Sprint" },
   { href: "/speaking", label: "Speaking Sprint" },
-  { href: "/how-it-works", label: "Mock tests" },
+  { href: "/how-it-works", label: "The Method" },
   { href: "/pricing", label: "Pricing" },
   { href: marketingAppHref(), label: "Practice" },
 ] as const;

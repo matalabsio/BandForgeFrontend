@@ -34,7 +34,7 @@ export const BF_MARKETING_NAV: readonly MarketingNavItem[] = [
     hoverStyles: { bgColor: "#0097a7", textColor: "#ffffff" },
   },
   {
-    href: "/#modules",
+    href: "/drills",
     label: "The Drills",
     ariaLabel: "The Drills — Four modules",
     icon: "layout-grid",
