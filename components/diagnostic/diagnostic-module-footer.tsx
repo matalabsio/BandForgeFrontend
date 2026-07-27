@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -44,13 +45,13 @@ export function DiagnosticModuleFooter({
           disabled={disabled || busy}
           onClick={onClick}
           className={cn(
-            "flex min-h-[var(--spacing-touch,48px)] w-full cursor-pointer items-center justify-center gap-2 rounded-[13px] bg-cyan px-6 font-display text-base font-semibold text-[#06222B] shadow-[0_12px_28px_rgba(0,188,212,0.30)] transition-colors duration-200 hover:bg-brand-sky-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
-            !narrow && "rounded-full text-sm text-white sm:ml-auto sm:max-w-sm",
+            bfPrimaryCtaDiagClass,
+            !narrow && "sm:ml-auto sm:max-w-sm",
           )}
         >
-          <span>{busy ? busyLabel : label}</span>
+          <span className="relative z-[1]">{busy ? busyLabel : label}</span>
           {!busy ? (
-            <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+            <ArrowRight className="relative z-[1] h-4 w-4 shrink-0" aria-hidden />
           ) : null}
         </button>
       </div>

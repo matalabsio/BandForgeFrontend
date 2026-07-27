@@ -1,62 +1,114 @@
 import Link from "next/link";
+import { MapPin } from "lucide-react";
 import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
 import {
   BF_FOOTER_COLUMNS,
   BF_FOOTER_YEAR,
+  type BfFooterLink,
 } from "@/components/bandforge/bf-footer-links";
-import { SITE_ENTITY_DESCRIPTION } from "@/lib/seo/metadata";
+import { cn } from "@/lib/utils";
 
-function FooterColumn({
-  title,
-  links,
-}: {
-  title: string;
-  links: readonly { href: string; label: string }[];
-}) {
+/** Short footer blurb — not the full SEO entity description. */
+const FOOTER_BLURB =
+  "IELTS prep for Telugu- and Urdu-speaking students in Telangana and Andhra Pradesh. Based in Hyderabad.";
+
+function FooterLinkRow({ link }: { link: BfFooterLink }) {
+  const Icon = link.icon;
   return (
-    <div>
-      <p className="font-display text-sm font-semibold text-white">{title}</p>
-      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2.5 lg:mt-4 lg:block lg:space-y-2.5 lg:gap-0">
-        {links.map((l) => (
-          <li key={`${title}-${l.href}-${l.label}`} className="lg:block">
-            <Link
-              href={l.href}
-              prefetch
-              className="cursor-pointer text-[0.8125rem] text-slate transition-colors duration-200 hover:text-cyan lg:text-sm"
-            >
-              {l.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <li>
+      <Link
+        href={link.href}
+        prefetch
+        className="group inline-flex cursor-pointer items-center gap-2 py-1.5 text-[0.8125rem] text-[#8FA3B8] no-underline transition-colors duration-200 hover:text-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 sm:text-[0.875rem]"
+      >
+        <Icon
+          className="size-3.5 shrink-0 text-[#5B6F86] transition-colors duration-200 group-hover:text-cyan"
+          strokeWidth={1.75}
+          aria-hidden
+        />
+        <span>{link.label}</span>
+      </Link>
+    </li>
   );
 }
 
-/** Site footer — Product / Resources / Company / Legal (non-landing pages). */
-export function BandForgeSiteFooter() {
+type Props = {
+  className?: string;
+  /** When true, omit outer top border (e.g. already bordered by parent). */
+  embedded?: boolean;
+};
+
+/** Site footer — compact brand + icon links, responsive. */
+export function BandForgeSiteFooter({ className, embedded = false }: Props) {
   return (
-    <footer className="border-t border-white/7 bg-navy-deep text-white">
-      <div className="mx-auto w-full max-w-[1200px] px-5 py-8 sm:px-6 sm:py-[34px] lg:px-10 lg:py-12">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] lg:gap-10">
+    <footer
+      className={cn(
+        "bg-[#0D1F3C] text-white",
+        !embedded && "border-t border-white/[0.07]",
+        className,
+      )}
+    >
+      <div className="mx-auto w-full max-w-[1100px] px-5 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
+        <div className="grid gap-9 sm:grid-cols-2 lg:grid-cols-[minmax(0,280px)_1fr_minmax(0,160px)] lg:gap-12 xl:gap-16">
+          {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-[9px] lg:gap-2.5">
+            <Link
+              href="/"
+              prefetch
+              className="inline-flex cursor-pointer items-center gap-2.5 no-underline transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0D1F3C]"
+              aria-label="BandForge home"
+            >
               <BfBrandBars size="footer" />
-              <p className="font-display text-[1.0625rem] font-bold tracking-tight lg:text-[1.1875rem]">
+              <span className="font-display text-[1.0625rem] font-bold tracking-tight sm:text-[1.125rem]">
                 Band<span className="text-cyan">Forge</span>
-              </p>
-            </div>
-            <p className="mt-3.5 max-w-[42ch] text-[0.8125rem] leading-normal text-[#7e93ad] lg:text-sm lg:leading-relaxed">
-              {SITE_ENTITY_DESCRIPTION}
+              </span>
+            </Link>
+
+            <p className="mt-3.5 max-w-[34ch] text-[0.8125rem] leading-[1.55] text-[#8FA3B8] sm:text-[0.875rem] sm:leading-[1.6]">
+              {FOOTER_BLURB}
+            </p>
+
+            <p className="mt-4 inline-flex items-center gap-1.5 text-[0.75rem] text-[#6B7F96]">
+              <MapPin className="size-3.5 shrink-0 text-cyan" strokeWidth={2} aria-hidden />
+              <span>Hyderabad, Telangana</span>
             </p>
           </div>
-          {BF_FOOTER_COLUMNS.map((col) => (
-            <FooterColumn key={col.title} title={col.title} links={col.links} />
-          ))}
+
+          {/* Link columns */}
+          {BF_FOOTER_COLUMNS.map((col) => {
+            const ColIcon = col.icon;
+            return (
+              <nav key={col.title} aria-label={col.title} className="min-w-0">
+                <div className="mb-3 flex items-center gap-2">
+                  <ColIcon
+                    className="size-3.5 shrink-0 text-cyan"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  <p className="font-display text-[0.8125rem] font-semibold tracking-wide text-white uppercase sm:text-sm sm:normal-case sm:tracking-tight">
+                    {col.title}
+                  </p>
+                </div>
+                <ul className="flex flex-col">
+                  {col.links.map((link) => (
+                    <FooterLinkRow
+                      key={`${col.title}-${link.href}-${link.label}`}
+                      link={link}
+                    />
+                  ))}
+                </ul>
+              </nav>
+            );
+          })}
         </div>
 
-        <div className="mt-8 border-t border-white/6 pt-5 text-[0.6875rem] text-[#54647c] lg:mt-10 lg:text-xs">
-          © {BF_FOOTER_YEAR} BandForge · MATA Labs OPC
+        <div className="mt-9 flex flex-col gap-2 border-t border-white/[0.08] pt-5 sm:mt-10 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-[0.6875rem] text-[#64748B] sm:text-xs">
+            © {BF_FOOTER_YEAR} BandForge · MATA Labs OPC
+          </p>
+          <p className="text-[0.6875rem] text-[#54647C] sm:text-xs">
+            IELTS prep for Telugu &amp; Urdu speakers
+          </p>
         </div>
       </div>
     </footer>

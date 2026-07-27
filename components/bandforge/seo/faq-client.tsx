@@ -59,10 +59,10 @@ export function FaqClient() {
               aria-selected={active}
               onClick={() => setCategory(cat.id)}
               className={cn(
-                "shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-[0.8125rem] font-semibold transition-colors duration-200",
+                "shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-[0.8125rem] font-semibold transition-[background-position,box-shadow,border-color,color,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                 active
-                  ? "border-cyan bg-cyan text-white"
-                  : "border-border-soft bg-white text-navy hover:border-cyan/40",
+                  ? "border-transparent bg-[linear-gradient(90deg,#0097a7_0%,#00bcd4_50%,#0097a7_100%)] bg-[length:200%_100%] bg-left text-white shadow-[0_8px_22px_rgb(0_151_167/0.28)] hover:bg-right hover:shadow-[0_14px_32px_rgb(0_151_167/0.38)]"
+                  : "border-border-soft bg-white text-navy hover:border-[#0097a7]/40 hover:text-[#0097a7]",
               )}
             >
               {cat.label}

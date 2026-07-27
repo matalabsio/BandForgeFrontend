@@ -6,6 +6,9 @@ import { DashboardAppShellSkeleton } from "@/components/bandforge/dashboard/dash
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import { syncDiagnosticLeadAfterAuth } from "@/lib/diagnostic-lead-sync";
 import { readDiagnosticResults } from "@/lib/diagnostic-session";
+import { isDiagnosticComplete, hasFullSkillProgram } from "@/lib/entitlement";
+import { getLearningProfile } from "@/lib/learning-api";
+import { getSubscription } from "@/lib/payments";
 import {
   resolvePostLoginDestination,
   safePostLoginPath,
@@ -21,18 +24,38 @@ function PostLoginContinueInner() {
     async function continueAfterLogin() {
       const snapshot = readDiagnosticResults();
       const lead = readDiagnosticLead();
-      const destination = resolvePostLoginDestination(
-        requestedPath,
-        Boolean(snapshot),
-      );
 
       if (snapshot && lead) {
         await syncDiagnosticLeadAfterAuth(snapshot, lead).catch(() => undefined);
       }
 
-      if (!cancelled) {
-        window.location.replace(destination);
+      let hasServerDiagnostic = false;
+      let hasPaidFullSkillProgram = false;
+
+      try {
+        const [profile, subscription] = await Promise.all([
+          getLearningProfile().catch(() => null),
+          getSubscription().catch(() => null),
+        ]);
+        if (profile) {
+          hasServerDiagnostic = isDiagnosticComplete(profile);
+        }
+        if (subscription) {
+          hasPaidFullSkillProgram = hasFullSkillProgram(subscription);
+        }
+      } catch {
+        /* offline / API — fall back to local diagnostic only */
       }
+
+      if (cancelled) return;
+
+      const destination = resolvePostLoginDestination(
+        requestedPath,
+        Boolean(snapshot),
+        { hasServerDiagnostic, hasPaidFullSkillProgram },
+      );
+
+      window.location.replace(destination);
     }
 
     void continueAfterLogin();

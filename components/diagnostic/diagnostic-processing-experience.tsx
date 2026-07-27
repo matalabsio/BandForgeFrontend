@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
-import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
+import { gsap } from "gsap";
+import { useGSAP } from "@gsap/react";
+import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
+import { DIAGNOSTIC_EXAM_STEPS } from "@/components/diagnostic/diagnostic-exam-steps";
 import { DiagnosticProcessingLoader } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import { diagnosticPaths, DIAGNOSTIC_PROCESSING_SEC } from "@/lib/diagnostic-catalog";
 import { useCountdown } from "@/hooks/use-countdown";
@@ -15,6 +18,8 @@ import {
   readDiagnosticProgress,
 } from "@/lib/diagnostic-storage";
 import { cn } from "@/lib/utils";
+
+gsap.registerPlugin(useGSAP);
 
 const WRITING_POLL_MS = 2000;
 const WRITING_WAIT_TIMEOUT_MS = 45_000;
@@ -30,6 +35,7 @@ export function DiagnosticProcessingExperience() {
   const [writingReady, setWritingReady] = useState(false);
   const writingResolvedRef = useRef(false);
   const startedAtRef = useRef(Date.now());
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!readDiagnosticResults()) {
@@ -37,7 +43,6 @@ export function DiagnosticProcessingExperience() {
     }
   }, [router]);
 
-  // Poll background Writing evaluation while the student waits on this screen.
   useEffect(() => {
     const progress = readDiagnosticProgress();
     const needsWriting =
@@ -115,21 +120,45 @@ export function DiagnosticProcessingExperience() {
     router.replace(diagnosticPaths.results);
   }, [remaining, writingReady, router]);
 
+  useGSAP(
+    () => {
+      const root = rootRef.current;
+      if (!root) return;
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduce) return;
+      const bits = root.querySelectorAll<HTMLElement>("[data-proc-reveal]");
+      gsap.fromTo(
+        bits,
+        { opacity: 0, y: 18, filter: "blur(8px)" },
+        {
+          opacity: 1,
+          y: 0,
+          filter: "blur(0px)",
+          duration: 0.6,
+          stagger: 0.08,
+          ease: "power3.out",
+          clearProps: "filter",
+        },
+      );
+    },
+    { scope: rootRef },
+  );
+
   const statusLines: Array<{
     text: string;
     state: "pending" | "active" | "done";
   }> = [
     {
-      text: "Submitting Listening and Reading answers…",
+      text: "Submitting Listening and Reading answers\u2026",
       state: activeLine > 0 ? "done" : "active",
     },
     {
       text:
         writingLine === "failed"
-          ? "Writing evaluation unavailable — continuing…"
+          ? "Writing evaluation unavailable \u2014 continuing\u2026"
           : writingLine === "done"
             ? "Writing evaluation complete"
-            : "AI-evaluating your Writing response…",
+            : "AI-evaluating your Writing response\u2026",
       state:
         writingLine === "done" || writingLine === "failed"
           ? "done"
@@ -138,63 +167,86 @@ export function DiagnosticProcessingExperience() {
             : "pending",
     },
     {
-      text: "Queuing Speaking recording for certified examiner review…",
+      text: "Queuing Speaking recording for certified examiner review\u2026",
       state: activeLine >= 2 ? (writingReady ? "done" : "active") : "pending",
     },
   ];
 
   return (
-    <DiagnosticChrome variant="marketing" fillViewport>
+    <DiagnosticSplitShell
+      steps={DIAGNOSTIC_EXAM_STEPS}
+      currentStep={4}
+      heading="Calculating results."
+      subtitle="We\u2019re scoring your diagnostic now."
+      footerNote="Almost done"
+      fillViewport
+    >
       <div
-        className="flex min-h-0 flex-1 flex-col items-center justify-center bg-white px-6 py-16"
-        style={{
-          backgroundImage:
-            "radial-gradient(560px 460px at 50% 38%, rgba(0,151,167,0.16), rgba(13,31,60,0) 64%)",
-        }}
+        ref={rootRef}
+        className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto bg-[radial-gradient(ellipse_at_top,_#F0FBFC_0%,_#FFFFFF_55%)] px-5 py-12 sm:px-8"
       >
-        <DiagnosticProcessingLoader />
-        <h1 className="text-center font-display text-[26px] font-bold tracking-tight text-navy">
-          Submitting Your Diagnostic.
-        </h1>
+        <div
+          data-proc-reveal
+          className="w-full max-w-md rounded-[24px] border border-[#E8EEF4] bg-white p-7 shadow-[0_16px_48px_rgba(13,31,60,0.07)] sm:p-8"
+        >
+          <div className="flex justify-center">
+            <DiagnosticProcessingLoader />
+          </div>
+          <h1
+            data-proc-reveal
+            className="mt-2 text-center font-display text-[24px] font-bold tracking-[-0.02em] text-navy sm:text-[26px]"
+          >
+            Submitting your diagnostic
+          </h1>
+          <p
+            data-proc-reveal
+            className="mt-2 text-center text-[14px] text-[#64748B]"
+          >
+            Hang tight — this usually takes under a minute.
+          </p>
 
-        <ul className="mt-8 w-full max-w-sm space-y-4">
-          {statusLines.map((line) => {
-            const done = line.state === "done";
-            const active = line.state === "active";
-            const pending = line.state === "pending";
+          <ul className="mt-7 space-y-3">
+            {statusLines.map((line) => {
+              const done = line.state === "done";
+              const active = line.state === "active";
+              const pending = line.state === "pending";
 
-            return (
-              <li
-                key={line.text}
-                className={cn(
-                  "flex items-center gap-3 text-sm transition-opacity duration-500",
-                  pending && "opacity-40",
-                )}
-              >
-                <span
+              return (
+                <li
+                  key={line.text}
+                  data-proc-reveal
                   className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-full",
-                    done && "bg-cyan/16",
-                    active && "border-2 border-navy/14 border-t-teal animate-spin",
-                    pending && "border-2 border-navy/14",
+                    "flex items-center gap-3 rounded-[14px] border px-3.5 py-3 text-sm transition-opacity duration-500",
+                    pending && "border-[#EEF2F6] opacity-45",
+                    active && "border-cyan/25 bg-[#F0FBFC]",
+                    done && "border-[#E8EEF4] bg-[#F8FBFC]",
                   )}
                 >
-                  {done ? (
-                    <Check className="size-3 text-cyan" strokeWidth={3} />
-                  ) : null}
-                </span>
-                <span
-                  className={cn(
-                    active ? "font-medium text-navy" : "font-light text-[#5A6B82]",
-                  )}
-                >
-                  {line.text}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+                  <span
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-full",
+                      done && "bg-cyan text-white",
+                      active && "animate-spin border-2 border-cyan/20 border-t-cyan",
+                      pending && "border-2 border-[#D5DCE6]",
+                    )}
+                  >
+                    {done ? (
+                      <Check className="size-3.5" strokeWidth={3} aria-hidden />
+                    ) : null}
+                  </span>
+                  <span
+                    className={cn(
+                      active ? "font-medium text-navy" : "font-normal text-[#5A6B82]",
+                    )}
+                  >
+                    {line.text}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </div>
-    </DiagnosticChrome>
+    </DiagnosticSplitShell>
   );
 }

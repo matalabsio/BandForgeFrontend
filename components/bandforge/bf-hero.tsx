@@ -260,10 +260,10 @@ export function BandForgeHero() {
         style={{ transform: "translateY(-40px)" }}
       >
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col text-center lg:max-w-3xl">
-          <div className="flex shrink-0 flex-col items-center px-1 pt-12 sm:pt-14 lg:pt-[97px]">
+          <div className="flex shrink-0 flex-col items-center px-1 pt-8 sm:pt-10 lg:pt-12">
             <h1
               id="bf-hero-heading"
-              className="relative z-20 font-display mb-0 text-[1.625rem] leading-[1.28] font-bold tracking-[-0.03em] text-navy sm:text-[2.125rem] sm:leading-[1.24] lg:text-[3.25rem] lg:leading-[1.15] lg:tracking-[-0.035em]"
+              className="relative z-20 font-display mb-0 text-[1.5rem] leading-[1.28] font-bold tracking-[-0.03em] text-navy sm:text-[2rem] sm:leading-[1.24] lg:text-[2.75rem] lg:leading-[1.15] lg:tracking-[-0.035em]"
             >
               {/* Mobile — 3 lines; IELTS + band in logo colors */}
               <span className="lg:hidden">
@@ -307,36 +307,39 @@ export function BandForgeHero() {
             </h1>
           </div>
 
-          <div className="pointer-events-none flex min-h-0 flex-1 flex-col items-center justify-center py-3 sm:py-4 lg:py-5">
+          <div className="pointer-events-none flex min-h-0 w-full flex-1 flex-col items-center justify-center px-4 py-2 sm:px-6 sm:py-3">
             <div
               ref={videoRef}
-              className="relative shrink-0 will-change-transform"
+              className="relative mx-auto w-full max-w-[min(96vw,400px)] shrink-0 will-change-transform sm:max-w-[min(82vw,460px)] lg:max-w-[min(48vw,520px)]"
             >
               <div data-hero-video-float className="will-change-transform">
                 <button
                   type="button"
-                  className="pointer-events-auto group relative inline-flex cursor-pointer items-center gap-3 rounded-full border border-[#d5e3ea] bg-white/90 py-2 pr-5 pl-2 shadow-[0_10px_28px_-16px_rgb(0_151_167/0.35)] backdrop-blur-[8px] transition-[border-color,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-cyan/40 hover:shadow-[0_14px_32px_-14px_rgb(0_151_167/0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-                  aria-label="Play avatar demo"
+                  className="pointer-events-auto group relative block w-full cursor-pointer overflow-hidden rounded-[16px] border border-[#94A3B8]/55 bg-transparent shadow-none backdrop-blur-[2px] transition-[border-color,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-cyan/50 hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:rounded-[18px]"
+                  style={{ aspectRatio: "16 / 10" }}
+                  aria-label="Play avatar demo — 30 second walkthrough"
                 >
-                  <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(145deg,#e8f7f9_0%,#ffffff_55%,#e0f7fa_100%)] ring-2 ring-cyan/25 sm:size-12">
-                    <span
-                      className="size-full bg-[radial-gradient(circle_at_50%_35%,#b2ebf2_0%,#4dd0e1_42%,#0097a7_100%)] opacity-80"
-                      aria-hidden
-                    />
-                    <span className="absolute inset-0 flex items-center justify-center bg-navy/25 transition-colors duration-300 group-hover:bg-navy/35">
+                  {/* Inner frame edge */}
+                  <span
+                    className="pointer-events-none absolute inset-1.5 rounded-[12px] border border-[#64748B]/35 sm:inset-2 sm:rounded-[13px]"
+                    aria-hidden
+                  />
+
+                  <span className="relative z-[1] flex h-full flex-col items-center justify-center gap-2 px-4 sm:gap-2.5">
+                    <span className="flex size-11 items-center justify-center rounded-full bg-[linear-gradient(145deg,#26C6DA_0%,#00ACC1_48%,#00838F_100%)] text-white shadow-[0_8px_18px_rgba(0,151,167,0.28)] transition-transform duration-300 group-hover:scale-105 sm:size-12">
                       <Play
-                        className="ml-0.5 size-3.5 fill-white text-white sm:size-4"
+                        className="ml-0.5 size-4 fill-white text-white sm:size-[1.125rem]"
                         strokeWidth={0}
                         aria-hidden
                       />
                     </span>
-                  </span>
-                  <span className="text-left">
-                    <span className="block font-display text-[0.9375rem] leading-none font-semibold text-navy">
-                      Avatar demo
-                    </span>
-                    <span className="mt-1 block text-[0.75rem] leading-none text-muted">
-                      30 sec walkthrough
+                    <span className="text-center">
+                      <span className="block font-display text-[0.875rem] font-semibold tracking-tight text-navy sm:text-[0.9375rem]">
+                        Avatar demo
+                      </span>
+                      <span className="mt-0.5 block text-[0.6875rem] text-muted sm:text-[0.75rem]">
+                        30 sec walkthrough
+                      </span>
                     </span>
                   </span>
                 </button>
@@ -344,10 +347,10 @@ export function BandForgeHero() {
             </div>
           </div>
 
-          <div className="mt-auto flex w-full shrink-0 flex-col items-center pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:pb-10 lg:pb-10">
+          <div className="mt-auto flex w-full shrink-0 flex-col items-center pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6 lg:pb-7">
             <p
               ref={descRef}
-              className="relative z-20 mx-auto mb-3 max-w-[40ch] px-1 text-[0.875rem] leading-[1.6] text-muted sm:mb-4 sm:max-w-[46ch] sm:text-base sm:leading-[1.75] lg:mb-4 lg:max-w-[42ch] lg:text-[1.125rem] lg:leading-[1.7]"
+              className="relative z-20 mx-auto mb-2.5 max-w-[40ch] px-1 text-[0.8125rem] leading-[1.55] text-muted sm:mb-3 sm:max-w-[46ch] sm:text-[0.9375rem] sm:leading-[1.65] lg:mb-3.5 lg:max-w-[42ch] lg:text-base lg:leading-[1.65]"
             >
               A free diagnostic test that tells you exactly where you stand —
               across all four sections — in 90 minutes.

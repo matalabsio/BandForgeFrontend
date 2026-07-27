@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { BandForgeHow } from "@/components/bandforge/bf-how";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
+import { SeoPrimaryCta, SeoSecondaryCta } from "@/components/seo/seo-cta-button";
 import { GlowCard, type GlowColor } from "@/components/ui/spotlight-card";
 import { BRAND_HOW_STEPS } from "@/lib/brand-mock-data";
 import { PLAYBOOK_HOW_STEPS } from "@/lib/seo/marketing-pricing";
@@ -18,21 +19,8 @@ const STEP_GLOW: Record<number, GlowColor> = {
 function HowItWorksCta() {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <Link
-        href="/diagnostic"
-        prefetch
-        className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-cyan px-6 text-sm font-semibold text-white no-underline transition-colors duration-200 hover:bg-brand-sky-hover"
-      >
-        Take free diagnostic
-        <ArrowRight className="size-4" strokeWidth={2.25} aria-hidden />
-      </Link>
-      <Link
-        href="/pricing"
-        prefetch
-        className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-border-soft bg-white px-6 text-sm font-semibold text-navy no-underline transition-colors duration-200 hover:border-cyan/40"
-      >
-        View pricing
-      </Link>
+      <SeoPrimaryCta href="/diagnostic">Take free diagnostic</SeoPrimaryCta>
+      <SeoSecondaryCta href="/pricing">View pricing</SeoSecondaryCta>
     </div>
   );
 }

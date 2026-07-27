@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { SeoPrimaryCta } from "@/components/seo/seo-cta-button";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 
 type Props = {
@@ -21,14 +20,9 @@ export function BfDiagnosticCtaBand({
           </p>
           <p className="mt-1 text-sm text-ink/60">{subline}</p>
         </div>
-        <Link
-          href={diagnosticPaths.landing}
-          prefetch
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-cyan px-5 py-3 font-display text-sm font-semibold text-white no-underline shadow-[0_8px_20px_rgb(0_151_167/0.3)] transition-colors hover:bg-brand-sky-hover sm:px-6 sm:text-[0.9375rem]"
-        >
+        <SeoPrimaryCta href={diagnosticPaths.landing} className="shrink-0">
           Start free diagnostic
-          <ArrowRight className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
-        </Link>
+        </SeoPrimaryCta>
       </div>
     </div>
   );

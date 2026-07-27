@@ -11,7 +11,7 @@ import {
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
-import { hasFullSkillProgram } from "@/lib/entitlement";
+import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
@@ -25,6 +25,7 @@ import {
   formatUserDisplayName,
   getUserFirstName,
 } from "@/lib/user-display";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,11 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
   const subscription = await fetchSubscription(cookieHeader);
   const learning = await fetchLearningProfile(cookieHeader);
   const profile = learning ?? emptyLearningProfile(userId);
+
+  // Diagnostic-first: no baseline → take the free diagnostic before dashboard/paywall
+  if (!isDiagnosticComplete(profile)) {
+    redirect("/diagnostic");
+  }
 
   if (!hasFullSkillProgram(subscription)) {
     return (

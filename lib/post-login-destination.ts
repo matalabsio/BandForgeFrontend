@@ -1,6 +1,22 @@
 const DASHBOARD_PATH = "/dashboard";
 const DIAGNOSTIC_LANDING_PATH = "/diagnostic";
 const DIAGNOSTIC_PLAN_PATH = "/diagnostic/plan";
+const ONBOARDING_PATH = "/onboarding";
+
+/** App entry paths that should follow diagnostic-first routing. */
+const DEFAULT_ENTRY_PATHS = new Set([
+  DASHBOARD_PATH,
+  DIAGNOSTIC_LANDING_PATH,
+  ONBOARDING_PATH,
+  "/",
+]);
+
+export type PostLoginDestinationOptions = {
+  /** Server learning profile already has a diagnostic baseline. */
+  hasServerDiagnostic?: boolean;
+  /** Active Full Skill Program subscription. */
+  hasPaidFullSkillProgram?: boolean;
+};
 
 export function safePostLoginPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
@@ -9,21 +25,38 @@ export function safePostLoginPath(raw: string | null | undefined): string {
   return raw;
 }
 
+function isDefaultEntryPath(path: string): boolean {
+  return DEFAULT_ENTRY_PATHS.has(path);
+}
+
 /**
- * A completed guest diagnostic only exists in browser storage until the first
- * full-account login. Keep that user in the conversion flow instead of sending
- * them through the empty-dashboard guard and back to the diagnostic start.
+ * Resolve where to send a user after login / OAuth continue.
+ *
+ * Diagnostic-first:
+ * - No diagnostic + dashboard/onboarding/diagnostic entry → `/diagnostic`
+ * - Local or server diagnostic + unpaid entry → `/diagnostic/plan`
+ * - Diagnostic + paid → `/dashboard` for default entries
+ * - Explicit deep links (`/pricing`, `/scores`, …) are preserved
  */
 export function resolvePostLoginDestination(
   requestedPath: string | null | undefined,
   hasLocalDiagnosticResults: boolean,
+  options: PostLoginDestinationOptions = {},
 ): string {
   const safePath = safePostLoginPath(requestedPath);
-  if (
-    hasLocalDiagnosticResults &&
-    (safePath === DASHBOARD_PATH || safePath === DIAGNOSTIC_LANDING_PATH)
-  ) {
+  const hasServerDiagnostic = Boolean(options.hasServerDiagnostic);
+  const hasPaid = Boolean(options.hasPaidFullSkillProgram);
+  const hasDiagnostic = hasLocalDiagnosticResults || hasServerDiagnostic;
+
+  if (isDefaultEntryPath(safePath)) {
+    if (!hasDiagnostic) {
+      return DIAGNOSTIC_LANDING_PATH;
+    }
+    if (hasPaid) {
+      return DASHBOARD_PATH;
+    }
     return DIAGNOSTIC_PLAN_PATH;
   }
+
   return safePath;
 }

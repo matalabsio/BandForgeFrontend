@@ -11,56 +11,15 @@ import {
   productionLoginUrl,
   PRODUCTION_OAUTH_ORIGIN,
 } from "@/lib/auth-site";
-import { isPhoneOtpEnabled } from "@/lib/flags";
 import {
   clearAuthStorage,
   hasSessionHintCookie,
 } from "@/lib/session";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
-import { readDiagnosticResults } from "@/lib/diagnostic-session";
-import { resolvePostLoginDestination } from "@/lib/post-login-destination";
+import { safePostLoginPath } from "@/lib/post-login-destination";
 
 function hasAuthCookies(): boolean {
   return hasSessionHintCookie();
-}
-
-function LoginTrustRow() {
-  const items = [
-    "Instant Reading & Listening scores",
-    "Real exam timing on mocks",
-    "Progress tracked on your dashboard",
-  ] as const;
-
-  return (
-    <ul className="mt-6 space-y-2.5 border-t border-border/70 pt-5">
-      {items.map((item) => (
-        <li
-          key={item}
-          className="flex items-start gap-2.5 text-body text-ink/68"
-        >
-          <CheckIcon className="mt-0.5 size-4 shrink-0 text-success" />
-          {item}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
 }
 
 function LoginForm() {
@@ -105,19 +64,18 @@ function LoginForm() {
   useEffect(() => {
     if (loading || onDeployPreview) return;
 
-    const dest = resolvePostLoginDestination(
-      next,
-      Boolean(readDiagnosticResults()),
-    );
+    const continueUrl = `/auth/continue?next=${encodeURIComponent(
+      safePostLoginPath(next),
+    )}`;
 
     if (hasAuthCookies() && !isAuthenticated && !escalatedToBootstrap.current) {
       escalatedToBootstrap.current = true;
-      router.replace(authBootstrapPath(dest));
+      router.replace(authBootstrapPath(continueUrl));
       return;
     }
 
     if (isAuthenticated && hasAuthCookies()) {
-      window.location.replace(dest);
+      window.location.replace(continueUrl);
     }
   }, [loading, isAuthenticated, next, onDeployPreview, router]);
 
@@ -127,24 +85,24 @@ function LoginForm() {
         title="Redirecting to sign in"
         subtitle="Deploy previews use production authentication so your Google session stays secure."
       >
-        <p className="text-body text-ink/70">
+        <p className="text-center text-base text-[#081B33]/60">
           Redirecting to{" "}
-          <span className="font-semibold text-teal">
+          <span className="font-semibold text-[#00A9C0]">
             {PRODUCTION_OAUTH_ORIGIN.replace(/^https:\/\//, "")}
           </span>
           …
         </p>
-        <p className="mt-4 text-meta text-ink/55">
+        <p className="mt-4 text-center text-sm text-[#081B33]/45">
           <a
             href={productionLoginUrl(next)}
-            className="cursor-pointer font-semibold text-teal underline-offset-2 hover:underline"
+            className="cursor-pointer font-semibold text-[#00A9C0] underline-offset-2 hover:underline"
           >
             Continue now
           </a>
           {" · "}
           <a
             href={`/login?stay=1&next=${encodeURIComponent(next)}`}
-            className="cursor-pointer text-ink/60 underline-offset-2 hover:underline"
+            className="cursor-pointer text-[#081B33]/50 underline-offset-2 hover:underline"
           >
             Stay on preview (UI only)
           </a>
@@ -159,7 +117,9 @@ function LoginForm() {
         title="Welcome back"
         subtitle="You are already signed in. Taking you to your dashboard."
       >
-        <p className="text-body text-ink/70">Redirecting to your dashboard…</p>
+        <p className="text-center text-base text-[#081B33]/60">
+          Redirecting to your dashboard…
+        </p>
       </AuthShell>
     );
   }
@@ -167,17 +127,17 @@ function LoginForm() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to pick up where you left off — mocks, scores, and AI feedback are waiting on your dashboard."
+      subtitle="Continue your IELTS preparation."
     >
       {onDeployPreview && stayOnPreview ? (
         <p
-          className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-meta leading-relaxed text-ink/80"
+          className="mb-8 text-center text-sm leading-relaxed text-[#081B33]/60"
           role="status"
         >
           Preview URLs cannot keep a Google session (cookies are on{" "}
           <a
             href={productionLoginUrl(next)}
-            className="cursor-pointer font-semibold text-teal underline-offset-2 hover:underline"
+            className="cursor-pointer font-semibold text-[#00A9C0] underline-offset-2 hover:underline"
           >
             bandforge-web.vercel.app
           </a>
@@ -187,7 +147,7 @@ function LoginForm() {
 
       {formError ? (
         <p
-          className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-meta font-medium text-danger"
+          className="mb-8 text-center text-sm font-medium text-[#081B33]/70"
           role="alert"
         >
           {formError}
@@ -196,27 +156,19 @@ function LoginForm() {
 
       <GoogleSignInButton next={next} />
 
-      <LoginTrustRow />
+      <p className="mt-6 text-center text-sm text-[#081B33]/45">
+        Secure authentication with Google
+      </p>
 
-      <p className="mt-6 text-center text-meta text-ink/55">
+      <p className="mt-10 text-center text-sm text-[#081B33]/45">
         New to BandForge?{" "}
         <Link
           href="/signup"
-          className="cursor-pointer font-semibold text-teal transition-colors duration-200 hover:text-teal-light"
+          className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
         >
           Create your account
         </Link>
       </p>
-
-      {!isPhoneOtpEnabled() ? (
-        <p className="mt-3 text-center text-meta text-ink/45">
-          Email, password, and phone OTP sign-in are coming soon.
-        </p>
-      ) : (
-        <p className="mt-3 text-center text-meta text-ink/45">
-          Phone OTP sign-in is coming soon.
-        </p>
-      )}
     </AuthShell>
   );
 }
@@ -227,9 +179,9 @@ export default function LoginPage() {
       fallback={
         <AuthShell
           title="Welcome back"
-          subtitle="Sign in to continue to your BandForge dashboard."
+          subtitle="Continue your IELTS preparation."
         >
-          <p className="text-body text-ink/70">Loading…</p>
+          <p className="text-center text-base text-[#081B33]/60">Loading…</p>
         </AuthShell>
       }
     >

@@ -15,6 +15,7 @@ import {
   BRAND_ONBOARDING_LANGUAGES,
   BRAND_ONBOARDING_STEPS,
 } from "@/lib/brand-mock-data";
+import { readDiagnosticResults } from "@/lib/diagnostic-session";
 import { cn } from "@/lib/utils";
 
 const BAND_OPTIONS = [5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5] as const;
@@ -99,7 +100,9 @@ export function OnboardingExperience() {
 
   const goNext = () => {
     if (step >= 4) {
-      router.push("/dashboard");
+      // Diagnostic-first: finish onboarding → diagnostic unless guest already has results
+      const hasLocalResults = Boolean(readDiagnosticResults());
+      router.push(hasLocalResults ? "/diagnostic/plan" : "/diagnostic");
       return;
     }
     setStep((s) => s + 1);

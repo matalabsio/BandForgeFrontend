@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen } from "lucide-react";
-import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
+import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { DiagnosticModuleGuard } from "@/components/diagnostic/diagnostic-module-guard";
-import {
-  DiagnosticExamShell,
-  DiagnosticPassageText,
-} from "@/components/diagnostic/diagnostic-exam-shell";
+import { DIAGNOSTIC_EXAM_STEPS, examStepIndex } from "@/components/diagnostic/diagnostic-exam-steps";
+import { DiagnosticPassageText } from "@/components/diagnostic/diagnostic-exam-shell";
+import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-module-footer";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
 import { DIAGNOSTIC_READING_TIMER_SEC } from "@/lib/diagnostic-catalog";
 import {
@@ -26,9 +24,7 @@ import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
 import { DiagnosticReadingMatchingHeadings } from "@/components/diagnostic/diagnostic-reading-matching-headings";
 import { ReadingQuestionInput } from "@/modules/reading/components/reading-question-input";
 import { SentenceInlineBlank } from "@/modules/listening/components/listening-inline-answer";
-import {
-  splitPromptBlank,
-} from "@/modules/reading/lib/reading-inline-blank";
+import { splitPromptBlank } from "@/modules/reading/lib/reading-inline-blank";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { cn } from "@/lib/utils";
 
@@ -142,7 +138,7 @@ function QuestionsContent({
     <>
       <div className="mb-4 rounded-xl border border-cyan/20 bg-cyan/10 p-3.5 lg:mb-5">
         <p className="font-mono text-[11px] tracking-wide text-teal uppercase">
-          Questions 1–{questionCount}
+          Questions 1\u2013{questionCount}
         </p>
         <p className="mt-1 text-[13.5px] leading-snug font-light text-[#3D4D63]">
           Answer all questions based on the passage.
@@ -235,79 +231,96 @@ export function DiagnosticReadingExperience() {
     ["--reading-border" as string]: "rgb(13 31 60 / 0.12)",
   };
 
+  const loading = !pack;
+
   return (
     <DiagnosticModuleGuard module="reading">
-      <DiagnosticChrome variant="exam" fillViewport>
-        <DiagnosticExamShell
-          module="reading"
-          moduleIcon={BookOpen}
-          error={error}
-          loading={!pack}
-          footerLabel="Submit reading"
-          footerBusy={submitting}
-          onFooter={handleSubmit}
-          footerWidth="full"
-          timer={
-            <DiagnosticTimerPill
-              durationSeconds={DIAGNOSTIC_READING_TIMER_SEC}
-              onExpire={handleSubmit}
-            />
-          }
-        >
-          {pack ? (
-            <div
-              className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row"
-              style={readingThemeVars}
-            >
-              {/* Mobile tabs */}
-              <div className="flex shrink-0 gap-1.5 px-4 pt-3 sm:px-6 lg:hidden">
-                {(["passage", "questions"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTab(t)}
+      <DiagnosticSplitShell
+        steps={DIAGNOSTIC_EXAM_STEPS}
+        currentStep={examStepIndex("reading")}
+        heading="Reading"
+        subtitle="Read the passage carefully, then answer the questions."
+        fillViewport
+        timer={
+          <DiagnosticTimerPill
+            durationSeconds={DIAGNOSTIC_READING_TIMER_SEC}
+            onExpire={handleSubmit}
+          />
+        }
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+          {error ? (
+            <p className="shrink-0 border-b border-red-100 bg-red-50 px-4 py-2.5 text-center text-sm text-red-700" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" role="status" aria-label="Loading" />
+            </div>
+          ) : (
+            <>
+              <div
+                className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row"
+                style={readingThemeVars}
+              >
+                {/* Mobile tabs */}
+                <div className="flex shrink-0 gap-1.5 px-4 pt-3 sm:px-6 lg:hidden">
+                  {(["passage", "questions"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTab(t)}
+                      className={cn(
+                        "flex-1 cursor-pointer py-2.5 text-center text-sm font-medium capitalize transition-colors",
+                        tab === t
+                          ? "rounded-t-[11px] border border-b-0 border-navy/10 bg-navy/[0.05] font-semibold text-navy"
+                          : "text-[#6E83A0]",
+                      )}
+                    >
+                      {t === "passage" ? "Passage" : "Questions"}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:contents">
+                  {/* Passage panel */}
+                  <div
                     className={cn(
-                      "flex-1 cursor-pointer py-2.5 text-center text-sm font-medium capitalize transition-colors",
-                      tab === t
-                        ? "rounded-t-[11px] border border-b-0 border-navy/10 bg-navy/[0.05] font-semibold text-navy"
-                        : "text-[#6E83A0]",
+                      "min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[60%] lg:flex-none lg:border-r lg:px-11 lg:py-8",
+                      tab !== "passage" && "hidden lg:block",
                     )}
                   >
-                    {t === "passage" ? "Passage" : "Questions"}
-                  </button>
-                ))}
-              </div>
+                    <PassageContent pack={pack} />
+                  </div>
 
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:contents">
-              {/* Passage panel */}
-              <div
-                className={cn(
-                  "min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[60%] lg:flex-none lg:border-r lg:px-11 lg:py-8",
-                  tab !== "passage" && "hidden lg:block",
-                )}
-              >
-                <PassageContent pack={pack} />
+                  {/* Questions panel */}
+                  <div
+                    className={cn(
+                      "min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-t border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[40%] lg:flex-none lg:border-t-0 lg:px-8 lg:py-8",
+                      tab !== "questions" && "hidden lg:block",
+                    )}
+                  >
+                    <QuestionsContent
+                      questions={questions}
+                      questionCount={questionCount}
+                      answers={answers}
+                      onAnswer={handleAnswer}
+                    />
+                  </div>
+                </div>
               </div>
-
-              {/* Questions panel */}
-              <div
-                className={cn(
-                  "min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-t border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[40%] lg:flex-none lg:border-t-0 lg:px-8 lg:py-8",
-                  tab !== "questions" && "hidden lg:block",
-                )}
-              >
-                <QuestionsContent
-                  questions={questions}
-                  questionCount={questionCount}
-                  answers={answers}
-                  onAnswer={handleAnswer}
-                />
-              </div>
-              </div>
-            </div>
-          ) : null}
-        </DiagnosticExamShell>
-      </DiagnosticChrome>
+              <DiagnosticModuleFooter
+                label="Submit reading"
+                busy={submitting}
+                onClick={handleSubmit}
+                contentWidth="full"
+              />
+            </>
+          )}
+        </div>
+      </DiagnosticSplitShell>
     </DiagnosticModuleGuard>
   );
 }

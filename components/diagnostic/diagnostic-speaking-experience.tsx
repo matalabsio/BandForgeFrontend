@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mic } from "lucide-react";
-import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
+import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
+import { DIAGNOSTIC_EXAM_STEPS, examStepIndex } from "@/components/diagnostic/diagnostic-exam-steps";
 import {
-  DiagnosticExamShell,
   DiagnosticExamScroll,
   DiagnosticExamColumn,
 } from "@/components/diagnostic/diagnostic-exam-shell";
@@ -227,14 +226,21 @@ export function DiagnosticSpeakingExperience() {
 
   return (
     <DiagnosticModuleGuard module="speaking">
-      <DiagnosticChrome variant="exam" fillViewport>
-        <DiagnosticExamShell
-          module="speaking"
-          moduleIcon={Mic}
-          error={error}
-          loading={!pack && micPassed}
-          timer={micPassed ? timer : undefined}
-        >
+      <DiagnosticSplitShell
+        steps={DIAGNOSTIC_EXAM_STEPS}
+        currentStep={examStepIndex("speaking")}
+        heading="Speaking"
+        subtitle="Speak clearly into your microphone."
+        fillViewport
+        timer={micPassed ? timer : undefined}
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+          {error ? (
+            <p className="shrink-0 border-b border-red-100 bg-red-50 px-4 py-2.5 text-center text-sm text-red-700" role="alert">
+              {error}
+            </p>
+          ) : null}
+
           {!micPassed ? (
             <DiagnosticExamScroll>
               <DiagnosticExamColumn className="py-4 sm:py-6 lg:py-8">
@@ -258,7 +264,11 @@ export function DiagnosticSpeakingExperience() {
                 />
               </DiagnosticExamColumn>
             </DiagnosticExamScroll>
-          ) : pack ? (
+          ) : !pack ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" role="status" aria-label="Loading" />
+            </div>
+          ) : (
             <SpeakingExamFlow
               variant="diagnostic"
               manifest={manifest}
@@ -268,9 +278,9 @@ export function DiagnosticSpeakingExperience() {
               footerBusy={submitting}
               completeLabel="Submit for examiner review"
             />
-          ) : null}
-        </DiagnosticExamShell>
-      </DiagnosticChrome>
+          )}
+        </div>
+      </DiagnosticSplitShell>
     </DiagnosticModuleGuard>
   );
 }

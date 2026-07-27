@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Check, Star } from "lucide-react";
+import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { BRAND_PLAN_PAGE_TIERS } from "@/lib/brand-mock-data";
 import { cn } from "@/lib/utils";
 
@@ -99,13 +100,12 @@ function PlanCard({
       <Link
         href={href}
         className={cn(
-          "flex h-12 w-full cursor-pointer items-center justify-center rounded-xl font-display text-[15px] font-semibold transition-colors",
           primary
-            ? "bg-cyan text-[#06222B] shadow-[0_12px_26px_rgba(0,188,212,0.28)] hover:bg-brand-sky-hover"
-            : "border-[1.5px] border-cyan/50 text-teal hover:bg-cyan/5",
+            ? cn(bfPrimaryCtaDiagClass, "rounded-xl text-[15px]")
+            : "flex h-12 w-full cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-cyan/50 font-display text-[15px] font-semibold text-teal transition-colors hover:bg-cyan/5",
         )}
       >
-        Choose {name}
+        <span className={cn(primary && "relative z-[1]")}>Choose {name}</span>
       </Link>
     </div>
   );

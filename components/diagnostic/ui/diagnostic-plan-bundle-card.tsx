@@ -1,5 +1,7 @@
 import { Check, ShieldCheck } from "lucide-react";
+import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
 import type { FullSkillProgramCard } from "@/lib/diagnostic-plan-content";
+import { cn } from "@/lib/utils";
 
 type Props = {
   bundle: FullSkillProgramCard;
@@ -26,9 +28,9 @@ export function DiagnosticPlanBundleCard({
         type="button"
         onClick={onCheckout}
         disabled={checkoutDisabled || checkoutLoading}
-        className="flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-cyan text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,151,167,0.40)] transition-colors hover:bg-brand-sky-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-[46px] sm:text-[15px]"
+        className={cn(bfPrimaryCtaDiagClass, "h-12 text-sm font-bold sm:h-[46px] sm:text-[15px]")}
       >
-        {ctaContent}
+        <span className="relative z-[1]">{ctaContent}</span>
       </button>
     ) : null;
 

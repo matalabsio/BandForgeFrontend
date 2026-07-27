@@ -16,10 +16,18 @@ export function GoogleSignInButton({
   return (
     <a
       href={href}
-      className={`flex min-h-[var(--spacing-touch)] w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border border-border bg-white px-4 text-body font-semibold text-navy shadow-[var(--shadow-soft)] transition-[box-shadow,background-color,border-color] duration-200 hover:border-teal/25 hover:bg-surface hover:shadow-[var(--shadow-elevated)] ${className}`}
+      className={`bf-auth-google group inline-flex h-14 w-full cursor-pointer items-center justify-center gap-2.5 overflow-hidden rounded-full border border-transparent bg-[linear-gradient(90deg,#0097a7_0%,#00bcd4_50%,#0097a7_100%)] bg-[length:200%_100%] bg-left px-8 text-[0.9375rem] font-semibold tracking-[-0.01em] text-white shadow-[0_8px_22px_rgb(0_151_167/0.28)] transition-[background-position,box-shadow,border-color,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-right hover:border-white/40 hover:shadow-[0_14px_32px_rgb(0_151_167/0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 active:shadow-[0_8px_22px_rgb(0_151_167/0.28)] ${className}`}
     >
-      <GoogleIcon className="size-5 shrink-0" />
-      {label}
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white">
+        <GoogleIcon className="size-3.5" />
+      </span>
+      <span>{label}</span>
+      <span
+        className="inline-block transition-transform duration-200 group-hover:translate-x-1"
+        aria-hidden
+      >
+        →
+      </span>
     </a>
   );
 }

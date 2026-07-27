@@ -810,6 +810,51 @@ html {
   }
 }
 
+/* ── Auth (login / signup): centered white layout ── */
+.bf-auth-glow {
+  background: radial-gradient(
+    circle at 50% 30%,
+    rgba(0, 169, 192, 0.08),
+    transparent 45%
+  );
+  animation: bf-auth-glow-float 20s ease-in-out infinite;
+}
+
+@keyframes bf-auth-glow-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+@keyframes bf-auth-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bf-auth-enter {
+  animation: bf-auth-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-auth-glow {
+    animation: none;
+  }
+
+  .bf-auth-enter {
+    animation: none;
+  }
+}
+
 /* Speaking score report only: complete, high-contrast print/PDF output. */
 .speaking-report .speaking-report-print-only {
   display: none;

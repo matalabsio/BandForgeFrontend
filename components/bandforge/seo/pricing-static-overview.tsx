@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import {
+  BF_PRIMARY_CTA_GRADIENT,
+  BF_PRIMARY_CTA_HOVER,
+} from "@/components/bandforge/bf-primary-cta-styles";
+import {
   FREE_DIAGNOSTIC_TIER,
   HOMEPAGE_PRICING_TIERS,
 } from "@/lib/seo/marketing-pricing";
@@ -42,7 +46,7 @@ export function PricingStaticOverview() {
           <Link
             href={FREE_DIAGNOSTIC_TIER.href}
             prefetch
-            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-cyan px-6 text-sm font-semibold text-white no-underline transition-colors duration-200 hover:bg-brand-sky-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2"
+            className={`inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full border border-transparent px-6 text-sm font-semibold text-white no-underline shadow-[0_8px_22px_rgb(0_151_167/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 ${BF_PRIMARY_CTA_GRADIENT} ${BF_PRIMARY_CTA_HOVER}`}
           >
             {FREE_DIAGNOSTIC_TIER.cta}
             <ArrowRight className="size-4" strokeWidth={2.25} aria-hidden />

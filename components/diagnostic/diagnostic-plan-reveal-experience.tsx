@@ -14,6 +14,8 @@ import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-tru
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
+import { bfPrimaryCtaNavClass } from "@/components/bandforge/bf-primary-cta-styles";
+import { cn } from "@/lib/utils";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import {
   isFullAccountUser,
@@ -386,7 +388,7 @@ export function DiagnosticPlanRevealExperience() {
             </p>
             <Link
               href={diagnosticPaths.landing}
-              className="inline-flex min-h-[var(--spacing-touch)] cursor-pointer items-center justify-center rounded-full bg-cyan px-6 text-sm font-semibold text-white hover:bg-brand-sky-hover"
+              className={cn(bfPrimaryCtaNavClass, "mx-auto")}
             >
               Start diagnostic
             </Link>

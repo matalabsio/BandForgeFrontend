@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
+import { bfPrimaryCtaNavClass } from "@/components/bandforge/bf-primary-cta-styles";
 import type { StudyPlanWeek } from "@/lib/diagnostic-plan-content";
+import { cn } from "@/lib/utils";
 
 type Props = {
   weeks: StudyPlanWeek[];
@@ -62,7 +64,7 @@ export function DiagnosticStudyPlanLocked({ weeks, unlocked = false }: Props) {
         </p>
         <Link
           href="/pricing"
-          className="mt-1 inline-flex h-10 items-center justify-center rounded-full bg-cyan px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-sky-hover"
+          className={cn(bfPrimaryCtaNavClass, "mt-1")}
         >
           View subscription plans
         </Link>

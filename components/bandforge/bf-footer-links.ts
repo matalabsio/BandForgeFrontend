@@ -1,41 +1,52 @@
-import { marketingAppHref } from "@/components/bandforge/bf-marketing-auth-links";
+import type { LucideIcon } from "lucide-react";
+import {
+  BookOpen,
+  CircleHelp,
+  FileText,
+  GitCompareArrows,
+  Languages,
+  MapPin,
+  Newspaper,
+  Receipt,
+  Scale,
+  Shield,
+} from "lucide-react";
 
-export const BF_FOOTER_PRODUCT = [
-  { href: "/diagnostic", label: "Free diagnostic" },
-  { href: "/drills", label: "The Drills" },
-  { href: "/writing", label: "Writing Sprint" },
-  { href: "/speaking", label: "Speaking Sprint" },
-  { href: "/how-it-works", label: "The Method" },
-  { href: "/pricing", label: "Pricing" },
-  { href: marketingAppHref(), label: "Practice" },
+// Temporarily hidden — product routes
+// export const BF_FOOTER_PRODUCT = [...]
+
+export type BfFooterLink = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+/** SEO / audience landing pages. */
+export const BF_FOOTER_RESOURCES: readonly BfFooterLink[] = [
+  { href: "/telugu", label: "Telugu speakers", icon: Languages },
+  { href: "/urdu", label: "Urdu speakers", icon: Languages },
+  { href: "/hyderabad", label: "Hyderabad", icon: MapPin },
+  { href: "/faq", label: "FAQ", icon: CircleHelp },
+  { href: "/vs-coaching-centres", label: "vs Coaching", icon: GitCompareArrows },
+  { href: "/blog", label: "Blog", icon: Newspaper },
 ] as const;
 
-export const BF_FOOTER_RESOURCES = [
-  { href: "/telugu", label: "Telugu speakers" },
-  { href: "/urdu", label: "Urdu speakers" },
-  { href: "/hyderabad", label: "Hyderabad" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/vs-coaching-centres", label: "vs Coaching" },
-  { href: "/blog", label: "Blog" },
+export const BF_FOOTER_LEGAL: readonly BfFooterLink[] = [
+  { href: "/privacy-policy", label: "Privacy", icon: Shield },
+  { href: "/terms", label: "Terms", icon: FileText },
+  { href: "/refund-policy", label: "Refunds", icon: Receipt },
 ] as const;
 
-export const BF_FOOTER_COMPANY = [
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
-] as const;
+export type BfFooterColumn = {
+  title: string;
+  icon: LucideIcon;
+  links: readonly BfFooterLink[];
+};
 
-export const BF_FOOTER_LEGAL = [
-  { href: "/privacy-policy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
-  { href: "/refund-policy", label: "Refunds" },
-] as const;
-
-/** Full footer — Product / IELTS prep / Company / Legal */
-export const BF_FOOTER_COLUMNS = [
-  { title: "Product", links: BF_FOOTER_PRODUCT },
-  { title: "IELTS prep", links: BF_FOOTER_RESOURCES },
-  { title: "Company", links: BF_FOOTER_COMPANY },
-  { title: "Legal", links: BF_FOOTER_LEGAL },
+/** Footer — SEO + Legal (product / company hidden for now). */
+export const BF_FOOTER_COLUMNS: readonly BfFooterColumn[] = [
+  { title: "IELTS prep", icon: BookOpen, links: BF_FOOTER_RESOURCES },
+  { title: "Legal", icon: Scale, links: BF_FOOTER_LEGAL },
 ] as const;
 
 export const BF_FOOTER_YEAR = 2026;

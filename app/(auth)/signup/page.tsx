@@ -2,29 +2,27 @@
 
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
-import {
-  GoogleSignInButton,
-} from "@/components/auth/google-sign-in-button";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 export default function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Google sign-up is active. After sign-up you can complete a quick onboarding."
+      subtitle="Start your IELTS preparation."
     >
-      <GoogleSignInButton next="/onboarding" />
-      <p className="mt-4 text-body text-muted">
-        Continue with Google and we will create your account automatically.
+      <GoogleSignInButton next="/diagnostic" />
+
+      <p className="mt-6 text-center text-sm text-[#081B33]/45">
+        Secure authentication with Google
       </p>
-      <p className="mt-4 text-center text-meta text-muted-light">
+
+      <p className="mt-10 text-center text-sm text-[#081B33]/45">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-cyan">
+        <Link
+          href="/login"
+          className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
+        >
           Sign in
-        </Link>
-      </p>
-      <p className="mt-2 text-center text-meta text-muted-light">
-        <Link href="/onboarding" className="font-semibold text-cyan">
-          Preview onboarding
         </Link>
       </p>
     </AuthShell>

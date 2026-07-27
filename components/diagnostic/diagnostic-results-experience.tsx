@@ -3,14 +3,20 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Clock, ShieldCheck } from "lucide-react";
-import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
+import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
+import { DIAGNOSTIC_EXAM_STEPS } from "@/components/diagnostic/diagnostic-exam-steps";
 import { DiagnosticPerformanceSkillCard } from "@/components/diagnostic/ui/diagnostic-performance-skill-card";
 import { DiagnosticScoreAnalysisBlock } from "@/components/diagnostic/ui/diagnostic-score-analysis-block";
 import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-trust-badges";
+import {
+  bfPrimaryCtaDiagClass,
+  bfPrimaryCtaNavClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { aggregateBand } from "@/lib/diagnostic-scoring";
 import { calculateWritingBand, wordCount } from "@/lib/diagnostic-scoring";
 import { isAnswerCorrect } from "@/lib/diagnostic-scoring";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
+import { cn } from "@/lib/utils";
 import {
   loadDiagnosticPack,
   type DiagnosticPackQuestion,
@@ -278,7 +284,14 @@ export function DiagnosticResultsExperience() {
   }
 
   return (
-    <DiagnosticChrome variant="report">
+    <DiagnosticSplitShell
+      steps={DIAGNOSTIC_EXAM_STEPS}
+      currentStep={4}
+      heading={pendingHuman ? "Your report is on the way." : "Your results are ready."}
+      subtitle="Here\u2019s how you performed across all four skills."
+      footerNote="Diagnostic complete"
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto bg-white">
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
         {loading ? (
           <ResultsSkeleton />
@@ -289,7 +302,7 @@ export function DiagnosticResultsExperience() {
             </p>
             <Link
               href={diagnosticPaths.landing}
-              className="inline-flex min-h-[var(--spacing-touch)] cursor-pointer items-center justify-center rounded-full bg-cyan px-6 text-sm font-semibold text-white hover:bg-brand-sky-hover"
+              className={cn(bfPrimaryCtaNavClass, "mx-auto")}
             >
               Start diagnostic
             </Link>
@@ -471,10 +484,10 @@ export function DiagnosticResultsExperience() {
               </p>
               <Link
                 href={diagnosticPaths.planReveal}
-                className="mt-5 inline-flex w-full max-w-md cursor-pointer items-center justify-center gap-2.5 rounded-full bg-cyan px-9 py-4 text-base font-semibold text-white shadow-[0_12px_28px_rgba(0,151,167,0.32)] transition-colors hover:bg-brand-sky-hover sm:w-auto"
+                className={cn(bfPrimaryCtaDiagClass, "mt-5 sm:mx-auto sm:max-w-md")}
               >
-                Build My Personalised Study Plan
-                <ArrowRight className="size-[18px]" aria-hidden />
+                <span className="relative z-[1]">Build My Personalised Study Plan</span>
+                <ArrowRight className="relative z-[1] size-[18px]" aria-hidden />
               </Link>
               <p className="mt-3.5 flex items-center justify-center gap-1.5 text-[12.5px] font-light text-[#6E83A0]">
                 <ShieldCheck className="size-3.5 text-teal" strokeWidth={2} />
@@ -486,6 +499,7 @@ export function DiagnosticResultsExperience() {
           </div>
         ) : null}
       </div>
-    </DiagnosticChrome>
+      </div>
+    </DiagnosticSplitShell>
   );
 }

@@ -22,12 +22,11 @@ export function UrduLandingExperience() {
         "Mobile-friendly practice anytime",
       ]}
       relatedLinks={[
-        { href: "/telugu", label: "IELTS for Telugu speakers" },
-        { href: "/hyderabad", label: "IELTS coaching in Hyderabad" },
-        { href: "/writing", label: "Writing Sprint" },
-        { href: "/speaking", label: "Speaking Sprint" },
+        { href: "/telugu", label: "Telugu speakers" },
+        { href: "/hyderabad", label: "Hyderabad" },
         { href: "/faq", label: "FAQ" },
-        { href: "/vs-coaching-centres", label: "vs Coaching centres" },
+        { href: "/vs-coaching-centres", label: "vs Coaching" },
+        { href: "/blog", label: "Blog" },
       ]}
     />
   );

@@ -2,12 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil } from "lucide-react";
-import { DiagnosticChrome } from "@/components/diagnostic/diagnostic-chrome";
+import { ArrowRight } from "lucide-react";
+import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { DiagnosticModuleGuard } from "@/components/diagnostic/diagnostic-module-guard";
-import { DiagnosticExamShell, DiagnosticExamScroll, DiagnosticExamColumn } from "@/components/diagnostic/diagnostic-exam-shell";
+import { DIAGNOSTIC_EXAM_STEPS, examStepIndex } from "@/components/diagnostic/diagnostic-exam-steps";
+import {
+  DiagnosticExamColumn,
+  DiagnosticExamScroll,
+} from "@/components/diagnostic/diagnostic-exam-shell";
+import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-module-footer";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
+import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { DIAGNOSTIC_WRITING_TIMER_SEC } from "@/lib/diagnostic-catalog";
+import { cn } from "@/lib/utils";
 import {
   loadDiagnosticPack,
   type DiagnosticPack,
@@ -22,15 +29,11 @@ import {
   saveModuleAnswers,
 } from "@/lib/diagnostic-storage";
 import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
-import { ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api";
 import { examTextInputProps } from "@/lib/exam-input-props";
 
 type WritingPanel = "task1" | "task2";
 
-/** Below this word count the backend can't produce a meaningful AI band, so we
- * skip evaluation and let the candidate submit with writing left unscored. */
 const WRITING_MIN_WORDS_FOR_AI = 30;
 
 type PromptBlocks = {
@@ -129,8 +132,6 @@ export function DiagnosticWritingExperience() {
     const primaryTask = tasks[0] ?? activeTask;
     const essayText = essays[primaryTask.id] ?? "";
 
-    // No word limit to proceed: a too-short/empty response skips AI evaluation
-    // and advances with writing left unscored (band stays null).
     if (wordCount(essayText) < WRITING_MIN_WORDS_FOR_AI) {
       advanceDiagnosticModule("writing", {
         moduleAnswers: { module: "writing", answers: essays },
@@ -182,7 +183,6 @@ export function DiagnosticWritingExperience() {
           writingEvalPending: false,
         });
       } else {
-        // Background evaluation — continue to Speaking immediately.
         advanceDiagnosticModule("writing", {
           moduleAnswers: { module: "writing", answers: essays },
           scores: {
@@ -220,147 +220,169 @@ export function DiagnosticWritingExperience() {
     }
   }, [pack, essays, submitting, router, tasks, activeTask]);
 
+  const loading = !pack;
+
   return (
     <DiagnosticModuleGuard module="writing">
-      <DiagnosticChrome variant="exam" fillViewport>
-        <DiagnosticExamShell
-          module="writing"
-          moduleIcon={Pencil}
-          error={error}
-          loading={!pack}
-          footerLabel="Continue to speaking"
-          footerBusy={submitting}
-          footerBusyLabel="Submitting…"
-          onFooter={handleSubmit}
-          footerWidth="full"
-          timer={
-            <DiagnosticTimerPill
-              durationSeconds={DIAGNOSTIC_WRITING_TIMER_SEC}
-              onExpire={handleSubmit}
-            />
-          }
-        >
-          {pack && activeTask ? (
-            <DiagnosticExamScroll>
-              <DiagnosticExamColumn className="flex min-h-0 flex-col">
-              {tasks.length > 1 ? (
-              <div className="-mx-2 flex shrink-0 gap-2 overflow-x-auto px-2 pt-3.5">
-                {tasks.map((task) => {
-                  const panel = taskPanelId(task);
-                  return (
-                    <button
-                      key={task.id}
-                      type="button"
-                      onClick={() => setActivePanel(panel)}
-                      className={cn(
-                        "cursor-pointer rounded-[10px] px-4 py-2 text-[13.5px] font-medium transition-colors",
-                        activePanel === panel
-                          ? "border border-cyan/30 bg-cyan/14 font-semibold text-navy"
-                          : "border border-navy/14 text-[#6E83A0]",
-                      )}
-                    >
-                      Task {task.part}
-                    </button>
-                  );
-                })}
-              </div>
-              ) : null}
+      <DiagnosticSplitShell
+        steps={DIAGNOSTIC_EXAM_STEPS}
+        currentStep={examStepIndex("writing")}
+        heading="Writing"
+        subtitle="Read the task carefully and write your response."
+        fillViewport
+        timer={
+          <DiagnosticTimerPill
+            durationSeconds={DIAGNOSTIC_WRITING_TIMER_SEC}
+            onExpire={handleSubmit}
+          />
+        }
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+          {error ? (
+            <p className="shrink-0 border-b border-red-100 bg-red-50 px-4 py-2.5 text-center text-sm text-red-700" role="alert">
+              {error}
+            </p>
+          ) : null}
 
-              <div className="min-h-0 flex-1 py-4">
-                <div className="mb-3 max-w-full rounded-[14px] border border-navy/10 bg-navy/[0.04] p-4">
-                  <p className="font-mono text-[10px] tracking-wider text-teal uppercase">
-                    Task {activeTask.part} · {activeTask.part === 1 ? "20" : "25"} min ·{" "}
-                    {activeTask.minWords}+ words
-                  </p>
-                  {promptBlocks ? (
-                    <div className="mt-2.5 space-y-2.5">
-                      {promptBlocks.intro ? (
-                        <p className="text-[13px] font-semibold text-[#1B2B45]">
-                          {promptBlocks.intro}
-                        </p>
-                      ) : null}
-                      {promptBlocks.description ? (
-                        <p className="break-words text-sm leading-relaxed font-light text-[#334155]">
-                          {promptBlocks.description}
-                        </p>
-                      ) : null}
-                      {promptBlocks.instruction ? (
-                        <p className="break-words text-sm leading-relaxed font-medium text-[#1B2B45]">
-                          {promptBlocks.instruction}
-                        </p>
-                      ) : null}
-                      {promptBlocks.minWordsLine ? (
-                        <p className="text-[13px] font-semibold text-teal">
-                          {promptBlocks.minWordsLine}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p className="mt-2 break-words text-sm leading-relaxed font-light text-[#1B2B45]">
-                      {activeTask.prompt}
-                    </p>
-                  )}
-                </div>
-
-                {activeTask.diagramUrl ? (
-                  <div className="mb-4 overflow-hidden rounded-[14px] border border-dashed border-navy/18 bg-[repeating-linear-gradient(45deg,rgba(13,31,60,0.05)_0_10px,transparent_10px_20px)] p-3 md:p-4">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={activeTask.diagramUrl}
-                      alt="Task diagram"
-                      className="mx-auto h-auto max-h-[420px] w-full max-w-4xl object-contain"
-                    />
-                  </div>
-                ) : null}
-
-                <textarea
-                  id={`diagnostic-writing-${activeTask.id}`}
-                  value={essays[activeTask.id] ?? ""}
-                  onChange={(e) => handleEssayChange(activeTask.id, e.target.value)}
-                  {...examTextInputProps}
-                  className="min-h-[280px] w-full max-w-full resize-y rounded-[14px] border border-navy/10 bg-white p-4 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
-                  placeholder="Write your response here…"
-                />
-                <div className="mt-3 space-y-2">
-                  <p
-                    className={cn(
-                      "text-right font-mono text-xs",
-                      words >= activeTask.minWords ? "text-teal" : "text-[#6E83A0]",
-                    )}
-                  >
-                    Current words: {words}
-                  </p>
-                  {words < activeTask.minWords ? (
-                    <div
-                      className="rounded-[12px] border border-amber-200/80 bg-[#FEF8EC] px-3.5 py-3 text-[13px] leading-snug font-light text-[#5C4A2E]"
-                      role="status"
-                    >
-                      <p className="font-medium text-[#8A5A00]">
-                        IELTS Task {activeTask.part} requires at least {activeTask.minWords} words.
-                      </p>
-                      <p className="mt-1">
-                        Your score may be significantly reduced. Write an overview, key features,
-                        and comparisons before continuing.
-                      </p>
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" role="status" aria-label="Loading" />
+            </div>
+          ) : activeTask ? (
+            <>
+              <DiagnosticExamScroll>
+                <DiagnosticExamColumn className="flex min-h-0 flex-col">
+                  {tasks.length > 1 ? (
+                    <div className="-mx-2 flex shrink-0 gap-2 overflow-x-auto px-2 pt-3.5">
+                      {tasks.map((task) => {
+                        const panel = taskPanelId(task);
+                        return (
+                          <button
+                            key={task.id}
+                            type="button"
+                            onClick={() => setActivePanel(panel)}
+                            className={cn(
+                              "cursor-pointer rounded-[10px] px-4 py-2 text-[13.5px] font-medium transition-colors",
+                              activePanel === panel
+                                ? "border border-cyan/30 bg-cyan/14 font-semibold text-navy"
+                                : "border border-navy/14 text-[#6E83A0]",
+                            )}
+                          >
+                            Task {task.part}
+                          </button>
+                        );
+                      })}
                     </div>
                   ) : null}
-                </div>
 
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={handleSubmit}
-                  className="mt-6 flex min-h-[var(--spacing-touch,48px)] w-full cursor-pointer items-center justify-center gap-2 rounded-[13px] bg-cyan px-6 font-display text-base font-semibold text-[#06222B] shadow-[0_12px_28px_rgba(0,188,212,0.30)] transition-colors hover:bg-brand-sky-hover disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
-                >
-                  {submitting ? "Submitting…" : "Continue to speaking"}
-                  {!submitting ? <ArrowRight className="size-4" aria-hidden /> : null}
-                </button>
-              </div>
-              </DiagnosticExamColumn>
-            </DiagnosticExamScroll>
+                  <div className="min-h-0 flex-1 py-4">
+                    <div className="mb-3 max-w-full rounded-[14px] border border-navy/10 bg-navy/[0.04] p-4">
+                      <p className="font-mono text-[10px] tracking-wider text-teal uppercase">
+                        Task {activeTask.part} \u00b7 {activeTask.part === 1 ? "20" : "25"} min \u00b7{" "}
+                        {activeTask.minWords}+ words
+                      </p>
+                      {promptBlocks ? (
+                        <div className="mt-2.5 space-y-2.5">
+                          {promptBlocks.intro ? (
+                            <p className="text-[13px] font-semibold text-[#1B2B45]">
+                              {promptBlocks.intro}
+                            </p>
+                          ) : null}
+                          {promptBlocks.description ? (
+                            <p className="break-words text-sm leading-relaxed font-light text-[#334155]">
+                              {promptBlocks.description}
+                            </p>
+                          ) : null}
+                          {promptBlocks.instruction ? (
+                            <p className="break-words text-sm leading-relaxed font-medium text-[#1B2B45]">
+                              {promptBlocks.instruction}
+                            </p>
+                          ) : null}
+                          {promptBlocks.minWordsLine ? (
+                            <p className="text-[13px] font-semibold text-teal">
+                              {promptBlocks.minWordsLine}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="mt-2 break-words text-sm leading-relaxed font-light text-[#1B2B45]">
+                          {activeTask.prompt}
+                        </p>
+                      )}
+                    </div>
+
+                    {activeTask.diagramUrl ? (
+                      <div className="mb-4 overflow-hidden rounded-[14px] border border-dashed border-navy/18 bg-[repeating-linear-gradient(45deg,rgba(13,31,60,0.05)_0_10px,transparent_10px_20px)] p-3 md:p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={activeTask.diagramUrl}
+                          alt="Task diagram"
+                          className="mx-auto h-auto max-h-[420px] w-full max-w-4xl object-contain"
+                        />
+                      </div>
+                    ) : null}
+
+                    <textarea
+                      id={`diagnostic-writing-${activeTask.id}`}
+                      value={essays[activeTask.id] ?? ""}
+                      onChange={(e) => handleEssayChange(activeTask.id, e.target.value)}
+                      {...examTextInputProps}
+                      className="min-h-[280px] w-full max-w-full resize-y rounded-[14px] border border-navy/10 bg-white p-4 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
+                      placeholder="Write your response here\u2026"
+                    />
+                    <div className="mt-3 space-y-2">
+                      <p
+                        className={cn(
+                          "text-right font-mono text-xs",
+                          words >= activeTask.minWords ? "text-teal" : "text-[#6E83A0]",
+                        )}
+                      >
+                        Current words: {words}
+                      </p>
+                      {words < activeTask.minWords ? (
+                        <div
+                          className="rounded-[12px] border border-amber-200/80 bg-[#FEF8EC] px-3.5 py-3 text-[13px] leading-snug font-light text-[#5C4A2E]"
+                          role="status"
+                        >
+                          <p className="font-medium text-[#8A5A00]">
+                            IELTS Task {activeTask.part} requires at least {activeTask.minWords} words.
+                          </p>
+                          <p className="mt-1">
+                            Your score may be significantly reduced. Write an overview, key features,
+                            and comparisons before continuing.
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={handleSubmit}
+                      className={cn(bfPrimaryCtaDiagClass, "mt-6 lg:hidden")}
+                    >
+                      <span className="relative z-[1]">
+                        {submitting ? "Submitting\u2026" : "Continue to speaking"}
+                      </span>
+                      {!submitting ? (
+                        <ArrowRight className="relative z-[1] size-4" aria-hidden />
+                      ) : null}
+                    </button>
+                  </div>
+                </DiagnosticExamColumn>
+              </DiagnosticExamScroll>
+              <DiagnosticModuleFooter
+                label="Continue to speaking"
+                busy={submitting}
+                busyLabel="Submitting\u2026"
+                onClick={handleSubmit}
+                contentWidth="full"
+                className="hidden lg:block"
+              />
+            </>
           ) : null}
-        </DiagnosticExamShell>
-      </DiagnosticChrome>
+        </div>
+      </DiagnosticSplitShell>
     </DiagnosticModuleGuard>
   );
 }

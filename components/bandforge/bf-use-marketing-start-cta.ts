@@ -25,7 +25,7 @@ export function useMarketingStartCta(
 
   if (signedIn) {
     return {
-      href: next,
+      href: "/dashboard",
       label: "Dashboard",
       ariaLabel: "Open your dashboard",
     };
@@ -33,7 +33,7 @@ export function useMarketingStartCta(
 
   return {
     href: marketingSignInHref(next),
-    label: "Start free",
-    ariaLabel: "Start free — sign in to open your dashboard",
+    label: "Dashboard",
+    ariaLabel: "Sign in to open your dashboard",
   };
 }

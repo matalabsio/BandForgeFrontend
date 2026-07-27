@@ -26,3 +26,11 @@ export const bfPrimaryCtaHeroClass = cn(
   BF_PRIMARY_CTA_HOVER,
   "pointer-events-auto w-full min-w-[14.5rem] gap-2.5 px-9 py-[17px] text-[1.0625rem] sm:w-auto sm:min-w-[16rem] lg:inline-flex lg:min-w-[17.5rem] lg:px-11 lg:py-[18px]",
 );
+
+/** Diagnostic exam / form full-width primary CTA (same gradient as hero) */
+export const bfPrimaryCtaDiagClass = cn(
+  BF_PRIMARY_CTA_BASE,
+  BF_PRIMARY_CTA_GRADIENT,
+  BF_PRIMARY_CTA_HOVER,
+  "font-display w-full min-h-[var(--spacing-touch,48px)] gap-2 px-6 py-3.5 text-base disabled:pointer-events-none disabled:opacity-60",
+);

@@ -22,12 +22,11 @@ export function TeluguLandingExperience() {
         "Built in Hyderabad for AP and TG students",
       ]}
       relatedLinks={[
-        { href: "/urdu", label: "IELTS for Urdu speakers" },
-        { href: "/hyderabad", label: "IELTS coaching in Hyderabad" },
-        { href: "/writing", label: "Writing Sprint" },
-        { href: "/speaking", label: "Speaking Sprint" },
+        { href: "/urdu", label: "Urdu speakers" },
+        { href: "/hyderabad", label: "Hyderabad" },
         { href: "/faq", label: "FAQ" },
-        { href: "/vs-coaching-centres", label: "vs Coaching centres" },
+        { href: "/vs-coaching-centres", label: "vs Coaching" },
+        { href: "/blog", label: "Blog" },
       ]}
     />
   );

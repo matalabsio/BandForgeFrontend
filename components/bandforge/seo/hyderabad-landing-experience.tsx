@@ -26,29 +26,28 @@ export function HyderabadLandingExperience() {
         "Mobile-friendly mocks and practice anytime",
       ]}
       relatedLinks={[
-        { href: "/telugu", label: "IELTS for Telugu speakers" },
-        { href: "/urdu", label: "IELTS for Urdu speakers" },
-        { href: "/diagnostic", label: "Free diagnostic" },
-        { href: "/pricing", label: "Sprint pricing" },
+        { href: "/telugu", label: "Telugu speakers" },
+        { href: "/urdu", label: "Urdu speakers" },
         { href: "/faq", label: "FAQ" },
-        { href: "/vs-coaching-centres", label: "vs Coaching centres" },
+        { href: "/vs-coaching-centres", label: "vs Coaching" },
+        { href: "/blog", label: "Blog" },
       ]}
       afterBenefits={
-        <section className="border-b border-border-soft bg-white bf-section">
-          <div className="bf-container">
-            <h2 className="font-display text-xl font-bold text-navy sm:text-2xl">
+        <section className="border-b border-border-soft bg-white py-10 sm:py-12 lg:py-16">
+          <div className="bf-container mx-auto max-w-2xl">
+            <h2 className="font-display text-lg font-bold tracking-[-0.02em] text-navy sm:text-xl">
               Find us in Gachibowli
             </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted sm:text-base">
+            <p className="mt-2 text-sm leading-relaxed text-muted sm:text-[0.9375rem]">
               {OPERATOR_NAME} · Gachibowli, Hyderabad, Telangana 500032, India
             </p>
-            <div className="mt-6 overflow-hidden rounded-[1.25rem] border border-border-soft shadow-[0_16px_40px_-28px_rgb(13_31_60/0.35)]">
+            <div className="mt-5 overflow-hidden rounded-2xl border border-border-soft">
               <iframe
                 title="BandForge — Gachibowli, Hyderabad"
                 src={GACHIBOWLI_MAP_EMBED}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                className="h-[240px] w-full border-0 sm:h-[320px] lg:h-[380px]"
+                className="h-[220px] w-full border-0 sm:h-[280px]"
                 allowFullScreen
               />
             </div>

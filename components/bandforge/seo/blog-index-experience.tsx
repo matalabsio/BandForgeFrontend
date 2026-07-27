@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { BandForgeFinalCta } from "@/components/bandforge/bf-final-cta";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
-import { BfDiagnosticCtaBand } from "@/components/seo/bf-diagnostic-cta-band";
+import { SeoPrimaryCta } from "@/components/seo/seo-cta-button";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { BLOG_POSTS } from "@/lib/seo/blog-posts";
 import { PAGE_SEO_COPY } from "@/lib/seo/page-copy";
@@ -19,28 +19,6 @@ function formatDisplayDate(isoDate: string) {
   }
 }
 
-function HeroCtas() {
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <Link
-        href={diagnosticPaths.landing}
-        prefetch
-        className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-cyan px-6 text-sm font-semibold text-white no-underline transition-colors duration-200 hover:bg-brand-sky-hover"
-      >
-        Take free diagnostic
-        <ArrowRight className="size-4" strokeWidth={2.25} aria-hidden />
-      </Link>
-      <Link
-        href="/faq"
-        prefetch
-        className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-border-soft bg-white px-6 text-sm font-semibold text-navy no-underline transition-colors duration-200 hover:border-cyan/40"
-      >
-        Read FAQ
-      </Link>
-    </div>
-  );
-}
-
 export function BlogIndexExperience() {
   return (
     <BandForgeRouteShell
@@ -48,36 +26,37 @@ export function BlogIndexExperience() {
       eyebrow="Blog"
       title={PAGE_SEO_COPY.blog.h1}
       description={PAGE_SEO_COPY.blog.description}
-      heroCta={<HeroCtas />}
-      afterHero={
-        <BfDiagnosticCtaBand headline="Reading guides? Pair them with a free 15-minute band check." />
+      heroCta={
+        <SeoPrimaryCta href={diagnosticPaths.landing}>
+          Take free diagnostic
+        </SeoPrimaryCta>
       }
     >
-      <section className="bf-section bg-white">
-        <div className="bf-container">
-          <ul className="mx-auto grid max-w-4xl gap-4 sm:gap-5">
+      <section className="bg-white py-10 sm:py-12 lg:py-16">
+        <div className="bf-container mx-auto max-w-2xl">
+          <ul className="divide-y divide-border-soft border-y border-border-soft">
             {BLOG_POSTS.map((post) => (
               <li key={post.slug}>
                 <Link
                   href={`/blog/${post.slug}`}
                   prefetch
-                  className="group flex h-full cursor-pointer flex-col rounded-[1.25rem] border border-border-soft bg-surface p-5 no-underline transition-colors duration-200 hover:border-cyan/40 hover:bg-white sm:p-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8"
+                  className="group flex cursor-pointer flex-col gap-2 py-5 no-underline sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:py-6"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-[0.6875rem] font-semibold tracking-wide text-cyan uppercase">
-                      Updated {formatDisplayDate(post.updatedAt)}
+                      {formatDisplayDate(post.updatedAt)}
                     </p>
-                    <h2 className="mt-2 font-display text-lg font-bold text-navy transition-colors group-hover:text-cyan sm:text-xl">
+                    <h2 className="mt-1.5 font-display text-base font-bold text-navy transition-colors group-hover:text-[#0097a7] sm:text-lg">
                       {post.title}
                     </h2>
-                    <p className="mt-2 text-sm leading-relaxed text-muted sm:text-[0.9375rem]">
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted">
                       {post.description}
                     </p>
                   </div>
-                  <span className="mt-4 inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-cyan lg:mt-1">
-                    Read article
+                  <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-[#0097a7]">
+                    Read
                     <ArrowRight
-                      className="size-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                      className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
                       aria-hidden
                     />
                   </span>
