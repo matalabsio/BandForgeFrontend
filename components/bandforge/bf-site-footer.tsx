@@ -49,7 +49,7 @@ export function BandForgeSiteFooter({ className, embedded = false }: Props) {
       )}
     >
       <div className="mx-auto w-full max-w-[1100px] px-5 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
-        <div className="grid gap-9 sm:grid-cols-2 lg:grid-cols-[minmax(0,280px)_1fr_minmax(0,160px)] lg:gap-12 xl:gap-16">
+        <div className="grid gap-9 lg:grid-cols-[minmax(0,280px)_1fr_minmax(0,160px)] lg:gap-12 xl:gap-16">
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <Link
@@ -75,31 +75,33 @@ export function BandForgeSiteFooter({ className, embedded = false }: Props) {
           </div>
 
           {/* Link columns */}
-          {BF_FOOTER_COLUMNS.map((col) => {
-            const ColIcon = col.icon;
-            return (
-              <nav key={col.title} aria-label={col.title} className="min-w-0">
-                <div className="mb-3 flex items-center gap-2">
-                  <ColIcon
-                    className="size-3.5 shrink-0 text-cyan"
-                    strokeWidth={2}
-                    aria-hidden
-                  />
-                  <p className="font-display text-[0.8125rem] font-semibold tracking-wide text-white uppercase sm:text-sm sm:normal-case sm:tracking-tight">
-                    {col.title}
-                  </p>
-                </div>
-                <ul className="flex flex-col">
-                  {col.links.map((link) => (
-                    <FooterLinkRow
-                      key={`${col.title}-${link.href}-${link.label}`}
-                      link={link}
+          <div className="grid grid-cols-2 gap-6 sm:gap-8 lg:col-span-2 lg:grid-cols-2">
+            {BF_FOOTER_COLUMNS.map((col) => {
+              const ColIcon = col.icon;
+              return (
+                <nav key={col.title} aria-label={col.title} className="min-w-0">
+                  <div className="mb-3 flex items-center gap-2">
+                    <ColIcon
+                      className="size-3.5 shrink-0 text-cyan"
+                      strokeWidth={2}
+                      aria-hidden
                     />
-                  ))}
-                </ul>
-              </nav>
-            );
-          })}
+                    <p className="font-display text-[0.8125rem] font-semibold tracking-wide text-white uppercase sm:text-sm sm:normal-case sm:tracking-tight">
+                      {col.title}
+                    </p>
+                  </div>
+                  <ul className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-2 sm:gap-x-3 lg:grid-cols-1">
+                    {col.links.map((link) => (
+                      <FooterLinkRow
+                        key={`${col.title}-${link.href}-${link.label}`}
+                        link={link}
+                      />
+                    ))}
+                  </ul>
+                </nav>
+              );
+            })}
+          </div>
         </div>
 
         <div className="mt-9 flex flex-col gap-2 border-t border-white/[0.08] pt-5 sm:mt-10 sm:flex-row sm:items-center sm:justify-between sm:gap-4">

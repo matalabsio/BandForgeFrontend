@@ -88,11 +88,6 @@ export function BandForgeFinishLine() {
       aria-label="BandForge footer"
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-[3] h-20 bg-gradient-to-b from-white via-white/50 to-transparent sm:h-24"
-        aria-hidden
-      />
-
-      <div
         ref={glowRef}
         className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[min(40vh,260px)]"
         style={{
