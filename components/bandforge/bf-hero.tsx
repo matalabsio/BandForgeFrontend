@@ -260,10 +260,10 @@ export function BandForgeHero() {
         style={{ transform: "translateY(-40px)" }}
       >
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col text-center lg:max-w-3xl">
-          <div className="flex shrink-0 flex-col items-center px-1 pt-8 sm:pt-10 lg:pt-12">
+          <div className="flex shrink-0 flex-col items-center px-1 pt-12 sm:pt-10 lg:pt-12">
             <h1
               id="bf-hero-heading"
-              className="relative z-20 font-display mb-0 text-[1.5rem] leading-[1.28] font-bold tracking-[-0.03em] text-navy sm:text-[2rem] sm:leading-[1.24] lg:text-[2.75rem] lg:leading-[1.15] lg:tracking-[-0.035em]"
+              className="relative z-20 font-display mb-0 text-[1.9rem] leading-[1.2] font-bold tracking-[-0.03em] text-navy sm:text-[2rem] sm:leading-[1.24] lg:text-[2.75rem] lg:leading-[1.15] lg:tracking-[-0.035em]"
             >
               {/* Mobile — 3 lines; IELTS + band in logo colors */}
               <span className="lg:hidden">
