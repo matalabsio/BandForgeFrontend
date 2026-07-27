@@ -1,6 +1,6 @@
 const DASHBOARD_PATH = "/dashboard";
 const DIAGNOSTIC_LANDING_PATH = "/diagnostic";
-const DIAGNOSTIC_PLAN_PATH = "/diagnostic/plan";
+const DIAGNOSTIC_RESULTS_PATH = "/diagnostic/results";
 const ONBOARDING_PATH = "/onboarding";
 
 /** App entry paths that should follow diagnostic-first routing. */
@@ -34,7 +34,7 @@ function isDefaultEntryPath(path: string): boolean {
  *
  * Diagnostic-first:
  * - No diagnostic + dashboard/onboarding/diagnostic entry → `/diagnostic`
- * - Local or server diagnostic + unpaid entry → `/diagnostic/plan`
+ * - Local or server diagnostic + unpaid entry → `/diagnostic/results` (plan + checkout)
  * - Diagnostic + paid → `/dashboard` for default entries
  * - Explicit deep links (`/pricing`, `/scores`, …) are preserved
  */
@@ -48,6 +48,11 @@ export function resolvePostLoginDestination(
   const hasPaid = Boolean(options.hasPaidFullSkillProgram);
   const hasDiagnostic = hasLocalDiagnosticResults || hasServerDiagnostic;
 
+  // Legacy plan URL → results (checkout lives there now)
+  if (safePath === "/diagnostic/plan" || safePath.startsWith("/diagnostic/plan#")) {
+    return `${DIAGNOSTIC_RESULTS_PATH}#plan-unlock`;
+  }
+
   if (isDefaultEntryPath(safePath)) {
     if (!hasDiagnostic) {
       return DIAGNOSTIC_LANDING_PATH;
@@ -55,7 +60,7 @@ export function resolvePostLoginDestination(
     if (hasPaid) {
       return DASHBOARD_PATH;
     }
-    return DIAGNOSTIC_PLAN_PATH;
+    return `${DIAGNOSTIC_RESULTS_PATH}#plan-unlock`;
   }
 
   return safePath;

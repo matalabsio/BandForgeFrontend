@@ -29,8 +29,8 @@ export function DashboardPlanPaywall() {
           the Full Skill Program.
         </p>
         <Link
-          href="/diagnostic/plan"
-          className="mt-1 inline-flex h-10 items-center justify-center rounded-full bg-cyan px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-sky-hover"
+          href="/diagnostic/results#plan-unlock"
+          className="mt-1 inline-flex h-10 cursor-pointer items-center justify-center rounded-full bg-cyan px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-sky-hover"
         >
           View your plan &amp; subscribe
         </Link>

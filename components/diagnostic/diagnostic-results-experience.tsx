@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Clock, ShieldCheck } from "lucide-react";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { DIAGNOSTIC_EXAM_STEPS } from "@/components/diagnostic/diagnostic-exam-steps";
+import { DiagnosticPlanCheckoutSection } from "@/components/diagnostic/diagnostic-plan-checkout-section";
 import { DiagnosticPerformanceSkillCard } from "@/components/diagnostic/ui/diagnostic-performance-skill-card";
 import { DiagnosticScoreAnalysisBlock } from "@/components/diagnostic/ui/diagnostic-score-analysis-block";
 import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-trust-badges";
@@ -180,6 +181,18 @@ export function DiagnosticResultsExperience() {
   }, []);
 
   useEffect(() => {
+    if (loading || error || !snapshot) return;
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#plan-unlock") return;
+    const el = document.getElementById("plan-unlock");
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => {
+      el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    }, 80);
+  }, [loading, error, snapshot]);
+
+  useEffect(() => {
     const progress = readDiagnosticProgress();
     if (progress?.answers) {
       setAnswersByModule({
@@ -288,7 +301,7 @@ export function DiagnosticResultsExperience() {
       steps={DIAGNOSTIC_EXAM_STEPS}
       currentStep={4}
       heading={pendingHuman ? "Your report is on the way." : "Your results are ready."}
-      subtitle="Here\u2019s how you performed across all four skills."
+      subtitle="Here's how you performed across all four skills."
       footerNote="Diagnostic complete"
     >
       <div className="min-h-0 flex-1 overflow-y-auto bg-white">
@@ -482,20 +495,22 @@ export function DiagnosticResultsExperience() {
                 with Band 9 model answers, AI essay feedback and examiner-scored
                 mock tests.
               </p>
-              <Link
-                href={diagnosticPaths.planReveal}
+              <a
+                href="#plan-unlock"
                 className={cn(bfPrimaryCtaDiagClass, "mt-5 sm:mx-auto sm:max-w-md")}
               >
                 <span className="relative z-[1]">Build My Personalised Study Plan</span>
                 <ArrowRight className="relative z-[1] size-[18px]" aria-hidden />
-              </Link>
+              </a>
               <p className="mt-3.5 flex items-center justify-center gap-1.5 text-[12.5px] font-light text-[#6E83A0]">
                 <ShieldCheck className="size-3.5 text-teal" strokeWidth={2} />
-                Free to preview · No card required
+                Preview free · Checkout stays on this page
               </p>
             </div>
 
             <DiagnosticTrustBadges variant="results" />
+
+            <DiagnosticPlanCheckoutSection snapshot={snapshot} />
           </div>
         ) : null}
       </div>

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { DiagnosticPlanRevealExperience } from "@/components/diagnostic/diagnostic-plan-reveal-experience";
+import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import { fetchSubscription } from "@/lib/payments-server";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+/** Plan unlock + checkout live on `/diagnostic/results` — keep this route for old links. */
 export default async function DiagnosticPlanRevealPage() {
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerSession(cookieHeader);
@@ -23,5 +24,5 @@ export default async function DiagnosticPlanRevealPage() {
     }
   }
 
-  return <DiagnosticPlanRevealExperience />;
+  redirect(`${diagnosticPaths.results}#plan-unlock`);
 }
