@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { useAuthSession } from "@/components/auth/auth-session-provider";
 import { authBootstrapPath, logout } from "@/lib/auth";
@@ -38,20 +38,26 @@ function LoginForm() {
   const redirectedToProd = useRef(false);
   const escalatedToBootstrap = useRef(false);
 
-  const onDeployPreview =
-    typeof window !== "undefined" &&
-    isNetlifyDeployPreviewHost(window.location.hostname);
+  // Defer window/cookie reads until after mount so SSR and hydration match.
+  const [mounted, setMounted] = useState(false);
+  const [onDeployPreview, setOnDeployPreview] = useState(false);
 
   useEffect(() => {
-    if (!onDeployPreview || hasAuthCookies()) return;
+    setOnDeployPreview(isNetlifyDeployPreviewHost(window.location.hostname));
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !onDeployPreview || hasAuthCookies()) return;
     clearAuthStorage();
-  }, [onDeployPreview]);
+  }, [mounted, onDeployPreview]);
 
   useEffect(() => {
-    if (!onDeployPreview || stayOnPreview || redirectedToProd.current) return;
+    if (!mounted || !onDeployPreview || stayOnPreview || redirectedToProd.current)
+      return;
     redirectedToProd.current = true;
     window.location.replace(productionLoginUrl(next));
-  }, [onDeployPreview, stayOnPreview, next]);
+  }, [mounted, onDeployPreview, stayOnPreview, next]);
 
   useEffect(() => {
     if (!sessionExpired || cleared.current) return;
@@ -62,7 +68,7 @@ function LoginForm() {
   const { isAuthenticated, loading } = useAuthSession();
 
   useEffect(() => {
-    if (loading || onDeployPreview) return;
+    if (!mounted || loading || onDeployPreview) return;
 
     const continueUrl = `/auth/continue?next=${encodeURIComponent(
       safePostLoginPath(next),
@@ -77,9 +83,9 @@ function LoginForm() {
     if (isAuthenticated && hasAuthCookies()) {
       window.location.replace(continueUrl);
     }
-  }, [loading, isAuthenticated, next, onDeployPreview, router]);
+  }, [mounted, loading, isAuthenticated, next, onDeployPreview, router]);
 
-  if (onDeployPreview && !stayOnPreview) {
+  if (mounted && onDeployPreview && !stayOnPreview) {
     return (
       <AuthShell
         title="Redirecting to sign in"
@@ -111,7 +117,7 @@ function LoginForm() {
     );
   }
 
-  if (!loading && isAuthenticated && hasAuthCookies()) {
+  if (mounted && !loading && isAuthenticated && hasAuthCookies()) {
     return (
       <AuthShell
         title="Welcome back"
@@ -129,7 +135,7 @@ function LoginForm() {
       title="Welcome back"
       subtitle="Continue your IELTS preparation."
     >
-      {onDeployPreview && stayOnPreview ? (
+      {mounted && onDeployPreview && stayOnPreview ? (
         <p
           className="mb-8 text-center text-sm leading-relaxed text-[#081B33]/60"
           role="status"

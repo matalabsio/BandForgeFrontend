@@ -4,10 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { DIAGNOSTIC_EXAM_STEPS, examStepIndex } from "@/components/diagnostic/diagnostic-exam-steps";
-import {
-  DiagnosticExamScroll,
-  DiagnosticExamColumn,
-} from "@/components/diagnostic/diagnostic-exam-shell";
 import { DiagnosticModuleGuard } from "@/components/diagnostic/diagnostic-module-guard";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
 import {
@@ -230,7 +226,11 @@ export function DiagnosticSpeakingExperience() {
         steps={DIAGNOSTIC_EXAM_STEPS}
         currentStep={examStepIndex("speaking")}
         heading="Speaking"
-        subtitle="Speak clearly into your microphone."
+        subtitle={
+          micPassed
+            ? "Speak clearly into your microphone."
+            : "Mic check first — then Parts 1–3 run like the real exam."
+        }
         fillViewport
         timer={micPassed ? timer : undefined}
       >
@@ -242,28 +242,12 @@ export function DiagnosticSpeakingExperience() {
           ) : null}
 
           {!micPassed ? (
-            <DiagnosticExamScroll>
-              <DiagnosticExamColumn className="py-4 sm:py-6 lg:py-8">
-                <div className="mb-4 rounded-[16px] border border-navy/12 bg-white p-4 shadow-[0_10px_24px_rgba(13,31,60,0.06)] sm:mb-5 sm:p-5">
-                  <p className="font-mono text-[10px] tracking-[0.14em] text-teal uppercase">
-                    Speaking format
-                  </p>
-                  <h2 className="mt-1.5 text-lg font-semibold leading-tight text-navy sm:text-xl">
-                    Video-first examiner prompts, timed answers, one-take flow
-                  </h2>
-                  <p className="mt-2 text-sm leading-relaxed text-[#334155]">
-                    Complete a quick mic check first. Then Part 1, Part 2 prep + long
-                    turn, and Part 3 run continuously like the real IELTS speaking test.
-                  </p>
-                </div>
-                <SpeakingMicCheck
-                  variant="diagnostic"
-                  onBegin={handleMicBegin}
-                  beginLabel="Begin diagnostic speaking"
-                  totalMinutes={12}
-                />
-              </DiagnosticExamColumn>
-            </DiagnosticExamScroll>
+            <SpeakingMicCheck
+              variant="diagnostic"
+              onBegin={handleMicBegin}
+              beginLabel="Begin diagnostic speaking"
+              totalMinutes={12}
+            />
           ) : !pack ? (
             <div className="flex flex-1 items-center justify-center p-8">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" role="status" aria-label="Loading" />
