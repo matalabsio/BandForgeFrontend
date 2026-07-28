@@ -124,7 +124,8 @@ Admin UI + API live in [`../admin/`](../admin/) (`admin/web` on :3001; `admin/ap
 | **`/test/reading`, writing, speaking** | **Demo** | Timer + UI only; no backend submit |
 | **`/scores`** | **Live** | Real dashboard summary via `scores-experience.tsx` |
 | **Admin panel** | **Separate app** | See [`../admin/`](../admin/) — `admin/web` on port 3001 |
-| Email/password, phone OTP | **UI only** | Backend returns 503 in Google-only phase |
+| Email/password | **Disabled** (admin login only) | Student email auth returns 503 |
+| Phone OTP (MSG91) | **Flag-gated** | Enable with `NEXT_PUBLIC_PHONE_OTP_ENABLED` + backend `PHONE_OTP_ENABLED` + MSG91 |
 
 Published listening test ID (canonical):
 
@@ -153,9 +154,9 @@ These routes wrap content in `BfConversionShell` (header, footer, signup modals)
 
 | Path | Purpose |
 |------|---------|
-| `/login` | Google OAuth + disabled email/phone hints |
+| `/login` | Google OAuth; phone link when `NEXT_PUBLIC_PHONE_OTP_ENABLED` |
 | `/signup`, `/check-email`, `/verify-email` | Email flow (backend often 503) |
-| `/verify-phone` | OTP UI (off unless flag enabled) |
+| `/verify-phone` | Phone OTP login/signup (MSG91; flag-gated) |
 | `/forgot-password`, `/reset-password` | Password reset UI |
 | `/auth/bootstrap` | After OAuth: refresh session → `?next=` redirect |
 

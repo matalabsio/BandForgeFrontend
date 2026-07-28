@@ -13,9 +13,8 @@ import { DiagnosticStudyPlanLocked } from "@/components/diagnostic/ui/diagnostic
 import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-trust-badges";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
+import { BfEmptyState } from "@/components/bandforge/ui/bf-empty-state";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
-import { bfPrimaryCtaNavClass } from "@/components/bandforge/bf-primary-cta-styles";
-import { cn } from "@/lib/utils";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import {
   isFullAccountUser,
@@ -382,17 +381,12 @@ export function DiagnosticPlanRevealExperience() {
         {loading || checkingAccess ? (
           <PlanRevealSkeleton />
         ) : !snapshot || !lead || !planPreview ? (
-          <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-border-soft bg-white p-8 text-center shadow-sm">
-            <p className="text-sm text-[#5A6B82]">
-              Complete the free diagnostic first to see your personalised study plan.
-            </p>
-            <Link
-              href={diagnosticPaths.landing}
-              className={cn(bfPrimaryCtaNavClass, "mx-auto")}
-            >
-              Start diagnostic
-            </Link>
-          </div>
+          <BfEmptyState
+            variant="no-tests"
+            className="mx-auto max-w-lg"
+            secondaryLabel="Back to dashboard"
+            secondaryHref="/dashboard"
+          />
         ) : (
           <div className="space-y-4 sm:space-y-6">
             <h1 className="font-display text-[26px] leading-[1.12] font-bold tracking-[-0.025em] text-[#0D1F3C] sm:text-[34px] sm:leading-tight">

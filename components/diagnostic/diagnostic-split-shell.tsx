@@ -1033,7 +1033,7 @@ export function DiagnosticSplitShell({
     return (
       <div
         className={cn(
-          "flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#EEF3F7] lg:flex-row",
+          "flex h-dvh max-h-dvh flex-col overflow-hidden bg-white lg:flex-row",
           fillViewport && "fixed inset-0 z-40",
         )}
       >
@@ -1077,7 +1077,7 @@ export function DiagnosticSplitShell({
         </aside>
 
         {/* Mobile / tablet top panel — horizontal step row */}
-        <div className="shrink-0 border-b border-[#E2E8F0] bg-white lg:hidden">
+        <div className="shrink-0 border-b border-transparent bg-white lg:hidden">
           <div className="flex items-center justify-between gap-3 px-4 pt-3 sm:px-5">
             <Link
               href="/"
@@ -1122,8 +1122,8 @@ export function DiagnosticSplitShell({
           </div>
         </div>
 
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#EEF3F7]">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:my-4 lg:mr-4 lg:rounded-[28px] lg:ring-1 lg:ring-[#E2E8F0]/90">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
             {children}
           </div>
         </main>
@@ -1135,7 +1135,7 @@ export function DiagnosticSplitShell({
   return (
     <div
       className={cn(
-        "flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#EEF3F7] lg:flex-row",
+        "flex h-dvh max-h-dvh flex-col overflow-hidden bg-white lg:flex-row",
         fillViewport && "fixed inset-0 z-40",
       )}
     >
@@ -1226,7 +1226,7 @@ export function DiagnosticSplitShell({
       </aside>
 
       {/* Mobile top chrome — light, matches canvas */}
-      <div className="shrink-0 border-b border-[#E2E8F0] bg-white lg:hidden">
+      <div className="shrink-0 border-b border-transparent bg-white lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-2">
           <Link
             href="/"
@@ -1250,13 +1250,10 @@ export function DiagnosticSplitShell({
         <ExamMobileStepper steps={steps} currentStep={currentStep} />
       </div>
 
-      <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#EEF3F7]">
+      <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
         <div
           className={cn(
             "flex min-h-0 flex-1 flex-col overflow-hidden bg-white",
-            "lg:my-3 lg:mr-3",
-            "lg:rounded-[24px]",
-            "lg:ring-1 lg:ring-[#E2E8F0]/90",
           )}
         >
           {children}

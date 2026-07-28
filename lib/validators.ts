@@ -38,7 +38,7 @@ export const otpSchema = z.object({
   phone: z.string(),
   code: z
     .string()
-    .length(6, "Enter the 6-digit OTP")
+    .length(4, "Enter the 4-digit OTP")
     .regex(/^\d+$/, "OTP must be digits only"),
 });
 

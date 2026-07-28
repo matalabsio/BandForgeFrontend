@@ -49,8 +49,8 @@ export default function VerifyPhoneClient() {
 
   const onVerify = async () => {
     setFormError(null);
-    if (otp.length !== 6) {
-      setFormError("Enter the 6-digit code.");
+    if (otp.length !== 4) {
+      setFormError("Enter the 4-digit code.");
       return;
     }
     setLoading(true);
@@ -118,7 +118,7 @@ export default function VerifyPhoneClient() {
           ) : null}
           <button
             type="button"
-            disabled={loading || otp.length !== 6}
+            disabled={loading || otp.length !== 4}
             onClick={() => void onVerify()}
             className="w-full rounded-xl bg-navy py-3 font-semibold text-white disabled:opacity-50"
           >
@@ -128,7 +128,7 @@ export default function VerifyPhoneClient() {
       )}
       <p className="mt-4 text-center text-meta text-ink/55">
         <Link href="/login" className="font-semibold text-teal">
-          Sign in with email
+          Sign in with Google
         </Link>
       </p>
     </AuthShell>

@@ -339,10 +339,10 @@ export function DiagnosticWritingExperience() {
                       </p>
                       {words < activeTask.minWords ? (
                         <div
-                          className="rounded-[12px] border border-amber-200/80 bg-[#FEF8EC] px-3.5 py-3 text-[13px] leading-snug font-light text-[#5C4A2E]"
+                          className="px-0.5 py-1 text-[13px] leading-snug font-light text-[#5A6B82]"
                           role="status"
                         >
-                          <p className="font-medium text-[#8A5A00]">
+                          <p className="font-medium text-navy">
                             IELTS Task {activeTask.part} requires at least {activeTask.minWords} words.
                           </p>
                           <p className="mt-1">

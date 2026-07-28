@@ -17,6 +17,7 @@ import {
 } from "@/lib/session";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { safePostLoginPath } from "@/lib/post-login-destination";
+import { isPhoneOtpEnabled } from "@/lib/flags";
 
 function hasAuthCookies(): boolean {
   return hasSessionHintCookie();
@@ -161,6 +162,17 @@ function LoginForm() {
       ) : null}
 
       <GoogleSignInButton next={next} />
+
+      {isPhoneOtpEnabled() ? (
+        <p className="mt-6 text-center text-sm text-[#081B33]/55">
+          <Link
+            href="/verify-phone"
+            className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
+          >
+            Sign in with phone
+          </Link>
+        </p>
+      ) : null}
 
       <p className="mt-6 text-center text-sm text-[#081B33]/45">
         Secure authentication with Google

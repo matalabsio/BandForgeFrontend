@@ -11,7 +11,7 @@ import {
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
-import { canAccessPersonalizedDashboard, hasFullSkillProgram } from "@/lib/entitlement";
+import { hasFullSkillProgram } from "@/lib/entitlement";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
@@ -25,7 +25,6 @@ import {
   formatUserDisplayName,
   getUserFirstName,
 } from "@/lib/user-display";
-import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -60,12 +59,8 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
   const learning = await fetchLearningProfile(cookieHeader);
   const profile = learning ?? emptyLearningProfile(userId);
 
-  // Allow dashboard for users with active full-skill subscription/plan even if
-  // diagnostic baseline counters are temporarily missing.
-  if (!canAccessPersonalizedDashboard(profile, subscription)) {
-    redirect("/diagnostic");
-  }
-
+  // Stay on dashboard: unpaid users see the plan paywall instead of being
+  // forced into the diagnostic exam flow.
   if (!hasFullSkillProgram(subscription)) {
     return (
       <>

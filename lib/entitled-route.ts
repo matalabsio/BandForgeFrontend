@@ -1,5 +1,4 @@
 import {
-  canAccessPersonalizedDashboard,
   hasFullSkillProgram,
   isDiagnosticComplete,
 } from "@/lib/entitlement";
@@ -24,10 +23,7 @@ export function resolveEntitledRoute({
     return { kind: "paywall" };
   }
 
-  if (!canAccessPersonalizedDashboard(learning, subscription)) {
-    return { kind: "redirect", path: "/diagnostic" };
-  }
-
+  // Paid users stay on the entitled route even if diagnostic counters lag.
   return { kind: "ok", profile: learning };
 }
 

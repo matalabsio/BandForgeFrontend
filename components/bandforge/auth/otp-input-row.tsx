@@ -8,11 +8,11 @@ import {
   type KeyboardEvent,
 } from "react";
 
-const LENGTH = 6;
+const LENGTH = 4;
 
 type OtpInputRowProps = {
   value: string;
-  onChange: (six: string) => void;
+  onChange: (code: string) => void;
   disabled?: boolean;
   idPrefix?: string;
   /** Increment when the OTP step mounts to autofocus first cell */

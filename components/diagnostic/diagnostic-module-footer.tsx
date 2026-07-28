@@ -29,7 +29,7 @@ export function DiagnosticModuleFooter({
   return (
     <div
       className={cn(
-        "shrink-0 border-t border-border-soft bg-white/95 shadow-[0_-4px_24px_rgb(15_25_35/0.06)] backdrop-blur-md",
+        "shrink-0 border-t border-transparent bg-white",
         "pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3",
         className,
       )}

@@ -8,11 +8,11 @@ export default function VerifyPhonePage() {
     return (
       <AuthShell
         title="Phone sign-in unavailable"
-        subtitle="Use email to create an account and sign in. Phone OTP will return when MSG91 is configured."
+        subtitle="Use Google to create an account and sign in. Phone OTP will return when MSG91 is configured."
       >
         <p className="text-body text-ink/70">
           <Link href="/login" className="font-semibold text-teal">
-            Continue with email
+            Continue with Google
           </Link>
         </p>
       </AuthShell>

@@ -22,7 +22,7 @@ export function DiagnosticPanelHeader({
   accent = "listening",
 }: PanelHeaderProps) {
   return (
-    <div className="shrink-0 border-b border-border-soft bg-white px-4 py-3 sm:px-5">
+    <div className="shrink-0 bg-white px-4 py-3 sm:px-5">
       <p
         className={cn(
           "text-[10px] font-bold uppercase tracking-[0.2em]",
@@ -50,7 +50,7 @@ export function DiagnosticPassageBody({ children, className }: PassageBodyProps)
   return (
     <div
       className={cn(
-        "min-h-0 flex-1 overflow-y-auto bg-[var(--exam-paper,#fafbfc)] px-4 py-4 sm:px-5 sm:py-5",
+        "min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4 sm:px-5 sm:py-5",
         className,
       )}
     >
@@ -95,9 +95,9 @@ export function DiagnosticSplitPane({
       )}
     >
       {showToggle ? (
-        <div className="shrink-0 border-b border-border-soft bg-white px-4 py-2 lg:hidden">
+        <div className="shrink-0 border-b border-transparent bg-white px-4 py-2 lg:hidden">
           <div
-            className="flex rounded-xl border border-border-soft bg-surface p-0.5"
+            className="flex rounded-xl bg-[#F8FAFC] p-0.5"
             role="tablist"
             aria-label="Reading panels"
           >
@@ -109,7 +109,7 @@ export function DiagnosticSplitPane({
               className={cn(
                 "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
                 mobilePanel === "left"
-                  ? "bg-white text-navy shadow-sm"
+                  ? "bg-white text-navy"
                   : "text-muted",
               )}
             >
@@ -123,7 +123,7 @@ export function DiagnosticSplitPane({
               className={cn(
                 "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
                 mobilePanel === "right"
-                  ? "bg-white text-navy shadow-sm"
+                  ? "bg-white text-navy"
                   : "text-muted",
               )}
             >
@@ -135,7 +135,7 @@ export function DiagnosticSplitPane({
 
       <section
         className={cn(
-          "flex min-h-0 flex-col overflow-hidden border-b border-border-soft bg-white lg:min-h-0 lg:w-1/2 lg:border-b-0 lg:border-r",
+          "flex min-h-0 flex-col overflow-hidden bg-white lg:min-h-0 lg:w-1/2 lg:border-r lg:border-[#EEF2F7]",
           showToggle && mobilePanel !== "left" && "hidden lg:flex",
           !showToggle && "max-h-[38vh] shrink-0 lg:max-h-none lg:shrink",
         )}
@@ -145,7 +145,7 @@ export function DiagnosticSplitPane({
       </section>
       <section
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--exam-surface,#f8fafc)] lg:w-1/2",
+          "flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:w-1/2",
           showToggle && mobilePanel !== "right" && "hidden lg:flex",
         )}
       >

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import BubbleMenu from "@/components/bandforge/bubble-menu";
-import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
+import Image from "next/image";
+import bandforgeLogo from "@/logo.png";
 import { BfMarketingWordmark } from "@/components/bandforge/bf-marketing-wordmark";
 import { BfMarketingNavIcon } from "@/components/bandforge/bf-marketing-nav-icon";
 import {
@@ -121,13 +122,14 @@ export function BandForgeHeaderMarketing({ activeHref, overHero }: Props) {
       <header className="pointer-events-none relative z-30 h-[4.75rem] lg:hidden">
         <BubbleMenu
           logo={
-            <span className="inline-flex items-center gap-2">
-              <BfBrandBars size="sm" />
-              <span className="font-display text-[1.0625rem] leading-none font-bold tracking-[-0.025em]">
-                <span className="text-navy">Band</span>
-                <span className="text-cyan">Forge</span>
-              </span>
-            </span>
+            <Image
+              src={bandforgeLogo}
+              alt="BandForge"
+              width={bandforgeLogo.width}
+              height={bandforgeLogo.height}
+              className="h-7 w-auto max-w-[160px] object-contain"
+              priority
+            />
           }
           items={bubbleItems}
           menuAriaLabel="Toggle navigation"

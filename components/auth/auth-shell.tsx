@@ -1,8 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { AuthAntigravity } from "@/components/auth/auth-antigravity";
-import bandforgeLogo from "@/modules/listening/img/logo.png";
 
 type AuthShellProps = {
   title: string;
@@ -14,8 +12,6 @@ type AuthShellProps = {
  * Single-column auth layout — white bg, antigravity particles, content centered.
  */
 export function AuthShell({ title, subtitle, children }: AuthShellProps) {
-  const isWelcomeBandForge = title === "Welcome to BandForge";
-
   return (
     <div className="bf-auth relative flex min-h-dvh flex-col overflow-hidden bg-white text-[#081B33]">
       <AuthAntigravity />
@@ -30,21 +26,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
 
       <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center px-6 py-12 sm:max-w-md sm:px-8">
         <h1 className="bf-auth-enter w-full text-center font-display text-[2rem] leading-[1.1] font-bold tracking-[-0.04em] text-[#081B33] sm:text-[2.75rem] md:text-[3.5rem]">
-          {isWelcomeBandForge ? (
-            <span className="inline-flex flex-wrap items-center justify-center gap-3">
-              <span>Welcome to</span>
-              <Image
-                src={bandforgeLogo}
-                alt="BandForge"
-                width={bandforgeLogo.width}
-                height={bandforgeLogo.height}
-                className="h-9 w-auto object-contain align-middle sm:h-11"
-                priority
-              />
-            </span>
-          ) : (
-            title
-          )}
+          {title}
         </h1>
         {subtitle ? (
           <p

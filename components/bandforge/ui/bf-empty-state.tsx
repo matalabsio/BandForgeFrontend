@@ -26,11 +26,11 @@ const PRESETS: Record<
   }
 > = {
   "no-tests": {
-    title: "No tests yet",
+    title: "No diagnostic results yet",
     description:
-      "Take your free diagnostic to see your band score across all four IELTS sections.",
-    actionLabel: "Take the Free Diagnostic",
-    actionHref: "/test",
+      "Complete the free diagnostic to see your band score across all four IELTS skills.",
+    actionLabel: "Start diagnostic",
+    actionHref: "/diagnostic",
   },
   "score-pending": {
     title: "Score pending",

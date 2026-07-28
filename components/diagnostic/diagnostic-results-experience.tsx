@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { DIAGNOSTIC_EXAM_STEPS } from "@/components/diagnostic/diagnostic-exam-steps";
@@ -8,11 +7,9 @@ import { DiagnosticPlanCheckoutSection } from "@/components/diagnostic/diagnosti
 import { DiagnosticPerformanceSkillCard } from "@/components/diagnostic/ui/diagnostic-performance-skill-card";
 import { DiagnosticScoreAnalysisBlock } from "@/components/diagnostic/ui/diagnostic-score-analysis-block";
 import { DiagnosticSkillCardReveal } from "@/components/diagnostic/ui/diagnostic-skill-card-reveal";
-import { bfPrimaryCtaNavClass } from "@/components/bandforge/bf-primary-cta-styles";
+import { BfEmptyState } from "@/components/bandforge/ui/bf-empty-state";
 import { aggregateBand } from "@/lib/diagnostic-scoring";
 import { calculateWritingBand, wordCount } from "@/lib/diagnostic-scoring";
-import { diagnosticPaths } from "@/lib/diagnostic-catalog";
-import { cn } from "@/lib/utils";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import {
   bandBarPercent,
@@ -134,9 +131,7 @@ export function DiagnosticResultsExperience() {
       }
       setLoading(false);
     } else {
-      setError(
-        "No diagnostic results yet. Complete the free diagnostic first.",
-      );
+      setError("missing_results");
       setLoading(false);
     }
   }, []);
@@ -219,27 +214,32 @@ export function DiagnosticResultsExperience() {
   return (
     <DiagnosticSplitShell
       steps={DIAGNOSTIC_EXAM_STEPS}
-      currentStep={4}
-      heading={pendingHuman ? "Your report is on the way." : "Your results are ready."}
-      subtitle="Unlock your plan, then reveal your personalised skill breakdown."
-      footerNote="Diagnostic complete"
+      currentStep={error ? 0 : 4}
+      heading={
+        error
+          ? "Take your free diagnostic"
+          : pendingHuman
+            ? "Your report is on the way."
+            : "Your results are ready."
+      }
+      subtitle={
+        error
+          ? "Get a baseline across Listening, Reading, Writing, and Speaking before unlocking your plan."
+          : "Unlock your plan, then reveal your personalised skill breakdown."
+      }
+      footerNote={error ? "About 45 minutes" : "Diagnostic complete"}
     >
       <div className="min-h-0 flex-1 overflow-y-auto bg-white">
         <div className="mx-auto w-full max-w-5xl px-3 py-6 sm:px-6 sm:py-10">
           {loading ? (
             <ResultsSkeleton />
           ) : error ? (
-            <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-border-soft bg-white p-8 text-center shadow-sm">
-              <p className="text-sm text-red-600" role="alert">
-                {error}
-              </p>
-              <Link
-                href={diagnosticPaths.landing}
-                className={cn(bfPrimaryCtaNavClass, "mx-auto")}
-              >
-                Start diagnostic
-              </Link>
-            </div>
+            <BfEmptyState
+              variant="no-tests"
+              className="mx-auto max-w-lg border-0 bg-transparent px-2 py-4 shadow-none sm:py-8"
+              secondaryLabel="Back to dashboard"
+              secondaryHref="/dashboard"
+            />
           ) : snapshot ? (
             <div className="space-y-6 sm:space-y-7">
               <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-center lg:justify-between lg:gap-8">

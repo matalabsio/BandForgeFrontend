@@ -27,10 +27,8 @@ export const bfPrimaryCtaHeroClass = cn(
   "pointer-events-auto w-full min-w-[14.5rem] gap-2.5 px-9 py-[17px] text-[1.0625rem] sm:w-auto sm:min-w-[16rem] lg:inline-flex lg:min-w-[17.5rem] lg:px-11 lg:py-[18px]",
 );
 
-/** Diagnostic exam / form full-width primary CTA (same gradient as hero) */
+/** Diagnostic exam / form full-width primary CTA — flat (no shadow / border chrome). */
 export const bfPrimaryCtaDiagClass = cn(
-  BF_PRIMARY_CTA_BASE,
+  "group relative inline-flex w-full min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full border-0 font-display px-6 py-3.5 text-base font-semibold text-white no-underline shadow-none transition-[background-position] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60",
   BF_PRIMARY_CTA_GRADIENT,
-  BF_PRIMARY_CTA_HOVER,
-  "font-display w-full min-h-[var(--spacing-touch,48px)] gap-2 px-6 py-3.5 text-base disabled:pointer-events-none disabled:opacity-60",
 );
