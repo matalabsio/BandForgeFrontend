@@ -315,7 +315,7 @@ export function DiagnosticReadingExperience() {
                 label="Submit reading"
                 busy={submitting}
                 onClick={handleSubmit}
-                contentWidth="full"
+                contentWidth="narrow"
               />
             </>
           )}

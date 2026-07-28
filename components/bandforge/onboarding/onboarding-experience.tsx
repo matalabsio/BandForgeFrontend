@@ -102,7 +102,7 @@ export function OnboardingExperience() {
     if (step >= 4) {
       // Diagnostic-first: finish onboarding → diagnostic unless guest already has results
       const hasLocalResults = Boolean(readDiagnosticResults());
-      router.push(hasLocalResults ? "/diagnostic/results#plan-unlock" : "/diagnostic");
+      router.push(hasLocalResults ? "/diagnostic/results?checkout=1" : "/diagnostic");
       return;
     }
     setStep((s) => s + 1);

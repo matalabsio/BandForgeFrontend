@@ -44,10 +44,7 @@ export function DiagnosticModuleFooter({
           type="button"
           disabled={disabled || busy}
           onClick={onClick}
-          className={cn(
-            bfPrimaryCtaDiagClass,
-            !narrow && "sm:ml-auto sm:max-w-sm",
-          )}
+          className={bfPrimaryCtaDiagClass}
         >
           <span className="relative z-[1]">{busy ? busyLabel : label}</span>
           {!busy ? (

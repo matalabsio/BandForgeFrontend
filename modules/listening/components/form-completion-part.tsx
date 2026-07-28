@@ -14,7 +14,7 @@ type Props = {
   onAnswer: (questionId: string, value: string) => void;
   onFocus: (questionId: string) => void;
   onPartPlayed: (partNumber: number) => void;
-  variant?: "default" | "exam";
+  variant?: "default" | "exam" | "diagnostic";
   autoplayAudio?: boolean;
   /** When true, audio renders in the left panel (split exam layout). */
   deferAudio?: boolean;
@@ -68,6 +68,7 @@ function FormCompletionPartBase({
     "Registration Form";
   const { org, form } = formTitleLines(formTitle);
   const isExam = variant === "exam";
+  const isDiagnostic = variant === "diagnostic";
   const qStart = questions[0] ? qDisplay(questions[0]) : 1;
   const qEnd = questions.length > 0 ? qDisplay(questions[questions.length - 1]) : 10;
 
@@ -163,7 +164,11 @@ function FormCompletionPartBase({
   return (
     <section
       id={`part-${part.part}`}
-      className="rounded-2xl border border-border bg-surface p-4 sm:p-5"
+      className={
+        isDiagnostic
+          ? "rounded-2xl bg-[#F7FAFC] p-4 sm:p-5"
+          : "rounded-2xl border border-border bg-surface p-4 sm:p-5"
+      }
     >
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
@@ -173,7 +178,13 @@ function FormCompletionPartBase({
             Questions {qStart}–{qEnd}: Form Completion
           </p>
         </div>
-        <span className="rounded-full border border-border bg-white px-3 py-1 text-[12px] font-semibold text-navy">
+        <span
+          className={
+            isDiagnostic
+              ? "rounded-full bg-white/80 px-3 py-1 text-[12px] font-semibold text-navy"
+              : "rounded-full border border-border bg-white px-3 py-1 text-[12px] font-semibold text-navy"
+          }
+        >
           {answeredCount}/{questions.length} answered
         </span>
       </header>
@@ -190,11 +201,23 @@ function FormCompletionPartBase({
         </div>
       )}
 
-      <div className="mt-6 overflow-x-auto rounded-xl border-2 border-ink/20 bg-white p-4 shadow-sm sm:p-6">
+      <div
+        className={
+          isDiagnostic
+            ? "mt-6 overflow-x-auto rounded-xl bg-white p-4 sm:p-6"
+            : "mt-6 overflow-x-auto rounded-xl border-2 border-ink/20 bg-white p-4 shadow-sm sm:p-6"
+        }
+      >
         <p className="text-center text-[11px] font-bold uppercase tracking-widest text-navy">
           {formTitle}
         </p>
-        <div className="mt-4 space-y-4 border-t border-border pt-4">
+        <div
+          className={
+            isDiagnostic
+              ? "mt-4 space-y-4 border-t border-navy/[0.06] pt-4"
+              : "mt-4 space-y-4 border-t border-border pt-4"
+          }
+        >
           {questions.map((q) => (
             <LabelInlineBlank
               key={q.id}

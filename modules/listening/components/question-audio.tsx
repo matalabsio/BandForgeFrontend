@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { TextType } from "@/components/ui/text-type";
 import { useListeningAudio } from "@/modules/listening/hooks/use-listening-audio";
+import { cn } from "@/lib/utils";
 
 type Props = {
   audioUrl: string | null;
@@ -15,6 +17,8 @@ type Props = {
   allowManualStartAfterBegin?: boolean;
   /** Shown under the player (exam). */
   sectionNote?: string;
+  /** Larger TextType animation for progress label + section note. */
+  animateCopy?: boolean;
 };
 
 function formatTime(seconds: number): string {
@@ -49,6 +53,7 @@ export function QuestionAudio({
   autoplay = false,
   allowManualStartAfterBegin = false,
   sectionNote,
+  animateCopy = false,
 }: Props) {
   const audio = useListeningAudio(played ? null : audioUrl);
   const isExam = variant === "exam";
@@ -112,7 +117,12 @@ export function QuestionAudio({
       <output
         className={
           isExam
-            ? "flex items-center gap-3 rounded-lg border border-[var(--exam-border)] bg-white px-4 py-3"
+            ? cn(
+                "flex items-center gap-3 rounded-lg bg-white px-4 py-3",
+                animateCopy
+                  ? "bg-[#F7FAFC]"
+                  : "border border-[var(--exam-border)]",
+              )
             : "flex items-center gap-2 rounded-lg border border-teal/40 bg-teal/5 px-3 py-2 text-[12px] text-navy"
         }
       >
@@ -152,6 +162,10 @@ export function QuestionAudio({
   }
 
   const pct = audio.duration > 0 ? (audio.currentTime / audio.duration) * 100 : 0;
+  const noteText =
+    sectionNote ??
+    "One recording for all 10 questions. It plays once automatically when ready. Pausing and replay are disabled.";
+  const progressTime = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
 
   if (isExam) {
     const statusLabel = audio.isStarted
@@ -165,9 +179,30 @@ export function QuestionAudio({
             : "Ready to play";
 
     return (
-      <div className="overflow-hidden rounded-lg border border-[var(--exam-border)] bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-[var(--exam-border)] bg-[var(--exam-paper)] px-4 py-2.5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-[var(--exam-border)] bg-white text-[var(--exam-ink-muted)]">
+      <div
+        className={cn(
+          "overflow-hidden rounded-xl bg-white",
+          animateCopy
+            ? "bg-[#F7FAFC] shadow-[0_1px_0_rgba(15,23,42,0.04)]"
+            : "border border-[var(--exam-border)] shadow-sm",
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center gap-3 px-4 py-2.5",
+            animateCopy
+              ? "border-b border-navy/[0.05] bg-white/70"
+              : "border-b border-[var(--exam-border)] bg-[var(--exam-paper)]",
+          )}
+        >
+          <span
+            className={cn(
+              "flex size-9 shrink-0 items-center justify-center rounded-md text-[var(--exam-ink-muted)]",
+              animateCopy
+                ? "bg-cyan/10 text-cyan"
+                : "border border-[var(--exam-border)] bg-white",
+            )}
+          >
             <HeadphonesIcon className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -191,13 +226,34 @@ export function QuestionAudio({
 
         <div className="px-4 py-4">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[12px] text-[var(--exam-ink-muted)]">Progress</p>
-            <p className="font-mono text-[12px] tabular-nums text-[var(--exam-ink)]">
-              {formatTime(audio.currentTime)} / {formatTime(audio.duration)}
+            {animateCopy ? (
+              <TextType
+                as="p"
+                text="Progress"
+                loop={false}
+                typingSpeed={42}
+                showCursor={false}
+                className="text-[15px] font-semibold text-navy sm:text-[16px]"
+              />
+            ) : (
+              <p className="text-[12px] text-[var(--exam-ink-muted)]">Progress</p>
+            )}
+            <p
+              className={cn(
+                "font-mono tabular-nums",
+                animateCopy
+                  ? "text-[15px] text-navy sm:text-[16px]"
+                  : "text-[12px] text-[var(--exam-ink)]",
+              )}
+            >
+              {progressTime}
             </p>
           </div>
           <div
-            className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--exam-border)]"
+            className={cn(
+              "mt-2 h-1.5 w-full overflow-hidden rounded-full",
+              animateCopy ? "bg-navy/10" : "bg-[var(--exam-border)]",
+            )}
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={100}
@@ -205,7 +261,10 @@ export function QuestionAudio({
             aria-label="Audio progress"
           >
             <div
-              className="h-full rounded-full bg-[var(--exam-bar)] transition-[width] duration-200 motion-reduce:transition-none"
+              className={cn(
+                "h-full rounded-full transition-[width] duration-200 motion-reduce:transition-none",
+                animateCopy ? "bg-cyan" : "bg-[var(--exam-bar)]",
+              )}
               style={{ width: `${Math.min(100, pct)}%` }}
             />
           </div>
@@ -249,10 +308,25 @@ export function QuestionAudio({
           ) : null}
         </div>
 
-        <p className="border-t border-[var(--exam-border)] bg-[var(--exam-paper)] px-4 py-2.5 text-[11px] leading-relaxed text-[var(--exam-ink-muted)]">
-          {sectionNote ??
-            "One recording for all 10 questions. It plays once automatically when ready. Pausing and replay are disabled."}
-        </p>
+        {animateCopy ? (
+          <div className="border-t border-navy/[0.05] bg-white/60 px-4 py-3.5">
+            <TextType
+              as="p"
+              text={noteText}
+              loop={false}
+              typingSpeed={22}
+              initialDelay={320}
+              showCursor
+              cursorCharacter="|"
+              cursorBlinkDuration={0.55}
+              className="text-[14px] leading-relaxed text-[#3D4F66] sm:text-[15px]"
+            />
+          </div>
+        ) : (
+          <p className="border-t border-[var(--exam-border)] bg-[var(--exam-paper)] px-4 py-2.5 text-[11px] leading-relaxed text-[var(--exam-ink-muted)]">
+            {noteText}
+          </p>
+        )}
       </div>
     );
   }

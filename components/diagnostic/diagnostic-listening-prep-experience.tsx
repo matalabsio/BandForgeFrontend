@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { BookOpen, Headphones, Volume2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
@@ -18,9 +18,25 @@ import {
   readDiagnosticProgress,
 } from "@/lib/diagnostic-storage";
 
+const PREP_TIPS = [
+  {
+    icon: <Volume2 className="size-4" aria-hidden />,
+    text: "Find a quiet space where you can focus without interruption.",
+  },
+  {
+    icon: <Headphones className="size-4" aria-hidden />,
+    text: "Plug in earphones or headphones for clear audio.",
+  },
+  {
+    icon: <BookOpen className="size-4" aria-hidden />,
+    text: "You'll have 30 seconds to read the questions before the recording starts.",
+  },
+] as const;
+
 export function DiagnosticListeningPrepExperience() {
   const router = useRouter();
   const remaining = useCountdown(DIAGNOSTIC_LISTENING_PREP_SEC);
+  const tips = useMemo(() => [...PREP_TIPS], []);
 
   useEffect(() => {
     const progress = readDiagnosticProgress();
@@ -55,22 +71,9 @@ export function DiagnosticListeningPrepExperience() {
           remaining={remaining}
           totalSec={DIAGNOSTIC_LISTENING_PREP_SEC}
           countdownLabel="Listening begins in"
-          loader="book"
+          loader="ring"
           badge={<Headphones className="size-7" strokeWidth={1.75} aria-hidden />}
-          tips={[
-            {
-              icon: <Volume2 className="size-4" aria-hidden />,
-              text: "Find a quiet space where you can focus without interruption.",
-            },
-            {
-              icon: <Headphones className="size-4" aria-hidden />,
-              text: "Plug in earphones or headphones for clear audio.",
-            },
-            {
-              icon: <BookOpen className="size-4" aria-hidden />,
-              text: "You'll have 30 seconds to read the questions before the recording starts.",
-            },
-          ]}
+          tips={tips}
         />
       </DiagnosticSplitShell>
     </DiagnosticModuleGuard>

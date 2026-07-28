@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { DiagnosticModuleGuard } from "@/components/diagnostic/diagnostic-module-guard";
 import { DIAGNOSTIC_EXAM_STEPS, examStepIndex } from "@/components/diagnostic/diagnostic-exam-steps";
@@ -12,7 +11,6 @@ import {
 } from "@/components/diagnostic/diagnostic-exam-shell";
 import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-module-footer";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
-import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { DIAGNOSTIC_WRITING_TIMER_SEC } from "@/lib/diagnostic-catalog";
 import { cn } from "@/lib/utils";
 import {
@@ -354,20 +352,6 @@ export function DiagnosticWritingExperience() {
                         </div>
                       ) : null}
                     </div>
-
-                    <button
-                      type="button"
-                      disabled={submitting}
-                      onClick={handleSubmit}
-                      className={cn(bfPrimaryCtaDiagClass, "mt-6 lg:hidden")}
-                    >
-                      <span className="relative z-[1]">
-                        {submitting ? "Submitting\u2026" : "Continue to speaking"}
-                      </span>
-                      {!submitting ? (
-                        <ArrowRight className="relative z-[1] size-4" aria-hidden />
-                      ) : null}
-                    </button>
                   </div>
                 </DiagnosticExamColumn>
               </DiagnosticExamScroll>
@@ -376,8 +360,7 @@ export function DiagnosticWritingExperience() {
                 busy={submitting}
                 busyLabel="Submitting\u2026"
                 onClick={handleSubmit}
-                contentWidth="full"
-                className="hidden lg:block"
+                contentWidth="narrow"
               />
             </>
           ) : null}

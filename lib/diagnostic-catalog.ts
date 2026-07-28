@@ -31,7 +31,7 @@ export const diagnosticPaths = {
   processing: "/diagnostic/processing",
   transition: "/diagnostic/transition",
   results: "/diagnostic/results",
-  planReveal: "/diagnostic/results#plan-unlock",
+  planReveal: "/diagnostic/results?checkout=1",
 } as const;
 
 export const DIAGNOSTIC_MOCK_META: MockMeta = {

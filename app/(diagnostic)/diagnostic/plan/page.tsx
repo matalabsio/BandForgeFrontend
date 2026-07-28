@@ -24,5 +24,5 @@ export default async function DiagnosticPlanRevealPage() {
     }
   }
 
-  redirect(`${diagnosticPaths.results}#plan-unlock`);
+  redirect(`${diagnosticPaths.results}?checkout=1`);
 }

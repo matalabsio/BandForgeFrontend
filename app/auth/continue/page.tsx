@@ -24,13 +24,30 @@ function PostLoginContinueInner() {
     async function continueAfterLogin() {
       const snapshot = readDiagnosticResults();
       const lead = readDiagnosticLead();
+      const wantsCheckout = requestedPath.includes("checkout=1");
 
-      if (snapshot && lead) {
+      // Never block checkout return on lead/diagnostic sync
+      if (snapshot && lead && !wantsCheckout) {
         await syncDiagnosticLeadAfterAuth(snapshot, lead).catch(() => undefined);
+      } else if (snapshot && lead && wantsCheckout) {
+        // Results page opens Razorpay immediately and syncs in the background
+        void syncDiagnosticLeadAfterAuth(snapshot, lead).catch(() => undefined);
       }
 
-      let hasServerDiagnostic = false;
+      let hasServerDiagnostic = Boolean(snapshot);
       let hasPaidFullSkillProgram = false;
+
+      if (wantsCheckout) {
+        // Fast path: skip profile/subscription round-trips; go open Razorpay
+        if (cancelled) return;
+        window.location.replace(
+          resolvePostLoginDestination(requestedPath, Boolean(snapshot), {
+            hasServerDiagnostic,
+            hasPaidFullSkillProgram: false,
+          }),
+        );
+        return;
+      }
 
       try {
         const [profile, subscription] = await Promise.all([

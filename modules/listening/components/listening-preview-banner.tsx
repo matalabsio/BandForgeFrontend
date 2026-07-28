@@ -25,10 +25,10 @@ function ListeningPreviewBannerBase({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg border shadow-sm",
+        "overflow-hidden rounded-xl",
         isDiagnostic
-          ? "border-navy/10 bg-white"
-          : "border-[var(--exam-border)] bg-white",
+          ? "bg-[#F7FAFC] shadow-[0_1px_0_rgba(15,23,42,0.04)]"
+          : "border border-[var(--exam-border)] bg-white shadow-sm",
       )}
       role="status"
       aria-live="polite"
@@ -36,10 +36,10 @@ function ListeningPreviewBannerBase({
     >
       <div
         className={cn(
-          "border-b px-4 py-3",
+          "px-4 py-3",
           isDiagnostic
-            ? "border-navy/10 bg-navy/[0.03]"
-            : "border-[var(--exam-border)] bg-[var(--exam-paper)]",
+            ? "border-b border-navy/[0.05] bg-white/70"
+            : "border-b border-[var(--exam-border)] bg-[var(--exam-paper)]",
         )}
       >
         <p

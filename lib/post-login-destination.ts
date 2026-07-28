@@ -1,6 +1,8 @@
 const DASHBOARD_PATH = "/dashboard";
 const DIAGNOSTIC_LANDING_PATH = "/diagnostic";
 const DIAGNOSTIC_RESULTS_PATH = "/diagnostic/results";
+/** Unpaid post-login / checkout-resume destination (query survives OAuth). */
+const DIAGNOSTIC_CHECKOUT_RETURN_PATH = "/diagnostic/results?checkout=1";
 const ONBOARDING_PATH = "/onboarding";
 
 /** App entry paths that should follow diagnostic-first routing. */
@@ -25,8 +27,23 @@ export function safePostLoginPath(raw: string | null | undefined): string {
   return raw;
 }
 
+/** Pathname only — ignore query/hash for default-entry matching. */
+function pathOnly(path: string): string {
+  return path.split(/[?#]/, 1)[0] || path;
+}
+
 function isDefaultEntryPath(path: string): boolean {
-  return DEFAULT_ENTRY_PATHS.has(path);
+  return DEFAULT_ENTRY_PATHS.has(pathOnly(path));
+}
+
+function isDiagnosticResultsPath(path: string): boolean {
+  const base = pathOnly(path);
+  return base === DIAGNOSTIC_RESULTS_PATH;
+}
+
+function isLegacyPlanPath(path: string): boolean {
+  const base = pathOnly(path);
+  return base === "/diagnostic/plan";
 }
 
 /**
@@ -34,8 +51,8 @@ function isDefaultEntryPath(path: string): boolean {
  *
  * Diagnostic-first:
  * - No diagnostic + dashboard/onboarding/diagnostic entry → `/diagnostic`
- * - Local or server diagnostic + unpaid entry → `/diagnostic/results` (plan + checkout)
- * - Diagnostic + paid → `/dashboard` for default entries
+ * - Local or server diagnostic + unpaid entry → `/diagnostic/results?checkout=1`
+ * - Diagnostic + paid → `/dashboard` for default entries / results checkout
  * - Explicit deep links (`/pricing`, `/scores`, …) are preserved
  */
 export function resolvePostLoginDestination(
@@ -48,9 +65,14 @@ export function resolvePostLoginDestination(
   const hasPaid = Boolean(options.hasPaidFullSkillProgram);
   const hasDiagnostic = hasLocalDiagnosticResults || hasServerDiagnostic;
 
-  // Legacy plan URL → results (checkout lives there now)
-  if (safePath === "/diagnostic/plan" || safePath.startsWith("/diagnostic/plan#")) {
-    return `${DIAGNOSTIC_RESULTS_PATH}#plan-unlock`;
+  // Legacy plan URL → results checkout resume
+  if (isLegacyPlanPath(safePath)) {
+    return hasPaid ? DASHBOARD_PATH : DIAGNOSTIC_CHECKOUT_RETURN_PATH;
+  }
+
+  // Explicit results / checkout return — preserve when unpaid; dashboard when paid
+  if (isDiagnosticResultsPath(safePath)) {
+    return hasPaid ? DASHBOARD_PATH : safePath;
   }
 
   if (isDefaultEntryPath(safePath)) {
@@ -60,7 +82,7 @@ export function resolvePostLoginDestination(
     if (hasPaid) {
       return DASHBOARD_PATH;
     }
-    return `${DIAGNOSTIC_RESULTS_PATH}#plan-unlock`;
+    return DIAGNOSTIC_CHECKOUT_RETURN_PATH;
   }
 
   return safePath;

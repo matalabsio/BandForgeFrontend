@@ -56,20 +56,25 @@ function SkillRow({
   const styles = BAR_STYLES[status];
 
   return (
-    <div className="flex items-center gap-2.5 sm:gap-3">
-      <span className="w-14 shrink-0 text-[11.5px] font-semibold text-[#0D1F3C] sm:w-16 sm:text-[12.5px]">
+    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+      <span className="w-12 shrink-0 truncate text-[11px] font-semibold text-[#0D1F3C] sm:w-16 sm:text-[12.5px]">
         {skillLabel(skillKey)}
       </span>
       <span
         className={cn(
-          "w-[42px] shrink-0 text-left text-[10px] font-semibold sm:w-[48px] sm:text-[11px]",
+          "w-9 shrink-0 text-left text-[10px] font-semibold sm:w-[48px] sm:text-[11px]",
           score > 0
             ? cn("font-mono font-medium sm:text-[13.5px]", styles.score)
             : "text-[#94A3B8]",
         )}
         title={score > 0 ? undefined : "Pending review"}
       >
-        {score > 0 ? score.toFixed(1) : "Pending"}
+        {score > 0 ? score.toFixed(1) : (
+          <>
+            <span className="sm:hidden">—</span>
+            <span className="hidden sm:inline">Pending</span>
+          </>
+        )}
       </span>
       <div className="relative h-2 min-w-0 flex-1 rounded-full bg-[#EEF2F7] sm:h-2.5">
         {score > 0 ? (

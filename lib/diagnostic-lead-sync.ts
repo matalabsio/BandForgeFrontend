@@ -4,7 +4,7 @@ import { syncDiagnosticToServer } from "@/lib/diagnostic-sync";
 import { updateProfile } from "@/lib/profile";
 import { getMe } from "@/lib/auth";
 
-/** After full-account login: persist diagnostic + lead fields server-side. */
+/** After full-account login: persist diagnostic + lead fields server-side (non-blocking). */
 export async function syncDiagnosticLeadAfterAuth(
   snapshot: DiagnosticResultsSnapshot,
   lead: DiagnosticLead,
@@ -13,18 +13,14 @@ export async function syncDiagnosticLeadAfterAuth(
   const user = await getMe().catch(() => null);
   if (!user || user.role === "guest") return;
 
+  // Never block checkout / navigation on these writes
   void syncDiagnosticToServer(snapshot, startedAt);
-
-  try {
-    await updateProfile({
-      full_name: lead.fullName,
-      phone: lead.phone,
-      target_band: lead.targetBand,
-      exam_date: lead.examDate,
-    });
-  } catch {
-    /* non-blocking — local preview still works */
-  }
+  void updateProfile({
+    full_name: lead.fullName,
+    phone: lead.phone,
+    target_band: lead.targetBand,
+    exam_date: lead.examDate,
+  }).catch(() => undefined);
 }
 
 export function isFullAccountUser(role: string | undefined): boolean {

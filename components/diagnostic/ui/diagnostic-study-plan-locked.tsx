@@ -45,7 +45,10 @@ export function DiagnosticStudyPlanLocked({
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-[#E8EDF3] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.05)] sm:rounded-[18px]">
-      <div className="pointer-events-none select-none blur-[6px]" aria-hidden>
+      <div
+        className="pointer-events-none select-none blur-[11px] saturate-[0.85] contrast-[0.92]"
+        aria-hidden
+      >
         <div className="p-[18px] sm:p-[22px] sm:px-[26px]">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-4">
             {weeks.map((week) => (
@@ -64,7 +67,7 @@ export function DiagnosticStudyPlanLocked({
         </div>
       </div>
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-[rgba(248,250,252,0.62)] px-6 sm:gap-[13px]">
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-[rgba(248,250,252,0.72)] px-6 backdrop-blur-[1px] sm:gap-[13px]">
         <div className="flex size-[46px] items-center justify-center rounded-full bg-[#0D1F3C] shadow-[0_8px_20px_rgba(13,31,60,0.30)] sm:size-[52px] sm:shadow-[0_10px_24px_rgba(13,31,60,0.30)]">
           <Lock className="size-5 text-white sm:size-[22px]" strokeWidth={2} />
         </div>

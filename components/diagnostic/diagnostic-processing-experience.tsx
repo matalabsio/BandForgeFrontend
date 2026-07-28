@@ -190,7 +190,7 @@ export function DiagnosticProcessingExperience() {
           className="w-full max-w-md rounded-[24px] border border-[#E8EEF4] bg-white p-7 shadow-[0_16px_48px_rgba(13,31,60,0.07)] sm:p-8"
         >
           <div className="flex justify-center">
-            <DiagnosticProcessingLoader />
+            <DiagnosticProcessingLoader size="md" />
           </div>
           <h1
             data-proc-reveal

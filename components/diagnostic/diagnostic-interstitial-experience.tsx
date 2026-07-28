@@ -1,23 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Star } from "lucide-react";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { DIAGNOSTIC_EXAM_STEPS } from "@/components/diagnostic/diagnostic-exam-steps";
 import { DiagnosticStagePanel } from "@/components/diagnostic/ui/diagnostic-stage-panel";
+import { TextType } from "@/components/ui/text-type";
 import { useCountdown } from "@/hooks/use-countdown";
 import {
   DIAGNOSTIC_TRANSITIONS,
   type DiagnosticTransitionSlug,
 } from "@/lib/diagnostic-transitions";
 import { hasInProgressDiagnostic } from "@/lib/diagnostic-storage";
+import { planTimedTextType } from "@/lib/timed-text-type";
 
 const SLUG_TO_STEP: Record<DiagnosticTransitionSlug, number> = {
   "listening-reading": 1,
   "reading-writing": 2,
   "writing-speaking": 3,
 };
+
+const BREATH =
+  "Take a breath — you’re making steady progress through your diagnostic.";
 
 type Props = {
   slug: DiagnosticTransitionSlug;
@@ -28,6 +33,17 @@ export function DiagnosticInterstitialExperience({ slug }: Props) {
   const config = DIAGNOSTIC_TRANSITIONS[slug];
   const remaining = useCountdown(config.countdownSec);
   const canContinue = remaining === 0;
+  const title = `${config.nextLabel} is next`;
+  const quoteText = `“${config.quote}”`;
+
+  const typePlan = useMemo(
+    () =>
+      planTimedTextType(
+        [{ text: title }, { text: BREATH }, { text: quoteText }],
+        config.countdownSec,
+      ),
+    [title, quoteText, config.countdownSec],
+  );
 
   useEffect(() => {
     if (!hasInProgressDiagnostic()) {
@@ -50,12 +66,13 @@ export function DiagnosticInterstitialExperience({ slug }: Props) {
       fillViewport
     >
       <DiagnosticStagePanel
-        title={`${config.nextLabel} is next`}
-        description="Take a breath — you’re making steady progress through your diagnostic."
+        title={title}
+        description={BREATH}
         remaining={remaining}
         totalSec={config.countdownSec}
         countdownLabel={`${config.nextLabel} begins in`}
-        loader="book"
+        loader="brand"
+        typeBudgetExtraTexts={[quoteText]}
         alwaysShowCta
         ctaLabel={
           canContinue ? (
@@ -81,9 +98,18 @@ export function DiagnosticInterstitialExperience({ slug }: Props) {
           >
             <path d="M7 7h4v4c0 2.2-1.4 3.7-3.5 4.2l-.5-1.4c1.1-.3 1.7-.9 1.8-1.8H7zm8 0h4v4c0 2.2-1.4 3.7-3.5 4.2l-.5-1.4c1.1-.3 1.7-.9 1.8-1.8H15z" />
           </svg>
-          <blockquote className="font-display text-[17px] leading-snug font-medium tracking-tight text-pretty text-navy sm:text-xl">
-            &ldquo;{config.quote}&rdquo;
-          </blockquote>
+          <TextType
+            as="blockquote"
+            text={quoteText}
+            loop={false}
+            typingSpeed={typePlan.typingSpeed}
+            variableSpeed={typePlan.variableSpeed}
+            initialDelay={typePlan.delays[2] ?? 0}
+            showCursor
+            cursorCharacter="|"
+            cursorBlinkDuration={0.55}
+            className="font-display text-[17px] leading-snug font-medium tracking-tight text-pretty text-navy sm:text-xl"
+          />
           <div className="mt-4 flex items-center gap-2.5">
             <div
               className="flex size-10 items-center justify-center rounded-full font-display text-[14px] font-bold text-white"

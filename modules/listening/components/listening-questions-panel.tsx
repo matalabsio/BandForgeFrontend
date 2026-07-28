@@ -201,7 +201,7 @@ function ListeningQuestionsPanelBase({
                     onAnswer={onAnswer}
                     onFocus={onFocus}
                     onPartPlayed={() => {}}
-                    variant={isDiagnostic ? "default" : "exam"}
+                    variant={isDiagnostic ? "diagnostic" : "exam"}
                     deferAudio
                   />
                 );

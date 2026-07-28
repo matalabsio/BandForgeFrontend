@@ -85,19 +85,10 @@ export function DiagnosticPerformanceSkillCard({
   const styles = CARD_STYLES[status];
   const isWeak = status === "focus_area" || status === "priority";
 
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex w-full flex-col rounded-2xl border p-4 text-left sm:rounded-[18px] sm:p-[22px] sm:pb-5",
-        onClick ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40" : "",
-        styles.card,
-      )}
-      aria-label={`Open ${label} review`}
-    >
-      <div className="mb-[11px] flex items-center justify-between gap-2 sm:mb-[18px]">
-        <span className="text-[13px] font-semibold text-[#0D1F3C] sm:text-[15px]">
+  const body = (
+    <>
+      <div className="mb-[11px] flex items-center justify-between gap-1.5 sm:mb-[18px] sm:gap-2">
+        <span className="truncate text-[12px] font-semibold text-[#0D1F3C] sm:text-[15px]">
           {label}
         </span>
 
@@ -130,7 +121,7 @@ export function DiagnosticPerformanceSkillCard({
 
       <p
         className={cn(
-          "mb-2.5 font-mono text-[23px] leading-none font-medium tracking-[-0.02em] sm:mb-[14px] sm:text-[30px]",
+          "mb-2 font-mono text-[20px] leading-none font-medium tracking-[-0.02em] sm:mb-[14px] sm:text-[30px]",
           styles.band,
         )}
       >
@@ -153,12 +144,35 @@ export function DiagnosticPerformanceSkillCard({
 
       <p
         className={cn(
-          "text-[11.5px] leading-snug sm:text-[13px]",
+          "line-clamp-3 text-[11px] leading-snug sm:line-clamp-none sm:text-[13px]",
           styles.coaching,
         )}
       >
         {pending ? "Examiner review in progress." : coaching}
       </p>
-    </button>
+    </>
   );
+
+  const shellClass = cn(
+    "flex h-full w-full min-w-0 flex-col rounded-2xl border p-3.5 text-left sm:rounded-[18px] sm:p-[22px] sm:pb-5",
+    styles.card,
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          shellClass,
+          "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40",
+        )}
+        aria-label={`Open ${label} review`}
+      >
+        {body}
+      </button>
+    );
+  }
+
+  return <div className={shellClass}>{body}</div>;
 }

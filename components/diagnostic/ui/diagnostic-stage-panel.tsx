@@ -1,10 +1,13 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { DiagnosticBookLoader } from "@/components/diagnostic/ui/diagnostic-book-loader";
+import { DiagnosticProcessingLoader } from "@/components/diagnostic/ui/diagnostic-processing-loader";
+import { TextType } from "@/components/ui/text-type";
+import { planTimedTextType } from "@/lib/timed-text-type";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP);
@@ -27,8 +30,17 @@ type Props = {
   ctaDisabled?: boolean;
   alwaysShowCta?: boolean;
   badge?: ReactNode;
-  /** `ring` — circular countdown (prep). `book` — flipping book (transitions). */
-  loader?: "ring" | "book";
+  /**
+   * Extra copy typed outside this panel (e.g. interstitial quote) that must
+   * still finish inside `totalSec` — included only in the typing budget.
+   */
+  typeBudgetExtraTexts?: string[];
+  /**
+   * `brand` — BandForge bars (analyzing screen).
+   * `ring` — circular countdown (prep).
+   * `book` — flipping book (legacy).
+   */
+  loader?: "brand" | "ring" | "book";
 };
 
 export function DiagnosticStagePanel({
@@ -44,7 +56,8 @@ export function DiagnosticStagePanel({
   ctaDisabled,
   alwaysShowCta = false,
   badge,
-  loader = "book",
+  typeBudgetExtraTexts,
+  loader = "brand",
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const progressPct = Math.min(
@@ -55,6 +68,23 @@ export function DiagnosticStagePanel({
   const circumference = 2 * Math.PI * 54;
   const dashOffset = circumference * (1 - progressPct / 100);
   const useBook = loader === "book";
+  const useBrand = loader === "brand";
+
+  const tipTexts = tips?.map((t) => t.text) ?? [];
+  const tipTextsKey = tipTexts.join("\0");
+  const extraTextsKey = (typeBudgetExtraTexts ?? []).join("\0");
+
+  const typePlan = useMemo(() => {
+    const segments = [
+      { text: title },
+      { text: description },
+      ...tipTexts.map((text) => ({ text })),
+      ...(typeBudgetExtraTexts ?? []).map((text) => ({ text })),
+    ];
+    return planTimedTextType(segments, totalSec);
+    // tipTexts / extras keyed by content so countdown re-renders don't reset typing
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tipTextsKey / extraTextsKey
+  }, [title, description, tipTextsKey, extraTextsKey, totalSec]);
 
   useGSAP(
     () => {
@@ -66,13 +96,13 @@ export function DiagnosticStagePanel({
       const bits = root.querySelectorAll<HTMLElement>("[data-stage-reveal]");
       gsap.fromTo(
         bits,
-        { opacity: 0, y: 22, filter: "blur(8px)" },
+        { opacity: 0, y: 18, filter: "blur(6px)" },
         {
           opacity: 1,
           y: 0,
           filter: "blur(0px)",
           duration: 0.65,
-          stagger: 0.09,
+          stagger: 0.1,
           ease: "power3.out",
           clearProps: "filter",
         },
@@ -83,7 +113,7 @@ export function DiagnosticStagePanel({
 
   useGSAP(
     () => {
-      if (useBook) return;
+      if (useBook || useBrand) return;
       const el = rootRef.current?.querySelector<HTMLElement>("[data-countdown-num]");
       if (!el) return;
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -94,8 +124,17 @@ export function DiagnosticStagePanel({
         { scale: 1, duration: 0.35, ease: "power2.out" },
       );
     },
-    { scope: rootRef, dependencies: [remaining, useBook] },
+    { scope: rootRef, dependencies: [remaining, useBook, useBrand] },
   );
+
+  const countdownCaption = (
+    <>
+      {countdownLabel}{" "}
+      <span className="font-mono font-semibold text-cyan">{remaining}s</span>
+    </>
+  );
+
+  const tipDelayOffset = 2;
 
   return (
     <div
@@ -104,17 +143,22 @@ export function DiagnosticStagePanel({
     >
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-5 py-8 sm:px-8 sm:py-10">
         <div data-stage-reveal className="mx-auto flex flex-col items-center">
-          {useBook ? (
-            <DiagnosticBookLoader
-              label={
-                <>
-                  {countdownLabel}{" "}
-                  <span className="font-mono font-semibold text-cyan">
-                    {remaining}s
-                  </span>
-                </>
-              }
-            />
+          {useBrand ? (
+            <>
+              <DiagnosticProcessingLoader
+                size="lg"
+                label={countdownCaption}
+                labelKey={remaining}
+              />
+              <div className="mt-3 h-1 w-40 overflow-hidden rounded-full bg-[#E2E8F0] sm:w-48">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#0097a7_0%,#00bcd4_50%,#0097a7_100%)] transition-[width] duration-1000 ease-linear"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </>
+          ) : useBook ? (
+            <DiagnosticBookLoader label={countdownCaption} />
           ) : (
             <>
               <div className="relative size-[132px] sm:size-[148px]">
@@ -164,8 +208,7 @@ export function DiagnosticStagePanel({
                 </div>
               </div>
               <p className="mt-4 text-center text-[13px] text-[#64748B] sm:text-[14px]">
-                {countdownLabel}{" "}
-                <span className="font-mono font-semibold text-cyan">{remaining}s</span>
+                {countdownCaption}
               </p>
               <div className="mt-3 h-1 w-40 overflow-hidden rounded-full bg-[#E2E8F0] sm:w-48">
                 <div
@@ -179,7 +222,7 @@ export function DiagnosticStagePanel({
 
         <div
           data-stage-reveal
-          className="mt-8 rounded-[24px] border border-[#E8EEF4] bg-white p-6 sm:mt-10 sm:p-8"
+          className="mt-8 rounded-[24px] bg-white/90 p-6 shadow-[0_1px_0_rgba(15,23,42,0.04)] sm:mt-10 sm:p-8"
         >
           {badge ? (
             <div
@@ -190,33 +233,56 @@ export function DiagnosticStagePanel({
             </div>
           ) : null}
 
-          <h1
-            data-stage-reveal
-            className="text-center font-display text-[26px] leading-[1.15] font-bold tracking-[-0.03em] text-navy sm:text-[32px]"
-          >
-            {title}
-          </h1>
-          <p
-            data-stage-reveal
-            className="mx-auto mt-2.5 max-w-[40ch] text-center text-[14px] leading-relaxed text-[#64748B] sm:text-[15px]"
-          >
-            {description}
-          </p>
+          <TextType
+            as="h1"
+            text={title}
+            loop={false}
+            typingSpeed={typePlan.typingSpeed}
+            variableSpeed={typePlan.variableSpeed}
+            initialDelay={typePlan.delays[0] ?? 0}
+            showCursor
+            cursorCharacter="|"
+            cursorBlinkDuration={0.55}
+            className="w-full text-center font-display text-[26px] leading-[1.25] font-bold tracking-[-0.03em] text-navy sm:text-[32px]"
+          />
+          <TextType
+            as="p"
+            text={description}
+            loop={false}
+            typingSpeed={typePlan.typingSpeed}
+            variableSpeed={typePlan.variableSpeed}
+            initialDelay={typePlan.delays[1] ?? 0}
+            showCursor
+            cursorCharacter="|"
+            cursorBlinkDuration={0.55}
+            className="mx-auto mt-3 max-w-[42ch] text-center text-[15px] leading-relaxed text-[#64748B] sm:text-[16px]"
+          />
 
           {tips && tips.length > 0 ? (
             <ul className="mt-6 space-y-2.5">
-              {tips.map((tip) => (
+              {tips.map((tip, tipIndex) => (
                 <li
                   key={tip.text}
                   data-stage-reveal
-                  className="flex items-start gap-3 rounded-[14px] border border-[#E8EEF4] bg-[#F8FBFC] px-3.5 py-3.5"
+                  className="flex items-start gap-3 rounded-[14px] bg-[#F4F8FA] px-3.5 py-3.5"
                 >
                   <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-cyan/12 text-cyan">
                     {tip.icon}
                   </span>
-                  <span className="pt-1 text-[13.5px] leading-snug text-[#1B2B45] sm:text-[14px]">
-                    {tip.text}
-                  </span>
+                  <TextType
+                    as="span"
+                    text={tip.text}
+                    loop={false}
+                    typingSpeed={typePlan.typingSpeed}
+                    variableSpeed={typePlan.variableSpeed}
+                    initialDelay={
+                      typePlan.delays[tipDelayOffset + tipIndex] ?? 0
+                    }
+                    showCursor
+                    cursorCharacter="|"
+                    cursorBlinkDuration={0.55}
+                    className="min-w-0 flex-1 pt-1 text-[15px] leading-snug text-[#1B2B45] sm:text-[16px]"
+                  />
                 </li>
               ))}
             </ul>

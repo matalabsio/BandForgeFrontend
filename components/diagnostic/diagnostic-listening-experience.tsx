@@ -138,6 +138,8 @@ export function DiagnosticListeningExperience() {
     Boolean(pack?.listening.audioUrl) &&
     (partAudioPhase === "playing" || partAudioPhase === "complete");
   const inPreview = partAudioPhase === "preview";
+  /** Exam clock starts after the 30s question-explore preview. */
+  const examTimerActive = !inPreview && questionsVisible;
 
   const loading = !pack || !listeningPart;
 
@@ -152,7 +154,7 @@ export function DiagnosticListeningExperience() {
         timer={
           <DiagnosticTimerPill
             durationSeconds={DIAGNOSTIC_LISTENING_TIMER_SEC}
-            active={questionsVisible}
+            active={examTimerActive}
             onExpire={handleSubmit}
           />
         }
@@ -193,6 +195,7 @@ export function DiagnosticListeningExperience() {
                           allowManualStartAfterBegin={partAudioPhase === "playing"}
                           onCompleted={handleAudioCompleted}
                           sectionNote="Use earphones for the clearest audio. The recording plays once — take notes as you listen and answer while you go. Pausing and replay are disabled."
+                          animateCopy
                         />
                       </div>
                     ) : pack.listening.audioUrl ? null : (
