@@ -383,7 +383,7 @@ export function SpeakingMicCheck({
                 <SpeakingMicHero
                   phase={phase}
                   variant="diagnostic"
-                  className="size-[72px] sm:size-[84px] lg:size-[80px]"
+                  className="size-[100px] sm:size-[112px] lg:size-[108px]"
                 />
 
                 <p
