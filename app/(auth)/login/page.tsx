@@ -120,7 +120,7 @@ function LoginForm() {
   if (mounted && !loading && isAuthenticated && hasAuthCookies()) {
     return (
       <AuthShell
-        title="Welcome back"
+        title="Welcome to BandForge"
         subtitle="You are already signed in. Taking you to your dashboard."
       >
         <p className="text-center text-base text-[#081B33]/60">
@@ -132,7 +132,7 @@ function LoginForm() {
 
   return (
     <AuthShell
-      title="Welcome back"
+      title="Welcome to BandForge"
       subtitle="Continue your IELTS preparation."
     >
       {mounted && onDeployPreview && stayOnPreview ? (
@@ -184,7 +184,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <AuthShell
-          title="Welcome back"
+          title="Welcome to BandForge"
           subtitle="Continue your IELTS preparation."
         >
           <p className="text-center text-base text-[#081B33]/60">Loading…</p>

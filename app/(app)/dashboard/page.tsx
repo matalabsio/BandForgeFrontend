@@ -11,7 +11,7 @@ import {
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
-import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
+import { canAccessPersonalizedDashboard, hasFullSkillProgram } from "@/lib/entitlement";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
@@ -60,8 +60,9 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
   const learning = await fetchLearningProfile(cookieHeader);
   const profile = learning ?? emptyLearningProfile(userId);
 
-  // Diagnostic-first: no baseline → take the free diagnostic before dashboard/paywall
-  if (!isDiagnosticComplete(profile)) {
+  // Allow dashboard for users with active full-skill subscription/plan even if
+  // diagnostic baseline counters are temporarily missing.
+  if (!canAccessPersonalizedDashboard(profile, subscription)) {
     redirect("/diagnostic");
   }
 

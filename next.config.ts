@@ -48,4 +48,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSerwist(nextConfig);
+// In local dev, keep raw Next config to avoid Turbopack root/module-resolution
+// drift caused by plugin wrapping in this monorepo layout.
+export default process.env.NODE_ENV === "development"
+  ? nextConfig
+  : withSerwist(nextConfig);
