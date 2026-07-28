@@ -12,7 +12,6 @@ const PROTECTED_PREFIXES = [
   "/profile",
   "/mock",
   "/test",
-  "/admin",
   "/study-plan",
   "/practice",
   "/diagnostic/report",
@@ -22,13 +21,6 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!isAuthEnabled()) {
-    const response = NextResponse.next();
-    response.headers.set("x-pathname", pathname);
-    return response;
-  }
-  
- // Admin login uses email/password on this page — no session cookie required yet. 
-  if (pathname === "/admin/login") {
     const response = NextResponse.next();
     response.headers.set("x-pathname", pathname);
     return response;
@@ -48,19 +40,10 @@ export async function middleware(request: NextRequest) {
   );
 
   if (!hasCookie) {
-    const url = request.nextUrl.clone();
-    const isAdminPanel =
-      pathname === "/admin" || pathname.startsWith("/admin/");
-    if (isAdminPanel) {
-      url.pathname = "/admin/login";
-      url.searchParams.set("next", "/admin");
-    } else {
-      const next = bootstrapNextPath(pathname, request.nextUrl.search);
-      return NextResponse.redirect(
-        new URL(loginPathWithNext(next), request.url),
-      );
-    }
-    return NextResponse.redirect(url);
+    const next = bootstrapNextPath(pathname, request.nextUrl.search);
+    return NextResponse.redirect(
+      new URL(loginPathWithNext(next), request.url),
+    );
   }
 
   const refreshed = await middlewareRefreshAuth(request);
@@ -86,8 +69,6 @@ export const config = {
     "/mock/:path*",
     "/test",
     "/test/:path*",
-    "/admin",
-    "/admin/:path*",
     "/study-plan",
     "/study-plan/:path*",
     "/practice",

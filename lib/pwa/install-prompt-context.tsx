@@ -50,7 +50,6 @@ const BLOCKED_PREFIXES = [
   "/test",
   "/mock",
   "/diagnostic",
-  "/admin",
 ] as const;
 
 function isBlockedRoute(pathname: string): boolean {

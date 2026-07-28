@@ -71,7 +71,6 @@ frontend/
 │   ├── dashboard/                # Live dashboard (API-backed)
 │   ├── workspace/, profile/, settings/
 │   ├── scores/                   # Demo analytics (hardcoded)
-│   ├── admin/                    # Placeholder admin UI
 │   ├── auth/bootstrap/           # Post-OAuth session restore → redirect
 │   └── api/                      # BFF proxies → FastAPI
 │       ├── auth/[...path]/
@@ -108,6 +107,8 @@ frontend/
 └── package.json
 ```
 
+Admin UI + API live in [`../admin/`](../admin/) (`admin/web` on :3001; `admin/api` mounted by the backend).
+
 ---
 
 ## What is live vs demo
@@ -122,7 +123,7 @@ frontend/
 | **20-Q listening mock** | **Dev** | `/mock/c0000000-.../listening` (per-question audio) |
 | **`/test/reading`, writing, speaking** | **Demo** | Timer + UI only; no backend submit |
 | **`/scores`** | **Live** | Real dashboard summary via `scores-experience.tsx` |
-| **`/admin/*`** | **Placeholder** | No CRUD wired |
+| **Admin panel** | **Separate app** | See [`../admin/`](../admin/) — `admin/web` on port 3001 |
 | Email/password, phone OTP | **UI only** | Backend returns 503 in Google-only phase |
 
 Published listening test ID (canonical):
@@ -185,7 +186,7 @@ These routes wrap content in `BfConversionShell` (header, footer, signup modals)
 | Path | Purpose |
 |------|---------|
 | `/scores` | Demo score analytics (not user data) |
-| `/admin`, `/admin/tests`, … | Placeholder admin |
+| Admin (`/admin/*`) | Moved to [`../admin/web`](../admin/web) — not served by this app |
 
 ---
 

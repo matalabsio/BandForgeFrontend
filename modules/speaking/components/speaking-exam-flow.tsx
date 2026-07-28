@@ -20,6 +20,8 @@ import type {
 } from "@/modules/speaking/types";
 import { examTextInputProps } from "@/lib/exam-input-props";
 import { cn } from "@/lib/utils";
+import { TextType } from "@/components/ui/text-type";
+import { planTimedTextType } from "@/lib/timed-text-type";
 import {
   secondsUntilDeadline,
   speakingFlowReducer,
@@ -503,6 +505,15 @@ export function SpeakingExamFlow({
   }
 
   const cueCard = isPart2 ? parseSpeakingCueCard(current.prompt) : null;
+  const recordPromptText = cueCard?.title ?? current.prompt;
+  const recordPromptPlan = useMemo(
+    () =>
+      planTimedTextType(
+        [{ text: recordPromptText }],
+        Math.max(1.6, Math.min(4.5, recordPromptText.length / 16)),
+      ),
+    [recordPromptText],
+  );
 
   const content = (
     <div className="flex flex-col gap-5">
@@ -515,11 +526,12 @@ export function SpeakingExamFlow({
           prompt={current.prompt}
           partLabel={partLabel}
           onEnded={handleQuestionEnded}
+          onStartAnswerNow={handleQuestionEnded}
         />
       ) : null}
 
       {(subPhase === "record" || subPhase === "part2_record" || subPhase === "ready") ? (
-        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:gap-8">
+        <div className="grid min-w-0 items-stretch gap-5 lg:grid-cols-2 lg:gap-6">
           <SpeakingQuestionCard
             variant={variant}
             partLabel={partLabel}
@@ -527,13 +539,30 @@ export function SpeakingExamFlow({
             videoUrl={current.videoUrl}
             passiveListening
           />
-          <div className="flex min-w-0 flex-col">
+          <div
+            className={cn(
+              "flex min-w-0 flex-col rounded-[20px] border border-navy/12 bg-white p-4 sm:p-5",
+              isDiagnostic && "shadow-[0_14px_30px_rgba(13,31,60,0.07)]",
+            )}
+          >
             <p className="font-mono text-[10px] font-medium tracking-[0.14em] text-teal uppercase">
               {isPart2 ? "Cue card" : "Question"}
             </p>
-            <h2 className="mt-2 break-words font-display text-xl font-semibold leading-snug text-navy sm:text-2xl">
-              {cueCard?.title ?? current.prompt}
-            </h2>
+            <div className="mt-2 min-h-[1.6em]">
+              <TextType
+                key={`${current.id}-${subPhase}-prompt`}
+                as="h2"
+                text={recordPromptText}
+                loop={false}
+                typingSpeed={recordPromptPlan.typingSpeed}
+                variableSpeed={recordPromptPlan.variableSpeed}
+                initialDelay={80}
+                showCursor={subPhase === "record" || subPhase === "part2_record"}
+                cursorCharacter="|"
+                cursorBlinkDuration={0.5}
+                className="block w-full break-words font-display text-lg font-semibold leading-snug text-navy sm:text-xl"
+              />
+            </div>
 
             {(subPhase === "record" || subPhase === "part2_record") &&
             !recorder.recording ? (
@@ -561,7 +590,7 @@ export function SpeakingExamFlow({
                 showStop={subPhase === "record" || subPhase === "part2_record"}
                 stopLabel={isPart2 ? "Finish long turn" : "Complete answer"}
                 hideElapsed={false}
-                className="mt-5"
+                className="mt-4 flex-1"
               />
             ) : null}
 
@@ -579,7 +608,7 @@ export function SpeakingExamFlow({
       ) : null}
 
       {subPhase === "part2_prep" && cueCard ? (
-        <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-11">
+        <div className="grid min-w-0 items-stretch gap-6 lg:grid-cols-2 lg:gap-6">
           <div className="min-w-0">
             <div className="mb-4 lg:hidden">
               <div className="flex min-h-14 items-center gap-3 rounded-2xl border border-cyan/30 bg-[#0B1B32] px-4 py-3 text-white">

@@ -8,7 +8,6 @@ import {
   loginPathWithNext,
   logout,
 } from "@/lib/auth";
-import { adminLoginPath } from "@/lib/admin-roles";
 import { isAuthEnabled } from "@/lib/flags";
 import {
   hasLikelyClientSession,
@@ -27,9 +26,6 @@ function hadPriorSession(): boolean {
 }
 
 function loginRedirectPath(next: string, sessionExpired: boolean): string {
-  if (next === "/admin" || next.startsWith("/admin/")) {
-    return adminLoginPath("/admin", sessionExpired ? "session_expired" : undefined);
-  }
   return loginPathWithNext(next, sessionExpired);
 }
 

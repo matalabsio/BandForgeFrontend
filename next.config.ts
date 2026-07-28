@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Admin listening MP3 uploads proxy through /api/admin — default 10MB truncates part audio.
+  // Large body uploads (e.g. listening audio via BFF) — default 10MB truncates.
   experimental: {
     proxyClientMaxBodySize: "50mb",
   },

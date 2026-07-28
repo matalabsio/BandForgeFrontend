@@ -13,7 +13,6 @@ const APP_ROUTE_PREFIXES = [
   "/mock",
   "/test",
   "/diagnostic",
-  "/admin",
   "/auth",
 ] as const;
 
@@ -40,16 +39,13 @@ function matchesPrefix(
 export function AppRoot({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const shell =
-    pathname === "/admin/login" ? (
-      <BfAuthSessionRoot>{children}</BfAuthSessionRoot>
-    ) : matchesPrefix(pathname, APP_ROUTE_PREFIXES) ? (
-      <>{children}</>
-    ) : matchesPrefix(pathname, AUTH_SESSION_ROUTE_PREFIXES) ? (
-      <BfAuthSessionRoot>{children}</BfAuthSessionRoot>
-    ) : (
-      <BfMarketingRoot>{children}</BfMarketingRoot>
-    );
+  const shell = matchesPrefix(pathname, APP_ROUTE_PREFIXES) ? (
+    <>{children}</>
+  ) : matchesPrefix(pathname, AUTH_SESSION_ROUTE_PREFIXES) ? (
+    <BfAuthSessionRoot>{children}</BfAuthSessionRoot>
+  ) : (
+    <BfMarketingRoot>{children}</BfMarketingRoot>
+  );
 
   return (
     <>

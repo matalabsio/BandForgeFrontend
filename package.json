@@ -28,7 +28,6 @@
     "test:speaking-phases": "node --experimental-strip-types modules/speaking/lib/speaking-phases.test.mjs",
     "test:speaking-report": "node --experimental-strip-types modules/speaking/lib/build-speaking-feedback.test.mjs",
     "test:speaking-phase-13": "node --experimental-strip-types modules/speaking/lib/speaking-phase-13.test.mjs",
-    "test:speaking-review-ui": "node --experimental-strip-types lib/speaking-review-ui.test.mjs",
     "test:speaking-transcripts": "node --experimental-strip-types modules/speaking/lib/speaking-transcript-groups.test.mjs",
     "test:mock-results": "node --experimental-strip-types modules/mock/lib/mock-result-presentation.test.mjs",
     "build:diagnostic-pack": "node ../scripts/build-diagnostic-pack.mjs",

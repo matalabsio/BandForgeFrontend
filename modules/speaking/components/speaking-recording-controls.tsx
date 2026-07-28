@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Headphones, Mic, Pause, Play, RotateCcw, Square } from "lucide-react";
+import { Mic, Pause, Play, RotateCcw, Square } from "lucide-react";
 import { formatAudioDuration } from "@/modules/speaking/lib/media-recorder-support";
 import { cn } from "@/lib/utils";
 
@@ -127,7 +127,7 @@ export function SpeakingRecordingControls({
           ? `Answer captured · ${formatAudioDuration(playbackDuration || seconds)}`
           : "Waiting to record";
 
-  const showActionRow = showStart || showStop || captured || showRerecord;
+  const showActionRow = showStart || showStop || showRerecord;
 
   return (
     <div
@@ -264,29 +264,6 @@ export function SpeakingRecordingControls({
             >
               <Square className="size-3.5 shrink-0 fill-current" />
               {stopLabel}
-            </button>
-          ) : null}
-
-          {captured ? (
-            <button
-              type="button"
-              onClick={() => void toggleHear()}
-              disabled={!playbackUrl}
-              className={cn(
-                "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border px-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 sm:text-[15px]",
-                playbackUrl
-                  ? "border-navy/12 bg-white text-navy hover:border-cyan/30 hover:bg-cyan/5"
-                  : "border-navy/12 bg-white text-[#6E83A0]",
-                isHearing && "border-cyan/40 bg-cyan/10 text-teal",
-                !showStop && "col-span-2",
-              )}
-            >
-              {isHearing ? (
-                <Pause className="size-3.5 shrink-0" />
-              ) : (
-                <Headphones className="size-3.5 shrink-0" />
-              )}
-              Hear
             </button>
           ) : null}
 

@@ -22,7 +22,7 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 
-/** App/admin typography — full next/font bundle for dashboard UI. */
+/** App typography — full next/font bundle for dashboard UI. */
 export function AppFontsShell({ children }: { children: ReactNode }) {
   return (
     <div

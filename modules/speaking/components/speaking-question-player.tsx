@@ -7,6 +7,8 @@ import {
   speakPromptText,
   stopSpeakingPrompt,
 } from "@/modules/speaking/lib/speak-question-prompt";
+import { TextType } from "@/components/ui/text-type";
+import { planTimedTextType } from "@/lib/timed-text-type";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -15,9 +17,15 @@ type Props = {
   prompt: string;
   partLabel: string;
   onEnded: () => void;
+  onStartAnswerNow?: () => void;
   playKey: string;
   variant?: "mock" | "diagnostic";
 };
+
+/** Natural ask pace (~13 chars/sec) when media duration is not ready yet. */
+function estimateAskDurationSec(prompt: string): number {
+  return Math.max(2.4, Math.min(14, prompt.length / 13));
+}
 
 function ExaminerPanel({
   videoUrl,
@@ -27,6 +35,7 @@ function ExaminerPanel({
   active,
   status,
   compact = false,
+  onDuration,
 }: {
   videoUrl?: string;
   videoRef?: RefObject<HTMLVideoElement | null>;
@@ -35,6 +44,7 @@ function ExaminerPanel({
   active: boolean;
   status: "ASKING" | "LISTENING" | "PREPARING";
   compact?: boolean;
+  onDuration?: (seconds: number) => void;
 }) {
   if (compact) {
     return (
@@ -54,7 +64,7 @@ function ExaminerPanel({
   }
 
   return (
-    <div className="relative flex min-h-[180px] overflow-hidden rounded-[20px] border border-cyan/40 bg-[#0B1B32] shadow-[0_20px_44px_rgba(13,31,60,0.22)] sm:min-h-[260px] lg:min-h-[380px]">
+    <div className="relative flex h-full min-h-[200px] w-full overflow-hidden rounded-[20px] border border-cyan/40 bg-[#0B1B32] shadow-[0_20px_44px_rgba(13,31,60,0.22)] sm:min-h-[240px] lg:min-h-[340px]">
       <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full border border-slate-400/30 bg-slate-950/50 px-3 py-1.5 backdrop-blur-sm">
         <span
           className={cn(
@@ -76,13 +86,17 @@ function ExaminerPanel({
           className="absolute inset-0 size-full object-cover"
           playsInline
           onEnded={onEnded}
+          onLoadedMetadata={(e) => {
+            const d = e.currentTarget.duration;
+            if (Number.isFinite(d) && d > 0) onDuration?.(d);
+          }}
           aria-label="BandForge examiner video"
         />
       ) : (
         <div className="m-auto flex flex-col items-center gap-4 px-6 text-center">
           <span
             className={cn(
-              "flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-cyan via-teal to-navy font-display text-3xl font-bold text-white shadow-[0_14px_34px_rgba(0,0,0,0.35)] sm:size-28 sm:text-4xl",
+              "flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan via-teal to-navy font-display text-2xl font-bold text-white shadow-[0_14px_34px_rgba(0,0,0,0.35)] sm:size-24 sm:text-3xl",
               status === "LISTENING" && "opacity-75",
             )}
             aria-hidden
@@ -107,6 +121,7 @@ export function SpeakingQuestionPlayer({
   prompt,
   partLabel,
   onEnded,
+  onStartAnswerNow,
   playKey,
   variant = "mock",
 }: Props) {
@@ -116,10 +131,38 @@ export function SpeakingQuestionPlayer({
   const cancelSpeakRef = useRef<(() => void) | null>(null);
   const onEndedRef = useRef(onEnded);
   const [isListening, setIsListening] = useState(false);
+  const durationLockedRef = useRef(false);
+  const [typePlan, setTypePlan] = useState(() =>
+    planTimedTextType([{ text: prompt }], estimateAskDurationSec(prompt)),
+  );
+  const [typeEpoch, setTypeEpoch] = useState(0);
 
   useEffect(() => {
     onEndedRef.current = onEnded;
   }, [onEnded]);
+
+  useEffect(() => {
+    durationLockedRef.current = false;
+    setTypePlan(
+      planTimedTextType([{ text: prompt }], estimateAskDurationSec(prompt)),
+    );
+    setTypeEpoch((n) => n + 1);
+    const lockTimer = window.setTimeout(() => {
+      durationLockedRef.current = true;
+    }, 320);
+    return () => window.clearTimeout(lockTimer);
+  }, [playKey, prompt]);
+
+  const handleAskDuration = useCallback(
+    (seconds: number) => {
+      if (durationLockedRef.current) return;
+      if (!Number.isFinite(seconds) || seconds <= 0.4) return;
+      durationLockedRef.current = true;
+      setTypePlan(planTimedTextType([{ text: prompt }], seconds));
+      setTypeEpoch((n) => n + 1);
+    },
+    [prompt],
+  );
 
   const finishAutoPlay = useCallback(() => {
     if (autoEndedRef.current) return;
@@ -153,6 +196,7 @@ export function SpeakingQuestionPlayer({
 
     let cancelled = false;
     let fallbackTimer: number | undefined;
+    let mediaWatchdog: number | undefined;
 
     const runSpeechFallback = () => {
       if (canSpeakPrompt()) {
@@ -177,6 +221,15 @@ export function SpeakingQuestionPlayer({
         video.currentTime = 0;
         try {
           await video.play();
+          const d = Number.isFinite(video.duration) ? video.duration : Number.NaN;
+          if (Number.isFinite(d) && d > 0) {
+            mediaWatchdog = window.setTimeout(() => {
+              if (!cancelled) {
+                setIsListening(false);
+                finishAutoPlay();
+              }
+            }, Math.ceil(d * 1000) + 1200);
+          }
         } catch {
           if (!cancelled) {
             setIsListening(false);
@@ -192,6 +245,15 @@ export function SpeakingQuestionPlayer({
         audio.currentTime = 0;
         try {
           await audio.play();
+          const d = Number.isFinite(audio.duration) ? audio.duration : Number.NaN;
+          if (Number.isFinite(d) && d > 0) {
+            mediaWatchdog = window.setTimeout(() => {
+              if (!cancelled) {
+                setIsListening(false);
+                finishAutoPlay();
+              }
+            }, Math.ceil(d * 1000) + 1200);
+          }
         } catch {
           if (!cancelled) {
             setIsListening(false);
@@ -208,6 +270,7 @@ export function SpeakingQuestionPlayer({
 
     return () => {
       cancelled = true;
+      if (mediaWatchdog) window.clearTimeout(mediaWatchdog);
       if (fallbackTimer) window.clearTimeout(fallbackTimer);
       stopPlayback();
     };
@@ -274,7 +337,7 @@ export function SpeakingQuestionPlayer({
   const canListen = Boolean(videoUrl || audioUrl || canSpeakPrompt());
 
   return (
-    <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] lg:gap-8">
+    <div className="grid min-w-0 items-stretch gap-5 lg:grid-cols-2 lg:gap-6">
       <ExaminerPanel
         videoUrl={videoUrl}
         videoRef={videoRef}
@@ -282,11 +345,12 @@ export function SpeakingQuestionPlayer({
         onEnded={handleMediaEnded}
         active={isListening}
         status="ASKING"
+        onDuration={handleAskDuration}
       />
 
       <div
         className={cn(
-          "flex min-w-0 flex-col rounded-[18px] border border-navy/12 bg-white p-4 sm:p-6",
+          "flex min-w-0 flex-col rounded-[20px] border border-navy/12 bg-white p-4 sm:p-6",
           variant === "diagnostic" && "shadow-[0_14px_30px_rgba(13,31,60,0.07)]",
         )}
       >
@@ -322,6 +386,7 @@ export function SpeakingQuestionPlayer({
           key={playKey}
           src={audioUrl}
           onEnded={handleMediaEnded}
+          onLoadedMetadata={(e) => handleAskDuration(e.currentTarget.duration)}
           className="hidden"
         />
       ) : null}
@@ -333,14 +398,40 @@ export function SpeakingQuestionPlayer({
           <p className="font-mono text-[10px] font-medium tracking-[0.14em] text-teal uppercase">
             Question
           </p>
-          <p className="mt-3 break-words whitespace-pre-wrap font-display text-xl font-semibold leading-snug text-navy sm:text-2xl">
-            {prompt}
-          </p>
+          <div
+            className="mt-3 min-h-[2.6em] sm:min-h-[3em]"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <TextType
+              key={`${playKey}-${typeEpoch}`}
+              as="h2"
+              text={prompt}
+              loop={false}
+              typingSpeed={typePlan.typingSpeed}
+              variableSpeed={typePlan.variableSpeed}
+              initialDelay={typePlan.delays[0] ?? 180}
+              showCursor
+              cursorCharacter="|"
+              cursorBlinkDuration={0.55}
+              hideCursorWhileTyping={false}
+              className="block w-full break-words whitespace-pre-wrap font-display text-xl font-semibold leading-snug text-navy sm:text-2xl"
+            />
+          </div>
           <p className="mt-5 text-sm leading-relaxed text-[#5A6B82]">
             {canListen
               ? "Listen to the full question. Your recording starts automatically when it ends."
               : "Your recording starts automatically after the question."}
           </p>
+          {onStartAnswerNow ? (
+            <button
+              type="button"
+              onClick={onStartAnswerNow}
+              className="mt-4 inline-flex min-h-11 w-fit cursor-pointer items-center justify-center rounded-full border border-cyan/35 bg-cyan/10 px-4 py-2 text-xs font-semibold text-teal transition-colors duration-200 hover:border-cyan/45 hover:bg-cyan/15 sm:text-[13px]"
+            >
+              Start recording now
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -363,7 +454,7 @@ export function SpeakingQuestionCard({
   passiveListening?: boolean;
 }) {
   return (
-    <div className={cn(variant === "diagnostic" && "min-w-0")}>
+    <div className={cn("flex h-full min-w-0", variant === "diagnostic" && "min-w-0")}>
       <ExaminerPanel
         videoUrl={videoUrl}
         active={false}
