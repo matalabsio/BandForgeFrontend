@@ -131,6 +131,26 @@ export function wordCount(text: string): number {
   return stripped ? stripped.split(/\s+/).length : 0;
 }
 
+/** Below this word count, skip AI writing evaluation and assign a local short band. */
+export const SHORT_RESPONSE_AI_MIN_WORDS = 100;
+
+/** Total recorded speech under this many seconds uses the short-response band (0–3). */
+export const SHORT_SPEAKING_MAX_SEC = 45;
+
+/**
+ * Map a short response (words or speech seconds) onto band 0–3 in half-band steps.
+ * `amount` of 0 → 0.0; `maxForFullShort` → 3.0.
+ */
+export function shortResponseBand(
+  amount: number,
+  maxForFullShort = SHORT_RESPONSE_AI_MIN_WORDS - 1,
+): number {
+  if (amount <= 0) return 0;
+  const ceiling = Math.max(1, maxForFullShort);
+  const capped = Math.min(amount, ceiling);
+  return Math.round((capped / ceiling) * 3 * 2) / 2;
+}
+
 export function calculateWritingBand(words: number, part: number): number {
   if (words <= 0) return 0;
   const minimum = WRITING_MIN_WORDS[part] ?? WRITING_MIN_WORDS[2];
@@ -222,9 +242,13 @@ export function scoreSpeakingModule(input: SpeakingScoreInput): {
   const { part1Questions, part2MinSec, part2Enabled = true, answers } = input;
   let earned = 0;
   let possible = part1Questions.length + (part2Enabled ? 1 : 0);
+  let totalSec = 0;
 
   for (const q of part1Questions) {
     const rec = answers.part1[q.id];
+    if (rec?.durationSec && rec.durationSec > 0) {
+      totalSec += rec.durationSec;
+    }
     if (rec?.completed && rec.durationSec >= q.minSec) {
       earned += 1;
     } else if (rec?.completed && rec.durationSec > 0) {
@@ -234,6 +258,9 @@ export function scoreSpeakingModule(input: SpeakingScoreInput): {
 
   const p2 = answers.part2;
   if (part2Enabled) {
+    if (p2?.recordSec && p2.recordSec > 0) {
+      totalSec += p2.recordSec;
+    }
     if (p2?.completed && p2.recordSec >= part2MinSec) {
       earned += 1;
     } else if (p2?.completed && p2.recordSec > 0) {
@@ -242,6 +269,12 @@ export function scoreSpeakingModule(input: SpeakingScoreInput): {
   }
 
   const completionRate = possible > 0 ? earned / possible : 0;
+  if (totalSec < SHORT_SPEAKING_MAX_SEC) {
+    return {
+      band: shortResponseBand(totalSec, SHORT_SPEAKING_MAX_SEC - 1),
+      completionRate,
+    };
+  }
   const band = Math.round((4.0 + completionRate * 3.5) * 10) / 10;
   return { band, completionRate };
 }

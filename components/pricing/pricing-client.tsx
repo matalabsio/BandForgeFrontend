@@ -236,7 +236,9 @@ export function PricingClient() {
           setStatusModal("payment_failed");
         },
       });
-      if (!opened) {
+      if (opened) {
+        setOverlay(null);
+      } else {
         setOverlay(null);
         clearCheckoutBusy();
         setStatusModal("checkout_unavailable");

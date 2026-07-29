@@ -9,19 +9,18 @@ import { DiagnosticScoreAnalysisBlock } from "@/components/diagnostic/ui/diagnos
 import { DiagnosticSkillCardReveal } from "@/components/diagnostic/ui/diagnostic-skill-card-reveal";
 import { BfEmptyState } from "@/components/bandforge/ui/bf-empty-state";
 import { aggregateBand } from "@/lib/diagnostic-scoring";
-import { calculateWritingBand, wordCount } from "@/lib/diagnostic-scoring";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import {
   bandBarPercent,
   bandRange,
-  coachingCopy,
   holdingBackNarrative,
+  resultsScoreCoaching,
+  resultsScoreTone,
   skillLabel,
-  skillStatuses,
+  type ResultsScoreTone,
   type SkillBands,
   type SkillKey,
 } from "@/lib/diagnostic-performance";
-import { readDiagnosticProgress } from "@/lib/diagnostic-storage";
 import {
   readDiagnosticResults,
   type DiagnosticResultsSnapshot,
@@ -48,15 +47,20 @@ function bandLabel(
 
 function ResultsSkeleton() {
   return (
-    <div className="animate-pulse space-y-6">
-      <div className="h-32 rounded-2xl bg-navy/8" />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="h-36 rounded-2xl bg-navy/8" />
-        <div className="h-36 rounded-2xl bg-navy/8" />
-        <div className="h-36 rounded-2xl bg-navy/8" />
-        <div className="h-36 rounded-2xl bg-navy/8" />
+    <div className="animate-pulse space-y-8">
+      <div className="space-y-3">
+        <div className="h-3 w-32 rounded bg-navy/8" />
+        <div className="h-10 w-2/3 rounded-xl bg-navy/8" />
+        <div className="h-16 w-full rounded-xl bg-navy/8" />
       </div>
-      <div className="h-40 rounded-2xl bg-navy/8" />
+      <div className="h-28 rounded-2xl bg-navy/8" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="h-40 rounded-2xl bg-navy/8" />
+        <div className="h-40 rounded-2xl bg-navy/8" />
+        <div className="h-40 rounded-2xl bg-navy/8" />
+        <div className="h-40 rounded-2xl bg-navy/8" />
+      </div>
+      <div className="h-48 rounded-2xl bg-navy/8" />
     </div>
   );
 }
@@ -68,40 +72,70 @@ const SKILL_ORDER: SkillKey[] = [
   "speaking",
 ];
 
+/** Lowest scores first; pending last. */
+function sortSkillsByScore(
+  keys: SkillKey[],
+  bands: SkillBands,
+  tones: Record<SkillKey, ResultsScoreTone>,
+): SkillKey[] {
+  const rank: Record<ResultsScoreTone, number> = {
+    needs_work: 0,
+    room_to_grow: 1,
+    strong: 2,
+    pending: 3,
+  };
+  return [...keys].sort((a, b) => {
+    const rd = rank[tones[a]] - rank[tones[b]];
+    if (rd !== 0) return rd;
+    return (bands[a] ?? 99) - (bands[b] ?? 99);
+  });
+}
+
 export function DiagnosticResultsExperience() {
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<DiagnosticResultsSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [progressWritingFallbackBand, setProgressWritingFallbackBand] = useState<
-    number | null
-  >(null);
 
   const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
   const targetBand = lead?.targetBand ?? 7.0;
 
   const pendingHuman = snapshot?.review_status === "pending_human";
   const hasWritingEval = snapshot?.writingEvaluation != null;
-  const writingBandFromSnapshot =
-    snapshot?.writingEvaluation?.writing_band ?? snapshot?.writing_band ?? null;
   const effectiveWritingBand =
-    writingBandFromSnapshot ?? progressWritingFallbackBand;
+    snapshot?.writingEvaluation?.writing_band ?? snapshot?.writing_band ?? null;
   const effectiveSpeakingBand = snapshot?.speaking_band ?? null;
-  const speakingBandForDisplay = effectiveSpeakingBand;
 
   const skillBands: SkillBands = useMemo(
     () => ({
       listening: snapshot?.listening_band ?? null,
       reading: snapshot?.reading_band ?? null,
       writing: effectiveWritingBand,
-      speaking: speakingBandForDisplay,
+      speaking: effectiveSpeakingBand,
     }),
-    [snapshot, effectiveWritingBand, speakingBandForDisplay],
+    [snapshot, effectiveWritingBand, effectiveSpeakingBand],
   );
 
-  const statuses = useMemo(
-    () => skillStatuses(skillBands, targetBand),
-    [skillBands, targetBand],
-  );
+  const scoreTones = useMemo(() => {
+    const pendingFor = (key: SkillKey) =>
+      pendingHuman &&
+      ((key === "writing" &&
+        effectiveWritingBand == null &&
+        !hasWritingEval) ||
+        (key === "speaking" && effectiveSpeakingBand == null));
+
+    return {
+      listening: resultsScoreTone(skillBands.listening, pendingFor("listening")),
+      reading: resultsScoreTone(skillBands.reading, pendingFor("reading")),
+      writing: resultsScoreTone(skillBands.writing, pendingFor("writing")),
+      speaking: resultsScoreTone(skillBands.speaking, pendingFor("speaking")),
+    } satisfies Record<SkillKey, ResultsScoreTone>;
+  }, [
+    skillBands,
+    pendingHuman,
+    effectiveWritingBand,
+    hasWritingEval,
+    effectiveSpeakingBand,
+  ]);
 
   const analysis = useMemo(
     () => holdingBackNarrative(skillBands, targetBand),
@@ -112,30 +146,12 @@ export function DiagnosticResultsExperience() {
     const cached = readDiagnosticResults();
     if (cached) {
       setSnapshot(cached);
-      const storedWritingBand =
-        cached.writingEvaluation?.writing_band ?? cached.writing_band ?? null;
-      if (storedWritingBand == null) {
-        const progress = readDiagnosticProgress();
-        const writingAnswers = progress?.answers?.writing
-          ? Object.values(progress.answers.writing)
-          : [];
-        const longestEssayWords = writingAnswers.reduce(
-          (max, essay) => Math.max(max, wordCount(essay)),
-          0,
-        );
-        setProgressWritingFallbackBand(
-          longestEssayWords > 0 ? calculateWritingBand(longestEssayWords, 1) : null,
-        );
-      } else {
-        setProgressWritingFallbackBand(null);
-      }
       setLoading(false);
     } else {
       setError("missing_results");
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     if (loading || error || !snapshot) return;
     if (typeof window === "undefined") return;
@@ -157,23 +173,19 @@ export function DiagnosticResultsExperience() {
       : bandLabel(snapshot.aggregate_band)
     : "—";
 
-  const personalizedResults = snapshot ? (
-    <section className="space-y-5 sm:space-y-6">
+  const skillsSection = snapshot ? (
+    <section className="space-y-4 sm:space-y-5">
       <div>
-        <p className="text-[11px] font-semibold tracking-[0.1em] text-[#94A3B8] uppercase">
-          Your diagnostic
-        </p>
-        <h2 className="mt-1.5 font-display text-[22px] leading-tight font-bold tracking-[-0.02em] text-[#0D1F3C] sm:text-[26px]">
+        <h2 className="font-display text-[20px] leading-tight font-bold tracking-[-0.02em] text-[#0B1B33] sm:text-[22px]">
           Skill-by-skill results
         </h2>
-        <p className="mt-1.5 text-[14px] leading-relaxed text-[#5A6B82] sm:text-[15px]">
-          Cards stay private until you reveal them — tap each skill to uncover your
-          band and coaching note.
+        <p className="mt-1.5 text-[13px] leading-relaxed text-[#4B5568] sm:text-[14px]">
+          Tap a sealed card to open — the paper peels up and down to reveal your score.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-[18px] lg:grid-cols-4">
-        {SKILL_ORDER.map((key, index) => {
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        {sortSkillsByScore(SKILL_ORDER, skillBands, scoreTones).map((key, index) => {
           const pending =
             pendingHuman &&
             ((key === "writing" &&
@@ -181,21 +193,24 @@ export function DiagnosticResultsExperience() {
               !hasWritingEval) ||
               (key === "speaking" && effectiveSpeakingBand == null));
           const band = skillBands[key];
+          const tone = scoreTones[key];
 
           return (
             <DiagnosticSkillCardReveal
               key={key}
               label={skillLabel(key)}
               index={index}
-              className="min-h-[148px] sm:min-h-[180px]"
+              className="min-h-[148px] sm:min-h-[168px]"
             >
               <DiagnosticPerformanceSkillCard
+                variant="results"
                 label={skillLabel(key)}
-                bandRange={pending ? "—" : bandRange(band)}
-                status={statuses[key]}
-                coaching={coachingCopy(statuses[key])}
+                bandRange={bandRange(band)}
+                status="on_track"
+                scoreTone={tone}
+                coaching={resultsScoreCoaching(tone)}
                 barPercent={bandBarPercent(band)}
-                pending={pending}
+                pending={pending || tone === "pending"}
               />
             </DiagnosticSkillCardReveal>
           );
@@ -220,17 +235,17 @@ export function DiagnosticResultsExperience() {
           ? "Take your free diagnostic"
           : pendingHuman
             ? "Your report is on the way."
-            : "Your results are ready."
+            : "Your results are in."
       }
       subtitle={
         error
           ? "Get a baseline across Listening, Reading, Writing, and Speaking before unlocking your plan."
-          : "Unlock your plan, then reveal your personalised skill breakdown."
+          : "Your personalised skill breakdown and study plan, built from your diagnostic."
       }
       footerNote={error ? "About 45 minutes" : "Diagnostic complete"}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto bg-white">
-        <div className="mx-auto w-full max-w-5xl px-3 py-6 sm:px-6 sm:py-10">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F8FA]">
+        <div className="mx-auto w-full max-w-[920px] px-4 py-6 sm:px-8 sm:py-10">
           {loading ? (
             <ResultsSkeleton />
           ) : error ? (
@@ -241,39 +256,46 @@ export function DiagnosticResultsExperience() {
               secondaryHref="/dashboard"
             />
           ) : snapshot ? (
-            <div className="space-y-6 sm:space-y-7">
-              <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
-                <div className="min-w-0">
-                  <h1 className="font-display text-[24px] leading-tight font-bold tracking-[-0.025em] text-[#0D1F3C] sm:text-[36px]">
-                    {pendingHuman
-                      ? "Your report is on the way."
-                      : "Your results are ready."}
-                  </h1>
-                  <p className="mt-2 text-[14px] leading-relaxed font-light text-[#5A6B82] sm:text-[16.5px]">
-                    Unlock the Full Skill Program first — then scroll to reveal your
-                    personalised skill scores and study plan.
-                  </p>
-                </div>
-
-                <div className="flex w-full shrink-0 items-center justify-between gap-4 rounded-[16px] bg-[#0D1F3C] px-4 py-3.5 shadow-[0_12px_30px_rgba(13,31,60,0.25)] sm:w-auto sm:justify-start sm:gap-5 sm:rounded-[18px] sm:px-7 sm:py-[18px]">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-semibold tracking-[0.08em] text-[#9DB0CB] uppercase sm:text-[11px]">
-                      Estimated overall band
-                    </p>
-                    <p className="mt-0.5 text-[11px] font-light text-[#9DB0CB] sm:mt-1 sm:text-[12.5px]">
-                      Across all four skills
-                    </p>
-                  </div>
-                  <span className="hidden h-[50px] w-px bg-white/15 sm:block" aria-hidden />
-                  <p className="shrink-0 font-mono text-[40px] leading-[0.9] font-medium tracking-[-0.02em] text-cyan sm:text-[50px]">
-                    {heroBand}
-                  </p>
-                </div>
-              </div>
+            <div className="space-y-8 sm:space-y-10">
+              <header className="min-w-0">
+                <p className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#0F6E56] uppercase sm:text-xs">
+                  Diagnostic complete
+                </p>
+                <h1 className="font-display text-[28px] leading-tight font-bold tracking-[-0.02em] text-[#0B1B33] sm:text-[42px]">
+                  {pendingHuman
+                    ? "Your report is on the way."
+                    : "Your results are in."}
+                </h1>
+                <p className="mt-3 max-w-[640px] text-[15px] leading-relaxed text-[#4B5568] sm:text-[18px]">
+                  {pendingHuman ? (
+                    <>
+                      We&apos;re finishing examiner review on remaining skills.
+                      Your target is{" "}
+                      <strong className="font-bold text-[#0B1B33]">
+                        Band {targetBand.toFixed(1)}
+                      </strong>
+                      .
+                    </>
+                  ) : (
+                    <>
+                      You&apos;re currently at{" "}
+                      <strong className="font-bold text-[#0B1B33]">
+                        Band {heroBand}
+                      </strong>
+                      . Your target is{" "}
+                      <strong className="font-bold text-[#0B1B33]">
+                        Band {targetBand.toFixed(1)}
+                      </strong>{" "}
+                      — here&apos;s exactly what&apos;s holding you back, skill by
+                      skill, and the plan to close it.
+                    </>
+                  )}
+                </p>
+              </header>
 
               <DiagnosticPlanCheckoutSection
                 snapshot={snapshot}
-                afterPayment={personalizedResults}
+                skillsSection={skillsSection}
               />
             </div>
           ) : null}

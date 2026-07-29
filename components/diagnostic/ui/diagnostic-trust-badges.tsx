@@ -41,34 +41,54 @@ const PLAN_ITEMS: TrustItem[] = [
     label: "Questions? WhatsApp us.",
     short: "WhatsApp support",
     href: "#",
-    linkLabel: "WhatsApp us.",
+    linkLabel: "WhatsApp us",
   },
 ];
 
 function PlanTrustLabel({ item }: { item: TrustItem }) {
   if (item.href && item.linkLabel) {
-    const prefix = item.label.replace(item.linkLabel, "").trim();
+    const prefix = item.label.replace(item.linkLabel, "").replace(/\.$/, "").trim();
     return (
-      <span className="text-[13px] font-normal text-[#64748B]">
+      <span className="text-[13px] font-normal text-[#4B5568]">
         {prefix}{" "}
         <Link
           href={item.href}
-          className="cursor-pointer font-semibold text-cyan transition-colors hover:text-brand-sky-hover"
+          className="cursor-pointer font-semibold text-[#0F6E56] transition-colors hover:underline"
         >
           {item.linkLabel}
         </Link>
       </span>
     );
   }
-  return <span className="text-[13px] font-normal text-[#64748B]">{item.label}</span>;
+  return <span className="text-[13px] font-normal text-[#4B5568]">{item.label}</span>;
 }
 
 export function DiagnosticTrustBadges({ variant = "results", className }: Props) {
   const items = variant === "plan" ? PLAN_ITEMS : RESULTS_ITEMS;
 
+  if (variant === "plan") {
+    return (
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-center gap-x-6 gap-y-3 rounded-[14px] border border-[#E4E7EC] bg-white px-4 py-4 sm:gap-x-8 sm:px-5 sm:py-5",
+          className,
+        )}
+      >
+        {items.map((item) => {
+          const { icon: Icon } = item;
+          return (
+            <div key={item.label} className="flex items-center gap-2">
+              <Icon className="size-4 shrink-0 text-[#0F6E56]" strokeWidth={1.8} />
+              <PlanTrustLabel item={item} />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className={cn("border-t border-[#EDF1F6] pt-5 sm:pt-6", className)}>
-      {/* Mobile: 4-column footer grid */}
       <div className="grid grid-cols-4 gap-2 sm:hidden">
         {items.map(({ icon: Icon, short, href, linkLabel }) => (
           <div
@@ -92,7 +112,6 @@ export function DiagnosticTrustBadges({ variant = "results", className }: Props)
         ))}
       </div>
 
-      {/* Desktop: single row with dividers */}
       <div className="hidden flex-wrap items-center justify-center gap-x-7 gap-y-3 sm:flex lg:gap-x-[30px]">
         {items.map((item, index) => {
           const { icon: Icon } = item;
@@ -105,13 +124,9 @@ export function DiagnosticTrustBadges({ variant = "results", className }: Props)
                 />
               ) : null}
               <Icon className="size-[19px] shrink-0 text-cyan" strokeWidth={1.8} />
-              {variant === "plan" ? (
-                <PlanTrustLabel item={item} />
-              ) : (
-                <span className="text-[13px] font-normal text-[#64748B]">
-                  {item.label}
-                </span>
-              )}
+              <span className="text-[13px] font-normal text-[#64748B]">
+                {item.label}
+              </span>
             </div>
           );
         })}

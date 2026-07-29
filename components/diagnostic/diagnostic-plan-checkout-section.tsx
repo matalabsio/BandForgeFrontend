@@ -4,13 +4,10 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Calendar, Sparkles, Target } from "lucide-react";
 import { DiagnosticBandGapCard } from "@/components/diagnostic/ui/diagnostic-band-gap-card";
 import { DiagnosticPlanBundleCard } from "@/components/diagnostic/ui/diagnostic-plan-bundle-card";
-import { DiagnosticPlanPreviewSection } from "@/components/diagnostic/ui/diagnostic-plan-preview-section";
 import { DiagnosticPersonalizedBlurLock } from "@/components/diagnostic/ui/diagnostic-personalized-blur-lock";
-import { DiagnosticSkillTags } from "@/components/diagnostic/ui/diagnostic-skill-tags";
-import { DiagnosticStudyPlanLocked } from "@/components/diagnostic/ui/diagnostic-study-plan-locked";
+import { DiagnosticPlanTeaserContent } from "@/components/diagnostic/ui/diagnostic-plan-teaser-content";
 import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-trust-badges";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
@@ -28,10 +25,7 @@ import {
   FULL_SKILL_PROGRAM,
   FULL_SKILL_PROGRAM_SLUG,
 } from "@/lib/diagnostic-plan-content";
-import {
-  initialsFromName,
-  type SkillBands,
-} from "@/lib/diagnostic-performance";
+import type { SkillBands } from "@/lib/diagnostic-performance";
 import type { DiagnosticResultsSnapshot } from "@/lib/diagnostic-session";
 import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
@@ -70,107 +64,25 @@ type StatusModal =
 
 type Props = {
   snapshot: DiagnosticResultsSnapshot;
-  /** When true, skip redirect-to-dashboard if already subscribed (parent handles). */
-  compact?: boolean;
-  /**
-   * Rendered after the payment CTA and before personalised plan details
-   * (skill cards, analysis, etc.).
-   */
-  afterPayment?: ReactNode;
+  /** Skill-by-skill section — always visible above the plan teaser. */
+  skillsSection?: ReactNode;
 };
 
 /** Survives React Strict Mode remount so post-login Razorpay opens once. */
 let diagnosticCheckoutResumeClaimed = false;
 
-function shortName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "Student";
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
-}
-
-function formatExamDate(iso: string): string {
-  try {
-    return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function PlanSummaryBar({
-  studentName,
-  initials,
-  targetBand,
-  examDate,
-  daysToTest,
-}: {
-  studentName: string;
-  initials: string;
-  targetBand: number;
-  examDate: string;
-  daysToTest: number;
-}) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-[#E8EDF3] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.05)]">
-      <div className="grid grid-cols-2 sm:grid-cols-4">
-        <div className="flex flex-col items-center px-2.5 py-[11px] text-center sm:flex-row sm:items-center sm:gap-3 sm:px-5 sm:py-4 sm:text-left">
-          <div className="mb-2 flex size-10 shrink-0 items-center justify-center rounded-full bg-[#0D1F3C] font-display text-[15px] font-bold text-white sm:mb-0">
-            {initials}
-          </div>
-          <div>
-            <p className="mb-0.5 text-[9.5px] font-medium tracking-[0.05em] text-[#94A3B8] uppercase sm:text-[11.5px]">
-              Student
-            </p>
-            <p className="text-[13px] font-bold text-[#0D1F3C] sm:text-base sm:font-semibold">
-              {shortName(studentName)}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-col items-center border-l border-[#EEF2F7] px-2.5 py-[11px] text-center sm:px-5 sm:py-4">
-          <Target className="mb-1 size-4 text-[#0097A7] sm:hidden" />
-          <p className="mb-0.5 text-[9.5px] font-medium tracking-[0.05em] text-[#94A3B8] uppercase">
-            Target
-          </p>
-          <p className="text-[13px] font-bold text-[#0D1F3C]">
-            Band{" "}
-            <span className="font-mono font-medium text-[#0097A7]">
-              {targetBand.toFixed(1)}
-            </span>
-          </p>
-        </div>
-        <div className="flex flex-col items-center border-t border-[#EEF2F7] px-2.5 py-[11px] text-center sm:border-t-0 sm:border-l sm:px-5 sm:py-4">
-          <Calendar className="mb-1 size-4 text-[#0097A7] sm:hidden" />
-          <p className="mb-0.5 text-[9.5px] font-medium tracking-[0.05em] text-[#94A3B8] uppercase">
-            Exam date
-          </p>
-          <p className="text-[13px] font-bold text-[#0D1F3C]">
-            {formatExamDate(examDate)}
-          </p>
-        </div>
-        <div className="flex flex-col items-center border-t border-l border-[#EEF2F7] px-2.5 py-[11px] text-center sm:border-t-0 sm:px-5 sm:py-4">
-          <p className="mb-0.5 text-[9.5px] font-medium tracking-[0.05em] text-[#94A3B8] uppercase">
-            Days to test
-          </p>
-          <p className="font-mono text-[13px] font-bold text-[#0097A7]">
-            {daysToTest}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+function initialCheckoutOverlay(): OverlayState {
+  if (typeof window === "undefined") return null;
+  return shouldResumeDiagnosticCheckout() ? "creating" : null;
 }
 
 /**
- * Personalised plan preview + blurred weeks + in-page Razorpay checkout.
- * Mounted on `/diagnostic/results` so scores → unlock stays one SPA.
+ * Gap → skills → blurred plan → offer → trust + in-page Razorpay checkout.
+ * Mounted on `/diagnostic/results` as one seamless SPA.
  */
 export function DiagnosticPlanCheckoutSection({
   snapshot,
-  afterPayment,
+  skillsSection,
 }: Props) {
   const router = useRouter();
   const [bootstrapping, setBootstrapping] = useState(true);
@@ -178,12 +90,14 @@ export function DiagnosticPlanCheckoutSection({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planPrice, setPlanPrice] = useState("—");
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
-  const [overlay, setOverlay] = useState<OverlayState>(null);
+  const [overlay, setOverlay] = useState<OverlayState>(initialCheckoutOverlay);
   const [statusModal, setStatusModal] = useState<StatusModal>(null);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(
     null,
   );
-  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutBusy, setCheckoutBusy] = useState(
+    () => typeof window !== "undefined" && shouldResumeDiagnosticCheckout(),
+  );
   const checkoutInFlightRef = useRef(false);
   const autoCheckoutStartedRef = useRef(false);
 
@@ -199,6 +113,18 @@ export function DiagnosticPlanCheckoutSection({
     },
     [router],
   );
+
+  const forceLockThenRefresh = useCallback(() => {
+    setHasSubscription(false);
+    void (async () => {
+      try {
+        const sub = await getSubscription();
+        setHasSubscription(hasFullSkillProgram(sub));
+      } catch {
+        setHasSubscription(false);
+      }
+    })();
+  }, []);
 
   const lead = readDiagnosticLead();
   const targetBand = lead?.targetBand ?? 7.0;
@@ -246,7 +172,6 @@ export function DiagnosticPlanCheckoutSection({
           if (cancelled) return;
           const full = isFullAccountUser(user?.role);
           setIsLoggedIn(full);
-          // Background only — never delay UI / checkout
           if (full && currentLead && !diagnosticCheckoutResumeClaimed) {
             void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
           }
@@ -283,7 +208,6 @@ export function DiagnosticPlanCheckoutSection({
         return;
       }
 
-      // Sync in background — do not block Razorpay open
       const currentLead = readDiagnosticLead();
       if (currentLead) {
         void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
@@ -313,12 +237,14 @@ export function DiagnosticPlanCheckoutSection({
               return;
             }
             setOverlay(null);
+            setHasSubscription(false);
             setPaymentFailureMessage(
               "Payment was received but the subscription was not activated.",
             );
             setStatusModal("verify_failed");
           } catch (e) {
             setOverlay(null);
+            setHasSubscription(false);
             if (e instanceof ApiError && e.status === 401) {
               router.push(loginPathWithNext("/checkout/success"));
             } else {
@@ -334,17 +260,22 @@ export function DiagnosticPlanCheckoutSection({
         onDismiss: () => {
           setOverlay(null);
           clearBusy();
+          forceLockThenRefresh();
           setStatusModal("cancelled");
         },
         onFailed: (message) => {
           setOverlay(null);
           clearBusy();
+          forceLockThenRefresh();
           setPaymentFailureMessage(message);
           setStatusModal("payment_failed");
         },
       });
 
-      if (!opened) {
+      if (opened) {
+        // Razorpay modal owns the UI — drop our loader so it does not stack underneath.
+        setOverlay(null);
+      } else {
         setOverlay(null);
         clearBusy();
         setStatusModal("checkout_unavailable");
@@ -362,14 +293,13 @@ export function DiagnosticPlanCheckoutSection({
     }
   }, [
     checkoutBusy,
+    forceLockThenRefresh,
     hasSubscription,
     redirectToLoginForCheckout,
     router,
     snapshot,
   ]);
 
-  // Post-login resume: open Razorpay immediately — do not wait for plans/bootstrap.
-  // Do not abort on unmount (Strict Mode remount); module flag + lock keep it one-shot.
   useEffect(() => {
     if (diagnosticCheckoutResumeClaimed || autoCheckoutStartedRef.current) {
       return;
@@ -420,7 +350,6 @@ export function DiagnosticPlanCheckoutSection({
           void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
         }
 
-        // Skip subscription pre-check — create-order is the source of truth
         const order = await createOrder(FULL_SKILL_PROGRAM_SLUG);
 
         const opened = await openRazorpayCheckout({
@@ -446,12 +375,14 @@ export function DiagnosticPlanCheckoutSection({
                 return;
               }
               setOverlay(null);
+              setHasSubscription(false);
               setPaymentFailureMessage(
                 "Payment was received but the subscription was not activated.",
               );
               setStatusModal("verify_failed");
             } catch (e) {
               setOverlay(null);
+              setHasSubscription(false);
               if (e instanceof ApiError && e.status === 401) {
                 router.push(loginPathWithNext("/checkout/success"));
               } else {
@@ -467,17 +398,21 @@ export function DiagnosticPlanCheckoutSection({
           onDismiss: () => {
             setOverlay(null);
             clearBusy();
+            forceLockThenRefresh();
             setStatusModal("cancelled");
           },
           onFailed: (message) => {
             setOverlay(null);
             clearBusy();
+            forceLockThenRefresh();
             setPaymentFailureMessage(message);
             setStatusModal("payment_failed");
           },
         });
 
-        if (!opened) {
+        if (opened) {
+          setOverlay(null);
+        } else {
           setOverlay(null);
           clearBusy();
           setStatusModal("checkout_unavailable");
@@ -494,7 +429,7 @@ export function DiagnosticPlanCheckoutSection({
         }
       }
     })();
-  }, [redirectToLoginForCheckout, router, snapshot]);
+  }, [forceLockThenRefresh, redirectToLoginForCheckout, router, snapshot]);
 
   const handleVerifyRetry = useCallback(async () => {
     const pending = readCheckoutReceiptContext();
@@ -516,12 +451,14 @@ export function DiagnosticPlanCheckoutSection({
         return;
       }
       setOverlay(null);
+      setHasSubscription(false);
       setPaymentFailureMessage(
         "Payment was received but the subscription was not activated.",
       );
       setStatusModal("verify_failed");
     } catch (e) {
       setOverlay(null);
+      setHasSubscription(false);
       if (e instanceof ApiError && e.status === 401) {
         router.push(loginPathWithNext("/checkout/success"));
       } else {
@@ -536,161 +473,8 @@ export function DiagnosticPlanCheckoutSection({
     }
   }, [router]);
 
-  if (!lead || !examDate || !planPreview) {
-    return (
-      <div className="space-y-6 sm:space-y-8">
-        <div className="rounded-2xl border border-border-soft bg-white p-6 text-center shadow-sm">
-          <p className="text-sm text-[#5A6B82]">
-            Complete the free diagnostic lead details to unlock your personalised plan
-            preview.
-          </p>
-          <Link
-            href={diagnosticPaths.landing}
-            className={cn(bfPrimaryCtaNavClass, "mx-auto mt-4")}
-          >
-            Back to diagnostic
-          </Link>
-        </div>
-        {afterPayment}
-      </div>
-    );
-  }
-
-  if (bootstrapping) {
-    return (
-      <div className="space-y-6 sm:space-y-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-10 w-2/3 rounded-xl bg-navy/8" />
-          <div className="h-48 rounded-2xl bg-navy/8" />
-        </div>
-        {afterPayment}
-        <div className="animate-pulse space-y-4">
-          <div className="h-16 rounded-2xl bg-navy/8" />
-          <div className="h-40 rounded-2xl bg-navy/8" />
-        </div>
-      </div>
-    );
-  }
-
-  const studentName = lead.fullName ?? "Student";
-  const initials = initialsFromName(studentName);
-
-  return (
-    <div className="min-w-0 space-y-5 overflow-x-clip sm:space-y-8">
-      {/* —— First viewport: payment CTA —— */}
-      <section id="plan-unlock" className="scroll-mt-4 space-y-3.5 sm:scroll-mt-6 sm:space-y-5">
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold tracking-[0.1em] text-[#0097A7] uppercase">
-            Unlock your plan
-          </p>
-          <h2 className="mt-1.5 font-display text-[20px] leading-tight font-bold tracking-[-0.02em] text-[#0D1F3C] sm:text-[28px]">
-            Turn this into a Band {targetBand.toFixed(1)} plan
-          </h2>
-          <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-[#5A6B82] sm:text-[15px]">
-            Week-by-week study path built around your weakest skills — Band 9
-            models, AI essay feedback, and examiner-scored mocks.
-          </p>
-        </div>
-
-        {!isLoggedIn ? (
-          <div className="rounded-xl border border-[#B6E9F0] bg-[#E6F7FA] px-4 py-3 text-sm text-[#0E6E78]">
-            <Link
-              href={loginPathWithNext(DIAGNOSTIC_CHECKOUT_RETURN_PATH)}
-              onClick={() =>
-                setPendingCheckoutResume({
-                  planSlug: FULL_SKILL_PROGRAM_SLUG,
-                  returnTo: DIAGNOSTIC_CHECKOUT_RETURN_PATH,
-                })
-              }
-              className="cursor-pointer font-semibold text-[#0097A7] underline-offset-2 hover:underline"
-            >
-              Sign in
-            </Link>{" "}
-            to save your diagnostic scores and unlock checkout.
-          </div>
-        ) : null}
-
-        <DiagnosticPlanBundleCard
-          bundle={FULL_SKILL_PROGRAM}
-          price={planPrice}
-          onCheckout={() => void handleCheckout()}
-          checkoutDisabled={hasSubscription || !paymentsEnabled}
-          checkoutLoading={checkoutBusy}
-        />
-
-        <DiagnosticBandGapCard bands={skillBands} targetBand={targetBand} />
-
-        {hasSubscription ? (
-          <div className="text-center">
-            <Link
-              href="/dashboard"
-              className="cursor-pointer text-sm font-semibold text-[#0097A7] hover:underline"
-            >
-              Go to your dashboard →
-            </Link>
-          </div>
-        ) : null}
-
-        <DiagnosticTrustBadges variant="plan" />
-      </section>
-
-      {afterPayment}
-
-      {/* —— Next: personalised preview (more locked / blurred) —— */}
-      <section className="space-y-4 sm:space-y-5">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.1em] text-[#94A3B8] uppercase">
-            Built for you
-          </p>
-          <h2 className="mt-1.5 font-display text-[22px] leading-tight font-bold tracking-[-0.02em] text-[#0D1F3C] sm:text-[26px]">
-            Your personalised study plan preview
-          </h2>
-          <p className="mt-1.5 text-[14px] leading-relaxed text-[#5A6B82] sm:text-[15px]">
-            Preview below is shaped by your diagnostic — unlock the full
-            week-by-week plan with the Full Skill Program.
-          </p>
-        </div>
-
-        <PlanSummaryBar
-          studentName={studentName}
-          initials={initials}
-          targetBand={targetBand}
-          examDate={examDate}
-          daysToTest={planPreview.daysRemaining}
-        />
-
-        <DiagnosticPersonalizedBlurLock
-          unlocked={hasSubscription}
-          onUnlock={() => void handleCheckout()}
-          unlockBusy={checkoutBusy}
-          unlockDisabled={hasSubscription || !paymentsEnabled}
-        >
-          <DiagnosticSkillTags difficulty={planPreview.difficulty} />
-
-          <DiagnosticPlanPreviewSection preview={planPreview} />
-
-          <div className="flex items-center gap-2 rounded-xl border border-[#B6E9F0] bg-[#E6F7FA] px-3.5 py-2.5 sm:px-5 sm:py-3">
-            <Sparkles className="size-4 shrink-0 text-[#0097A7] sm:size-[18px]" />
-            <p className="text-[13px] leading-snug font-medium text-[#0E6E78] sm:text-[15px]">
-              Based on your diagnostic, we recommend the{" "}
-              <strong className="font-bold text-[#0D1F3C]">
-                Full Skill Program
-              </strong>{" "}
-              with focus on{" "}
-              <strong className="font-bold text-[#0D1F3C]">
-                {planPreview.focusLabel}
-              </strong>
-              .
-            </p>
-          </div>
-
-          <DiagnosticStudyPlanLocked
-            weeks={DIAGNOSTIC_STUDY_PLAN_WEEKS}
-            unlocked
-          />
-        </DiagnosticPersonalizedBlurLock>
-      </section>
-
+  const checkoutChrome = (
+    <>
       {overlay ? <ProcessingOverlay variant={overlay} /> : null}
       {statusModal ? (
         <PaymentStatusModal
@@ -705,6 +489,12 @@ export function DiagnosticPlanCheckoutSection({
               void handleVerifyRetry();
               return;
             }
+            if (statusModal === "cancelled" || statusModal === "payment_failed") {
+              setPaymentFailureMessage(null);
+              setStatusModal(null);
+              void handleCheckout();
+              return;
+            }
             setPaymentFailureMessage(null);
             setStatusModal(null);
           }}
@@ -714,6 +504,130 @@ export function DiagnosticPlanCheckoutSection({
           }}
         />
       ) : null}
-    </div>
+    </>
+  );
+
+  if (!lead || !examDate || !planPreview) {
+    return (
+      <>
+        <div className="space-y-8 sm:space-y-10">
+          {skillsSection}
+          <div className="rounded-2xl border border-border-soft bg-white p-6 text-center shadow-sm">
+            <p className="text-sm text-[#5A6B82]">
+              Complete the free diagnostic lead details to unlock your personalised
+              plan preview.
+            </p>
+            <Link
+              href={diagnosticPaths.landing}
+              className={cn(bfPrimaryCtaNavClass, "mx-auto mt-4")}
+            >
+              Back to diagnostic
+            </Link>
+          </div>
+        </div>
+        {checkoutChrome}
+      </>
+    );
+  }
+
+  if (bootstrapping) {
+    return (
+      <>
+        <div className="space-y-8 sm:space-y-10">
+          <div className="h-28 animate-pulse rounded-2xl bg-navy/8" />
+          {skillsSection}
+          <div className="h-48 animate-pulse rounded-2xl bg-navy/8" />
+          <div className="h-56 animate-pulse rounded-2xl bg-navy/8" />
+        </div>
+        {checkoutChrome}
+      </>
+    );
+  }
+
+  const daysToExam = planPreview.daysRemaining;
+
+  return (
+    <>
+      <div className="min-w-0 space-y-8 overflow-x-clip sm:space-y-10">
+        <DiagnosticBandGapCard
+          bands={skillBands}
+          targetBand={targetBand}
+          variant="navy"
+          daysToExam={daysToExam}
+        />
+
+        {skillsSection}
+
+        <section className="overflow-hidden rounded-2xl border border-[#E4E7EC] bg-white p-5 sm:rounded-[16px] sm:p-8">
+          <h2 className="font-display text-[20px] leading-tight font-bold tracking-[-0.02em] text-[#0B1B33] sm:text-[22px]">
+            Your personalised plan to reach Band {targetBand.toFixed(1)}
+          </h2>
+          <p className="mt-1.5 mb-5 text-[13px] leading-relaxed text-[#4B5568] sm:mb-6 sm:text-[15px]">
+            Built from your diagnostic — week-by-week, skill-by-skill.
+          </p>
+
+          <DiagnosticPersonalizedBlurLock
+            unlocked={hasSubscription}
+            onUnlock={() => void handleCheckout()}
+            unlockBusy={checkoutBusy}
+            unlockDisabled={hasSubscription || !paymentsEnabled}
+            title="Purchase your plan to unlock it"
+            subtitle="Difficulty tags, day split, and week-by-week path stay private until checkout."
+            ctaLabel="Start my plan →"
+          >
+            {hasSubscription ? (
+              <DiagnosticPlanTeaserContent weeks={DIAGNOSTIC_STUDY_PLAN_WEEKS} />
+            ) : (
+              <DiagnosticPlanTeaserContent placeholder />
+            )}
+          </DiagnosticPersonalizedBlurLock>
+        </section>
+
+        <section
+          id="plan-unlock"
+          className="scroll-mt-4 space-y-4 sm:scroll-mt-6 sm:space-y-5"
+        >
+          {!isLoggedIn ? (
+            <div className="rounded-xl border border-[#B6E9F0] bg-[#E6F7FA] px-4 py-3 text-sm text-[#0E6E78]">
+              <Link
+                href={loginPathWithNext(DIAGNOSTIC_CHECKOUT_RETURN_PATH)}
+                onClick={() =>
+                  setPendingCheckoutResume({
+                    planSlug: FULL_SKILL_PROGRAM_SLUG,
+                    returnTo: DIAGNOSTIC_CHECKOUT_RETURN_PATH,
+                  })
+                }
+                className="cursor-pointer font-semibold text-[#0097A7] underline-offset-2 hover:underline"
+              >
+                Sign in
+              </Link>{" "}
+              to save your diagnostic scores and unlock checkout.
+            </div>
+          ) : null}
+
+          <DiagnosticPlanBundleCard
+            bundle={FULL_SKILL_PROGRAM}
+            price={planPrice}
+            onCheckout={() => void handleCheckout()}
+            checkoutDisabled={hasSubscription || !paymentsEnabled}
+            checkoutLoading={checkoutBusy}
+          />
+
+          {hasSubscription ? (
+            <div className="text-center">
+              <Link
+                href="/dashboard"
+                className="cursor-pointer text-sm font-semibold text-[#0097A7] hover:underline"
+              >
+                Go to your dashboard →
+              </Link>
+            </div>
+          ) : null}
+
+          <DiagnosticTrustBadges variant="plan" />
+        </section>
+      </div>
+      {checkoutChrome}
+    </>
   );
 }

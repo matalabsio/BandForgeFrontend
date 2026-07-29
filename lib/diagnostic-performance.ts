@@ -2,6 +2,13 @@ export type SkillKey = "listening" | "reading" | "writing" | "speaking";
 
 export type SkillStatus = "on_track" | "strongest" | "focus_area" | "priority";
 
+/** Score-driven tone for results page cards (independent of relative ranking). */
+export type ResultsScoreTone =
+  | "needs_work"
+  | "room_to_grow"
+  | "strong"
+  | "pending";
+
 export type SkillBands = Record<SkillKey, number | null>;
 
 const SKILL_LABELS: Record<SkillKey, string> = {
@@ -26,6 +33,46 @@ export function bandBarPercent(band: number | null | undefined): number {
   const low = Math.floor(band * 2) / 2;
   const mid = Math.min(9, low + 0.25);
   return Math.round((mid / 9) * 100);
+}
+
+/**
+ * Map absolute band score → card color/label.
+ * < 5.0 Needs work · 5.0–6.0 Room to grow · ≥ 6.5 Strong · missing Pending
+ */
+export function resultsScoreTone(
+  band: number | null | undefined,
+  pending = false,
+): ResultsScoreTone {
+  if (pending || band == null || band <= 0) return "pending";
+  if (band < 5) return "needs_work";
+  if (band < 6.5) return "room_to_grow";
+  return "strong";
+}
+
+export function resultsScoreLabel(tone: ResultsScoreTone): string {
+  switch (tone) {
+    case "needs_work":
+      return "Needs work";
+    case "room_to_grow":
+      return "Room to grow";
+    case "strong":
+      return "Strong";
+    case "pending":
+      return "Pending";
+  }
+}
+
+export function resultsScoreCoaching(tone: ResultsScoreTone): string {
+  switch (tone) {
+    case "needs_work":
+      return "This skill needs focused rebuilding — it is holding your overall band back.";
+    case "room_to_grow":
+      return "You catch the basics, but detail and consistency are still costing bands.";
+    case "strong":
+      return "Good control and clear structure — a few precision fixes from your next band.";
+    case "pending":
+      return "Examiner review in progress.";
+  }
 }
 
 function rankedSkills(bands: SkillBands): { key: SkillKey; band: number }[] {

@@ -19,8 +19,13 @@ import {
   type DiagnosticWritingTask,
 } from "@/lib/diagnostic-pack";
 import { startDiagnosticWritingEvaluation } from "@/lib/diagnostic-evaluate-writing";
+import type { DiagnosticWritingEvaluation } from "@/lib/diagnostic-evaluate-writing";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
-import { wordCount } from "@/lib/diagnostic-scoring";
+import {
+  SHORT_RESPONSE_AI_MIN_WORDS,
+  shortResponseBand,
+  wordCount,
+} from "@/lib/diagnostic-scoring";
 import {
   advanceDiagnosticModule,
   readDiagnosticProgress,
@@ -32,7 +37,39 @@ import { examTextInputProps } from "@/lib/exam-input-props";
 
 type WritingPanel = "task1" | "task2";
 
-const WRITING_MIN_WORDS_FOR_AI = 30;
+function buildShortWritingEvaluation(
+  words: number,
+): DiagnosticWritingEvaluation {
+  const band = shortResponseBand(words);
+  return {
+    evaluation_id: `short-local-${Date.now()}`,
+    writing_band: band,
+    scores: {
+      task_achievement: band,
+      coherence: band,
+      lexical_resource: band,
+      grammar: band,
+    },
+    feedback: {
+      strengths: [],
+      weaknesses: [
+        "Response too short for a full IELTS Writing evaluation.",
+      ],
+      improvement_tips: [
+        "Write at least 100 words to unlock AI criterion scoring.",
+      ],
+    },
+    metadata: {
+      word_count: words,
+      sentence_count: 0,
+      paragraph_count: 0,
+    },
+    warnings: [
+      "Too short for full IELTS evaluation — write 100+ words for AI scoring.",
+    ],
+    provider: "short_local",
+  };
+}
 
 type PromptBlocks = {
   intro: string;
@@ -129,18 +166,22 @@ export function DiagnosticWritingExperience() {
 
     const primaryTask = tasks[0] ?? activeTask;
     const essayText = essays[primaryTask.id] ?? "";
+    const words = wordCount(essayText);
 
-    if (wordCount(essayText) < WRITING_MIN_WORDS_FOR_AI) {
+    if (words < SHORT_RESPONSE_AI_MIN_WORDS) {
+      const shortEval = buildShortWritingEvaluation(words);
       advanceDiagnosticModule("writing", {
         moduleAnswers: { module: "writing", answers: essays },
         scores: {
           listening_band: progress?.scores?.listening_band ?? null,
           reading_band: progress?.scores?.reading_band ?? null,
-          writing_band: null,
+          writing_band: shortEval.writing_band,
           speaking_band: null,
           aggregate_band: null,
         },
         review: progress?.review,
+        writingEvaluation: shortEval,
+        writingEvalPending: false,
       });
       router.replace(diagnosticTransitionPath("writing-speaking"));
       return;
@@ -204,7 +245,7 @@ export function DiagnosticWritingExperience() {
       } else if (e instanceof ApiError && e.status === 400) {
         setError(
           e.message.includes("too short")
-            ? "Response too short for IELTS evaluation. Write at least 30 words of your own answer (150+ recommended)."
+            ? "Response too short for IELTS evaluation. Write at least 100 words of your own answer (150+ recommended)."
             : e.message,
         );
       } else {

@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { DashboardAppShellSkeleton } from "@/components/bandforge/dashboard/dashboard-shell-skeleton";
+import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import { syncDiagnosticLeadAfterAuth } from "@/lib/diagnostic-lead-sync";
 import { readDiagnosticResults } from "@/lib/diagnostic-session";
@@ -17,6 +18,7 @@ import {
 function PostLoginContinueInner() {
   const searchParams = useSearchParams();
   const requestedPath = safePostLoginPath(searchParams.get("next"));
+  const wantsCheckout = requestedPath.includes("checkout=1");
 
   useEffect(() => {
     let cancelled = false;
@@ -24,7 +26,6 @@ function PostLoginContinueInner() {
     async function continueAfterLogin() {
       const snapshot = readDiagnosticResults();
       const lead = readDiagnosticLead();
-      const wantsCheckout = requestedPath.includes("checkout=1");
 
       // Never block checkout return on lead/diagnostic sync
       if (snapshot && lead && !wantsCheckout) {
@@ -79,7 +80,11 @@ function PostLoginContinueInner() {
     return () => {
       cancelled = true;
     };
-  }, [requestedPath]);
+  }, [requestedPath, wantsCheckout]);
+
+  if (wantsCheckout) {
+    return <ProcessingOverlay variant="creating" />;
+  }
 
   return <DashboardAppShellSkeleton />;
 }

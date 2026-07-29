@@ -314,7 +314,9 @@ export function DiagnosticPlanRevealExperience() {
         },
       });
 
-      if (!opened) {
+      if (opened) {
+        setOverlay(null);
+      } else {
         setOverlay(null);
         clearBusy();
         setStatusModal("checkout_unavailable");

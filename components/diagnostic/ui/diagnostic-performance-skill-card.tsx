@@ -1,5 +1,9 @@
 import { AlertTriangle } from "lucide-react";
-import type { SkillStatus } from "@/lib/diagnostic-performance";
+import type {
+  ResultsScoreTone,
+  SkillStatus,
+} from "@/lib/diagnostic-performance";
+import { resultsScoreLabel } from "@/lib/diagnostic-performance";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -10,6 +14,10 @@ type Props = {
   barPercent: number;
   pending?: boolean;
   onClick?: () => void;
+  /** HTML prototype tiles for results page. Default keeps report/dashboard bars. */
+  variant?: "default" | "results";
+  /** Score-driven tone for results cards (overrides relative status colors). */
+  scoreTone?: ResultsScoreTone;
 };
 
 const STATUS_LABELS: Record<SkillStatus, string> = {
@@ -28,6 +36,7 @@ type StatusStyle = {
   coaching: string;
   dot: string;
   mark: string;
+  name: string;
 };
 
 const CARD_STYLES: Record<SkillStatus, StatusStyle> = {
@@ -40,6 +49,7 @@ const CARD_STYLES: Record<SkillStatus, StatusStyle> = {
     coaching: "text-[#64748B]",
     dot: "bg-[#00BCD4]",
     mark: "",
+    name: "text-[#0D1F3C]",
   },
   strongest: {
     card: "border-[#E8EDF3] bg-white shadow-[0_2px_10px_rgba(13,31,60,0.05)]",
@@ -50,6 +60,7 @@ const CARD_STYLES: Record<SkillStatus, StatusStyle> = {
     coaching: "text-[#64748B]",
     dot: "bg-[#00BCD4]",
     mark: "",
+    name: "text-[#0D1F3C]",
   },
   focus_area: {
     card: "border-[#F0E0BE] bg-[#FFFCF6] shadow-[0_2px_10px_rgba(180,130,30,0.07)]",
@@ -60,6 +71,7 @@ const CARD_STYLES: Record<SkillStatus, StatusStyle> = {
     coaching: "text-[#8A7034]",
     dot: "bg-[#D9A441]",
     mark: "text-[#C58A1E]",
+    name: "text-[#9A6B12]",
   },
   priority: {
     card: "border-[#F2CFC8] bg-[#FFF8F6] shadow-[0_2px_10px_rgba(200,70,55,0.07)]",
@@ -70,6 +82,55 @@ const CARD_STYLES: Record<SkillStatus, StatusStyle> = {
     coaching: "text-[#A35248]",
     dot: "bg-[#E05A4D]",
     mark: "text-[#C5483A]",
+    name: "text-[#B23B30]",
+  },
+};
+
+/** Colors driven by absolute band score. */
+const TONE_STYLES: Record<ResultsScoreTone, StatusStyle> = {
+  strong: {
+    card: "border-[#9AD8E0] bg-[#E8F7F9]",
+    band: "text-[#0A6B75]",
+    badge: "bg-[#0097A7] text-white",
+    barTrack: "",
+    barFill: "",
+    coaching: "text-[#3D6F78]",
+    dot: "",
+    mark: "",
+    name: "text-[#0A6B75]",
+  },
+  room_to_grow: {
+    card: "border-[#E8C98A] bg-[#FFF8EB]",
+    band: "text-[#8A5A0A]",
+    badge: "bg-[#C4860F] text-white",
+    barTrack: "",
+    barFill: "",
+    coaching: "text-[#7A6230]",
+    dot: "",
+    mark: "",
+    name: "text-[#8A5A0A]",
+  },
+  needs_work: {
+    card: "border-[#E8A99A] bg-[#FFF4F1]",
+    band: "text-[#A83228]",
+    badge: "bg-[#C4453A] text-white",
+    barTrack: "",
+    barFill: "",
+    coaching: "text-[#8F4A42]",
+    dot: "",
+    mark: "",
+    name: "text-[#A83228]",
+  },
+  pending: {
+    card: "border-[#D5DCE6] bg-[#F4F6F9]",
+    band: "text-[#64748B]",
+    badge: "bg-[#64748B] text-white",
+    barTrack: "",
+    barFill: "",
+    coaching: "text-[#64748B]",
+    dot: "",
+    mark: "",
+    name: "text-[#0B1B33]",
   },
 };
 
@@ -81,7 +142,66 @@ export function DiagnosticPerformanceSkillCard({
   barPercent,
   pending = false,
   onClick,
+  variant = "default",
+  scoreTone,
 }: Props) {
+  if (variant === "results") {
+    const tone = scoreTone ?? (pending ? "pending" : "room_to_grow");
+    const styles = TONE_STYLES[tone];
+    const badgeLabel = resultsScoreLabel(tone);
+    const body = (
+      <>
+        <span
+          className={cn(
+            "mb-2.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-[0.04em] uppercase",
+            styles.badge,
+          )}
+        >
+          {badgeLabel}
+        </span>
+        <div className="mb-2 flex items-baseline justify-between gap-3">
+          <span className={cn("text-[16px] font-bold sm:text-[17px]", styles.name)}>
+            {label}
+          </span>
+          <span
+            className={cn(
+              "font-mono text-[26px] leading-none font-bold tracking-[-0.02em] sm:text-[27px]",
+              styles.band,
+            )}
+          >
+            {tone === "pending" ? "—" : bandRange}
+          </span>
+        </div>
+        <p className={cn("text-[14px] leading-relaxed sm:text-[14.5px]", styles.coaching)}>
+          {coaching}
+        </p>
+      </>
+    );
+
+    const shellClass = cn(
+      "flex h-full min-h-[148px] w-full min-w-0 flex-col rounded-[14px] border p-5 text-left sm:min-h-[168px] sm:px-[22px] sm:py-5",
+      styles.card,
+    );
+
+    if (onClick) {
+      return (
+        <button
+          type="button"
+          onClick={onClick}
+          className={cn(
+            shellClass,
+            "cursor-pointer transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40",
+          )}
+          aria-label={`Open ${label} review`}
+        >
+          {body}
+        </button>
+      );
+    }
+
+    return <div className={shellClass}>{body}</div>;
+  }
+
   const styles = CARD_STYLES[status];
   const isWeak = status === "focus_area" || status === "priority";
 
@@ -92,7 +212,6 @@ export function DiagnosticPerformanceSkillCard({
           {label}
         </span>
 
-        {/* Mobile: compact dot / warning mark */}
         {isWeak ? (
           <AlertTriangle
             className={cn("size-3.5 shrink-0 sm:hidden", styles.mark)}
@@ -105,7 +224,6 @@ export function DiagnosticPerformanceSkillCard({
           />
         )}
 
-        {/* Desktop: full text badge */}
         <span
           className={cn(
             "hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] sm:inline-flex",

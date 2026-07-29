@@ -12,13 +12,16 @@ type AuthShellProps = {
  * Single-column auth layout — white bg, antigravity particles, content centered.
  */
 export function AuthShell({ title, subtitle, children }: AuthShellProps) {
+  const isWelcomeBandForge = title === "Welcome to BandForge";
+
   return (
     <div className="bf-auth relative flex min-h-dvh flex-col overflow-hidden bg-white text-[#081B33]">
       <AuthAntigravity />
 
       <header className="bf-auth-enter relative z-10 flex justify-center px-6 pt-8 sm:px-8 sm:pt-10">
+        {/* Same logo asset as marketing nav (transparent logo.png) */}
         <BandForgeLogoLink
-          size="md"
+          size="nav"
           priority
           className="[&_img]:object-center"
         />
@@ -26,7 +29,15 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
 
       <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center px-6 py-12 sm:max-w-md sm:px-8">
         <h1 className="bf-auth-enter w-full text-center font-display text-[2rem] leading-[1.1] font-bold tracking-[-0.04em] text-[#081B33] sm:text-[2.75rem] md:text-[3.5rem]">
-          {title}
+          {isWelcomeBandForge ? (
+            <>
+              <span>Welcome to </span>
+              <span className="text-[#00A9C0]">Band</span>
+              <span className="text-[#081B33]">Forge</span>
+            </>
+          ) : (
+            title
+          )}
         </h1>
         {subtitle ? (
           <p
