@@ -185,7 +185,7 @@ export function DiagnosticResultsExperience() {
           Skill-by-skill results
         </h2>
         <p className="mt-1.5 text-[13px] leading-relaxed text-[#4B5568] sm:text-[14px]">
-          Tap a sealed card to open — the paper peels up and down to reveal your score.
+          Click each blurred card to reveal your band and coaching note.
         </p>
       </div>
 
@@ -205,7 +205,7 @@ export function DiagnosticResultsExperience() {
               key={key}
               label={skillLabel(key)}
               index={index}
-              className="min-h-[148px] sm:min-h-[168px]"
+              className="min-h-[120px] sm:min-h-[140px]"
             >
               <DiagnosticPerformanceSkillCard
                 variant="results"

@@ -4,10 +4,12 @@ import {
   BookCheck,
   GraduationCap,
   ListChecks,
-  MessageCircle,
-  ShieldCheck,
+  Lock,
+  RefreshCcw,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 
 type Variant = "results" | "plan";
@@ -18,7 +20,7 @@ type Props = {
 };
 
 type TrustItem = {
-  icon: LucideIcon;
+  icon: LucideIcon | typeof FaWhatsapp;
   label: string;
   short: string;
   href?: string;
@@ -33,11 +35,11 @@ const RESULTS_ITEMS: TrustItem[] = [
 ];
 
 const PLAN_ITEMS: TrustItem[] = [
-  { icon: ShieldCheck, label: "Secure payment via Razorpay", short: "Secure via Razorpay" },
-  { icon: BookCheck, label: "Cancel anytime", short: "Cancel anytime" },
-  { icon: Award, label: "Band 9 trainer content", short: "Band 9 content" },
+  { icon: Lock, label: "Secure payment via Razorpay", short: "Secure via Razorpay" },
+  { icon: RefreshCcw, label: "Cancel anytime", short: "Cancel anytime" },
+  { icon: Trophy, label: "Band 9 trainer content", short: "Band 9 content" },
   {
-    icon: MessageCircle,
+    icon: FaWhatsapp,
     label: "Questions? WhatsApp us.",
     short: "WhatsApp support",
     href: "#",

@@ -39,40 +39,40 @@ export function DiagnosticBandGapCard({
     return (
       <div
         className={cn(
-          "flex min-w-0 flex-col items-start justify-between gap-4 rounded-2xl bg-[#0B1B33] px-5 py-5 text-white sm:flex-row sm:items-center sm:gap-8 sm:rounded-[16px] sm:px-8 sm:py-7",
+          "flex min-w-0 flex-col items-start justify-between gap-3 rounded-2xl bg-[#0B1B33] px-5 py-4 text-white sm:flex-row sm:items-center sm:gap-8 sm:rounded-[16px] sm:px-7 sm:py-5",
         )}
       >
-        <div className="flex items-center gap-5 sm:gap-6">
+        <div className="flex items-center gap-4 sm:gap-5">
           <div className="text-center">
-            <p className="mb-1 text-[10px] font-semibold tracking-[0.06em] text-[#8494AC] uppercase sm:text-[11px]">
+            <p className="mb-0.5 text-[10px] font-semibold tracking-[0.06em] text-[#8494AC] uppercase sm:text-[11px]">
               Now
             </p>
-            <p className="font-mono text-[32px] leading-none font-bold tracking-[-0.02em] sm:text-[36px]">
+            <p className="font-mono text-[28px] leading-none font-bold tracking-[-0.02em] sm:text-[32px]">
               {nowLabel}
             </p>
           </div>
-          <ArrowRight className="size-5 shrink-0 text-[#2FB8C6] sm:size-6" strokeWidth={2.2} />
+          <ArrowRight className="size-4 shrink-0 text-[#2FB8C6] sm:size-5" strokeWidth={2.2} />
           <div className="text-center">
-            <p className="mb-1 text-[10px] font-semibold tracking-[0.06em] text-[#8494AC] uppercase sm:text-[11px]">
+            <p className="mb-0.5 text-[10px] font-semibold tracking-[0.06em] text-[#8494AC] uppercase sm:text-[11px]">
               Target
             </p>
-            <p className="font-mono text-[32px] leading-none font-bold tracking-[-0.02em] text-[#2FB8C6] sm:text-[36px]">
+            <p className="font-mono text-[28px] leading-none font-bold tracking-[-0.02em] text-[#2FB8C6] sm:text-[32px]">
               {targetBand.toFixed(1)}
             </p>
           </div>
         </div>
 
         <div className="w-full text-left sm:w-auto sm:text-right">
-          <div className="inline-flex items-center rounded-full border border-[#2FB8C6] bg-[rgba(47,184,198,0.15)] px-3.5 py-2 text-[13px] font-bold text-[#2FB8C6] sm:px-4 sm:text-[15px]">
+          <div className="inline-flex items-center rounded-full border border-[#2FB8C6] bg-[rgba(47,184,198,0.15)] px-3 py-1.5 text-[12px] font-bold text-[#2FB8C6] sm:px-3.5 sm:text-[13px]">
             {gapLabel}
           </div>
           {daysToExam != null && daysToExam >= 0 ? (
-            <p className="mt-1.5 text-[12px] text-[#B8C2D6] sm:text-[13px]">
+            <p className="mt-1 text-[11px] text-[#B8C2D6] sm:text-[12px]">
               {daysToExam} days to your exam
             </p>
           ) : null}
           {isPartial ? (
-            <p className="mt-1 text-[11px] text-[#8494AC]">
+            <p className="mt-0.5 text-[10px] text-[#8494AC] sm:text-[11px]">
               Based on {scoredCount} of 4 skills — pending scores excluded
             </p>
           ) : null}

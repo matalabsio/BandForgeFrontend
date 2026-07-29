@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Headphones, BookOpen, Pencil, Mic } from "lucide-react";
 import type {
   ResultsScoreTone,
   SkillStatus,
@@ -14,10 +14,15 @@ type Props = {
   barPercent: number;
   pending?: boolean;
   onClick?: () => void;
-  /** HTML prototype tiles for results page. Default keeps report/dashboard bars. */
   variant?: "default" | "results";
-  /** Score-driven tone for results cards (overrides relative status colors). */
   scoreTone?: ResultsScoreTone;
+};
+
+const SKILL_ICONS: Record<string, typeof Headphones> = {
+  Listening: Headphones,
+  Reading: BookOpen,
+  Writing: Pencil,
+  Speaking: Mic,
 };
 
 const STATUS_LABELS: Record<SkillStatus, string> = {
@@ -149,18 +154,22 @@ export function DiagnosticPerformanceSkillCard({
     const tone = scoreTone ?? (pending ? "pending" : "room_to_grow");
     const styles = TONE_STYLES[tone];
     const badgeLabel = resultsScoreLabel(tone);
+    const SkillIcon = SKILL_ICONS[label] ?? null;
     const body = (
       <>
-        <span
-          className={cn(
-            "mb-2.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-[0.04em] uppercase",
-            styles.badge,
-          )}
-        >
-          {badgeLabel}
-        </span>
-        <div className="mb-2 flex items-baseline justify-between gap-3">
-          <span className={cn("text-[16px] font-bold sm:text-[17px]", styles.name)}>
+        <div className="mb-2 flex items-center gap-2">
+          <span
+            className={cn(
+              "inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-[0.04em] uppercase",
+              styles.badge,
+            )}
+          >
+            {badgeLabel}
+          </span>
+        </div>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className={cn("flex items-center gap-1.5 text-[16px] font-bold sm:text-[17px]", styles.name)}>
+            {SkillIcon ? <SkillIcon className="size-4 shrink-0" strokeWidth={2} /> : null}
             {label}
           </span>
           <span
@@ -172,14 +181,14 @@ export function DiagnosticPerformanceSkillCard({
             {tone === "pending" ? "—" : bandRange}
           </span>
         </div>
-        <p className={cn("text-[14px] leading-relaxed sm:text-[14.5px]", styles.coaching)}>
+        <p className={cn("text-[13px] leading-relaxed sm:text-[14px]", styles.coaching)}>
           {coaching}
         </p>
       </>
     );
 
     const shellClass = cn(
-      "flex h-full min-h-[148px] w-full min-w-0 flex-col rounded-[14px] border p-5 text-left sm:min-h-[168px] sm:px-[22px] sm:py-5",
+      "flex h-full min-h-[120px] w-full min-w-0 flex-col rounded-[14px] border p-4 text-left sm:min-h-[140px] sm:px-5 sm:py-4",
       styles.card,
     );
 
