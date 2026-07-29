@@ -29,7 +29,7 @@ export function ProcessingOverlay({ variant, className }: Props) {
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[100] flex items-center justify-center bg-[#F7F8FA]/92 px-4 backdrop-blur-[2px]",
+        "fixed inset-0 z-[100] flex items-center justify-center bg-[#F7F8FA] px-4",
         className,
       )}
       role="status"

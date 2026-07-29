@@ -138,7 +138,7 @@ function QuestionsContent({
     <>
       <div className="mb-4 rounded-xl border border-cyan/20 bg-cyan/10 p-3.5 lg:mb-5">
         <p className="font-mono text-[11px] tracking-wide text-teal uppercase">
-          Questions 1\u2013{questionCount}
+          Questions 1–{questionCount}
         </p>
         <p className="mt-1 text-[13.5px] leading-snug font-light text-[#3D4D63]">
           Answer all questions based on the passage.

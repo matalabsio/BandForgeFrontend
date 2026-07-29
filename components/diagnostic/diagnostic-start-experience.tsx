@@ -205,7 +205,7 @@ export function DiagnosticStartExperience() {
     persistAndStart();
   };
 
-  const heading = step === 4 ? "Almost there." : "Let\u2019s set up your study plan.";
+  const heading = step === 4 ? "Almost there." : "Let’s set up your study plan.";
   const subtitle =
     step === 4
       ? "One last question, then your free diagnostic test is ready."
@@ -333,7 +333,7 @@ export function DiagnosticStartExperience() {
             >
               {step === 4
                 ? busy
-                  ? "Starting\u2026"
+                  ? "Starting…"
                   : "Begin Diagnostic"
                 : "Continue"}
               <ArrowRight className="size-[17px]" aria-hidden />
@@ -539,8 +539,8 @@ function StepTestDate({
 }) {
   const options: { id: DiagnosticTestDateOption; label: string }[] = [
     { id: "booked", label: "I have a test date booked" },
-    { id: "1-3_months", label: "I\u2019m planning to test in 1\u20133 months" },
-    { id: "undecided", label: "I haven\u2019t decided yet" },
+    { id: "1-3_months", label: "I’m planning to test in 1–3 months" },
+    { id: "undecided", label: "I haven’t decided yet" },
   ];
 
   return (

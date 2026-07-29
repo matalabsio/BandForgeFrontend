@@ -317,7 +317,7 @@ export function DiagnosticWritingExperience() {
                   <div className="min-h-0 flex-1 py-4">
                     <div className="mb-3 max-w-full rounded-[14px] border border-navy/10 bg-navy/[0.04] p-4">
                       <p className="font-mono text-[10px] tracking-wider text-teal uppercase">
-                        Task {activeTask.part} \u00b7 {activeTask.part === 1 ? "20" : "25"} min \u00b7{" "}
+                        Task {activeTask.part} · {activeTask.part === 1 ? "20" : "25"} min ·{" "}
                         {activeTask.minWords}+ words
                       </p>
                       {promptBlocks ? (
@@ -367,7 +367,7 @@ export function DiagnosticWritingExperience() {
                       onChange={(e) => handleEssayChange(activeTask.id, e.target.value)}
                       {...examTextInputProps}
                       className="min-h-[280px] w-full max-w-full resize-y rounded-[14px] border border-navy/10 bg-white p-4 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
-                      placeholder="Write your response here\u2026"
+                      placeholder="Write your response here…"
                     />
                     <div className="mt-3 space-y-2">
                       <p
@@ -399,7 +399,7 @@ export function DiagnosticWritingExperience() {
               <DiagnosticModuleFooter
                 label="Continue to speaking"
                 busy={submitting}
-                busyLabel="Submitting\u2026"
+                busyLabel="Submitting…"
                 onClick={handleSubmit}
                 contentWidth="narrow"
               />

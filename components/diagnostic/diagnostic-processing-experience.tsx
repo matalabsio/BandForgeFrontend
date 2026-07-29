@@ -149,16 +149,16 @@ export function DiagnosticProcessingExperience() {
     state: "pending" | "active" | "done";
   }> = [
     {
-      text: "Submitting Listening and Reading answers\u2026",
+      text: "Submitting Listening and Reading answers…",
       state: activeLine > 0 ? "done" : "active",
     },
     {
       text:
         writingLine === "failed"
-          ? "Writing evaluation unavailable \u2014 continuing\u2026"
+          ? "Writing evaluation unavailable — continuing…"
           : writingLine === "done"
             ? "Writing evaluation complete"
-            : "AI-evaluating your Writing response\u2026",
+            : "AI-evaluating your Writing response…",
       state:
         writingLine === "done" || writingLine === "failed"
           ? "done"
@@ -167,7 +167,7 @@ export function DiagnosticProcessingExperience() {
             : "pending",
     },
     {
-      text: "Queuing Speaking recording for certified examiner review\u2026",
+      text: "Queuing Speaking recording for certified examiner review…",
       state: activeLine >= 2 ? (writingReady ? "done" : "active") : "pending",
     },
   ];
@@ -177,7 +177,7 @@ export function DiagnosticProcessingExperience() {
       steps={DIAGNOSTIC_EXAM_STEPS}
       currentStep={4}
       heading="Calculating results."
-      subtitle="We\u2019re scoring your diagnostic now."
+      subtitle="We’re scoring your diagnostic now."
       footerNote="Almost done"
       fillViewport
     >

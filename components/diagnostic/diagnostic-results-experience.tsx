@@ -25,6 +25,8 @@ import {
   readDiagnosticResults,
   type DiagnosticResultsSnapshot,
 } from "@/lib/diagnostic-session";
+import { shouldResumeDiagnosticCheckout } from "@/lib/checkout-resume";
+import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 
 function aggregatePartialBand(snapshot: DiagnosticResultsSnapshot): number {
   const partial = aggregateBand(
@@ -95,6 +97,9 @@ export function DiagnosticResultsExperience() {
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<DiagnosticResultsSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutResumeGate, setCheckoutResumeGate] = useState(
+    () => typeof window !== "undefined" && shouldResumeDiagnosticCheckout(),
+  );
 
   const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
   const targetBand = lead?.targetBand ?? 7.0;
@@ -153,7 +158,7 @@ export function DiagnosticResultsExperience() {
     }
   }, []);
   useEffect(() => {
-    if (loading || error || !snapshot) return;
+    if (loading || error || !snapshot || checkoutResumeGate) return;
     if (typeof window === "undefined") return;
     const wantsPlan =
       window.location.hash === "#plan-unlock" ||
@@ -165,7 +170,7 @@ export function DiagnosticResultsExperience() {
     window.setTimeout(() => {
       el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     }, 80);
-  }, [loading, error, snapshot]);
+  }, [loading, error, snapshot, checkoutResumeGate]);
 
   const heroBand = snapshot
     ? pendingHuman
@@ -225,6 +230,23 @@ export function DiagnosticResultsExperience() {
       ) : null}
     </section>
   ) : null;
+
+  // Post-login checkout: BandForge loader only — never paint results under Razorpay.
+  if (checkoutResumeGate && snapshot) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-[#F7F8FA]">
+        <DiagnosticPlanCheckoutSection
+          snapshot={snapshot}
+          resumeGate
+          onResumeSettled={() => setCheckoutResumeGate(false)}
+        />
+      </div>
+    );
+  }
+
+  if (checkoutResumeGate && loading) {
+    return <ProcessingOverlay variant="creating" />;
+  }
 
   return (
     <DiagnosticSplitShell

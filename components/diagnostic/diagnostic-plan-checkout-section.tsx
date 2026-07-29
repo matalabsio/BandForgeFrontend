@@ -66,6 +66,12 @@ type Props = {
   snapshot: DiagnosticResultsSnapshot;
   /** Skill-by-skill section — always visible above the plan teaser. */
   skillsSection?: ReactNode;
+  /**
+   * Post-login checkout resume: hide results chrome and keep a solid loader
+   * until Razorpay opens or the attempt settles (cancel / fail).
+   */
+  resumeGate?: boolean;
+  onResumeSettled?: () => void;
 };
 
 /** Survives React Strict Mode remount so post-login Razorpay opens once. */
@@ -83,6 +89,8 @@ function initialCheckoutOverlay(): OverlayState {
 export function DiagnosticPlanCheckoutSection({
   snapshot,
   skillsSection,
+  resumeGate = false,
+  onResumeSettled,
 }: Props) {
   const router = useRouter();
   const [bootstrapping, setBootstrapping] = useState(true);
@@ -300,6 +308,15 @@ export function DiagnosticPlanCheckoutSection({
     snapshot,
   ]);
 
+  const settleResumeGate = useCallback(() => {
+    onResumeSettled?.();
+    try {
+      window.history.replaceState(null, "", diagnosticPaths.results);
+    } catch {
+      /* ignore */
+    }
+  }, [onResumeSettled]);
+
   useEffect(() => {
     if (diagnosticCheckoutResumeClaimed || autoCheckoutStartedRef.current) {
       return;
@@ -310,16 +327,6 @@ export function DiagnosticPlanCheckoutSection({
     diagnosticCheckoutResumeClaimed = true;
     autoCheckoutStartedRef.current = true;
     clearPendingCheckoutResume();
-
-    try {
-      window.history.replaceState(
-        null,
-        "",
-        `${diagnosticPaths.results}#plan-unlock`,
-      );
-    } catch {
-      /* ignore */
-    }
 
     setOverlay("creating");
     setCheckoutBusy(true);
@@ -339,6 +346,7 @@ export function DiagnosticPlanCheckoutSection({
         if (!session || !isFullAccountUser(user?.role)) {
           setOverlay(null);
           clearBusy();
+          settleResumeGate();
           redirectToLoginForCheckout();
           return;
         }
@@ -380,6 +388,7 @@ export function DiagnosticPlanCheckoutSection({
                 "Payment was received but the subscription was not activated.",
               );
               setStatusModal("verify_failed");
+              settleResumeGate();
             } catch (e) {
               setOverlay(null);
               setHasSubscription(false);
@@ -390,6 +399,7 @@ export function DiagnosticPlanCheckoutSection({
                   e instanceof ApiError ? e.message : "Could not verify payment.",
                 );
                 setStatusModal("verify_failed");
+                settleResumeGate();
               }
             } finally {
               clearBusy();
@@ -399,37 +409,64 @@ export function DiagnosticPlanCheckoutSection({
             setOverlay(null);
             clearBusy();
             forceLockThenRefresh();
-            setStatusModal("cancelled");
+            if (resumeGate) {
+              settleResumeGate();
+            } else {
+              setStatusModal("cancelled");
+            }
           },
           onFailed: (message) => {
             setOverlay(null);
             clearBusy();
             forceLockThenRefresh();
-            setPaymentFailureMessage(message);
-            setStatusModal("payment_failed");
+            if (resumeGate) {
+              settleResumeGate();
+            } else {
+              setPaymentFailureMessage(message);
+              setStatusModal("payment_failed");
+            }
           },
         });
 
         if (opened) {
+          // Keep solid backdrop behind Razorpay — do not reveal results yet.
           setOverlay(null);
         } else {
           setOverlay(null);
           clearBusy();
-          setStatusModal("checkout_unavailable");
+          if (resumeGate) {
+            settleResumeGate();
+          } else {
+            setStatusModal("checkout_unavailable");
+          }
         }
       } catch (e) {
         setOverlay(null);
         clearBusy();
         if (e instanceof ApiError && e.status === 401) {
+          settleResumeGate();
           redirectToLoginForCheckout(true);
         } else if (e instanceof ApiError && e.status === 503) {
-          setStatusModal("payments_disabled");
+          if (resumeGate) {
+            settleResumeGate();
+          } else {
+            setStatusModal("payments_disabled");
+          }
+        } else if (resumeGate) {
+          settleResumeGate();
         } else {
           setStatusModal("verify_failed");
         }
       }
     })();
-  }, [forceLockThenRefresh, redirectToLoginForCheckout, router, snapshot]);
+  }, [
+    forceLockThenRefresh,
+    redirectToLoginForCheckout,
+    resumeGate,
+    router,
+    settleResumeGate,
+    snapshot,
+  ]);
 
   const handleVerifyRetry = useCallback(async () => {
     const pending = readCheckoutReceiptContext();
@@ -475,7 +512,15 @@ export function DiagnosticPlanCheckoutSection({
 
   const checkoutChrome = (
     <>
-      {overlay ? <ProcessingOverlay variant={overlay} /> : null}
+      {overlay ? (
+        <ProcessingOverlay variant={overlay} />
+      ) : resumeGate && checkoutBusy ? (
+        // Solid backdrop while Razorpay modal is open — never flash results.
+        <div
+          className="fixed inset-0 z-[100] bg-[#F7F8FA]"
+          aria-hidden
+        />
+      ) : null}
       {statusModal ? (
         <PaymentStatusModal
           variant={statusModal}
@@ -506,6 +551,10 @@ export function DiagnosticPlanCheckoutSection({
       ) : null}
     </>
   );
+
+  if (resumeGate) {
+    return checkoutChrome;
+  }
 
   if (!lead || !examDate || !planPreview) {
     return (
