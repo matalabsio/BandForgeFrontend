@@ -49,10 +49,9 @@ function isLegacyPlanPath(path: string): boolean {
 /**
  * Resolve where to send a user after login / OAuth continue.
  *
- * - Explicit `/dashboard` is preserved (paywall or personalized content lives there).
- * - Other default entries (`/`, `/onboarding`, `/diagnostic`) stay diagnostic-first when unpaid.
- * - Diagnostic + unpaid entry → `/diagnostic/results?checkout=1`
- * - Diagnostic + paid → `/dashboard` for default entries / results checkout
+ * - Paid → `/dashboard` for default entries / results checkout
+ * - Unpaid + no diagnostic → `/diagnostic`
+ * - Unpaid + has diagnostic → `/diagnostic/results?checkout=1`
  * - Explicit deep links (`/pricing`, `/scores`, …) are preserved
  */
 export function resolvePostLoginDestination(
@@ -75,17 +74,12 @@ export function resolvePostLoginDestination(
     return hasPaid ? DASHBOARD_PATH : safePath;
   }
 
-  // User asked for dashboard — never bounce them into the diagnostic exam.
-  if (pathOnly(safePath) === DASHBOARD_PATH) {
-    return DASHBOARD_PATH;
-  }
-
   if (isDefaultEntryPath(safePath)) {
-    if (!hasDiagnostic) {
-      return DIAGNOSTIC_LANDING_PATH;
-    }
     if (hasPaid) {
       return DASHBOARD_PATH;
+    }
+    if (!hasDiagnostic) {
+      return DIAGNOSTIC_LANDING_PATH;
     }
     return DIAGNOSTIC_CHECKOUT_RETURN_PATH;
   }

@@ -11,7 +11,7 @@ import {
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
-import { hasFullSkillProgram } from "@/lib/entitlement";
+import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
@@ -59,8 +59,8 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
   const learning = await fetchLearningProfile(cookieHeader);
   const profile = learning ?? emptyLearningProfile(userId);
 
-  // Stay on dashboard: unpaid users see the plan paywall instead of being
-  // forced into the diagnostic exam flow.
+  // Stay on dashboard: unpaid users see the plan paywall (start vs unlock).
+  // Post-login continue routes unpaid users into diagnostic/checkout instead.
   if (!hasFullSkillProgram(subscription)) {
     return (
       <>
@@ -71,7 +71,7 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
           avatarUrl={user.avatarUrl}
           streakDays={0}
         />
-        <DashboardPlanPaywall />
+        <DashboardPlanPaywall hasDiagnostic={isDiagnosticComplete(profile)} />
       </>
     );
   }

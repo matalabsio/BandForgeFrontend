@@ -19,6 +19,7 @@ export type SpeakingQuestion = {
   max_recording_seconds: number;
   duration_hint_sec: number | null;
   part_label: string | null;
+  video_url?: string | null;
 };
 
 export type StartSpeakingPayload = {

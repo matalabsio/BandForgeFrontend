@@ -157,7 +157,7 @@ export function MockTestHub({
   const handlePrimary = async () => {
     if (status === "completed" && activeAttemptId) {
       persistMockAttemptId(mockTestId, activeAttemptId);
-      push(mockResultsPath(mockSlug, activeAttemptId));
+      push(mockResultsPath(mockSlug, activeAttemptId, { testNumber: resolvedTestNumber }));
       return;
     }
     if (status === "in_progress" && activeAttemptId) {
@@ -166,6 +166,8 @@ export function MockTestHub({
         mockSlug,
         activeAttemptId,
         progress!,
+        undefined,
+        { testNumber: resolvedTestNumber },
       );
       return;
     }
@@ -180,7 +182,10 @@ export function MockTestHub({
     try {
       clearMockExamLocalData(mockTestId);
       const res = await start(true);
-      navigateAfterMockStart({ push, replace }, mockSlug, res, { replace: true });
+      navigateAfterMockStart({ push, replace }, mockSlug, res, {
+        replace: true,
+        testNumber: resolvedTestNumber,
+      });
     } catch {
       /* error surfaced via hook */
     }
@@ -197,6 +202,7 @@ export function MockTestHub({
         if (!attemptId) return;
         persistMockAttemptId(mockTestId, attemptId);
         navigateToModuleExam({ push, replace }, resolvedTestNumber, module, {
+          mockTestId,
           part: 1,
           passage: 1,
           auto: true,
@@ -230,6 +236,7 @@ export function MockTestHub({
         if (!attemptId) return;
         persistMockAttemptId(mockTestId, attemptId);
         navigateToModuleExam({ push, replace }, resolvedTestNumber, module, {
+          mockTestId,
           part: 1,
           passage: 1,
           auto: true,
@@ -420,6 +427,7 @@ export function MockTestHub({
 
       <Test1ModuleCards
         mockSlug={mockSlug}
+        testNumber={resolvedTestNumber}
         moduleMeta={hubMeta ?? undefined}
         modules={progress?.modules ?? []}
         mockAttemptId={activeAttemptId}

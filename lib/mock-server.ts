@@ -1,5 +1,10 @@
 import { getApiUrl } from "@/lib/api";
-import type { MockCatalogApiItem } from "@/lib/mock-catalog-api";
+import {
+  buildCatalogPanel,
+  type MockCatalogApiItem,
+  type MockCatalogSlot,
+  slotByNumber,
+} from "@/lib/mock-catalog-api";
 import type { MockMeta } from "@/lib/mock-catalog";
 import { resolveMockMetaFromCatalog } from "@/lib/mock-catalog";
 import type {
@@ -66,6 +71,30 @@ export async function resolveMockMetaServer(
 ): Promise<MockMeta> {
   const catalog = await fetchMockCatalogServer(cookieHeader);
   return resolveMockMetaFromCatalog(catalog, slugOrId);
+}
+
+/** Live catalog slot for a test number (available + id), or null if coming soon / missing. */
+export async function resolveCatalogSlotServer(
+  cookieHeader: string,
+  testNumber: number,
+): Promise<{
+  catalog: MockCatalogApiItem[];
+  panel: MockCatalogSlot[];
+  slot: MockCatalogSlot;
+  mockTestId: string;
+  mockMeta: MockMeta;
+} | null> {
+  const catalog = await fetchMockCatalogServer(cookieHeader);
+  const panel = buildCatalogPanel(catalog);
+  const slot = slotByNumber(panel, testNumber);
+  if (!slot?.available || !slot.id) return null;
+  return {
+    catalog,
+    panel,
+    slot,
+    mockTestId: slot.id,
+    mockMeta: resolveMockMetaFromCatalog(catalog, slot.id),
+  };
 }
 
 export async function fetchMockSessionServer(

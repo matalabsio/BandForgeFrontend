@@ -13,6 +13,7 @@ import {
   mockApiId,
   mockModulePath,
   mockResultsPath,
+  shortModuleExamPath,
   shortModuleSpeakingPendingPath,
   shortModuleWritingPendingPath,
   testNumberForMockId,
@@ -119,13 +120,13 @@ const MODULE_CARDS: {
 function moduleHref(
   mockSlug: string,
   mockAttemptId: string,
+  testNumber: number,
   key: ModuleKey,
   mod: ModuleProgress,
 ): { href: string; nav: { auto?: boolean; sectionStart?: boolean } } | null {
   // `locked` is remapped to `available` via withFreeModuleAccess before call.
   if (!mod.is_enabled || mod.status === "locked") return null;
 
-  const testNumber = testNumberForMockId(mockApiId(mockSlug));
   const part = mod.part ?? 1;
 
   // Completed → section results (or pending while AI / human score is pending).
@@ -164,7 +165,12 @@ function moduleHref(
   const sectionStart = free || mod.status === "available";
 
   let path: string;
-  if (key === "listening") {
+  if (Number.isFinite(testNumber) && testNumber >= 1) {
+    path = shortModuleExamPath(testNumber, key, {
+      part: key === "listening" || key === "writing" ? part : undefined,
+      passage: key === "reading" ? part : undefined,
+    });
+  } else if (key === "listening") {
     path = mockModulePath(mockSlug, "listening", { part });
   } else if (key === "reading") {
     path = mockModulePath(mockSlug, "reading", { passage: part });
@@ -206,6 +212,7 @@ function sectionFiltersForModules(
 
 type Props = {
   mockSlug: MockSlug | string;
+  testNumber?: number;
   moduleMeta?: ModuleMeta;
   modules: ModuleProgress[];
   mockAttemptId: string | null;
@@ -223,6 +230,7 @@ type Props = {
 
 export function Test1ModuleCards({
   mockSlug,
+  testNumber,
   moduleMeta,
   modules,
   mockAttemptId,
@@ -237,6 +245,7 @@ export function Test1ModuleCards({
 }: Props) {
   const [sectionFilter, setSectionFilter] = useState<SectionFilter>("all");
   const meta = moduleMeta ?? getMockMeta(mockSlug as MockSlug);
+  const resolvedTestNumber = testNumber ?? testNumberForMockId(mockApiId(mockSlug));
   const displayLabel = meta.displayLabel;
   const mockComplete = mockStatus === "completed";
 
@@ -330,7 +339,7 @@ export function Test1ModuleCards({
           const status = mod?.status ?? "locked";
           const link =
             mod && mockAttemptId
-              ? moduleHref(mockSlug, mockAttemptId, card.key, mod)
+              ? moduleHref(mockSlug, mockAttemptId, resolvedTestNumber, card.key, mod)
               : null;
           const href = link?.href ?? null;
           const isCurrent = status === "in_progress";
@@ -442,6 +451,7 @@ export function Test1ModuleCards({
                         mockAttemptId,
                         auto: link.nav.auto,
                         sectionStart: link.nav.sectionStart,
+                      testNumber: resolvedTestNumber,
                       });
                     }}
                   >
@@ -470,6 +480,7 @@ export function Test1ModuleCards({
                       mockAttemptId,
                       auto: link.nav.auto,
                       sectionStart: link.nav.sectionStart,
+                      testNumber: resolvedTestNumber,
                     });
                   }}
                 >
@@ -496,7 +507,9 @@ export function Test1ModuleCards({
 
       {mockComplete && mockAttemptId ? (
         <Link
-          href={mockResultsPath(mockSlug, mockAttemptId)}
+          href={mockResultsPath(mockSlug, mockAttemptId, {
+            testNumber: resolvedTestNumber,
+          })}
           className="flex items-center justify-center gap-2 rounded-xl border border-[var(--exam-border)] bg-white px-4 py-3 text-[13px] font-bold text-[var(--exam-ink)] transition-colors hover:border-[var(--exam-accent)] hover:text-[var(--exam-accent)]"
         >
           View band report →

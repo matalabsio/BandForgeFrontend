@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import {
-  mockTestIdForNumber,
-  shortModuleWritingPendingPath,
-} from "@/lib/mock-catalog";
+import { shortModuleWritingPendingPath } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
+import { resolveCatalogSlotServer } from "@/lib/mock-server";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { WritingPendingPage } from "@/modules/writing/components/writing-pending-page";
 
@@ -33,18 +31,20 @@ export default async function TestWritingPendingPage({ params, searchParams }: P
     redirect(`/test/${testNumber}/writing`);
   }
 
-  const mockTestId = mockTestIdForNumber(testNumber);
   const returnPath = shortModuleWritingPendingPath(testNumber, attemptId);
 
   const cookieHeader = await getCachedCookieHeader();
   await guardMockModulePage(cookieHeader, returnPath);
+
+  const resolved = await resolveCatalogSlotServer(cookieHeader, testNumber);
+  if (!resolved) notFound();
 
   return (
     <MockLayout>
       <WritingPendingPage
         attemptId={attemptId}
         testNumber={testNumber}
-        mockTestId={mockTestId}
+        mockTestId={resolved.mockTestId}
       />
     </MockLayout>
   );

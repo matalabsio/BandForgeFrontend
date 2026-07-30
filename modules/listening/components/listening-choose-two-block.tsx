@@ -3,6 +3,11 @@
 import { memo, useCallback } from "react";
 import type { ListeningOption, ListeningQuestion } from "@/modules/listening/types";
 import { blockQuestionRange } from "@/modules/listening/lib/listening-question-groups";
+import {
+  listeningOptionLetter,
+  listeningOptionsHaveUniqueLetters,
+  listeningOptionValue,
+} from "@/modules/listening/lib/listening-option-value";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -38,16 +43,16 @@ function ListeningChooseTwoBlockBase({
   const selected = [answers[qLow.id] ?? "", answers[qHigh.id] ?? ""].filter(Boolean);
 
   const handleToggle = useCallback(
-    (letter: string) => {
+    (token: string) => {
       const low = answers[qLow.id] ?? "";
       const high = answers[qHigh.id] ?? "";
       const current = [low, high].filter(Boolean);
-      const has = current.includes(letter);
+      const has = current.includes(token);
       let next: string[];
       if (has) {
-        next = current.filter((l) => l !== letter);
+        next = current.filter((l) => l !== token);
       } else if (current.length < 2) {
-        next = [...current, letter];
+        next = [...current, token];
       } else {
         return;
       }
@@ -60,6 +65,7 @@ function ListeningChooseTwoBlockBase({
 
   const active = questions.some((q) => currentQuestionId === q.id);
   const isDiagnostic = variant === "diagnostic";
+  const uniqueLetters = listeningOptionsHaveUniqueLetters(options);
 
   return (
     <article
@@ -105,11 +111,23 @@ function ListeningChooseTwoBlockBase({
       </p>
       <fieldset className="mt-4 space-y-2.5">
         <legend className="sr-only">{stem}</legend>
-        {options.map((o) => {
-          const checked = selected.includes(o.label);
+        {options.map((o, optionIndex) => {
+          const token = listeningOptionValue(optionIndex, o.label);
+          const checked =
+            selected.includes(token) ||
+            (selected.includes(o.label) &&
+              !o.label.includes("::") &&
+              options.findIndex((x) => x.label === o.label) === optionIndex);
+          const displayLetter = uniqueLetters
+            ? o.label
+            : listeningOptionLetter(optionIndex);
+          const displayText =
+            o.text?.trim() && o.text.trim() !== o.label.trim()
+              ? o.text
+              : o.text?.trim() || o.label;
           return (
             <label
-              key={o.label}
+              key={`choose-two-${optionIndex}`}
               className={cn(
                 "flex min-h-[52px] cursor-pointer items-start gap-3 rounded-[13px] border px-4 py-3.5 text-[13px] transition-colors",
                 isDiagnostic
@@ -138,19 +156,21 @@ function ListeningChooseTwoBlockBase({
                 <input
                   type="checkbox"
                   checked={checked}
-                  onChange={() => handleToggle(o.label)}
+                  onChange={() => handleToggle(token)}
                   className="mt-1 size-4 shrink-0 accent-[var(--exam-accent)]"
                 />
               )}
-              <span className="mt-0.5 shrink-0 font-mono font-medium text-teal">{o.label}</span>
+              <span className="mt-0.5 shrink-0 font-mono font-medium text-teal">
+                {displayLetter}
+              </span>
               <span className={cn("min-w-0 flex-1 break-words text-sm", checked ? "font-medium text-navy" : "text-[#3D4D63]")}>
-                {o.text}
+                {displayText}
               </span>
               {isDiagnostic ? (
                 <input
                   type="checkbox"
                   checked={checked}
-                  onChange={() => handleToggle(o.label)}
+                  onChange={() => handleToggle(token)}
                   className="sr-only"
                 />
               ) : null}

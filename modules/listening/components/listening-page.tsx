@@ -16,15 +16,16 @@ import {
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
+  shortModuleResultsPath,
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
 import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import {
   isListeningTest,
-  listeningModuleResultsPath,
   listeningTestHubPath,
 } from "@/lib/listening-test";
+import { listeningOptionLabelFromValue } from "@/modules/listening/lib/listening-option-value";
 import { IeltsExamSkeleton } from "@/components/exam/ielts-exam-skeleton";
 import { ExamBusyOverlay } from "@/modules/shared/components/exam-section-loader";
 import { IeltsExamToolbar } from "@/components/exam/ielts-exam-toolbar";
@@ -220,10 +221,12 @@ export function ListeningPage({
             ? mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "listening", {
                 completedPart: listeningPartCount,
                 attemptId: _attemptId,
+                testNumber: resolvedTestNumber,
               })
             : mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "listening", {
                 completedPart: part,
                 attemptId: _attemptId,
+                testNumber: resolvedTestNumber,
               });
         navigateAfterSectionSubmit(
           { push, replace },
@@ -234,35 +237,38 @@ export function ListeningPage({
         );
         return;
       }
-      const testNumber = testNumberForMockId(testId);
+      const testNumber = resolvedTestNumber;
       persistModuleResultAttempt(testNumber, "listening", _attemptId);
-      push(listeningModuleResultsPath(testId, _attemptId));
+      push(shortModuleResultsPath(testNumber, "listening"));
     },
-    [replace, push, testId, mockSlug, mockAttemptId, part, isDiagnostic, listeningPartCount],
+    [replace, push, testId, mockSlug, mockAttemptId, part, isDiagnostic, listeningPartCount, resolvedTestNumber],
   );
 
   /** After each listening part in a mock: per-section results screen. */
   const goToMockSectionResults = useCallback(
     (attemptId: string, completedPart: number) => {
       if (!mockAttemptId) return;
-      const testNumber = testNumberForMockId(testId);
+      const testNumber = resolvedTestNumber;
       persistModuleResultAttempt(testNumber, "listening", attemptId);
       replace(
         sectionResultsPathForMockSubmit(mockSlug, "listening", {
           attempt: attemptId,
           part: completedPart,
           mockAttemptId,
+          testNumber,
         }),
       );
     },
-    [mockAttemptId, mockSlug, replace, testId],
+    [mockAttemptId, mockSlug, replace, resolvedTestNumber],
   );
 
-  const submitAnswers = useMemo(
+      const submitAnswers = useMemo(
     () =>
       allQuestions.map((q) => ({
         question_id: q.id,
-        user_answer: (state.answers[q.id] ?? "").trim(),
+        user_answer: listeningOptionLabelFromValue(
+          (state.answers[q.id] ?? "").trim(),
+        ),
       })),
     [allQuestions, state.answers],
   );
@@ -438,6 +444,8 @@ export function ListeningPage({
                   mockSlug,
                   mockAttemptId,
                   progress,
+                  undefined,
+                  { testNumber: resolvedTestNumber },
                 );
                 replace(dest);
                 return;
@@ -517,6 +525,7 @@ export function ListeningPage({
     part,
     sectionStart,
     replace,
+    testNumber: resolvedTestNumber,
   });
 
   useEffect(() => {

@@ -1,17 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  Check,
-  Clock,
-  Pause,
-  Play,
-  RotateCcw,
-  Smartphone,
-  VolumeX,
-} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Check, Pause, Play, RotateCcw } from "lucide-react";
 import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
-import { Button } from "@/components/ui/button";
 import { TextType } from "@/components/ui/text-type";
 import {
   formatAudioDuration,
@@ -142,9 +133,10 @@ export function SpeakingMicCheck({
     if (!AudioCtx) return null;
 
     try {
-      const ctx = waveCtxRef.current && waveCtxRef.current.state !== "closed"
-        ? waveCtxRef.current
-        : new AudioCtx();
+      const ctx =
+        waveCtxRef.current && waveCtxRef.current.state !== "closed"
+          ? waveCtxRef.current
+          : new AudioCtx();
       waveCtxRef.current = ctx;
       if (!waveSourceBoundRef.current) {
         const analyser = ctx.createAnalyser();
@@ -204,9 +196,14 @@ export function SpeakingMicCheck({
       if (!capability.supported) throw new Error(capability.message);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length === 0 || audioTracks.some((track) => track.readyState !== "live")) {
+      if (
+        audioTracks.length === 0 ||
+        audioTracks.some((track) => track.readyState !== "live")
+      ) {
         stream.getTracks().forEach((track) => track.stop());
-        throw new Error("The selected microphone is not ready. Reconnect it and try again.");
+        throw new Error(
+          "The selected microphone is not ready. Reconnect it and try again.",
+        );
       }
       streamRef.current = stream;
 
@@ -237,7 +234,9 @@ export function SpeakingMicCheck({
         stopStream();
 
         if (blob.size < 500) {
-          setError("We didn't capture any audio. Tap Test my microphone and try again.");
+          setError(
+            "We didn't capture any audio. Tap Test my microphone and try again.",
+          );
           setPhase("idle");
           chunksRef.current = [];
           return;
@@ -311,7 +310,9 @@ export function SpeakingMicCheck({
       }
       await audio.play();
     } catch {
-      setError("Could not play your recording. Check speaker volume and try again.");
+      setError(
+        "Could not play your recording. Check speaker volume and try again.",
+      );
       setIsPlaying(false);
     }
   }, [ensureWaveAnalyser, isPlaying, playbackUrl]);
@@ -346,353 +347,200 @@ export function SpeakingMicCheck({
     playbackDuration > 0 ? playbackDuration : MIC_TEST_SEC,
   );
 
-  if (isDiagnostic) {
-    return (
-      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,_#F0FBFC_0%,_#FFFFFF_55%)]">
-        <audio ref={audioRef} className="hidden" playsInline preload="auto" />
-
-        <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-1 flex-col px-4 py-3 sm:px-6 sm:py-4 lg:max-w-4xl lg:px-8 lg:py-5">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[#E8EEF4] bg-white lg:rounded-[24px]">
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 sm:py-5 lg:overflow-hidden lg:px-7 lg:py-5">
-              <header className="mx-auto max-w-2xl shrink-0 text-center">
-                <p className="font-mono text-[10px] tracking-[0.14em] text-teal uppercase">
-                  Before you begin
-                </p>
-                <TextType
-                  as="h1"
-                  text="Check your microphone"
-                  loop={false}
-                  typingSpeed={42}
-                  showCursor
-                  cursorCharacter="|"
-                  cursorBlinkDuration={0.55}
-                  className="mt-1.5 block w-full text-center font-display text-[22px] leading-[1.15] font-bold tracking-[-0.03em] text-navy sm:text-[26px] lg:text-[28px]"
-                />
-                <TextType
-                  as="p"
-                  text="A quick mic check, then Part 1, Part 2, and Part 3 run continuously — like the real IELTS Speaking test."
-                  loop={false}
-                  typingSpeed={28}
-                  initialDelay={900}
-                  showCursor={false}
-                  className="mx-auto mt-1.5 block w-full max-w-[48ch] text-center text-[13px] leading-snug text-[#64748B] sm:text-[14px]"
-                />
-              </header>
-
-              <div className="mx-auto mt-4 max-w-xl rounded-[16px] border border-[#E8EEF4] bg-[#F8FBFC] px-3 py-4 text-center sm:mt-5 sm:px-5 sm:py-5 lg:mt-4 lg:py-4">
-                <SpeakingMicHero
-                  phase={phase}
-                  variant="diagnostic"
-                  className="size-[100px] sm:size-[112px] lg:size-[108px]"
-                />
-
-                <p
-                  className="mt-3 text-[14px] font-semibold text-navy sm:mt-3.5 sm:text-[15px]"
-                  role="status"
-                  aria-live="polite"
-                >
-                  {statusLabel}
-                </p>
-                <p className="mt-0.5 text-[12px] text-[#64748B] sm:text-[13px]">{statusSub}</p>
-
-                {phase === "idle" ? (
-                  <button
-                    type="button"
-                    onClick={() => void startTest()}
-                    className={cn(
-                      bfPrimaryCtaDiagClass,
-                      "mt-4 h-[46px] sm:mx-auto sm:mt-4 sm:h-[48px] sm:max-w-sm",
-                    )}
-                  >
-                    <span className="relative z-[1]">Test my microphone</span>
-                  </button>
-                ) : null}
-
-                {phase === "recording" ? (
-                  <div className="mx-auto mt-4 w-full max-w-sm rounded-[14px] border border-[#E8EEF4] bg-white px-3 py-2.5">
-                    <MicWaveform active />
-                    <div
-                      className="mx-auto mt-2.5 h-1 w-full max-w-[200px] overflow-hidden rounded-full bg-[#E2E8F0]"
-                      aria-hidden
-                    >
-                      <div
-                        className="h-full rounded-full bg-[linear-gradient(90deg,#0097a7_0%,#00bcd4_50%,#0097a7_100%)] transition-[width] duration-200 ease-linear"
-                        style={{
-                          width: `${Math.min(100, (recordSec / MIC_TEST_SEC) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-
-                {(phase === "playback" || phase === "confirmed") && playbackUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => void playPlayback()}
-                    className={cn(
-                      "mt-4 flex w-full cursor-pointer items-center gap-2.5 rounded-[14px] border border-[#E8EEF4] bg-white px-3 py-2.5 text-left transition-colors duration-200 hover:border-cyan/40 hover:bg-cyan/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2",
-                      isPlaying && "border-cyan/40 ring-2 ring-cyan/15",
-                    )}
-                    aria-label={
-                      isPlaying ? "Pause your test recording" : "Play your test recording"
-                    }
-                  >
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#00BCD4_0%,#0097A7_100%)] text-white">
-                      {isPlaying ? (
-                        <Pause className="size-4 fill-current" aria-hidden />
-                      ) : (
-                        <Play className="size-4 fill-current" aria-hidden />
-                      )}
-                    </span>
-                    <MicWaveform
-                      active={isPlaying}
-                      analyserRef={waveAnalyserRef}
-                      audioContextRef={waveCtxRef}
-                    />
-                    <span className="shrink-0 font-mono text-[10px] text-[#64748B]">
-                      {durationLabel}
-                    </span>
-                  </button>
-                ) : null}
-
-                {phase === "playback" || phase === "confirmed" ? (
-                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
-                    <button
-                      type="button"
-                      onClick={handleConfirm}
-                      className={cn(
-                        "flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-[13px] font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 sm:min-h-[48px] sm:text-sm",
-                        confirmed
-                          ? "border-[#A7F3D0] bg-[#ECFDF5] text-[#059669]"
-                          : "border-[#E8EEF4] bg-white text-navy hover:border-cyan/40 hover:bg-cyan/5",
-                      )}
-                    >
-                      <Check className="size-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
-                      I hear myself clearly
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRecordAgain}
-                      className="flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#E8EEF4] bg-white px-3 py-2 text-[13px] font-semibold text-[#475569] transition-colors duration-200 hover:border-navy/20 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 sm:min-h-[48px] sm:text-sm"
-                    >
-                      <RotateCcw className="size-3.5 shrink-0" aria-hidden />
-                      Record again
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-
-              <ul className="mx-auto mt-4 grid max-w-3xl gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-2.5 lg:mt-4">
-                <DiagTip
-                  title="Find a quiet room"
-                  body="Background noise affects your transcript and examiner review."
-                  delayMs={1600}
-                />
-                <DiagTip
-                  title={`Keep ${totalMinutes} minutes free`}
-                  body="Parts 1–3 run in one sitting — no breaks."
-                  delayMs={2400}
-                />
-                <DiagTip
-                  title="Keep your screen on"
-                  body="Locking or switching apps can stop recording."
-                  delayMs={3200}
-                />
-              </ul>
-            </div>
-          </div>
-
-          {error ? (
-            <p
-              className="mt-2 shrink-0 rounded-[12px] border border-red-200 bg-red-50 px-3 py-2 text-center text-sm text-red-700"
-              role="alert"
-            >
-              {error}
-            </p>
-          ) : null}
-
-          <div className="shrink-0 pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pt-4">
-            <button
-              type="button"
-              disabled={!confirmed || beginBusy}
-              onClick={onBegin}
-              className={cn(bfPrimaryCtaDiagClass, "h-[48px] text-[15px] sm:h-[52px] sm:text-[16px]")}
-            >
-              <span className="relative z-[1]">
-                {beginBusy ? "Starting…" : beginLabel}
-              </span>
-            </button>
-            <p className="mt-2 text-center font-mono text-[10px] tracking-[0.14em] text-[#94A3B8] uppercase">
-              Part 1 starts immediately · {totalMinutes} min total
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const subtitle = isDiagnostic
+    ? "A quick mic check, then Part 1, Part 2, and Part 3 run continuously — like the real IELTS Speaking test."
+    : "A quick mic check, then your Speaking section starts. Answers are recorded for examiner review.";
 
   return (
-    <div className="mx-auto w-full max-w-md rounded-[28px] border border-cyan/20 bg-gradient-to-b from-[#081426] to-[#0D1F3C] p-5 text-[#EAF1F8] shadow-2xl md:max-w-3xl md:p-7 lg:max-w-4xl">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,_#F0FBFC_0%,_#FFFFFF_55%)]">
       <audio ref={audioRef} className="hidden" playsInline preload="auto" />
 
-      <div>
-        <div className="flex items-center justify-between">
-          <span className="font-display text-[17px] font-extrabold tracking-tight">
-            <span className="text-[#EAF1F8]">Band</span>
-            <span className="text-cyan">Forge</span>
-          </span>
-          <span className="font-mono text-[10px] tracking-widest text-[#5F7492] uppercase">
-            Setup · 1 of 1
-          </span>
-        </div>
-        <div className="mt-5 flex gap-1.5">
-          <span className="h-1 flex-1 rounded-sm bg-[#3ECF8E]" />
-          <span className="h-1 flex-1 rounded-sm bg-[#3ECF8E]" />
-          <span className="h-1 flex-1 rounded-sm bg-cyan" />
-        </div>
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-1 flex-col px-4 py-3 sm:px-6 sm:py-4 lg:max-w-4xl lg:px-8 lg:py-5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[#E8EEF4] bg-white lg:rounded-[24px]">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 sm:py-5 lg:overflow-hidden lg:px-7 lg:py-5">
+            <header className="mx-auto max-w-2xl shrink-0 text-center">
+              <p className="font-mono text-[10px] tracking-[0.14em] text-teal uppercase">
+                Before you begin
+              </p>
+              <TextType
+                as="h1"
+                text="Check your microphone"
+                loop={false}
+                typingSpeed={42}
+                showCursor
+                cursorCharacter="|"
+                cursorBlinkDuration={0.55}
+                className="mt-1.5 block w-full text-center font-display text-[22px] leading-[1.15] font-bold tracking-[-0.03em] text-navy sm:text-[26px] lg:text-[28px]"
+              />
+              <TextType
+                as="p"
+                text={subtitle}
+                loop={false}
+                typingSpeed={28}
+                initialDelay={900}
+                showCursor={false}
+                className="mx-auto mt-1.5 block w-full max-w-[48ch] text-center text-[13px] leading-snug text-[#64748B] sm:text-[14px]"
+              />
+            </header>
 
-        <div className="mt-6">
-          <p className="font-mono text-[10px] tracking-[0.14em] text-teal uppercase">
-            Before you begin
-          </p>
-          <h1 className="mt-1.5 font-display text-2xl font-bold leading-tight">
-            Let&apos;s check your microphone
-          </h1>
-          <p className="mt-2 text-[13px] leading-relaxed text-[#9FB2C8] sm:text-sm">
-            Your Speaking test is recorded and evaluated by an examiner. Thirty seconds here
-            makes sure every word is captured.
-          </p>
-        </div>
-      </div>
+            <div className="mx-auto mt-4 max-w-xl rounded-[16px] border border-[#E8EEF4] bg-[#F8FBFC] px-3 py-4 text-center sm:mt-5 sm:px-5 sm:py-5 lg:mt-4 lg:py-4">
+              <SpeakingMicHero
+                phase={phase}
+                variant="diagnostic"
+                className="size-[100px] sm:size-[112px] lg:size-[108px]"
+              />
 
-      <div className="mt-5 rounded-[18px] border border-cyan/15 bg-[#122747] p-5 text-center sm:p-6 md:mx-auto md:max-w-2xl">
-        <SpeakingMicHero phase={phase} variant="standalone" />
+              <p
+                className="mt-3 text-[14px] font-semibold text-navy sm:mt-3.5 sm:text-[15px]"
+                role="status"
+                aria-live="polite"
+              >
+                {statusLabel}
+              </p>
+              <p className="mt-0.5 text-[12px] text-[#64748B] sm:text-[13px]">
+                {statusSub}
+              </p>
 
-        <p className="mt-4 text-sm font-semibold" role="status" aria-live="polite">
-          {statusLabel}
-        </p>
-        <p className="mt-1 text-xs text-[#5F7492]">{statusSub}</p>
+              {phase === "idle" ? (
+                <button
+                  type="button"
+                  onClick={() => void startTest()}
+                  className={cn(
+                    bfPrimaryCtaDiagClass,
+                    "mt-4 h-[46px] sm:mx-auto sm:mt-4 sm:h-[48px] sm:max-w-sm",
+                  )}
+                >
+                  <span className="relative z-[1]">Test my microphone</span>
+                </button>
+              ) : null}
 
-        {phase === "idle" ? (
-          <Button
-            variant="primary"
-            className="mt-5 min-h-[var(--spacing-touch,48px)] w-full sm:max-w-sm"
-            onClick={() => void startTest()}
-          >
-            Test my microphone
-          </Button>
-        ) : null}
+              {phase === "recording" ? (
+                <div className="mx-auto mt-4 w-full max-w-sm rounded-[14px] border border-[#E8EEF4] bg-white px-3 py-2.5">
+                  <MicWaveform active />
+                  <div
+                    className="mx-auto mt-2.5 h-1 w-full max-w-[200px] overflow-hidden rounded-full bg-[#E2E8F0]"
+                    aria-hidden
+                  >
+                    <div
+                      className="h-full rounded-full bg-[linear-gradient(90deg,#0097a7_0%,#00bcd4_50%,#0097a7_100%)] transition-[width] duration-200 ease-linear"
+                      style={{
+                        width: `${Math.min(100, (recordSec / MIC_TEST_SEC) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : null}
 
-        {phase === "recording" ? (
-          <div className="mx-auto mt-5 w-full max-w-sm rounded-xl border border-cyan/15 bg-teal/10 px-3 py-3">
-            <MicWaveform active />
+              {(phase === "playback" || phase === "confirmed") && playbackUrl ? (
+                <button
+                  type="button"
+                  onClick={() => void playPlayback()}
+                  className={cn(
+                    "mt-4 flex w-full cursor-pointer items-center gap-2.5 rounded-[14px] border border-[#E8EEF4] bg-white px-3 py-2.5 text-left transition-colors duration-200 hover:border-cyan/40 hover:bg-cyan/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2",
+                    isPlaying && "border-cyan/40 ring-2 ring-cyan/15",
+                  )}
+                  aria-label={
+                    isPlaying
+                      ? "Pause your test recording"
+                      : "Play your test recording"
+                  }
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#00BCD4_0%,#0097A7_100%)] text-white">
+                    {isPlaying ? (
+                      <Pause className="size-4 fill-current" aria-hidden />
+                    ) : (
+                      <Play className="size-4 fill-current" aria-hidden />
+                    )}
+                  </span>
+                  <MicWaveform
+                    active={isPlaying}
+                    analyserRef={waveAnalyserRef}
+                    audioContextRef={waveCtxRef}
+                  />
+                  <span className="shrink-0 font-mono text-[10px] text-[#64748B]">
+                    {durationLabel}
+                  </span>
+                </button>
+              ) : null}
+
+              {phase === "playback" || phase === "confirmed" ? (
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    className={cn(
+                      "flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-[13px] font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 sm:min-h-[48px] sm:text-sm",
+                      confirmed
+                        ? "border-[#A7F3D0] bg-[#ECFDF5] text-[#059669]"
+                        : "border-[#E8EEF4] bg-white text-navy hover:border-cyan/40 hover:bg-cyan/5",
+                    )}
+                  >
+                    <Check
+                      className="size-3.5 shrink-0"
+                      strokeWidth={2.5}
+                      aria-hidden
+                    />
+                    I hear myself clearly
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRecordAgain}
+                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#E8EEF4] bg-white px-3 py-2 text-[13px] font-semibold text-[#475569] transition-colors duration-200 hover:border-navy/20 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 sm:min-h-[48px] sm:text-sm"
+                  >
+                    <RotateCcw className="size-3.5 shrink-0" aria-hidden />
+                    Record again
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <ul className="mx-auto mt-4 grid max-w-3xl gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-2.5 lg:mt-4">
+              <TipCard
+                title="Find a quiet room"
+                body="Background noise affects your transcript and examiner review."
+                delayMs={1600}
+              />
+              <TipCard
+                title={`Keep ${totalMinutes} minutes free`}
+                body="Parts 1–3 run in one sitting — no breaks."
+                delayMs={2400}
+              />
+              <TipCard
+                title="Keep your screen on"
+                body="Locking or switching apps can stop recording."
+                delayMs={3200}
+              />
+            </ul>
           </div>
+        </div>
+
+        {error ? (
+          <p
+            className="mt-2 shrink-0 rounded-[12px] border border-red-200 bg-red-50 px-3 py-2 text-center text-sm text-red-700"
+            role="alert"
+          >
+            {error}
+          </p>
         ) : null}
 
-        {(phase === "playback" || phase === "confirmed") && playbackUrl ? (
+        <div className="shrink-0 pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pt-4">
           <button
             type="button"
-            onClick={() => void playPlayback()}
+            disabled={!confirmed || beginBusy}
+            onClick={onBegin}
             className={cn(
-              "mt-5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-cyan/15 bg-teal/10 px-3 py-2.5 text-left transition-colors duration-200 hover:bg-teal/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
-              isPlaying && "border-cyan/40 ring-2 ring-cyan/20",
+              bfPrimaryCtaDiagClass,
+              "h-[48px] text-[15px] sm:h-[52px] sm:text-[16px]",
             )}
-            aria-label={isPlaying ? "Pause your test recording" : "Play your test recording"}
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan">
-              {isPlaying ? (
-                <Pause className="size-4 fill-[#06222B] text-[#06222B]" />
-              ) : (
-                <Play className="size-4 fill-[#06222B] text-[#06222B]" />
-              )}
+            <span className="relative z-[1]">
+              {beginBusy ? "Starting…" : beginLabel}
             </span>
-            <MicWaveform
-              active={isPlaying}
-              analyserRef={waveAnalyserRef}
-              audioContextRef={waveCtxRef}
-            />
-            <span className="shrink-0 font-mono text-[10px] text-[#6E83A0]">{durationLabel}</span>
           </button>
-        ) : null}
-
-        {phase === "playback" || phase === "confirmed" ? (
-          <div className="mt-3.5 grid grid-cols-2 gap-2.5 sm:gap-3">
-            <button
-              type="button"
-              onClick={handleConfirm}
-              className={cn(
-                "flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border px-3 py-2.5 text-xs font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan sm:text-sm",
-                confirmed
-                  ? "border-[#3ECF8E]/40 bg-[#3ECF8E]/12 text-[#3ECF8E]"
-                  : "border-cyan/15 text-[#9FB2C8] hover:border-[#3ECF8E]/30",
-              )}
-            >
-              <Check className="size-3.5 shrink-0" strokeWidth={2.5} />
-              I hear myself clearly
-            </button>
-            <button
-              type="button"
-              onClick={handleRecordAgain}
-              className="flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border border-cyan/15 px-3 py-2.5 text-xs font-semibold text-[#9FB2C8] transition-colors duration-200 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan sm:text-sm"
-            >
-              <RotateCcw className="size-3.5 shrink-0" />
-              Record again
-            </button>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-6 md:mx-auto md:w-full md:max-w-3xl">
-        <h2 className="font-display text-[15px] font-bold">Set up like the real test</h2>
-        <div className="mt-3 space-y-2">
-          <ChecklistItem
-            variant={variant}
-            icon={<VolumeX className="size-3.5 text-cyan" strokeWidth={1.8} />}
-            title="Find a quiet room"
-            body="Background noise affects your transcript and your examiner's review."
-          />
-          <ChecklistItem
-            variant={variant}
-            icon={<Clock className="size-3.5 text-cyan" strokeWidth={1.8} />}
-            title="Keep 15 minutes free"
-            body="The test runs in one sitting — Parts 1, 2 and 3 without breaks, like the real exam."
-          />
+          <p className="mt-2 text-center font-mono text-[10px] tracking-[0.14em] text-[#94A3B8] uppercase">
+            Part 1 starts immediately · {totalMinutes} min total
+          </p>
         </div>
-        <div className="mt-2 flex gap-3 rounded-xl border border-[#F5C46B]/30 bg-[#F5C46B]/10 p-3.5">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#F5C46B]/16">
-            <Smartphone className="size-3.5 text-[#F5C46B]" strokeWidth={1.8} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-[#F5C46B]">Keep your screen on</p>
-            <p className="mt-0.5 text-[11.5px] leading-relaxed text-[#9FB2C8]">
-              We&apos;ll try to keep your screen awake during the test. Locking your phone or
-              switching apps can still stop the recording.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {error ? (
-        <p
-          className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      <div className="mt-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:mx-auto md:w-full md:max-w-3xl">
-        <Button
-          variant="primary"
-          className="min-h-[var(--spacing-touch,48px)] w-full bg-cyan text-[#0D1F3C] hover:bg-cyan/90"
-          disabled={!confirmed || beginBusy}
-          onClick={onBegin}
-        >
-          {beginBusy ? "Starting…" : beginLabel}
-        </Button>
-        <p className="mt-2.5 text-center font-mono text-[10px] tracking-widest text-[#5F7492] uppercase">
-          Part 1 starts immediately · {totalMinutes} min total
-        </p>
       </div>
     </div>
   );
@@ -741,7 +589,10 @@ function MicWaveform({
         const usable = Math.max(8, Math.floor(data.length * 0.55));
         for (let i = 0; i < WAVE_BARS; i++) {
           const start = Math.floor((i / WAVE_BARS) * usable);
-          const end = Math.max(start + 1, Math.floor(((i + 1) / WAVE_BARS) * usable));
+          const end = Math.max(
+            start + 1,
+            Math.floor(((i + 1) / WAVE_BARS) * usable),
+          );
           let sum = 0;
           for (let j = start; j < end; j++) sum += data[j] ?? 0;
           const avg = sum / (end - start) / 255;
@@ -752,7 +603,8 @@ function MicWaveform({
         const t = (now - t0) / 1000;
         setLevels(
           Array.from({ length: WAVE_BARS }, (_, i) => {
-            const envelope = 0.35 + 0.65 * Math.sin(Math.PI * (i / (WAVE_BARS - 1)));
+            const envelope =
+              0.35 + 0.65 * Math.sin(Math.PI * (i / (WAVE_BARS - 1)));
             const voice =
               0.45 +
               0.35 * Math.sin(t * 7.2 + i * 0.55) +
@@ -795,7 +647,7 @@ function MicWaveform({
   );
 }
 
-function DiagTip({
+function TipCard({
   title,
   body,
   delayMs = 0,
@@ -825,44 +677,5 @@ function DiagTip({
         className="mt-0.5 block w-full text-[12px] leading-snug text-[#64748B] sm:text-[12.5px]"
       />
     </li>
-  );
-}
-
-function ChecklistItem({
-  icon,
-  title,
-  body,
-  variant,
-}: {
-  icon: ReactNode;
-  title: string;
-  body: string;
-  variant: Variant;
-}) {
-  const isDiagnostic = variant === "diagnostic";
-  return (
-    <div
-      className={cn(
-        "flex gap-3 rounded-xl border p-3.5",
-        isDiagnostic ? "border-navy/10 bg-white" : "border-cyan/15 bg-[#122747]",
-      )}
-    >
-      <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-cyan/12">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className={cn("text-xs font-semibold", isDiagnostic ? "text-navy" : undefined)}>
-          {title}
-        </p>
-        <p
-          className={cn(
-            "mt-0.5 text-[11.5px] leading-relaxed",
-            isDiagnostic ? "text-[#6E83A0]" : "text-[#5F7492]",
-          )}
-        >
-          {body}
-        </p>
-      </div>
-    </div>
   );
 }

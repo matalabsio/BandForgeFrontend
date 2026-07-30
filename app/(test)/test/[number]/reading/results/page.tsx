@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getServerUser, resolveAuthRedirectPath } from "@/lib/auth";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-live";
+import { resolveCatalogSlotServer } from "@/lib/mock-server";
 import { shortModuleResultsPath } from "@/lib/module-results-path";
 import { isMockSectionResultsUrl } from "@/lib/section-results-path";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
@@ -46,15 +47,23 @@ export default async function ReadingResultsPage({ params, searchParams }: PageP
   const part = Number.parseInt(sp.part ?? "1", 10);
   const resolvedPart = Number.isFinite(part) && part >= 1 ? part : 1;
 
+  const resolved = await resolveCatalogSlotServer(cookieHeader, testNumber);
+  if (!resolved) notFound();
+
   if (isMockSectionResultsUrl(new URLSearchParams(sp as Record<string, string>))) {
     return (
       <MockLayout>
         <MockSectionResultsClient
           testNumber={testNumber}
+          mockTestId={resolved.mockTestId}
           module="reading"
           attemptId={attemptId}
           part={resolvedPart}
           mockAttemptId={mockAttemptId}
+          listeningPartCount={resolved.mockMeta.listeningPartCount}
+          readingPassageCount={resolved.mockMeta.readingPassageCount}
+          writingTaskCount={resolved.mockMeta.writingTaskCount}
+          speakingMinutes={resolved.mockMeta.speakingMinutes}
         />
       </MockLayout>
     );

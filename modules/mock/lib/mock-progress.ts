@@ -23,6 +23,7 @@ const DEFAULT_PRESTART_MODULES: MockModuleKey[] = [
   "listening",
   "reading",
   "writing",
+  "speaking",
 ];
 
 /**
@@ -118,7 +119,7 @@ export function defaultModuleProgress(): ModuleProgress[] {
       sequence_order: 3,
       status: open ? "available" : "locked",
       duration_minutes: 60,
-      is_enabled: false,
+      is_enabled: true,
       band: null,
       test_attempt_id: null,
       part: null,
@@ -128,7 +129,7 @@ export function defaultModuleProgress(): ModuleProgress[] {
       sequence_order: 4,
       status: open ? "available" : "locked",
       duration_minutes: 14,
-      is_enabled: false,
+      is_enabled: true,
       band: null,
       test_attempt_id: null,
       part: null,

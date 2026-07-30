@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   canonicalMockSlug,
-  mockTestIdForNumber,
   shortModuleExamPath,
 } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { parseSkillContext } from "@/lib/practice-submit";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
-import { resolveMockMetaServer } from "@/lib/mock-server";
+import { resolveCatalogSlotServer } from "@/lib/mock-server";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { SpeakingPage } from "@/modules/speaking/components/speaking-page";
 
@@ -31,13 +30,15 @@ export default async function TestSpeakingPage({ params, searchParams }: Props) 
     notFound();
   }
 
-  const mockTestId = mockTestIdForNumber(testNumber);
-  const mockSlug = canonicalMockSlug(mockTestId);
   const returnPath = shortModuleExamPath(testNumber, "speaking");
 
   const cookieHeader = await getCachedCookieHeader();
   await guardMockModulePage(cookieHeader, returnPath);
-  const mockMeta = await resolveMockMetaServer(cookieHeader, mockTestId);
+
+  const resolved = await resolveCatalogSlotServer(cookieHeader, testNumber);
+  if (!resolved) notFound();
+  const { mockTestId, mockMeta } = resolved;
+  const mockSlug = canonicalMockSlug(mockTestId);
   const skillContext = parseSkillContext(sp.skill_context);
 
   return (

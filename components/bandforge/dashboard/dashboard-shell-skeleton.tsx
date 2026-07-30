@@ -40,7 +40,7 @@ export function DashboardAppShellSkeleton() {
               className={`hidden size-10 shrink-0 rounded-xl lg:block ${PULSE}`}
               aria-hidden
             />
-            <BandForgeLogoLink size="sm" className="min-w-0 flex-1" priority />
+            <BandForgeLogoLink href="/dashboard" size="sm" className="min-w-0 flex-1" priority />
             <div className="flex shrink-0 items-center gap-2">
               <div className={`size-9 rounded-full ${PULSE}`} aria-hidden />
               <div className={`size-9 rounded-full ${PULSE}`} aria-hidden />

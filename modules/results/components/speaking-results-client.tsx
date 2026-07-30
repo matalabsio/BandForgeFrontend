@@ -33,6 +33,7 @@ import type {
 
 type Props = {
   testNumber: number;
+  mockTestId?: string;
   attemptFromQuery?: string;
   targetBand?: number | null;
   mockAttemptId?: string | null;
@@ -46,6 +47,7 @@ const subscribeToHydration = () => () => {};
 
 export function SpeakingResultsClient({
   testNumber,
+  mockTestId: mockTestIdProp,
   attemptFromQuery,
   targetBand = null,
   mockAttemptId = null,
@@ -55,6 +57,7 @@ export function SpeakingResultsClient({
   onSecondaryAction,
 }: Props) {
   const router = useRouter();
+  const mockTestId = mockTestIdProp ?? mockTestIdForNumber(testNumber);
   const queryAttempt = attemptFromQuery?.trim() || null;
   const hydrated = useSyncExternalStore(
     subscribeToHydration,
@@ -68,7 +71,7 @@ export function SpeakingResultsClient({
   );
   const storedMockAttempt = useSyncExternalStore(
     subscribeToHydration,
-    () => readMockAttemptId(mockTestIdForNumber(testNumber)),
+    () => readMockAttemptId(mockTestId),
     () => null,
   );
   const attemptId = queryAttempt || storedAttempt;

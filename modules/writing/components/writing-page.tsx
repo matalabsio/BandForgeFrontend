@@ -232,7 +232,11 @@ export function WritingPage({
       if (e instanceof ApiError && mockAttemptId && (e.status === 403 || e.status === 409)) {
         try {
           const progress = await fetchMockProgressDeduped(mockAttemptId);
-          router.replace(mockPathFromProgress(mockSlug, mockAttemptId, progress));
+          router.replace(
+            mockPathFromProgress(mockSlug, mockAttemptId, progress, undefined, {
+              testNumber: resolvedTestNumber,
+            }),
+          );
           return;
         } catch {
           router.replace(mockHubPath(mockSlug));
@@ -242,7 +246,7 @@ export function WritingPage({
       setError(e instanceof Error ? e.message : "Could not start writing task.");
       setPhase("error");
     }
-  }, [mockTestId, part, mockAttemptId, mockSlug, router]);
+  }, [mockTestId, part, mockAttemptId, mockSlug, router, resolvedTestNumber]);
 
   useEffect(() => {
     if (initialBoot?.task) {
@@ -327,6 +331,7 @@ export function WritingPage({
           mockAttemptId,
           { module: "writing", part },
           p,
+          { testNumber: resolvedTestNumber },
         );
       } catch {
         if (!cancelled) router.replace(mockHubPath(mockSlug));
@@ -335,7 +340,7 @@ export function WritingPage({
     return () => {
       cancelled = true;
     };
-  }, [mockAttemptId, mockSlug, part, sectionStart, router, isDiagnostic, mockTestId]);
+  }, [mockAttemptId, mockSlug, part, sectionStart, router, isDiagnostic, mockTestId, resolvedTestNumber]);
 
   useEffect(() => {
     return () => {
@@ -417,7 +422,7 @@ export function WritingPage({
       }
 
       if (mockAttemptId) {
-        const testNum = testNumberForMockId(mockTestId);
+        const testNum = resolvedTestNumber;
         cacheMockNavHint({
           mock_attempt_id: mockAttemptId,
           next_module:
@@ -440,7 +445,7 @@ export function WritingPage({
           }
         }
         if (!isDiagnostic) {
-          const testNum = testNumberForMockId(mockTestId);
+          const testNum = resolvedTestNumber;
           persistModuleResultAttempt(testNum, "writing", result.attempt_id);
 
           const continueToTask2 =
@@ -452,12 +457,16 @@ export function WritingPage({
             mockMeta.writingTaskCount > 1;
 
           if (continueToTask2) {
-            const path = mockModulePath(mockSlug, "writing", { part: 2 });
+            const path = mockModulePath(mockSlug, "writing", {
+              part: 2,
+              testNumber: testNum,
+            });
             navigateToExamPath(router, mockSlug, path, {
               replace: true,
               mockAttemptId,
               auto: true,
               sectionStart: true,
+              testNumber: testNum,
             });
             return;
           }
@@ -468,6 +477,7 @@ export function WritingPage({
               attempt: result.attempt_id,
               part: result.part ?? part,
               mockAttemptId,
+              testNumber: testNum,
             }),
           );
           return;
@@ -480,7 +490,7 @@ export function WritingPage({
           return;
         }
         persistModuleResultAttempt(
-          testNumberForMockId(mockTestId),
+          resolvedTestNumber,
           "writing",
           result.attempt_id,
         );
@@ -498,6 +508,7 @@ export function WritingPage({
               next_part: result.mock_next_part,
             },
             result.attempt_id,
+            { testNumber: resolvedTestNumber },
           ),
         );
         return;
@@ -508,19 +519,19 @@ export function WritingPage({
         return;
       }
 
-      const testNum = testNumberForMockId(mockTestId);
+      const testNum = resolvedTestNumber;
       if (result.saved_for_review && testNum) {
         router.push(shortModuleWritingPendingPath(testNum, result.attempt_id));
         return;
       }
 
       persistModuleResultAttempt(
-        testNumberForMockId(mockTestId),
+        resolvedTestNumber,
         "writing",
         result.attempt_id,
       );
       router.push(
-        writingResultsPath(testNumberForMockId(mockTestId), result.attempt_id),
+        writingResultsPath(resolvedTestNumber, result.attempt_id),
       );
     } catch (e) {
       autosaveBlockedRef.current = false;

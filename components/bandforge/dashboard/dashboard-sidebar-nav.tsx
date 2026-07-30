@@ -23,7 +23,7 @@ export function DashboardSidebarNav({
   return (
     <>
       <div className="mb-8 px-1">
-        <BandForgeLogoLink size="sm" />
+        <BandForgeLogoLink href="/dashboard" size="sm" />
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto" aria-label="Main">

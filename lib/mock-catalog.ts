@@ -84,6 +84,7 @@ export function getMockPanelSlotBySlug(slug: MockSlug): MockTestPanelSlot | unde
   return MOCK_TEST_PANEL.find((slot) => slot.slug === slug);
 }
 
+/** Resolve m01/m02 UUID from static panel only. Unsafe for catalog ≥ 3 — use live catalog / slot.id. */
 export function mockTestIdForNumber(testNumber: number): string {
   const slot = MOCK_TEST_PANEL.find((row) => row.number === testNumber);
   if (slot?.slug) return MOCK_SLUGS[slot.slug];
@@ -407,11 +408,23 @@ export function getMockMeta(slugOrId: string): MockMeta {
 export function mockModulePath(
   slugOrId: string,
   module: MockModule,
-  opts?: { part?: number; passage?: number; auto?: boolean; mockAttemptId?: string },
+  opts?: {
+    part?: number;
+    passage?: number;
+    auto?: boolean;
+    mockAttemptId?: string;
+    /** Required for admin-published catalog mocks (UUID ≠ m01/m02). */
+    testNumber?: number;
+  },
 ): string {
   const id = resolveMockId(slugOrId);
-  const testNumber = testNumberForMockId(id);
+  const published = publishedSlugForMockRef(id);
+  const testNumber =
+    opts?.testNumber ??
+    (published ? testNumberForMockId(id) : null);
+
   if (
+    testNumber != null &&
     isLiveCatalogNumber(testNumber) &&
     (module === "listening" ||
       module === "reading" ||
@@ -457,10 +470,13 @@ export function mockCheckpointPath(
 export function mockResultsPath(
   slugOrId: string,
   mockAttemptId?: string | null,
+  opts?: { testNumber?: number },
 ): string {
   const id = resolveMockId(slugOrId);
-  const testNumber = testNumberForMockId(id);
-  if (isLiveCatalogNumber(testNumber)) {
+  const published = publishedSlugForMockRef(id);
+  const testNumber =
+    opts?.testNumber ?? (published ? testNumberForMockId(id) : null);
+  if (testNumber != null && isLiveCatalogNumber(testNumber)) {
     return mockResultsPathForTest(testNumber, mockAttemptId);
   }
   const slug = canonicalMockSlug(slugOrId);
@@ -491,17 +507,21 @@ export function mockAfterSectionSubmitPath(
     nextPart?: number;
     completedPart?: number;
     attemptId?: string;
+    testNumber?: number;
   },
 ): string {
+  const pathOpts = { testNumber: opts?.testNumber };
   if (completedModule === "listening") {
     const finishedPart = opts?.completedPart ?? TEST1_LISTENING_PART_COUNT;
     if (finishedPart < TEST1_LISTENING_PART_COUNT) {
       return mockModulePath(slugOrId, "listening", {
         part: finishedPart + 1,
+        ...pathOpts,
       });
     }
     return mockModulePath(slugOrId, "reading", {
       passage: opts?.nextPart ?? 1,
+      ...pathOpts,
     });
   }
 
@@ -510,10 +530,12 @@ export function mockAfterSectionSubmitPath(
   if (finishedPassage < readingPassageCount) {
     return mockModulePath(slugOrId, "reading", {
       passage: finishedPassage + 1,
+      ...pathOpts,
     });
   }
   return mockModulePath(slugOrId, "writing", {
     part: 1,
+    ...pathOpts,
   });
 }
 
@@ -528,9 +550,11 @@ export function mockAfterWritingSubmitPath(
     next_part?: number | null;
   },
   attemptId: string,
+  opts?: { testNumber?: number },
 ): string {
+  const pathOpts = { testNumber: opts?.testNumber };
   if (progress.status === "completed") {
-    return mockResultsPath(slugOrId, mockAttemptId);
+    return mockResultsPath(slugOrId, mockAttemptId, pathOpts);
   }
   if (
     progress.next_module === "writing" &&
@@ -540,10 +564,11 @@ export function mockAfterWritingSubmitPath(
   ) {
     return mockModulePath(slugOrId, "writing", {
       part: 2,
+      ...pathOpts,
     });
   }
   if (progress.next_module) {
-    return mockPathFromProgress(slugOrId, mockAttemptId, progress);
+    return mockPathFromProgress(slugOrId, mockAttemptId, progress, attemptId, pathOpts);
   }
   return mockHubPath(slugOrId, mockAttemptId);
 }
@@ -558,9 +583,11 @@ export function mockPathFromProgress(
     next_part?: number | null;
   },
   _attemptId?: string,
+  opts?: { testNumber?: number },
 ): string {
+  const pathOpts = { testNumber: opts?.testNumber };
   if (progress.status === "completed") {
-    return mockResultsPath(slugOrId, mockAttemptId);
+    return mockResultsPath(slugOrId, mockAttemptId, pathOpts);
   }
   const mod = progress.next_module;
   if (
@@ -575,6 +602,7 @@ export function mockPathFromProgress(
           ? (progress.next_part ?? 1)
           : undefined,
       passage: mod === "reading" ? (progress.next_part ?? 1) : undefined,
+      ...pathOpts,
     });
   }
   return mockHubPath(slugOrId);
@@ -588,6 +616,7 @@ export function examPathForMockStart(
     current_module: string;
     part?: number | null;
   },
+  opts?: { testNumber?: number },
 ): string {
   const raw = res.current_module;
   const mod: MockModule =
@@ -603,6 +632,7 @@ export function examPathForMockStart(
         ? (res.part ?? 1)
         : undefined,
     passage: mod === "reading" ? (res.part ?? 1) : undefined,
+    testNumber: opts?.testNumber,
   });
 }
 
@@ -616,9 +646,10 @@ export function examRedirectIfMismatch(
     next_module?: string | null;
     next_part?: number | null;
   },
+  opts?: { testNumber?: number },
 ): string | null {
   if (progress.status === "completed") {
-    return mockResultsPath(slugOrId, mockAttemptId);
+    return mockResultsPath(slugOrId, mockAttemptId, opts);
   }
   const expectedMod = progress.next_module;
   if (
@@ -633,10 +664,16 @@ export function examRedirectIfMismatch(
   if (expectedMod === current.module && expectedPart === current.part) {
     return null;
   }
-  return mockPathFromProgress(slugOrId, mockAttemptId, {
-    next_module: expectedMod,
-    next_part: expectedPart,
-  });
+  return mockPathFromProgress(
+    slugOrId,
+    mockAttemptId,
+    {
+      next_module: expectedMod,
+      next_part: expectedPart,
+    },
+    undefined,
+    opts,
+  );
 }
 
 /** User-facing label (UI only; routes/API stay mock/m01). */

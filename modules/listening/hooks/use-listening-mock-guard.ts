@@ -14,6 +14,7 @@ type Args = {
   part: number;
   sectionStart: boolean;
   replace: (url: string) => void;
+  testNumber?: number;
 };
 
 /** Redirect when mock session is invalid or URL part disagrees with server progress. */
@@ -24,6 +25,7 @@ export function useListeningMockGuard({
   part,
   sectionStart,
   replace,
+  testNumber,
 }: Args) {
   useEffect(() => {
     if (!enabled || !mockAttemptId) return;
@@ -41,7 +43,14 @@ export function useListeningMockGuard({
           replace(mockHubPath(mockSlug));
           return;
         }
-        syncExamRoute({ replace }, mockSlug, mockAttemptId, { module: "listening", part }, p);
+        syncExamRoute(
+          { replace },
+          mockSlug,
+          mockAttemptId,
+          { module: "listening", part },
+          p,
+          { testNumber },
+        );
       } catch {
         if (!cancelled) replace(mockHubPath(mockSlug));
       }
@@ -49,5 +58,5 @@ export function useListeningMockGuard({
     return () => {
       cancelled = true;
     };
-  }, [enabled, mockAttemptId, mockSlug, part, sectionStart, replace]);
+  }, [enabled, mockAttemptId, mockSlug, part, sectionStart, replace, testNumber]);
 }

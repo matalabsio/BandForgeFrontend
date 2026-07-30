@@ -10,7 +10,6 @@ import {
   mockApiId,
   mockPathFromProgress,
   shortModuleExamPath,
-  mockTestIdForNumber,
   testNumberForMockId,
 } from "@/lib/mock-catalog";
 import { isMockFreeModuleAccess } from "@/modules/mock/lib/mock-progress";
@@ -28,13 +27,14 @@ export function prepareExamModuleNavigation(
     auto?: boolean;
     sectionStart?: boolean;
     mockAttemptId?: string;
+    testNumber?: number;
   },
 ): void {
   const mockTestId = mockApiId(slug);
   if (opts?.mockAttemptId) {
     persistMockAttemptId(mockTestId, opts.mockAttemptId);
   }
-  const testNumber = testNumberForMockId(mockTestId);
+  const testNumber = opts?.testNumber ?? testNumberForMockId(mockTestId);
   if (opts?.auto || opts?.sectionStart) {
     persistExamNavFlags(testNumber, module, {
       auto: opts.auto,
@@ -47,7 +47,8 @@ export function navigateToModuleExam(
   router: Router,
   testNumber: number,
   module: ResultModule,
-  opts?: {
+  opts: {
+    mockTestId: string;
     part?: number;
     passage?: number;
     auto?: boolean;
@@ -56,18 +57,29 @@ export function navigateToModuleExam(
     replace?: boolean;
   },
 ) {
-  const slug = mockTestIdForNumber(testNumber);
   const path = shortModuleExamPath(testNumber, module, {
-    part: opts?.part,
-    passage: opts?.passage,
+    part: opts.part,
+    passage: opts.passage,
   });
-  navigateToExamPath(router, slug, path, opts);
+  navigateToExamPath(router, opts.mockTestId, path, {
+    replace: opts.replace,
+    mockAttemptId: opts.mockAttemptId,
+    auto: opts.auto,
+    sectionStart: opts.sectionStart,
+    testNumber,
+  });
 }
-
 
 function moduleFromExamPath(path: string): ResultModule | null {
   const match = path.match(/^\/test\/\d+\/(listening|reading|writing|speaking)/);
   return (match?.[1] as ResultModule | undefined) ?? null;
+}
+
+function testNumberFromExamPath(path: string): number | null {
+  const match = path.match(/^\/test\/(\d+)\//);
+  if (!match?.[1]) return null;
+  const n = Number.parseInt(match[1], 10);
+  return Number.isFinite(n) && n >= 1 ? n : null;
 }
 
 export function navigateToExamPath(
@@ -79,10 +91,14 @@ export function navigateToExamPath(
     mockAttemptId?: string;
     auto?: boolean;
     sectionStart?: boolean;
+    testNumber?: number;
   },
 ) {
   const mockTestId = mockApiId(slug);
-  const testNumber = testNumberForMockId(mockTestId);
+  const testNumber =
+    opts?.testNumber ??
+    testNumberFromExamPath(path) ??
+    testNumberForMockId(mockTestId);
   if (opts?.mockAttemptId) {
     persistMockAttemptId(mockTestId, opts.mockAttemptId);
   }
@@ -102,7 +118,7 @@ export function navigateAfterMockStart(
   router: Router,
   slug: string,
   res: StartMockResponse & { progress?: MockAttemptProgress | null },
-  opts?: { replace?: boolean },
+  opts?: { replace?: boolean; testNumber?: number },
 ) {
   if (res.progress?.mock_attempt_id && res.progress.next_module) {
     navigateFromProgress(
@@ -110,15 +126,18 @@ export function navigateAfterMockStart(
       slug,
       res.progress.mock_attempt_id,
       res.progress,
+      undefined,
+      { testNumber: opts?.testNumber },
     );
     return;
   }
-  const path = examPathForMockStart(slug, res);
+  const path = examPathForMockStart(slug, res, { testNumber: opts?.testNumber });
   navigateToExamPath(router, slug, path, {
     replace: opts?.replace,
     mockAttemptId: res.mock_attempt_id,
     auto: true,
     sectionStart: true,
+    testNumber: opts?.testNumber,
   });
 }
 
@@ -131,16 +150,18 @@ export function navigateFromProgress(
     "status" | "next_module" | "next_part"
   >,
   attemptId?: string,
+  opts?: { testNumber?: number },
 ) {
   navigateToExamPath(
     router,
     slug,
-    mockPathFromProgress(slug, mockAttemptId, progress, attemptId),
+    mockPathFromProgress(slug, mockAttemptId, progress, attemptId, opts),
     {
       replace: true,
       mockAttemptId,
       auto: true,
       sectionStart: true,
+      testNumber: opts?.testNumber,
     },
   );
 }
@@ -154,27 +175,41 @@ export function syncExamRoute(
     MockAttemptProgress,
     "status" | "next_module" | "next_part"
   >,
+  opts?: { testNumber?: number },
 ): boolean {
   // Free-access testing: allow opening any module from hub cards without
   // forcing the sequential next_module path. Still bounce completed mocks
   // to the band report.
   if (isMockFreeModuleAccess()) {
     if (progress.status === "completed") {
-      navigateToExamPath(router, slug, mockPathFromProgress(slug, mockAttemptId, progress), {
-        replace: true,
-        mockAttemptId,
-      });
+      navigateToExamPath(
+        router,
+        slug,
+        mockPathFromProgress(slug, mockAttemptId, progress, undefined, opts),
+        {
+          replace: true,
+          mockAttemptId,
+          testNumber: opts?.testNumber,
+        },
+      );
       return true;
     }
     return false;
   }
-  const redirect = examRedirectIfMismatch(slug, mockAttemptId, current, progress);
+  const redirect = examRedirectIfMismatch(
+    slug,
+    mockAttemptId,
+    current,
+    progress,
+    opts,
+  );
   if (redirect) {
     navigateToExamPath(router, slug, redirect, {
       replace: true,
       mockAttemptId,
       auto: true,
       sectionStart: true,
+      testNumber: opts?.testNumber,
     });
     return true;
   }

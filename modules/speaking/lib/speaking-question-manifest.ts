@@ -88,6 +88,7 @@ export function speakingManifestFromServer(
         question.max_recording_seconds || question.record_sec || question.max_record_sec || undefined,
       maxRecordSec:
         question.max_recording_seconds || question.max_record_sec || question.record_sec || undefined,
+      videoUrl: question.video_url?.trim() || undefined,
     }];
   });
 }

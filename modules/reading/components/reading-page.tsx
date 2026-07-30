@@ -15,6 +15,8 @@ import {
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
+  shortModuleResultsPath,
+  testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
 import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
@@ -30,10 +32,8 @@ import {
   navigateAfterDiagnosticSectionSubmit,
 } from "@/lib/diagnostic-exam-nav";
 import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
-import { readingModuleResultsPath } from "@/lib/reading-test";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
-import { testNumberForMockId } from "@/lib/mock-catalog";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
@@ -222,14 +222,6 @@ export function ReadingPage({
 
   const isLastQuestionSection = activeQuestionSection === "sentence_completion";
 
-  const footerLabel = useMemo(() => {
-    if (!isLastQuestionSection) return continueLabel;
-    if (mockAttemptId) {
-      return passage < readingPassageCount ? "Next Part" : "Finish reading";
-    }
-    return continueLabel;
-  }, [isLastQuestionSection, continueLabel, mockAttemptId, passage, readingPassageCount]);
-
   const toolbarSubmitLabel = useMemo(() => {
     if (mockAttemptId) {
       return passage < readingPassageCount ? "Next Part" : "Finish reading";
@@ -361,15 +353,18 @@ export function ReadingPage({
                   next_part: submit.mock_next_part ?? 1,
                 },
                 id,
+                { testNumber: resolvedTestNumber },
               )
             : submit.mock_reading_complete
               ? mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
                   completedPart: readingPassageCount,
                   attemptId: id,
+                  testNumber: resolvedTestNumber,
                 })
               : mockAfterSectionSubmitPath(mockSlug, mockAttemptId, "reading", {
                   completedPart: passage,
                   attemptId: id,
+                  testNumber: resolvedTestNumber,
                 });
         navigateAfterSectionSubmit(
           { push, replace },
@@ -380,28 +375,29 @@ export function ReadingPage({
         );
         return;
       }
-      const testNumber = testNumberForMockId(testId);
+      const testNumber = resolvedTestNumber;
       persistModuleResultAttempt(testNumber, "reading", id);
-      push(readingModuleResultsPath(testId, id));
+      push(shortModuleResultsPath(testNumber, "reading"));
     },
-    [replace, push, testId, mockSlug, mockAttemptId, passage, isDiagnostic, readingPassageCount],
+    [replace, push, testId, mockSlug, mockAttemptId, passage, isDiagnostic, readingPassageCount, resolvedTestNumber],
   );
 
   /** After each reading passage in a mock: per-section results screen. */
   const goToMockSectionResults = useCallback(
     (attemptId: string, completedPassage: number) => {
       if (!mockAttemptId) return;
-      const testNumber = testNumberForMockId(testId);
+      const testNumber = resolvedTestNumber;
       persistModuleResultAttempt(testNumber, "reading", attemptId);
       replace(
         sectionResultsPathForMockSubmit(mockSlug, "reading", {
           attempt: attemptId,
           part: completedPassage,
           mockAttemptId,
+          testNumber,
         }),
       );
     },
-    [mockAttemptId, mockSlug, replace, testId],
+    [mockAttemptId, mockSlug, replace, resolvedTestNumber],
   );
 
   const flushAutosaves = useCallback(
@@ -480,11 +476,17 @@ export function ReadingPage({
         try {
           const p = await fetchMockProgressDeduped(mockAttemptId);
           replace(
-            mockPathFromProgress(mockSlug, mockAttemptId, {
-              next_module: p.next_module,
-              next_part: p.next_part,
-              status: p.status,
-            }),
+            mockPathFromProgress(
+              mockSlug,
+              mockAttemptId,
+              {
+                next_module: p.next_module,
+                next_part: p.next_part,
+                status: p.status,
+              },
+              undefined,
+              { testNumber: resolvedTestNumber },
+            ),
           );
           return;
         } catch {
@@ -679,11 +681,17 @@ export function ReadingPage({
             try {
               const p = await fetchMockProgressDeduped(mockAttemptId);
               replace(
-                mockPathFromProgress(mockSlug, mockAttemptId, {
-                  next_module: p.next_module,
-                  next_part: p.next_part,
-                  status: p.status,
-                }),
+                mockPathFromProgress(
+                  mockSlug,
+                  mockAttemptId,
+                  {
+                    next_module: p.next_module,
+                    next_part: p.next_part,
+                    status: p.status,
+                  },
+                  undefined,
+                  { testNumber: resolvedTestNumber },
+                ),
               );
               return null;
             } catch {
@@ -791,10 +799,17 @@ export function ReadingPage({
           replace(mockHubPath(mockSlug));
           return;
         }
-        syncExamRoute({ replace }, mockSlug, mockAttemptId, {
-          module: "reading",
-          part: passage,
-        }, p);
+        syncExamRoute(
+          { replace },
+          mockSlug,
+          mockAttemptId,
+          {
+            module: "reading",
+            part: passage,
+          },
+          p,
+          { testNumber: resolvedTestNumber },
+        );
       } catch {
         if (!cancelled) replace(mockHubPath(mockSlug));
       }
@@ -802,7 +817,7 @@ export function ReadingPage({
     return () => {
       cancelled = true;
     };
-  }, [mockAttemptId, mockSlug, passage, sectionStart, replace, isDiagnostic]);
+  }, [mockAttemptId, mockSlug, passage, sectionStart, replace, isDiagnostic, resolvedTestNumber]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1051,7 +1066,7 @@ export function ReadingPage({
             </p>
           ) : null}
 
-          {examPhase === "questions" && currentGroup ? (
+          {examPhase === "questions" ? (
             <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
               <div className="min-h-[34vh] border-b border-[var(--reading-border)] lg:min-h-0 lg:w-[min(56%,1fr)] lg:border-b-0 lg:border-r">
                 <ReadingPassagePanel passageText={passageText} />
@@ -1077,15 +1092,34 @@ export function ReadingPage({
                   continueLabel={continueLabel}
                 />
                 <div className="flex min-h-0 flex-1 flex-col">
-                  <ReadingQuestionSection
-                    group={currentGroup}
-                    sectionId={activeQuestionSection}
-                    answers={answers}
-                    onAnswer={setAnswer}
-                  />
+                  {currentGroup ? (
+                    <ReadingQuestionSection
+                      group={currentGroup}
+                      sectionId={activeQuestionSection}
+                      answers={answers}
+                      onAnswer={setAnswer}
+                    />
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center px-6 py-10 text-center">
+                      <div className="max-w-md space-y-2">
+                        <p className="text-[14px] font-semibold text-[var(--reading-ink)]">
+                          No questions in this section
+                        </p>
+                        <p className="text-[13px] text-[var(--reading-ink)]/70">
+                          {isLastQuestionSection
+                            ? "This is the final section for this passage. You can submit now."
+                            : "This section has no questions for this test. Continue to the next section."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <ExamPartFooter
                     variant="reading"
-                    label={footerLabel}
+                    label={
+                      isLastQuestionSection
+                        ? "Submit passage"
+                        : continueLabel
+                    }
                     busy={busy}
                     onAction={() => {
                       if (isLastQuestionSection) {
@@ -1097,29 +1131,6 @@ export function ReadingPage({
                   />
                 </div>
               </div>
-            </div>
-          ) : examPhase === "questions" ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-              <p className="max-w-md text-[14px] text-[var(--reading-ink)]/75">
-                Passage content did not load. This can happen after submitting the
-                previous section — retry to continue.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoadStatus("booting");
-                  const bootGen = ++bootGenerationRef.current;
-                  void beginSession(sectionStart, null).then((start) => {
-                    finishBoot(start, false, bootGen, {
-                      examPhase: "questions",
-                      questionSection: activeQuestionSection,
-                    });
-                  });
-                }}
-                className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-5 py-2.5 text-[13px] font-bold text-white"
-              >
-                Reload passage
-              </button>
             </div>
           ) : null}
         </>

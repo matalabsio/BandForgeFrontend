@@ -67,7 +67,14 @@ function parseDragSource(
   id: string,
 ): { kind: "pool"; label: string } | { kind: "assigned"; questionId: string; label: string } | null {
   if (id.startsWith("pool-")) {
-    return { kind: "pool", label: id.slice(5) };
+    const rest = id.slice(5);
+    const sep = rest.lastIndexOf(ASSIGNED_SEP);
+    const encoded = sep === -1 ? rest : rest.slice(0, sep);
+    try {
+      return { kind: "pool", label: decodeURIComponent(encoded) };
+    } catch {
+      return { kind: "pool", label: encoded };
+    }
   }
   if (id.startsWith("assigned-")) {
     const rest = id.slice(9);
@@ -87,8 +94,8 @@ function parseDropTarget(id: string): string | null {
   return null;
 }
 
-function poolDragId(label: string): string {
-  return `pool-${label}`;
+function poolDragId(label: string, index: number): string {
+  return `pool-${encodeURIComponent(label)}${ASSIGNED_SEP}${index}`;
 }
 
 function assignedDragId(questionId: string, label: string): string {
@@ -128,6 +135,7 @@ function useMatchingTheme(variant: Variant) {
 }
 
 function PoolOption({
+  dragId,
   option,
   labelFormat,
   isUsed,
@@ -135,6 +143,7 @@ function PoolOption({
   theme,
   onTap,
 }: {
+  dragId: string;
   option: MatchingOption;
   labelFormat: LabelFormat;
   isUsed: boolean;
@@ -143,10 +152,9 @@ function PoolOption({
   onTap: () => void;
 }) {
   const label = option.label;
-  const id = poolDragId(label);
   const draggable = !isUsed;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id,
+    id: dragId,
     disabled: !draggable,
     data: { kind: "pool", label },
   });
@@ -484,11 +492,12 @@ function ExamMatchingDnDBlockBase({
               theme.border,
             )}
           >
-            {options.map((o) => {
+            {options.map((o, index) => {
               const label = normalize(o.label);
               return (
                 <PoolOption
-                  key={label}
+                  key={`${label}-${index}`}
+                  dragId={poolDragId(label, index)}
                   option={{ ...o, label }}
                   labelFormat={labelFormat}
                   isUsed={assignedLabels.has(label)}

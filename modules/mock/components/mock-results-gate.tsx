@@ -126,11 +126,18 @@ function MockResultsGateInner({ mockSlug, testNumber, initialSummary }: Props) {
             type="button"
             onClick={() => {
               void mockApi.progress(mockAttemptId).then((progress) => {
-                navigateFromProgress(router, mockSlug, mockAttemptId, {
-                  status: progress.status,
-                  next_module: progress.next_module,
-                  next_part: progress.next_part,
-                });
+                navigateFromProgress(
+                  router,
+                  mockSlug,
+                  mockAttemptId,
+                  {
+                    status: progress.status,
+                    next_module: progress.next_module,
+                    next_part: progress.next_part,
+                  },
+                  undefined,
+                  { testNumber: resolvedTestNumber },
+                );
               });
             }}
             className="rounded-xl bg-navy px-5 py-3 text-sm font-semibold text-white hover:bg-navy/90"

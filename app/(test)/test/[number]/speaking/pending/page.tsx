@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import {
-  canonicalMockSlug,
-  mockTestIdForNumber,
-  shortModuleSpeakingPendingPath,
-} from "@/lib/mock-catalog";
+import { shortModuleSpeakingPendingPath } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
+import { resolveCatalogSlotServer } from "@/lib/mock-server";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { SpeakingPendingPage } from "@/modules/speaking/components/speaking-pending-page";
 
@@ -34,7 +31,6 @@ export default async function TestSpeakingPendingPage({ params, searchParams }: 
     redirect(`/test/${testNumber}/speaking`);
   }
 
-  const mockTestId = mockTestIdForNumber(testNumber);
   const mockAttemptId = sp.mock_attempt?.trim() || null;
   const returnPath = shortModuleSpeakingPendingPath(testNumber, attemptId, {
     mockAttemptId,
@@ -43,12 +39,15 @@ export default async function TestSpeakingPendingPage({ params, searchParams }: 
   const cookieHeader = await getCachedCookieHeader();
   await guardMockModulePage(cookieHeader, returnPath);
 
+  const resolved = await resolveCatalogSlotServer(cookieHeader, testNumber);
+  if (!resolved) notFound();
+
   return (
     <MockLayout>
       <SpeakingPendingPage
         attemptId={attemptId}
         testNumber={testNumber}
-        mockTestId={mockTestId}
+        mockTestId={resolved.mockTestId}
       />
     </MockLayout>
   );

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { BrainCircuit, CheckCircle2, Clock3, Loader2, ShieldCheck } from "lucide-react";
 import {
   canonicalMockSlug,
-  mockTestIdForNumber,
   mockTestNumberPath,
   writingModuleLabel,
 } from "@/lib/mock-catalog";
@@ -46,10 +45,16 @@ const WRITING_RESULT_POLL_MS = 5_000;
 
 type Props = {
   testNumber: number;
+  /** Published catalog mock UUID for this test number (required for Test 3+). */
+  mockTestId: string;
   module: SectionResultsModule;
   attemptId: string | null;
   part: number;
   mockAttemptId: string | null;
+  listeningPartCount?: number;
+  readingPassageCount?: number;
+  writingTaskCount?: number;
+  speakingMinutes?: number;
 };
 
 type View = "summary" | "review";
@@ -83,13 +88,18 @@ function readingSectionCopy(part: number, total: number, reportTitle?: string | 
 
 export function MockSectionResultsClient({
   testNumber,
+  mockTestId,
   module,
   attemptId,
   part,
   mockAttemptId,
+  listeningPartCount,
+  readingPassageCount,
+  writingTaskCount,
+  speakingMinutes,
 }: Props) {
   const router = useRouter();
-  const mockSlug = canonicalMockSlug(mockTestIdForNumber(testNumber));
+  const mockSlug = canonicalMockSlug(mockTestId);
   const [view, setView] = useState<View>("summary");
   const [highlightQuestion, setHighlightQuestion] = useState<number | null>(null);
   const [loading, setLoading] = useState(Boolean(attemptId && mockAttemptId));
@@ -116,7 +126,7 @@ export function MockSectionResultsClient({
       return;
     }
     persistModuleResultAttempt(testNumber, module, attemptId);
-    persistMockAttemptId(mockTestIdForNumber(testNumber), mockAttemptId);
+    persistMockAttemptId(mockTestId, mockAttemptId);
 
     let cancelled = false;
     const load = async () => {
@@ -166,7 +176,7 @@ export function MockSectionResultsClient({
     return () => {
       cancelled = true;
     };
-  }, [attemptId, mockAttemptId, module, refreshToken, testNumber]);
+  }, [attemptId, mockAttemptId, mockTestId, module, refreshToken, testNumber]);
 
   const aiProcessing =
     (module === "writing" &&
@@ -201,8 +211,28 @@ export function MockSectionResultsClient({
 
   const continueCtx: MockSectionContext | null = useMemo(() => {
     if (!mockAttemptId) return null;
-    return { testNumber, mockAttemptId, module, part };
-  }, [testNumber, mockAttemptId, module, part]);
+    return {
+      testNumber,
+      mockAttemptId,
+      module,
+      part,
+      mockTestId,
+      listeningPartCount,
+      readingPassageCount,
+      writingTaskCount,
+      speakingMinutes,
+    };
+  }, [
+    testNumber,
+    mockAttemptId,
+    module,
+    part,
+    mockTestId,
+    listeningPartCount,
+    readingPassageCount,
+    writingTaskCount,
+    speakingMinutes,
+  ]);
 
   const continueAction = useMemo(() => {
     if (!continueCtx) return null;
@@ -211,7 +241,7 @@ export function MockSectionResultsClient({
 
   const handleContinue = useCallback(() => {
     if (!mockAttemptId || !continueAction) return;
-    persistMockAttemptId(mockTestIdForNumber(testNumber), mockAttemptId);
+    persistMockAttemptId(mockTestId, mockAttemptId);
     if (continueAction.path.includes("/results")) {
       router.replace(continueAction.path);
       return;
@@ -219,7 +249,7 @@ export function MockSectionResultsClient({
     navigateAfterSectionSubmit(router, mockSlug, mockAttemptId, continueAction.path, {
       replace: true,
     });
-  }, [mockAttemptId, continueAction, mockSlug, router, testNumber]);
+  }, [mockAttemptId, continueAction, mockSlug, mockTestId, router]);
 
   const openReview = useCallback((questionNumber?: number) => {
     if (questionNumber != null) setHighlightQuestion(questionNumber);
@@ -466,6 +496,7 @@ export function MockSectionResultsClient({
         <div className="h-full min-h-0 overflow-y-auto overscroll-y-contain">
           <SpeakingResultsClient
             testNumber={testNumber}
+            mockTestId={mockTestId}
             attemptFromQuery={speakingReview.attempt_id}
             mockAttemptId={mockAttemptId}
             primaryActionLabel={continueAction?.label}

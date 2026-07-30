@@ -9,11 +9,11 @@ import type { WritingReview } from "@/modules/writing/types";
 import { WritingResultsView } from "@/modules/writing/components/writing-results-view";
 import { WritingTaskTabs } from "@/modules/writing/components/writing-task-tabs";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
-import { mockTestIdForNumber } from "@/lib/mock-catalog";
 import { resolveSectionResultsBackHref } from "@/lib/section-results-back";
 
 type Props = {
   testNumber: number;
+  mockTestId: string;
   attemptFromQuery?: string;
   targetBand?: number | null;
   coachOpen?: boolean;
@@ -21,11 +21,11 @@ type Props = {
 
 export function WritingResultsClient({
   testNumber,
+  mockTestId,
   attemptFromQuery,
   targetBand = null,
   coachOpen = false,
 }: Props) {
-  const mockTestId = mockTestIdForNumber(testNumber);
   const mockAttemptId = useResolvedMockAttemptId(mockTestId);
   const queryAttempt = attemptFromQuery?.trim() || null;
   // Only seed from URL so server and client first paint match (no sessionStorage on SSR).

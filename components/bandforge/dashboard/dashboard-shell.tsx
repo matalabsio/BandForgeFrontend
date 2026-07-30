@@ -169,7 +169,7 @@ export function DashboardShell({
                 className="hidden lg:flex"
               />
             ) : null}
-            <BandForgeLogoLink size="sm" />
+            <BandForgeLogoLink href="/dashboard" size="sm" />
           </header>
         ) : (
           <header className="sticky top-0 z-20 border-b border-ink/8 bg-white/95 backdrop-blur-md">
@@ -192,7 +192,7 @@ export function DashboardShell({
               ) : (
                 <span className="hidden size-10 shrink-0 lg:block" aria-hidden />
               )}
-              <BandForgeLogoLink size="sm" className="min-w-0 flex-1" />
+              <BandForgeLogoLink href="/dashboard" size="sm" className="min-w-0 flex-1" />
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"

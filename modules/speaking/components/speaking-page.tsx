@@ -335,6 +335,7 @@ export function SpeakingPage({
               attempt: review.attempt_id,
               part: review.part,
               mockAttemptId,
+              testNumber,
             }),
           );
           return;
@@ -343,7 +344,9 @@ export function SpeakingPage({
         }
         try {
           const progress = await fetchMockProgressDeduped(mockAttemptId);
-          const destination = mockPathFromProgress(mockSlug, mockAttemptId, progress);
+          const destination = mockPathFromProgress(mockSlug, mockAttemptId, progress, undefined, {
+            testNumber,
+          });
           router.replace(
             destination.includes("/speaking")
               ? mockHubPath(mockSlug, mockAttemptId)
@@ -588,8 +591,8 @@ export function SpeakingPage({
 
   if (!micPassed) {
     return (
-      <TestShell header={<TestHeader timer={null} />}>
-        <main className="flex flex-1 flex-col items-center justify-center p-4 md:p-8">
+      <TestShell fillViewport header={<TestHeader timer={null} />}>
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
           <SpeakingMicCheck
             onBegin={handleMicBegin}
             beginBusy={loading}

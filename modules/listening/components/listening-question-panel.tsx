@@ -14,6 +14,11 @@ import {
 } from "@/modules/listening/lib/inline-blank";
 import type { ListeningQuestion } from "@/modules/listening/types";
 import { cn } from "@/lib/utils";
+import {
+  listeningOptionLetter,
+  listeningOptionsHaveUniqueLetters,
+  listeningOptionValue,
+} from "@/modules/listening/lib/listening-option-value";
 
 type Props = {
   question: ListeningQuestion;
@@ -27,6 +32,38 @@ type Props = {
 };
 
 const TFNG = ["TRUE", "FALSE", "NOT GIVEN"] as const;
+
+function isMcqOptionSelected(
+  value: string,
+  options: Array<{ label: string }>,
+  optionIndex: number,
+  label: string,
+): boolean {
+  const token = listeningOptionValue(optionIndex, label);
+  if (value === token) return true;
+  // Legacy plain-label answers: only the first option with that label stays selected
+  return (
+    value === label &&
+    !value.includes("::") &&
+    options.findIndex((x) => x.label === label) === optionIndex
+  );
+}
+
+function mcqDisplayLetter(
+  options: Array<{ label: string }>,
+  optionIndex: number,
+  label: string,
+): string {
+  return listeningOptionsHaveUniqueLetters(options)
+    ? label
+    : listeningOptionLetter(optionIndex);
+}
+
+function mcqDisplayText(o: { label: string; text?: string }): string {
+  const text = (o.text ?? "").trim();
+  if (text && text !== o.label.trim()) return text;
+  return text || o.label;
+}
 
 function renderTextAnswer(
   question: ListeningQuestion,
@@ -145,11 +182,19 @@ function ListeningQuestionPanelBase({
         {options && options.length > 0 ? (
           <fieldset className="mt-4 space-y-2.5">
             <legend className="sr-only">Options</legend>
-            {options.map((o) => {
-              const selected = value === o.label;
+            {options.map((o, optionIndex) => {
+              const token = listeningOptionValue(optionIndex, o.label);
+              const selected = isMcqOptionSelected(
+                value,
+                options,
+                optionIndex,
+                o.label,
+              );
+              const displayLetter = mcqDisplayLetter(options, optionIndex, o.label);
+              const displayText = mcqDisplayText(o);
               return (
                 <label
-                  key={o.label}
+                  key={`${question.id}-opt-${optionIndex}`}
                   className={cn(
                     "flex cursor-pointer items-start gap-3 rounded-[13px] border px-4 py-3.5 transition-colors",
                     selected
@@ -171,21 +216,23 @@ function ListeningQuestionPanelBase({
                       </svg>
                     ) : null}
                   </span>
-                  <span className="mt-0.5 font-mono text-[13px] font-medium text-teal shrink-0">{o.label}</span>
+                  <span className="mt-0.5 font-mono text-[13px] font-medium text-teal shrink-0">
+                    {displayLetter}
+                  </span>
                   <span
                     className={cn(
                       "min-w-0 flex-1 break-words text-sm",
                       selected ? "font-medium text-navy" : "text-[#3D4D63]",
                     )}
                   >
-                    {o.text}
+                    {displayText}
                   </span>
                   <input
                     type="radio"
                     name={question.id}
-                    value={o.label}
+                    value={token}
                     checked={selected}
-                    onChange={() => onChange(o.label)}
+                    onChange={() => onChange(token)}
                     className="sr-only"
                   />
                 </label>
@@ -251,24 +298,35 @@ function ListeningQuestionPanelBase({
         {options && options.length > 0 ? (
           <fieldset className="mt-4 space-y-2">
             <legend className="sr-only">Options</legend>
-            {options.map((o) => (
-              <label
-                key={o.label}
-                className="flex cursor-pointer items-start gap-3 rounded-md border border-[var(--exam-border)] bg-[var(--exam-surface)] px-3 py-2.5 text-[13px] has-[:checked]:border-[var(--exam-accent)] has-[:checked]:bg-[var(--exam-accent-soft)]"
-              >
-                <input
-                  type="radio"
-                  name={question.id}
-                  value={o.label}
-                  checked={value === o.label}
-                  onChange={() => onChange(o.label)}
-                  className="mt-0.5 accent-[var(--exam-accent)]"
-                />
-                <span className="text-[var(--exam-ink)]">
-                  <span className="font-bold">{o.label}.</span> {o.text}
-                </span>
-              </label>
-            ))}
+            {options.map((o, optionIndex) => {
+              const token = listeningOptionValue(optionIndex, o.label);
+              const selected = isMcqOptionSelected(
+                value,
+                options,
+                optionIndex,
+                o.label,
+              );
+              const displayLetter = mcqDisplayLetter(options, optionIndex, o.label);
+              const displayText = mcqDisplayText(o);
+              return (
+                <label
+                  key={`${question.id}-opt-${optionIndex}`}
+                  className="flex cursor-pointer items-start gap-3 rounded-md border border-[var(--exam-border)] bg-[var(--exam-surface)] px-3 py-2.5 text-[13px] has-[:checked]:border-[var(--exam-accent)] has-[:checked]:bg-[var(--exam-accent-soft)]"
+                >
+                  <input
+                    type="radio"
+                    name={question.id}
+                    value={token}
+                    checked={selected}
+                    onChange={() => onChange(token)}
+                    className="mt-0.5 accent-[var(--exam-accent)]"
+                  />
+                  <span className="text-[var(--exam-ink)]">
+                    <span className="font-bold">{displayLetter}.</span> {displayText}
+                  </span>
+                </label>
+              );
+            })}
           </fieldset>
         ) : type === "tfng" ? (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -322,24 +380,36 @@ function ListeningQuestionPanelBase({
       {options && options.length > 0 ? (
         <fieldset className="mt-4 space-y-2">
           <legend className="sr-only">Options</legend>
-          {options.map((o) => (
-            <label
-              key={o.label}
-              className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-body has-[:checked]:border-teal has-[:checked]:bg-teal/5"
-            >
-              <input
-                type="radio"
-                name={question.id}
-                value={o.label}
-                checked={value === o.label}
-                onChange={() => onChange(o.label)}
-                className="mt-1 accent-teal"
-              />
-              <span>
-                <span className="font-semibold text-navy">{o.label}.</span> {o.text}
-              </span>
-            </label>
-          ))}
+          {options.map((o, optionIndex) => {
+            const token = listeningOptionValue(optionIndex, o.label);
+            const selected = isMcqOptionSelected(
+              value,
+              options,
+              optionIndex,
+              o.label,
+            );
+            const displayLetter = mcqDisplayLetter(options, optionIndex, o.label);
+            const displayText = mcqDisplayText(o);
+            return (
+              <label
+                key={`${question.id}-opt-${optionIndex}`}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-body has-[:checked]:border-teal has-[:checked]:bg-teal/5"
+              >
+                <input
+                  type="radio"
+                  name={question.id}
+                  value={token}
+                  checked={selected}
+                  onChange={() => onChange(token)}
+                  className="mt-1 accent-teal"
+                />
+                <span>
+                  <span className="font-semibold text-navy">{displayLetter}.</span>{" "}
+                  {displayText}
+                </span>
+              </label>
+            );
+          })}
         </fieldset>
       ) : type === "tfng" ? (
         <div className="mt-4 flex flex-wrap gap-2">
