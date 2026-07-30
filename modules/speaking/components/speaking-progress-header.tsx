@@ -1,5 +1,6 @@
 "use client";
 
+import { BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -27,19 +28,8 @@ export function SpeakingProgressHeader({
     >
       <div className="mx-auto w-full max-w-[1200px]">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex shrink-0 items-center gap-2" aria-label="BandForge">
-            <span className="flex h-5 items-end gap-[3px]" aria-hidden>
-              {[40, 60, 80, 100].map((height, index) => (
-                <span
-                  key={height}
-                  className={cn("w-1 rounded-sm", index < 2 ? "bg-teal" : "bg-cyan")}
-                  style={{ height: `${height}%` }}
-                />
-              ))}
-            </span>
-            <span className="font-display text-sm font-extrabold tracking-tight text-navy sm:text-base">
-              Band<span className="text-teal">Forge</span>
-            </span>
+          <div className="flex shrink-0 items-center" aria-label="BandForge">
+            <BandForgeLogoMark size="sm" />
           </div>
           <p className="text-right font-mono text-[10px] tracking-[0.07em] text-[#5A6B82] uppercase sm:text-xs">
             Part {part} ·{" "}

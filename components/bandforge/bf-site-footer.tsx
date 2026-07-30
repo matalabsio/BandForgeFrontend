@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
-import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
+import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import {
   BF_FOOTER_COLUMNS,
   BF_FOOTER_YEAR,
@@ -52,17 +52,7 @@ export function BandForgeSiteFooter({ className, embedded = false }: Props) {
         <div className="grid gap-9 lg:grid-cols-[minmax(0,280px)_1fr_minmax(0,160px)] lg:gap-12 xl:gap-16">
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <Link
-              href="/"
-              prefetch
-              className="inline-flex cursor-pointer items-center gap-2.5 no-underline transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0D1F3C]"
-              aria-label="BandForge home"
-            >
-              <BfBrandBars size="footer" />
-              <span className="font-display text-[1.0625rem] font-bold tracking-tight sm:text-[1.125rem]">
-                Band<span className="text-cyan">Forge</span>
-              </span>
-            </Link>
+            <BandForgeLogoLink href="/" size="sm" onDark />
 
             <p className="mt-3.5 max-w-[34ch] text-[0.8125rem] leading-[1.55] text-[#8FA3B8] sm:text-[0.875rem] sm:leading-[1.6]">
               {FOOTER_BLURB}

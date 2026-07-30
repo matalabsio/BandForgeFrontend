@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
+import { BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -28,9 +28,11 @@ export function BfMarketingDarkCta({
       )}
     >
       <div className="bf-container flex flex-col items-center py-10 text-center sm:py-12 lg:py-[5.25rem]">
-        <div className="mb-5 flex h-7 items-end justify-center gap-1.5 sm:mb-6 lg:mb-[26px] lg:h-10 lg:gap-[9px]">
-          <BfBrandBars size="sm" className="h-7 lg:hidden" />
-          <BfBrandBars size="md" className="hidden h-10 lg:flex" />
+        <div className="mb-5 flex justify-center sm:mb-6 lg:mb-[26px]">
+          <div className="rounded-md bg-white px-3 py-1.5">
+            <BandForgeLogoMark size="sm" className="lg:hidden" />
+            <BandForgeLogoMark size="md" className="hidden lg:block" />
+          </div>
         </div>
         <h2 className="font-display mx-auto mb-6 max-w-[22ch] text-[1.5rem] leading-[1.15] font-bold tracking-[-0.025em] text-balance text-white sm:mb-7 sm:max-w-[24ch] sm:text-[1.625rem] lg:mb-8 lg:max-w-[28ch] lg:text-[2.625rem] lg:leading-[1.1] lg:tracking-[-0.035em]">
           {headline}

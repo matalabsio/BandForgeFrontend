@@ -1,6 +1,6 @@
 import { BandForgeHeaderMarketing } from "@/components/bandforge/bf-header-marketing";
 import { BandForgeSiteFooter } from "@/components/bandforge/bf-site-footer";
-import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
+import { BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import { BfSectionEyebrow } from "@/components/bandforge/ui";
 import { BfAboutCredentials } from "@/components/bandforge/about/bf-about-credentials";
 import { BfAboutFinalCta } from "@/components/bandforge/about/bf-about-final-cta";
@@ -30,7 +30,9 @@ export function AboutExperience() {
               </p>
             </div>
             <aside className="hidden rounded-[1.25rem] bg-navy bg-[radial-gradient(360px_220px_at_80%_0%,rgb(0_151_167/0.28),transparent_70%)] p-10 shadow-[0_30px_60px_rgb(13_31_60/0.16)] lg:block">
-              <BfBrandBars size="md" className="mb-8 h-12" />
+              <div className="mb-8 inline-flex rounded-md bg-white px-3 py-1.5">
+                <BandForgeLogoMark size="md" />
+              </div>
               <p className="font-display text-[1.75rem] leading-tight font-bold text-white">
                 Kiriti Mortha
               </p>

@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
+import { BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import { BRAND_DIAGNOSTIC_SECTIONS } from "@/lib/brand-mock-data";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +36,7 @@ export function BfHeroDiagnosticCard({ className }: Props) {
       </div>
 
       <div className="mb-5 flex items-end gap-3 sm:mb-[26px] sm:gap-[18px]">
-        <BfBrandBars size="card" className="scale-90 sm:scale-100" />
+        <BandForgeLogoMark size="sm" className="scale-90 sm:scale-100" />
         <div>
           <p className="text-xs text-muted-light sm:text-[0.8125rem]">Overall band</p>
           <p className="font-display text-[2.25rem] leading-[0.9] font-extrabold tracking-[-0.03em] text-navy sm:text-[2.875rem]">

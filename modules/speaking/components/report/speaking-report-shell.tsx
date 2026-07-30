@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import { BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import { SpeakingReportActions } from "@/modules/speaking/components/report/speaking-report-actions";
 
 type Props = {
@@ -58,19 +59,8 @@ export function SpeakingReportShell({
                 <ChevronLeft className="size-5" aria-hidden />
               </button>
             ) : null}
-            <Link href={backHref || fallbackHref || "/scores"} className="flex items-end gap-2" aria-label="BandForge">
-              <span className="flex h-5 items-end gap-[3px]" aria-hidden>
-                {[40, 60, 80, 100].map((height) => (
-                  <span
-                    key={height}
-                    className="w-1 rounded-sm bg-cyan"
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
-              </span>
-              <span className="font-display text-lg font-extrabold tracking-tight text-navy">
-                Band<span className="text-cyan">Forge</span>
-              </span>
+            <Link href={backHref || fallbackHref || "/scores"} className="inline-flex items-center" aria-label="BandForge">
+              <BandForgeLogoMark size="sm" />
             </Link>
           </div>
           <p className="font-mono text-[10px] tracking-[0.1em] text-muted uppercase sm:text-xs">

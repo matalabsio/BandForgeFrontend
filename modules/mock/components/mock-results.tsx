@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ChevronLeft, Loader2 } from "lucide-react";
+import { BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import {
   BookIcon,
   HeadphonesIcon,
@@ -409,20 +410,7 @@ function MockResultsBody({
                 >
                   <ChevronLeft className="size-5" aria-hidden />
                 </Link>
-                <div className="flex items-end gap-2" aria-hidden>
-                  <span className="flex h-4 items-end gap-[3px]">
-                    {[40, 60, 80, 100].map((height) => (
-                      <span
-                        key={height}
-                        className="w-1 rounded-sm bg-cyan"
-                        style={{ height: `${height}%` }}
-                      />
-                    ))}
-                  </span>
-                  <span className="font-display text-sm font-extrabold tracking-tight text-navy">
-                    Band<span className="text-cyan">Forge</span>
-                  </span>
-                </div>
+                <BandForgeLogoMark size="sm" />
               </div>
 
               <p className="mt-5 font-mono text-[11px] tracking-[0.14em] text-teal uppercase">

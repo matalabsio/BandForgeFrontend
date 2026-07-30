@@ -1,6 +1,6 @@
 /**
- * Regenerate favicons and PWA icons.
- * Source priority: favi.png → modules/listening/img/logo.png → pwa-icon-source.svg
+ * Regenerate favicons and PWA icons from the brand logo.
+ * Source priority: favi.png → logo.png → Group 103.png → modules/listening/img/logo.png
  * Run: npm run sync:favicons
  */
 import fs from "node:fs";
@@ -13,6 +13,8 @@ const targets = [path.join(root, "app"), path.join(root, "public")];
 
 const candidates = [
   path.join(root, "favi.png"),
+  path.join(root, "logo.png"),
+  path.join(root, "Group 103.png"),
   path.join(root, "modules/listening/img/logo.png"),
   path.join(root, "pwa-icon-source.svg"),
 ];
@@ -24,7 +26,12 @@ if (!source) {
 
 async function makeSquareIcon(size, filename) {
   const buffer = await sharp(source)
-    .resize({ width: size, height: size, fit: "cover", position: "center" })
+    .resize({
+      width: size,
+      height: size,
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
     .png()
     .toBuffer();
 

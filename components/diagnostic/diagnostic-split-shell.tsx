@@ -13,7 +13,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import Link from "next/link";
-import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
+import { BandForgeLogoLink, BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, MotionPathPlugin, DrawSVGPlugin);
@@ -53,20 +53,8 @@ const RING_GRADIENT =
   "linear-gradient(145deg, #26C6DA 0%, #00ACC1 48%, #00838F 100%)";
 const RING_SHADOW = "0 8px 20px rgba(0, 151, 167, 0.32)";
 
-function RailLogo({ light }: { light?: boolean }) {
-  return (
-    <Link
-      href="/"
-      className="inline-flex shrink-0 items-center gap-[11px] transition-opacity hover:opacity-90"
-      aria-label="BandForge home"
-    >
-      <BfBrandBars size="lg" />
-      <span className="font-display text-[22px] leading-none font-bold tracking-[-0.025em]">
-        <span className={light ? "text-navy" : "text-white"}>Band</span>
-        <span className="text-cyan">Forge</span>
-      </span>
-    </Link>
-  );
+function RailLogo() {
+  return <BandForgeLogoLink href="/" size="lg" />;
 }
 
 /** Teal SVG curve on the rail’s right edge — separation only, no fill/shadow */
@@ -1049,7 +1037,7 @@ export function DiagnosticSplitShell({
           <CurvedRailEdge />
 
           <div className="relative z-[1] mb-8 shrink-0 lg:mb-10">
-            <RailLogo light />
+            <RailLogo />
           </div>
 
           <div className="relative z-[1] shrink-0">
@@ -1081,14 +1069,10 @@ export function DiagnosticSplitShell({
           <div className="flex items-center justify-between gap-3 px-4 pt-3 sm:px-5">
             <Link
               href="/"
-              className="inline-flex shrink-0 items-center gap-2"
+              className="inline-flex shrink-0 items-center"
               aria-label="BandForge home"
             >
-              <BfBrandBars size="sm" />
-              <span className="font-display text-base leading-none font-bold tracking-[-0.025em]">
-                <span className="text-navy">Band</span>
-                <span className="text-cyan">Forge</span>
-              </span>
+              <BandForgeLogoMark size="sm" />
             </Link>
             <div className="flex items-center gap-2.5">
               <p className="font-mono text-[11px] tracking-wide text-[#94A3B8]">
@@ -1162,10 +1146,10 @@ export function DiagnosticSplitShell({
           >
             {railCollapsed ? (
               <Link href="/" aria-label="BandForge home" className="relative z-20 shrink-0">
-                <BfBrandBars size="sm" />
+                <BandForgeLogoMark size="mark" />
               </Link>
             ) : (
-              <RailLogo light />
+              <RailLogo />
             )}
             <button
               type="button"
@@ -1230,14 +1214,10 @@ export function DiagnosticSplitShell({
         <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-2">
           <Link
             href="/"
-            className="inline-flex shrink-0 items-center gap-2"
+            className="inline-flex shrink-0 items-center"
             aria-label="BandForge home"
           >
-            <BfBrandBars size="sm" />
-            <span className="font-display text-base leading-none font-bold tracking-[-0.025em]">
-              <span className="text-navy">Band</span>
-              <span className="text-cyan">Forge</span>
-            </span>
+            <BandForgeLogoMark size="sm" />
           </Link>
           <div className="flex min-w-0 items-center gap-2">
             {timer ? <div className="shrink-0">{timer}</div> : null}

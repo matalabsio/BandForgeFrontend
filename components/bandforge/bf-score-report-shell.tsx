@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Share2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
+import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 
 type Props = {
   module: string;
@@ -37,12 +37,7 @@ export function BfScoreReportShell({
     <div className="min-h-dvh bg-surface-alt">
       <header className="border-b border-border-soft bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <BfBrandBars size="sm" />
-            <span className="font-display text-sm font-bold text-navy">
-              Band<span className="text-cyan">Forge</span>
-            </span>
-          </div>
+          <BandForgeLogoLink href="/" size="sm" />
           <div className="flex items-center gap-3">
             <button
               type="button"

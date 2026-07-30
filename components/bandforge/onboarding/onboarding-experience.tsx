@@ -9,7 +9,7 @@ import {
   GraduationCap,
   TrendingUp,
 } from "lucide-react";
-import { BfBrandBars } from "@/components/bandforge/bf-brand-bars";
+import { BandForgeLogoLink, BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import { BfStepIndicator } from "@/components/bandforge/ui";
 import {
   BRAND_ONBOARDING_LANGUAGES,
@@ -113,12 +113,8 @@ export function OnboardingExperience() {
   return (
     <div className="flex min-h-dvh flex-col bg-[#11151c] lg:flex-row">
       <aside className="hidden flex-col bg-navy bg-[radial-gradient(420px_280px_at_20%_100%,rgb(0_151_167/0.26),transparent_70%)] px-8 py-10 lg:flex lg:w-[420px] lg:shrink-0 lg:px-11 lg:py-12">
-        <div className="mb-12 flex items-center gap-2.5">
-          <BfBrandBars size="lg" />
-          <span className="font-display text-[1.375rem] font-bold tracking-tight">
-            <span className="text-white">Band</span>
-            <span className="text-cyan">Forge</span>
-          </span>
+        <div className="mb-12">
+          <BandForgeLogoLink href="/" size="lg" onDark />
         </div>
         <h1 className="font-display text-[1.875rem] leading-[1.16] font-bold tracking-tight text-white">
           {sidebar.title}
@@ -142,11 +138,8 @@ export function OnboardingExperience() {
       </aside>
 
       <main className="flex flex-1 flex-col bg-white px-6 py-10 sm:px-12 lg:px-[4.5rem] lg:py-16">
-        <div className="mb-6 flex items-center gap-2.5 lg:hidden">
-          <BfBrandBars size="sm" />
-          <span className="font-display text-lg font-bold tracking-tight text-navy">
-            Band<span className="text-cyan">Forge</span>
-          </span>
+        <div className="mb-6 lg:hidden">
+          <BandForgeLogoMark size="sm" />
         </div>
         <MobileStepDots step={step} />
 

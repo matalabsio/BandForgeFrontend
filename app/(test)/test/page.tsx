@@ -11,6 +11,7 @@ import {
   slotByNumber,
 } from "@/lib/mock-catalog-api";
 import { mockTestNumberPath, mockTestsIndexPath } from "@/lib/mock-catalog";
+import { M01_MOCK_TEST_ID, M02_MOCK_TEST_ID } from "@/lib/mock-ids";
 import { fetchMockCatalogServer, fetchMockSessionServer } from "@/lib/mock-server";
 import { perfLog } from "@/lib/performance";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
@@ -25,6 +26,12 @@ export const metadata: Metadata = {
 
 type Props = {
   searchParams: Promise<{ test?: string; mock_attempt?: string }>;
+};
+
+/** Static IDs for Test 1/2 so session can load in parallel with catalog. */
+const KNOWN_MOCK_ID_BY_NUMBER: Record<number, string> = {
+  1: M01_MOCK_TEST_ID,
+  2: M02_MOCK_TEST_ID,
 };
 
 export default async function MockTestsIndexPage({ searchParams }: Props) {
@@ -43,8 +50,33 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
     test: sp.test ?? null,
   });
 
+  const requestedNumber =
+    sp.test !== undefined && sp.test !== ""
+      ? Number.parseInt(sp.test, 10)
+      : null;
+  if (
+    requestedNumber !== null &&
+    (!Number.isFinite(requestedNumber) || requestedNumber < 1)
+  ) {
+    notFound();
+  }
+
+  const knownId =
+    requestedNumber !== null
+      ? (KNOWN_MOCK_ID_BY_NUMBER[requestedNumber] ?? null)
+      : null;
+
+  // Overlap auth with catalog (+ session for Test 1/2) — largest SSR win when switching tests.
   t0 = performance.now();
-  const user = await getCachedServerSession(cookieHeader);
+  const userPromise = getCachedServerSession(cookieHeader);
+  const dataPromise = Promise.all([
+    fetchMockCatalogServer(cookieHeader),
+    knownId
+      ? fetchMockSessionServer(cookieHeader, knownId)
+      : Promise.resolve(null),
+  ]);
+
+  const user = await userPromise;
   perfLog("test-page-ssr", {
     step: "user-fetch",
     duration_ms: Math.round(performance.now() - t0),
@@ -53,26 +85,23 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
 
   redirectIfUnauthenticated(user, mockTestsIndexPath(), cookieHeader);
 
-  t0 = performance.now();
-  const catalog = await fetchMockCatalogServer(cookieHeader);
+  const [catalog, parallelSession] = await dataPromise;
   const catalogFetchMs = Math.round(performance.now() - t0);
   perfLog("test-page-ssr", {
-    step: "catalog-fetch",
+    step: "catalog-session-fetch",
     duration_ms: catalogFetchMs,
-    test: sp.test ?? null,
+    test: requestedNumber,
+    parallel_session: Boolean(knownId),
   });
 
   const panel = buildCatalogPanel(catalog);
 
   let number: number;
-  if (sp.test === undefined || sp.test === "") {
+  if (requestedNumber === null) {
     number = defaultCatalogTestNumber(panel);
     redirect(mockTestNumberPath(number, sp.mock_attempt ?? undefined));
   } else {
-    number = Number.parseInt(sp.test, 10);
-    if (!Number.isFinite(number) || number < 1) {
-      notFound();
-    }
+    number = requestedNumber;
   }
 
   const slot = slotByNumber(panel, number);
@@ -80,26 +109,14 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
     notFound();
   }
 
-  // Baseline: measure parallel catalog+session (does not change SSR execution order).
-  const parallelStart = performance.now();
-  await Promise.all([
-    fetchMockCatalogServer(cookieHeader),
-    slot.available && slot.id
-      ? fetchMockSessionServer(cookieHeader, slot.id)
-      : Promise.resolve(null),
-  ]);
-  perfLog("test-page-ssr", {
-    step: "parallel-fetch-baseline",
-    duration_ms: Math.round(performance.now() - parallelStart),
-    test: number,
-    note: "catalog+session in parallel; SSR still runs sequentially",
-  });
-
   t0 = performance.now();
-  const initialProgress =
-    slot.available && slot.id
-      ? await fetchMockSessionServer(cookieHeader, slot.id)
-      : null;
+  let initialProgress = parallelSession;
+  // Test 3+ (or unknown): resolve UUID from catalog, then one session fetch.
+  if (slot.available && slot.id && (!knownId || knownId !== slot.id)) {
+    initialProgress = await fetchMockSessionServer(cookieHeader, slot.id);
+  } else if (!slot.available || !slot.id) {
+    initialProgress = null;
+  }
   const sessionFetchMs = Math.round(performance.now() - t0);
   perfLog("test-page-ssr", {
     step: "session-fetch",

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getApiUrl } from "@/lib/api";
 import {
   buildCatalogPanel,
@@ -55,15 +56,16 @@ async function fetchBackendJson<T>(
   }
 }
 
-export async function fetchMockCatalogServer(
-  cookieHeader: string,
-): Promise<MockCatalogApiItem[]> {
-  return fetchBackendJson<MockCatalogApiItem[]>(
-    "/api/mock-attempts/catalog",
-    cookieHeader,
-    [],
-  );
-}
+/** Deduped within a single RSC request (picker + hub share one catalog round trip). */
+export const fetchMockCatalogServer = cache(
+  async (cookieHeader: string): Promise<MockCatalogApiItem[]> => {
+    return fetchBackendJson<MockCatalogApiItem[]>(
+      "/api/mock-attempts/catalog",
+      cookieHeader,
+      [],
+    );
+  },
+);
 
 export async function resolveMockMetaServer(
   cookieHeader: string,
@@ -97,16 +99,19 @@ export async function resolveCatalogSlotServer(
   };
 }
 
-export async function fetchMockSessionServer(
-  cookieHeader: string,
-  mockTestId: string,
-): Promise<MockAttemptProgress | null> {
-  return fetchBackendJson<MockAttemptProgress | null>(
-    `/api/mock-attempts/session?mock_test_id=${encodeURIComponent(mockTestId)}`,
-    cookieHeader,
-    null,
-  );
-}
+/** Deduped within a single RSC request per mock_test_id. */
+export const fetchMockSessionServer = cache(
+  async (
+    cookieHeader: string,
+    mockTestId: string,
+  ): Promise<MockAttemptProgress | null> => {
+    return fetchBackendJson<MockAttemptProgress | null>(
+      `/api/mock-attempts/session?mock_test_id=${encodeURIComponent(mockTestId)}`,
+      cookieHeader,
+      null,
+    );
+  },
+);
 
 export async function fetchMockSummaryServer(
   cookieHeader: string,
