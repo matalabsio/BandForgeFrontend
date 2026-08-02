@@ -14,7 +14,7 @@ export const PRICING_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How do I test payments?",
-    a: "Netbanking → Success is fastest. UPI: on desktop scan the QR with PhonePe/GPay; on mobile pick your UPI app. Cards: Add new card with domestic test numbers only — Visa 4111 1111 1111 1111 or Mastercard 5267 3181 8797 5449 (any expiry/CVV). International test cards (5555...) and real foreign cards are rejected. Uncheck Save card; disable browser autofill on saved cards.",
+    a: "Netbanking → any bank → Success is the fastest reliable path. UPI: on desktop scan the QR with PhonePe/GPay; on mobile pick your UPI app. Cards: Add new card with Mastercard 5267 3181 8797 5449 (any expiry/CVV). Visa 4111 often fails as \"international\" when that method is off on the merchant. International test cards (5555...) and real foreign cards are rejected. Uncheck Save card; disable browser autofill.",
   },
   {
     q: "Why does OTP fail even with 6 digits?",

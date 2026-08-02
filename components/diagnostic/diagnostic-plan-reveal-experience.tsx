@@ -46,9 +46,11 @@ import {
   paymentTraceLog,
   pendingVerifyPayloadFromReceipt,
   readCheckoutReceiptContext,
+  razorpayPaymentFailureDetail,
   saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
+
 function PlanRevealSkeleton() {
   return (
     <div className="animate-pulse space-y-6">
@@ -309,7 +311,7 @@ export function DiagnosticPlanRevealExperience() {
         onFailed: (message) => {
           setOverlay(null);
           clearBusy();
-          setPaymentFailureMessage(message);
+          setPaymentFailureMessage(razorpayPaymentFailureDetail(message));
           setStatusModal("payment_failed");
         },
       });

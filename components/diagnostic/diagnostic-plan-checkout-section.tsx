@@ -47,6 +47,7 @@ import {
   paymentTraceLog,
   pendingVerifyPayloadFromReceipt,
   readCheckoutReceiptContext,
+  razorpayPaymentFailureDetail,
   saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
@@ -77,11 +78,6 @@ type Props = {
 /** Survives React Strict Mode remount so post-login Razorpay opens once. */
 let diagnosticCheckoutResumeClaimed = false;
 
-function initialCheckoutOverlay(): OverlayState {
-  if (typeof window === "undefined") return null;
-  return shouldResumeDiagnosticCheckout() ? "creating" : null;
-}
-
 /**
  * Gap → skills → blurred plan → offer → trust + in-page Razorpay checkout.
  * Mounted on `/diagnostic/results` as one seamless SPA.
@@ -98,14 +94,13 @@ export function DiagnosticPlanCheckoutSection({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planPrice, setPlanPrice] = useState("—");
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
-  const [overlay, setOverlay] = useState<OverlayState>(initialCheckoutOverlay);
+  // Start null/false so SSR matches hydration; resume effect sets these after mount.
+  const [overlay, setOverlay] = useState<OverlayState>(null);
   const [statusModal, setStatusModal] = useState<StatusModal>(null);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(
     null,
   );
-  const [checkoutBusy, setCheckoutBusy] = useState(
-    () => typeof window !== "undefined" && shouldResumeDiagnosticCheckout(),
-  );
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
   const checkoutInFlightRef = useRef(false);
   const autoCheckoutStartedRef = useRef(false);
 
@@ -275,7 +270,7 @@ export function DiagnosticPlanCheckoutSection({
           setOverlay(null);
           clearBusy();
           forceLockThenRefresh();
-          setPaymentFailureMessage(message);
+          setPaymentFailureMessage(razorpayPaymentFailureDetail(message));
           setStatusModal("payment_failed");
         },
       });
@@ -419,12 +414,9 @@ export function DiagnosticPlanCheckoutSection({
             setOverlay(null);
             clearBusy();
             forceLockThenRefresh();
-            if (resumeGate) {
-              settleResumeGate();
-            } else {
-              setPaymentFailureMessage(message);
-              setStatusModal("payment_failed");
-            }
+            setPaymentFailureMessage(razorpayPaymentFailureDetail(message));
+            setStatusModal("payment_failed");
+            // Keep resumeGate until retry succeeds or the user closes the modal.
           },
         });
 
@@ -546,6 +538,9 @@ export function DiagnosticPlanCheckoutSection({
           onClose={() => {
             setPaymentFailureMessage(null);
             setStatusModal(null);
+            if (resumeGate) {
+              settleResumeGate();
+            }
           }}
         />
       ) : null}

@@ -97,9 +97,8 @@ export function DiagnosticResultsExperience() {
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<DiagnosticResultsSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [checkoutResumeGate, setCheckoutResumeGate] = useState(
-    () => typeof window !== "undefined" && shouldResumeDiagnosticCheckout(),
-  );
+  // Must start false so SSR HTML matches the first client render; read URL/storage after mount.
+  const [checkoutResumeGate, setCheckoutResumeGate] = useState(false);
 
   const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
   const targetBand = lead?.targetBand ?? 7.0;
@@ -146,6 +145,12 @@ export function DiagnosticResultsExperience() {
     () => holdingBackNarrative(skillBands, targetBand),
     [skillBands, targetBand],
   );
+
+  useEffect(() => {
+    if (shouldResumeDiagnosticCheckout()) {
+      setCheckoutResumeGate(true);
+    }
+  }, []);
 
   useEffect(() => {
     const cached = readDiagnosticResults();

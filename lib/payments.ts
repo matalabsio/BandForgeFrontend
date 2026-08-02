@@ -265,20 +265,42 @@ function razorpayContactPrefill(raw: string | null | undefined): {
  * Prefers UPI QR (desktop) + Intent (mobile). Collect/VPA typing is omitted (NPCI 2026).
  * Cannot enable UPI if the Razorpay account has not activated the method — use Dashboard
  * Payment Configuration + RAZORPAY_CHECKOUT_CONFIG_ID for production certainty.
+ *
+ * Test keys put netbanking before cards — mock bank Success/Failure is the reliable
+ * sandbox path; domestic Visa 4111 is often rejected as "international" when that
+ * method is off on the merchant account.
  */
-const RAZORPAY_FALLBACK_CHECKOUT_CONFIG: RazorpayDisplayConfig = {
-  display: {
-    blocks: {
-      upi_preferred: {
-        name: "Pay using UPI",
-        instruments: [{ method: "upi", flows: ["qr", "intent"] }],
+function razorpayFallbackCheckoutConfig(testMode: boolean): RazorpayDisplayConfig {
+  return {
+    display: {
+      blocks: {
+        upi_preferred: {
+          name: "Pay using UPI",
+          instruments: [{ method: "upi", flows: ["qr", "intent"] }],
+        },
       },
+      sequence: testMode
+        ? ["block.upi_preferred", "upi", "netbanking", "wallet", "card"]
+        : ["block.upi_preferred", "upi", "card", "netbanking", "wallet"],
+      hide: [{ method: "paylater" }],
+      preferences: { show_default_blocks: true },
     },
-    sequence: ["block.upi_preferred", "upi", "card", "netbanking", "wallet"],
-    hide: [{ method: "paylater" }],
-    preferences: { show_default_blocks: true },
-  },
-};
+  };
+}
+
+/** Map Razorpay payment.failed descriptions to actionable checkout hints. */
+export function razorpayPaymentFailureDetail(message: string): string {
+  const m = message.trim();
+  if (!m) return "Payment failed. Please try again.";
+  if (/international_transaction_not_allowed|international card/i.test(m)) {
+    return (
+      "Indian cards only on this merchant. Fastest test path: Netbanking → any bank → Success. " +
+      "Or Add new card with Mastercard 5267 3181 8797 5449 (any future expiry + any CVV). " +
+      "Skip Visa 4111 if it fails as international; do not use 5555… or real foreign cards."
+    );
+  }
+  return m;
+}
 
 function isMobileUserAgent(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -360,6 +382,7 @@ export function buildRazorpayCheckoutOptions(opts: {
   const { order } = opts;
   const { contact } = razorpayContactPrefill(order.checkout_contact.contact);
   const configId = order.checkout_config_id?.trim();
+  const testMode = order.key_id.startsWith("rzp_test_");
   const mobileUpiPreferred =
     isMobileUserAgent() &&
     Boolean(order.checkout_contact.email) &&
@@ -404,7 +427,7 @@ export function buildRazorpayCheckoutOptions(opts: {
     // Dashboard Payment Configuration controls UPI QR, Intent, cards, etc.
     options.checkout_config_id = configId;
   } else {
-    options.config = RAZORPAY_FALLBACK_CHECKOUT_CONFIG;
+    options.config = razorpayFallbackCheckoutConfig(testMode);
   }
 
   return options;

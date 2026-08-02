@@ -18,6 +18,9 @@ export function resolveSubmitHref(
   if (config.href && typeof config.href === "string") {
     return config.href;
   }
+  if (config.type === "bank") {
+    return `/practice/${skill}`;
+  }
 
   switch (skill) {
     case "writing":

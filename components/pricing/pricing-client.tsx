@@ -16,6 +16,7 @@ import {
   paymentTraceLog,
   pendingVerifyPayloadFromReceipt,
   readCheckoutReceiptContext,
+  razorpayPaymentFailureDetail,
   saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
@@ -55,22 +56,6 @@ function isRazorpayAuthMisconfig(error: ApiError): boolean {
     error.status === 503 &&
     /authentication failed|razorpay api authentication/i.test(error.message)
   );
-}
-
-/** Map Razorpay payment.failed descriptions to actionable checkout hints. */
-function paymentFailureDetail(message: string): string | null {
-  const m = message.trim();
-  if (!m) return null;
-  if (
-    /international_transaction_not_allowed|international card/i.test(m)
-  ) {
-    return (
-      "This merchant accepts Indian cards only. In test mode use domestic card " +
-      "4111 1111 1111 1111 (or 5267 3181 8797 5449). Do not use international " +
-      "test cards (5555...) or a real foreign card. Choose Add new card and turn off browser autofill."
-    );
-  }
-  return m;
 }
 
 export function PricingClient() {
@@ -232,7 +217,7 @@ export function PricingClient() {
         onFailed: (message) => {
           setOverlay(null);
           clearCheckoutBusy();
-          setPaymentFailureMessage(paymentFailureDetail(message));
+          setPaymentFailureMessage(razorpayPaymentFailureDetail(message));
           setStatusModal("payment_failed");
         },
       });
@@ -326,9 +311,11 @@ export function PricingClient() {
                 : "UPI: choose Pay with UPI → scan the QR with PhonePe, GPay, or Paytm"}
             </li>
             <li>
-              Cards: use <strong>Add new card</strong> with domestic test numbers only —{" "}
-              <span className="font-mono text-navy">4111 1111 1111 1111</span> or{" "}
-              <span className="font-mono text-navy">5267 3181 8797 5449</span>
+              Cards: use <strong>Add new card</strong> with Mastercard{" "}
+              <span className="font-mono text-navy">5267 3181 8797 5449</span>{" "}
+              (any future expiry + any CVV). Visa{" "}
+              <span className="font-mono text-navy">4111 1111 1111 1111</span>{" "}
+              often fails as &quot;international&quot; when that method is off
             </li>
             <li>Not supported: international test cards (5555...) or real foreign cards</li>
             <li>
@@ -339,7 +326,9 @@ export function PricingClient() {
               <strong>Skip OTP</strong> — that OTP is a real SMS, not a test code
             </li>
             <li>Payment OTP (after Pay): any 4-10 digits</li>
-            <li>Netbanking → Success is the fastest test path</li>
+            <li>
+              <strong>Netbanking → any bank → Success</strong> is the fastest reliable test path
+            </li>
           </ul>
         </div>
       ) : null}
