@@ -11,12 +11,11 @@ type Props = {
   className?: string;
 };
 
-const DEFAULT_HINT =
-  "This can take 10–15 seconds. Please keep this tab open and wait.";
+const DEFAULT_HINT = "Almost ready — hang on a moment.";
 
 /**
  * Full-screen loading overlay for exam sections (start / page boot).
- * Keeps a visible spinner + message while slow API calls complete.
+ * Prefer pairing with a layout underlay (`children`) for lighter perceived wait.
  */
 export function ExamSectionLoader({
   title,
@@ -68,7 +67,7 @@ type OverlayProps = {
 export function ExamBusyOverlay({
   title,
   subtitle,
-  hint = "Saving your work and preparing the next step…",
+  hint = "Almost done…",
 }: OverlayProps) {
   return (
     <div

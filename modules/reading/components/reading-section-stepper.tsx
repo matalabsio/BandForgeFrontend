@@ -41,10 +41,10 @@ export function ReadingSectionStepper({
 
   return (
     <nav
-      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[var(--reading-border)] bg-white px-4 py-3"
+      className="flex flex-col gap-2 border-b border-[var(--reading-border)] bg-white px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-2 sm:px-4 sm:py-3"
       aria-label="Question sections"
     >
-      <div className="flex min-w-0 flex-wrap gap-2">
+      <div className="flex min-w-0 gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap sm:gap-2 sm:overflow-visible sm:pb-0">
         {QUESTION_SECTION_ORDER.map((id, idx) => {
           const isCurrent = id === current;
           const isPast = idx < currentIdx;
@@ -56,7 +56,7 @@ export function ReadingSectionStepper({
               disabled={!canNavigate}
               onClick={() => canNavigate && onSelect(id)}
               className={cn(
-                "rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors",
+                "shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition-colors sm:px-3",
                 isCurrent
                   ? "bg-[var(--reading-accent)] text-white"
                   : isPast
@@ -76,16 +76,17 @@ export function ReadingSectionStepper({
           type="button"
           disabled={!hasPrev}
           onClick={onBack}
-          className="cursor-pointer rounded-md border border-[var(--reading-border)] bg-white px-3 py-1.5 text-[11px] font-bold text-[var(--reading-ink)] transition-colors hover:border-[var(--reading-accent)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="cursor-pointer rounded-md border border-[var(--reading-border)] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[var(--reading-ink)] transition-colors hover:border-[var(--reading-accent)] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
         >
-          ← Previous section
+          <span className="sm:hidden">← Prev</span>
+          <span className="hidden sm:inline">← Previous section</span>
         </button>
         {isLastSection ? (
           <button
             type="button"
             disabled={busy}
             onClick={onSubmit}
-            className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60 sm:px-4"
           >
             {busy ? "Submitting…" : (continueLabel ?? "Submit passage")}
           </button>
@@ -93,9 +94,12 @@ export function ReadingSectionStepper({
           <button
             type="button"
             onClick={onContinue}
-            className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-cyan"
+            className="min-w-0 flex-1 truncate cursor-pointer rounded-md bg-[var(--reading-accent)] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-cyan sm:flex-none sm:px-4"
           >
-            {continueLabel ?? "Continue"}
+            <span className="sm:hidden">Continue</span>
+            <span className="hidden sm:inline">
+              {continueLabel ?? "Continue"}
+            </span>
           </button>
         )}
       </div>

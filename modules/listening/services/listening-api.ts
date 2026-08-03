@@ -17,6 +17,7 @@ export const listeningApi = {
       mockAttemptId?: string;
       includeQuestions?: boolean;
       skillContext?: PracticeSkill;
+      fromPlan?: boolean;
     },
   ): Promise<StartListeningPayload> {
     const params = new URLSearchParams();
@@ -30,6 +31,9 @@ export const listeningApi = {
     }
     if (options?.skillContext) {
       params.set("skill_context", options.skillContext);
+    }
+    if (options?.fromPlan) {
+      params.set("from_plan", "true");
     }
     const qs = params.toString() ? `?${params.toString()}` : "";
     return examApiCall<StartListeningPayload>(

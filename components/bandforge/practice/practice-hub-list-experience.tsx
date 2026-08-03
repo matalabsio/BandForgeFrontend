@@ -15,6 +15,7 @@ type Props = {
   mockUnlock: MockUnlock | null;
   highlightHubId?: string | null;
   mockLockedMessage?: boolean;
+  hubLockedMessage?: boolean;
 };
 
 const STATUS_LABEL: Record<PracticeHub["status"], string> = {
@@ -29,17 +30,25 @@ const STATUS_STYLE: Record<PracticeHub["status"], string> = {
   completed: "bg-emerald-50 text-emerald-700",
 };
 
+function isHubAccessible(hub: PracticeHub): boolean {
+  return hub.accessible !== false;
+}
+
 export function PracticeHubListExperience({
   skill,
   hubs,
   mockUnlock,
   highlightHubId = null,
   mockLockedMessage = false,
+  hubLockedMessage = false,
 }: Props) {
   const highlightRef = useRef<HTMLLIElement>(null);
   const completed = hubs.filter((h) => h.status === "completed").length;
   const total = hubs.length;
   const required = mockUnlock?.required ?? 12;
+  const currentHub = hubs.find(
+    (h) => isHubAccessible(h) && h.status !== "completed",
+  );
 
   useEffect(() => {
     if (highlightHubId && highlightRef.current) {
@@ -56,8 +65,24 @@ export function PracticeHubListExperience({
         </BfSectionHeading>
         <p className="mt-2 text-sm text-muted">
           {completed} of {total || required} sets completed
-          {mockUnlock?.unlocked ? " · Mock unlocked" : " · Complete all sets to unlock mock"}
+          {mockUnlock?.unlocked
+            ? " · Mock unlocked"
+            : " · Finish sets in order to unlock the mock"}
         </p>
+        <p className="mt-1 text-sm text-muted">
+          Complete one set to unlock the next. Completed sets stay open for review.
+        </p>
+        {hubLockedMessage ? (
+          <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            That set is locked. Complete{" "}
+            {currentHub ? (
+              <span className="font-semibold">{currentHub.title}</span>
+            ) : (
+              "the previous set"
+            )}{" "}
+            first.
+          </p>
+        ) : null}
         {mockLockedMessage ? (
           <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Complete all {required} sets to unlock the full {practiceSkillLabel(skill)}{" "}
@@ -78,18 +103,26 @@ export function PracticeHubListExperience({
         </div>
       ) : (
         <ul className="space-y-3">
-          {hubs.map((hub) => {
+          {hubs.map((hub, index) => {
             const highlighted = highlightHubId === hub.id;
+            const accessible = isHubAccessible(hub);
             const setLabel = `Set ${hub.set_number} of ${required}`;
+            const isCurrent = accessible && hub.status !== "completed";
             return (
               <li
                 key={hub.id}
                 ref={highlighted ? highlightRef : undefined}
                 className={cn(
-                  "w-full rounded-2xl border bg-white px-4 py-4 sm:px-5",
-                  highlighted
+                  "w-full rounded-2xl border px-4 py-4 sm:px-5",
+                  !accessible
+                    ? "border-border-soft/80 bg-ink/[0.02] opacity-80"
+                    : "bg-white",
+                  highlighted && accessible
                     ? "border-cyan ring-2 ring-cyan/20"
-                    : "border-border-soft",
+                    : accessible
+                      ? "border-border-soft"
+                      : null,
+                  isCurrent ? "border-cyan/40" : null,
                 )}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -102,26 +135,43 @@ export function PracticeHubListExperience({
                     </p>
                     <p className="mt-1 text-xs text-muted">
                       ~{hub.estimated_min} min
+                      {!accessible
+                        ? " · Locked"
+                        : isCurrent
+                          ? " · Current set"
+                          : null}
                     </p>
                   </div>
                   <span
                     className={cn(
                       "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                      STATUS_STYLE[hub.status],
+                      !accessible
+                        ? "bg-ink/5 text-ink/45"
+                        : STATUS_STYLE[hub.status],
                     )}
                   >
-                    {hub.status === "completed" ? (
+                    {!accessible ? (
+                      <Lock className="size-3" strokeWidth={2.5} />
+                    ) : hub.status === "completed" ? (
                       <Check className="size-3" strokeWidth={2.5} />
                     ) : null}
-                    {STATUS_LABEL[hub.status]}
+                    {!accessible ? "Locked" : STATUS_LABEL[hub.status]}
                   </span>
                 </div>
-                <Link
-                  href={`/practice/${skill}/${hub.id}`}
-                  className="mt-3 inline-flex text-sm font-semibold text-cyan hover:underline"
-                >
-                  View hub →
-                </Link>
+                {accessible ? (
+                  <Link
+                    href={`/practice/${skill}/${hub.id}`}
+                    className="mt-3 inline-flex text-sm font-semibold text-cyan hover:underline"
+                  >
+                    {hub.status === "completed" ? "Review hub →" : "View hub →"}
+                  </Link>
+                ) : (
+                  <p className="mt-3 text-sm text-muted">
+                    {index === 0
+                      ? hub.locked_reason || "Locked"
+                      : "Complete the previous set to unlock"}
+                  </p>
+                )}
               </li>
             );
           })}

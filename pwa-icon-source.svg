@@ -1,12 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="96" fill="#0d1f3c"/>
-  <text
-    x="256"
-    y="340"
-    text-anchor="middle"
-    font-family="system-ui, -apple-system, sans-serif"
-    font-size="280"
-    font-weight="700"
-    fill="#00bcd4"
-  >B</text>
+  <rect width="512" height="512" rx="96" fill="#000000"/>
+  <g fill="#00bcd4">
+    <rect x="128" y="268" width="44" height="116" rx="22"/>
+    <rect x="196" y="220" width="44" height="164" rx="22"/>
+    <rect x="264" y="172" width="44" height="212" rx="22"/>
+    <rect x="332" y="124" width="44" height="260" rx="22"/>
+  </g>
 </svg>

@@ -6,6 +6,7 @@ import {
 } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { parseSkillContext } from "@/lib/practice-submit";
+import type { PlanTaskKind } from "@/lib/plan-task-flow";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
 import { resolveCatalogSlotServer } from "@/lib/mock-server";
@@ -19,8 +20,21 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ part?: string; skill_context?: string }>;
+  searchParams: Promise<{
+    part?: string;
+    skill_context?: string;
+    from?: string;
+    task?: string;
+    taskId?: string;
+    hubId?: string;
+    auto?: string;
+  }>;
 };
+
+function parsePlanTask(value: string | undefined): PlanTaskKind | null {
+  if (value === "watch" || value === "practice" || value === "submit") return value;
+  return null;
+}
 
 export default async function TestListeningPage({ params, searchParams }: Props) {
   const { number: numberRaw } = await params;
@@ -32,6 +46,7 @@ export default async function TestListeningPage({ params, searchParams }: Props)
 
   const part = sp.part ? Number.parseInt(sp.part, 10) : 1;
   const skillContext = parseSkillContext(sp.skill_context);
+  const fromPlan = sp.from === "plan";
   const returnPath = shortModuleExamPath(testNumber, "listening", { part });
 
   const cookieHeader = await getCachedCookieHeader();
@@ -52,6 +67,10 @@ export default async function TestListeningPage({ params, searchParams }: Props)
         variant="exam"
         testNumber={testNumber}
         skillContext={skillContext}
+        fromPlan={fromPlan}
+        planTask={parsePlanTask(sp.task)}
+        planTaskId={sp.taskId ?? null}
+        planHubId={sp.hubId ?? null}
       />
     </MockLayout>
   );

@@ -17,6 +17,8 @@ type Props = {
   busy: boolean;
   submitLabel?: string;
   sectionHint?: string;
+  /** Hide IELTS/mock marketing eyebrow (plan practice). */
+  plainHeader?: boolean;
   onSubmit: () => void;
 };
 
@@ -33,6 +35,7 @@ export function IeltsExamToolbar({
   busy,
   submitLabel = "Submit",
   sectionHint,
+  plainHeader = false,
   onSubmit,
 }: Props) {
   const warning = remainingSeconds <= 300 && timerActive;
@@ -49,13 +52,21 @@ export function IeltsExamToolbar({
         {hubLabel}
       </Link>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-white/60 sm:text-[11px]">
-          IELTS Academic {moduleName}
-          {sectionHint ? ` · ${sectionHint}` : ` · ${stageLabel}`}
-        </p>
-        <p className="truncate text-[12px] font-medium leading-tight sm:text-[13px]">
-          {testTitle}
-        </p>
+        {plainHeader ? (
+          <p className="truncate text-[12px] font-medium leading-tight sm:text-[13px]">
+            {testTitle || stageLabel}
+          </p>
+        ) : (
+          <>
+            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-white/60 sm:text-[11px]">
+              IELTS Academic {moduleName}
+              {sectionHint ? ` · ${sectionHint}` : ` · ${stageLabel}`}
+            </p>
+            <p className="truncate text-[12px] font-medium leading-tight sm:text-[13px]">
+              {testTitle}
+            </p>
+          </>
+        )}
       </div>
       <div className="hidden items-center gap-2 md:flex">
         <span className="text-[10px] font-medium text-white/50">Progress</span>

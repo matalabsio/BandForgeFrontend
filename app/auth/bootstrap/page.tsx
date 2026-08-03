@@ -69,7 +69,11 @@ function AuthBootstrapInner() {
       }
 
       if (staleSession) {
-        await logout();
+        try {
+          await logout();
+        } catch {
+          // Local storage is cleared in logout's finally; continue to login.
+        }
       }
       if (cancelled) return;
       replace(loginRedirectPath(next, staleSession));

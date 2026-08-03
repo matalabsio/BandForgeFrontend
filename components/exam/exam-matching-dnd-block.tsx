@@ -224,15 +224,19 @@ function AssignedChip({
       {...listeners}
       {...attributes}
       className={cn(
-        "flex min-w-[9.5rem] max-w-full cursor-grab items-center gap-2 rounded-md border px-3 py-2 text-[13px] active:cursor-grabbing",
+        "flex min-h-[44px] min-w-0 w-full max-w-full cursor-grab items-start gap-2 rounded-md border px-3 py-2 text-[13px] leading-snug active:cursor-grabbing",
         theme.border,
         theme.paper,
         theme.ink,
         isDragging && "opacity-40",
       )}
     >
-      <span className={theme.labelFont}>{formatLabel(label, labelFormat)}</span>
-      <span className={cn("min-w-0 flex-1 truncate", theme.muted)}>{optionText}</span>
+      <span className={cn("shrink-0 pt-0.5", theme.labelFont)}>
+        {formatLabel(label, labelFormat)}
+      </span>
+      <span className={cn("min-w-0 flex-1 break-words", theme.muted)}>
+        {optionText}
+      </span>
     </div>
   );
 }
@@ -275,15 +279,21 @@ function QuestionSlot({
   return (
     <li
       className={cn(
-        "flex flex-col gap-3 border-b border-dashed py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-2.5 border-b border-dashed py-3.5 last:border-b-0 sm:flex-row sm:items-start sm:gap-4 sm:py-4",
         theme.border,
         isActive && cn(theme.accentSoft, "rounded-sm"),
       )}
     >
-      <span className={cn("shrink-0 text-[13px]", theme.ink, theme.font)}>
+      <span
+        className={cn(
+          "min-w-0 flex-1 text-[13px] leading-snug",
+          theme.ink,
+          theme.font,
+        )}
+      >
         <strong className="tabular-nums">{num}</strong> {q.prompt}
       </span>
-      <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:shrink-0">
+      <div className="flex w-full min-w-0 max-w-full items-start gap-2 sm:w-[min(100%,18rem)] sm:shrink-0">
         {isEmpty ? (
           <button
             type="button"
@@ -295,11 +305,12 @@ function QuestionSlot({
             onFocus={onFocus}
             aria-label={`Question ${num}: ${q.prompt}. ${slotPlaceholder}`}
             className={cn(
-              "min-h-[44px] min-w-[9.5rem] rounded-md border-2 border-dashed px-3 py-2 text-left transition-colors",
+              "min-h-[44px] w-full rounded-md border-2 border-dashed px-3 py-2 text-left transition-colors",
               theme.border,
               theme.paper,
               isOver && cn(theme.accent, theme.accentSoft),
-              isPendingTarget && cn(theme.accent, theme.accentSoft, "ring-2", theme.accentRing),
+              isPendingTarget &&
+                cn(theme.accent, theme.accentSoft, "ring-2", theme.accentRing),
             )}
           >
             <span className={cn("text-[12px]", theme.muted)}>
@@ -319,7 +330,7 @@ function QuestionSlot({
               type="button"
               onClick={onClear}
               className={cn(
-                "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md border text-[14px] leading-none hover:opacity-80",
+                "mt-0.5 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md border text-[14px] leading-none hover:opacity-80",
                 theme.border,
                 theme.muted,
               )}
@@ -459,7 +470,38 @@ function ExamMatchingDnDBlockBase({
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      accessibility={{
+        announcements: {
+          onDragStart({ active }) {
+            const source = parseDragSource(String(active.id));
+            if (!source) return "";
+            const opt = optionByLabel.get(normalize(source.label));
+            return `Picked up ${formatLabel(normalize(source.label), labelFormat)}${opt ? ` ${opt.text}` : ""}`;
+          },
+          onDragOver({ over }) {
+            if (!over) return "";
+            const targetId = parseDropTarget(String(over.id));
+            if (!targetId) return "";
+            const q = sortedQuestions.find((item) => item.id === targetId);
+            return q ? `Over question ${qDisplay(q)}` : "";
+          },
+          onDragEnd({ over }) {
+            if (!over) return "Dropped";
+            const targetId = parseDropTarget(String(over.id));
+            if (!targetId) return "Dropped";
+            const q = sortedQuestions.find((item) => item.id === targetId);
+            return q ? `Dropped on question ${qDisplay(q)}` : "Dropped";
+          },
+          onDragCancel() {
+            return "Drag cancelled";
+          },
+        },
+      }}
+    >
       <div className="space-y-4">
         {pendingLabel ? (
           <p className={cn("text-[12px]", theme.muted)} role="status">
@@ -473,6 +515,7 @@ function ExamMatchingDnDBlockBase({
         <div
           className={cn(
             "rounded-lg border px-4 py-3",
+            // Sticky only when not nested in a scrolling panel (covers slots).
             poolSticky && "sticky top-0 z-10 shadow-sm",
             theme.border,
             variant === "reading" ? theme.surface : theme.paper,
@@ -488,7 +531,7 @@ function ExamMatchingDnDBlockBase({
           </p>
           <ul
             className={cn(
-              "mt-2 max-h-[min(40vh,280px)] divide-y overflow-y-auto",
+              "mt-2 max-h-[min(36vh,240px)] divide-y overflow-y-auto overscroll-contain",
               theme.border,
             )}
           >
@@ -510,7 +553,7 @@ function ExamMatchingDnDBlockBase({
           </ul>
         </div>
 
-        <ul className={cn("rounded-lg border px-4 py-1", theme.border, theme.paper)}>
+        <ul className={cn("rounded-lg border px-3 py-1 sm:px-4", theme.border, theme.paper)}>
           {sortedQuestions.map((q) => {
             const value = normalize(answers[q.id] ?? "");
             const opt = value ? optionByLabel.get(value) : null;
@@ -533,16 +576,16 @@ function ExamMatchingDnDBlockBase({
           })}
         </ul>
 
-        <p className="sr-only" aria-live="polite">
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
           {liveMessage}
         </p>
       </div>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={null} zIndex={60}>
         {activeDrag ? (
           <div
             className={cn(
-              "rounded-md border px-3 py-2 text-[13px] shadow-lg",
+              "max-w-[min(90vw,20rem)] rounded-md border px-3 py-2 text-[13px] leading-snug shadow-lg",
               theme.border,
               theme.paper,
               theme.ink,

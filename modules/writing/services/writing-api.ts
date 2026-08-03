@@ -7,16 +7,37 @@ import type {
   WritingReview,
 } from "@/modules/writing/types";
 
+type StartOptions = {
+  part?: number;
+  forceNew?: boolean;
+  mockAttemptId?: string;
+  skillContext?: PracticeSkill;
+  fromPlan?: boolean;
+};
+
+/** Dedupes React Strict Mode double-mount POST /writing/.../start. */
+const inflightWritingStarts = new Map<string, Promise<StartWritingPayload>>();
+
+function writingStartKey(mockTestId: string, options?: StartOptions): string {
+  return [
+    mockTestId,
+    options?.part ?? 1,
+    options?.mockAttemptId ?? "",
+    options?.fromPlan ? "1" : "0",
+    options?.forceNew ? "1" : "0",
+    options?.skillContext ?? "",
+  ].join("|");
+}
+
 export const writingApi = {
   start(
     mockTestId: string,
-    options?: {
-      part?: number;
-      forceNew?: boolean;
-      mockAttemptId?: string;
-      skillContext?: PracticeSkill;
-    },
+    options?: StartOptions,
   ): Promise<StartWritingPayload> {
+    const key = writingStartKey(mockTestId, options);
+    const existing = inflightWritingStarts.get(key);
+    if (existing) return existing;
+
     const params = new URLSearchParams();
     params.set("part", String(options?.part ?? 1));
     if (options?.forceNew === true) params.set("force_new", "true");
@@ -26,10 +47,17 @@ export const writingApi = {
     if (options?.skillContext) {
       params.set("skill_context", options.skillContext);
     }
-    return examApiCall<StartWritingPayload>(
+    if (options?.fromPlan) {
+      params.set("from_plan", "true");
+    }
+    const pending = examApiCall<StartWritingPayload>(
       `/api/writing/${encodeURIComponent(mockTestId)}/start?${params.toString()}`,
       { method: "POST" },
-    );
+    ).finally(() => {
+      inflightWritingStarts.delete(key);
+    });
+    inflightWritingStarts.set(key, pending);
+    return pending;
   },
 
   autosave(

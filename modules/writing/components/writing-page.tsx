@@ -19,6 +19,10 @@ import {
 import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistMockAttemptId, persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
+import { afterPlanStepHref, type PlanTaskKind } from "@/lib/plan-task-flow";
+import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
+import { patchLearningTask } from "@/lib/learning-api";
+import { completePracticeHub } from "@/lib/practice-api";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
@@ -56,9 +60,9 @@ import {
 } from "@/modules/shared/lib/submit-with-exam-session";
 import {
   ExamBusyOverlay,
-  ExamSectionLoader,
 } from "@/modules/shared/components/exam-section-loader";
 import { SectionInstructionsModal } from "@/modules/shared/components/section-instructions-modal";
+import { IeltsExamSkeleton } from "@/components/exam/ielts-exam-skeleton";
 
 function readConsent(moduleKey: string, attemptScope: string): boolean {
   if (typeof window === "undefined") return false;
@@ -99,6 +103,10 @@ type Props = {
   testNumber?: number;
   flow?: "mock" | "diagnostic";
   skillContext?: PracticeSkill | null;
+  fromPlan?: boolean;
+  planTask?: PlanTaskKind | null;
+  planTaskId?: string | null;
+  planHubId?: string | null;
 };
 
 export function WritingPage({
@@ -111,6 +119,10 @@ export function WritingPage({
   testNumber: testNumberProp,
   flow = "mock",
   skillContext = null,
+  fromPlan = false,
+  planTask = null,
+  planTaskId = null,
+  planHubId = null,
 }: Props) {
   const isDiagnostic = isDiagnosticFlow(flow, mockTestId);
   const router = useRouter();
@@ -169,7 +181,7 @@ export function WritingPage({
   }, [needsConsentGate]);
 
   useEffect(() => {
-    if (part !== 1) {
+    if (part !== 1 || fromPlan) {
       setIntroAgreed(true);
       setIntroPassed(true);
       return;
@@ -177,7 +189,7 @@ export function WritingPage({
     const seen = readConsent("writing", instructionScope);
     setIntroAgreed(seen);
     setIntroPassed(false);
-  }, [part, instructionScope]);
+  }, [part, instructionScope, fromPlan]);
 
   // Client navigation part=1 → part=2 reuses this component; reset so Task 2 gets a new attempt.
   useEffect(() => {
@@ -212,7 +224,9 @@ export function WritingPage({
         part,
         mockAttemptId: mockAttemptId ?? undefined,
         forceNew: false,
-        skillContext: skillContext ?? undefined,
+        // Plan practice uses MT prompts before 12/12 unlock — gate via fromPlan.
+        skillContext: fromPlan ? "writing" : (skillContext ?? undefined),
+        fromPlan: fromPlan || undefined,
       });
       setAttemptId(res.attempt_id);
       setTask(res.task ?? null);
@@ -246,7 +260,7 @@ export function WritingPage({
       setError(e instanceof Error ? e.message : "Could not start writing task.");
       setPhase("error");
     }
-  }, [mockTestId, part, mockAttemptId, mockSlug, router, resolvedTestNumber]);
+  }, [mockTestId, part, mockAttemptId, mockSlug, router, resolvedTestNumber, skillContext, fromPlan]);
 
   useEffect(() => {
     if (initialBoot?.task) {
@@ -421,6 +435,36 @@ export function WritingPage({
         /* ignore */
       }
 
+      // Personalized plan Writing: sync checklist; hub complete only on final Submit.
+      if (fromPlan && planHubId) {
+        const current =
+          planTask ?? (part === 2 ? "submit" : "practice");
+        recordPlanDayOutcome({
+          skill: "writing",
+          taskType: current,
+          band: null,
+          rawScore: null,
+          totalQuestions: null,
+        });
+        if (planTaskId) {
+          void patchLearningTask(planTaskId, "done").catch(() => {});
+        }
+        if (current === "submit") {
+          void completePracticeHub(planHubId).catch(() => {});
+        }
+        router.push(
+          afterPlanStepHref({
+            skill: "writing",
+            hubId: planHubId,
+            currentTask: current,
+            currentTaskId: planTaskId,
+            bankNumber: mockSlug === "m02" ? 2 : 1,
+            preferExercise: true,
+          }),
+        );
+        return;
+      }
+
       if (mockAttemptId) {
         const testNum = resolvedTestNumber;
         cacheMockNavHint({
@@ -551,6 +595,12 @@ export function WritingPage({
     mockSlug,
     router,
     mockMeta.writingTaskCount,
+    fromPlan,
+    planHubId,
+    planTaskId,
+    planTask,
+    isDiagnostic,
+    resolvedTestNumber,
   ]);
 
   const timerActive = phase === "ready" && Boolean(attemptId);
@@ -608,13 +658,15 @@ export function WritingPage({
 
   if (phase === "loading") {
     return (
-      <TestShell header={<TestHeader timer={<span className="text-meta">Loading…</span>} />}>
-        <ExamSectionLoader
-          className="min-h-0"
-          title={`Loading Writing · Task ${part}`}
-          subtitle="Fetching your task prompt and starting the timer."
-        />
-      </TestShell>
+      <IeltsExamSkeleton
+        light
+        title={`Loading Writing · Task ${part}`}
+        subtitle={
+          fromPlan
+            ? "Opening your plan task…"
+            : "Fetching your task prompt and starting the timer."
+        }
+      />
     );
   }
 
@@ -664,9 +716,19 @@ export function WritingPage({
 
   const promptNode =
     task && activePart === 2 ? (
-      <WritingTask2Prompt task={task} minutes={40} minWords={minWords} />
+      <WritingTask2Prompt
+        task={task}
+        minutes={40}
+        minWords={minWords}
+        plainHeader={fromPlan}
+      />
     ) : task ? (
-      <WritingTask1Prompt task={task} minutes={20} minWords={minWords} />
+      <WritingTask1Prompt
+        task={task}
+        minutes={20}
+        minWords={minWords}
+        plainHeader={fromPlan}
+      />
     ) : null;
 
   return (
@@ -692,7 +754,8 @@ export function WritingPage({
       <WritingExamWorkspace
         activePart={activePart}
         isMock={Boolean(mockAttemptId)}
-        displayLabel={mockMeta.displayLabel}
+        displayLabel={fromPlan ? undefined : mockMeta.displayLabel}
+        plainHeader={fromPlan}
         remainingSeconds={remaining}
         wordCount={wordCount}
         minWords={minWords}

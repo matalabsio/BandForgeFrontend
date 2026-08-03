@@ -34,6 +34,13 @@ import {
 import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
+import {
+  afterPlanStepHref,
+  type PlanTaskKind,
+} from "@/lib/plan-task-flow";
+import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
+import { patchLearningTask } from "@/lib/learning-api";
+import { completePracticeHub } from "@/lib/practice-api";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
@@ -105,6 +112,10 @@ type Props = {
   testNumber?: number;
   flow?: "mock" | "diagnostic";
   skillContext?: PracticeSkill | null;
+  fromPlan?: boolean;
+  planTask?: PlanTaskKind | null;
+  planTaskId?: string | null;
+  planHubId?: string | null;
 };
 
 type SessionStart = Awaited<ReturnType<typeof readingApi.start>>;
@@ -130,6 +141,10 @@ export function ReadingPage({
   testNumber: testNumberProp,
   flow = "mock",
   skillContext = null,
+  fromPlan = false,
+  planTask = null,
+  planTaskId = null,
+  planHubId = null,
 }: Props) {
   const isDiagnostic = isDiagnosticFlow(flow, testId);
   const { replace, push } = useRouter();
@@ -175,7 +190,9 @@ export function ReadingPage({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const autosaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pendingAutosaveValuesRef = useRef<Record<string, string>>({});
-  const shouldShowIntro = !mockAttemptId || passage === 1;
+  const shouldShowIntro = fromPlan
+    ? false
+    : !mockAttemptId || passage === 1;
   const shouldShowIntroRef = useRef(shouldShowIntro);
   const instructionScope = useMemo(
     () => mockAttemptId ?? `${testId}:reading`,
@@ -400,6 +417,42 @@ export function ReadingPage({
     [mockAttemptId, mockSlug, replace, resolvedTestNumber],
   );
 
+  const finishPlanReading = useCallback(
+    (score?: {
+      band?: number | null;
+      raw_score?: number | null;
+      total_questions?: number | null;
+    }) => {
+      if (!fromPlan || !planHubId) return false;
+      const current = planTask ?? "practice";
+      if (current === "practice") {
+        recordPlanDayOutcome({
+          skill: "reading",
+          taskType: "practice",
+          band: score?.band ?? null,
+          rawScore: score?.raw_score ?? null,
+          totalQuestions: score?.total_questions ?? null,
+        });
+      }
+      if (planTaskId) {
+        void patchLearningTask(planTaskId, "done").catch(() => {});
+      }
+      void completePracticeHub(planHubId).catch(() => {});
+      push(
+        afterPlanStepHref({
+          skill: "reading",
+          hubId: planHubId,
+          currentTask: current,
+          currentTaskId: planTaskId,
+          bankNumber: 1,
+          preferExercise: true,
+        }),
+      );
+      return true;
+    },
+    [fromPlan, planHubId, planTask, planTaskId, push],
+  );
+
   const flushAutosaves = useCallback(
     async (id: string, snapshot: Record<string, string>) => {
       clearAutosaveTimers();
@@ -462,6 +515,14 @@ export function ReadingPage({
       }
       const readingComplete =
         result.mock_reading_complete === true || passage >= readingPassageCount;
+      if (
+        finishPlanReading({
+          band: result.band,
+          raw_score: result.raw_score,
+          total_questions: result.total_questions,
+        })
+      )
+        return;
       if (mockAttemptId && !isDiagnostic) {
         goToMockSectionResults(result.attempt_id, passage);
         return;
@@ -503,6 +564,7 @@ export function ReadingPage({
     answers,
     goToResults,
     goToMockSectionResults,
+    finishPlanReading,
     isDiagnostic,
     mockAttemptId,
     testId,
@@ -646,7 +708,8 @@ export function ReadingPage({
               forceNew: false,
               part: passage,
               mockAttemptId: mockAttemptId ?? undefined,
-              skillContext: skillContext ?? undefined,
+              skillContext: fromPlan ? "reading" : (skillContext ?? undefined),
+              fromPlan: fromPlan || undefined,
             });
             if (!start.questions?.length || !start.passage_text) {
               const qs = await readingApi.questions(testId, { part: passage });
@@ -723,6 +786,9 @@ export function ReadingPage({
       hydrateFromStart,
       replace,
       initialBoot,
+      skillContext,
+      fromPlan,
+      resolvedTestNumber,
     ],
   );
 
@@ -958,8 +1024,13 @@ export function ReadingPage({
   if (loadStatus === "booting" || (loadStatus === "ready" && !contentReady && examPhase !== "intro")) {
     return (
       <ReadingExamSkeleton
+        light={fromPlan}
         title={`Loading Reading · Passage ${passage}`}
-        subtitle="Fetching the passage and questions for this section."
+        subtitle={
+          fromPlan
+            ? "Opening your reading practice…"
+            : "Fetching the passage and questions for this section."
+        }
       />
     );
   }
@@ -1033,16 +1104,35 @@ export function ReadingPage({
         <>
           <ReadingExamToolbar
             passage={passage}
-            testTitle={mockAttemptId ? mockMeta.displayLabel : testTitle}
+            testTitle={
+              fromPlan
+                ? displayTitle
+                : mockAttemptId
+                  ? mockMeta.displayLabel
+                  : testTitle
+            }
             hubHref={
-              mockAttemptId ? mockHubPath(mockSlug, mockAttemptId) : undefined
+              fromPlan
+                ? "/study-plan/today"
+                : mockAttemptId
+                  ? mockHubPath(mockSlug, mockAttemptId)
+                  : undefined
             }
-            hubLabel={mockAttemptId ? `← ${mockMeta.displayLabel}` : undefined}
+            hubLabel={
+              fromPlan
+                ? "← Today’s plan"
+                : mockAttemptId
+                  ? `← ${mockMeta.displayLabel}`
+                  : undefined
+            }
             sectionHint={
-              mockAttemptId
-                ? `Passage ${passage} of ${readingPassageCount}`
-                : undefined
+              fromPlan
+                ? undefined
+                : mockAttemptId
+                  ? `Passage ${passage} of ${readingPassageCount}`
+                  : undefined
             }
+            plainHeader={fromPlan}
             submitLabel={mockAttemptId ? toolbarSubmitLabel : undefined}
             remainingSeconds={remaining}
             timerActive={timerActive}
@@ -1067,11 +1157,11 @@ export function ReadingPage({
           ) : null}
 
           {examPhase === "questions" ? (
-            <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-              <div className="min-h-[34vh] border-b border-[var(--reading-border)] lg:min-h-0 lg:w-[min(56%,1fr)] lg:border-b-0 lg:border-r">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+              <div className="min-h-[38vh] max-h-[46vh] overflow-hidden border-b border-[var(--reading-border)] sm:min-h-[40vh] lg:max-h-none lg:min-h-0 lg:w-[56%] lg:flex-1 lg:border-b-0 lg:border-r">
                 <ReadingPassagePanel passageText={passageText} />
               </div>
-              <div className="flex min-h-[52vh] min-w-0 flex-1 flex-col lg:min-h-0 lg:w-[min(44%,560px)] lg:shrink-0 lg:max-h-[calc(100dvh-3rem)]">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:w-[min(44%,560px)] lg:max-w-[560px] lg:shrink-0 lg:max-h-[calc(100dvh-3rem)]">
                 <ReadingSectionStepper
                   current={activeQuestionSection}
                   onSelect={handleStepperSelect}
@@ -1091,7 +1181,7 @@ export function ReadingPage({
                   isLastSection={isLastQuestionSection}
                   continueLabel={continueLabel}
                 />
-                <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                   {currentGroup ? (
                     <ReadingQuestionSection
                       group={currentGroup}

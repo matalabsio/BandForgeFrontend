@@ -1,0 +1,263 @@
+import {
+  M01_MOCK_TEST_ID,
+  M02_MOCK_TEST_ID,
+  type MockSlug,
+} from "@/lib/mock-catalog";
+import type { PracticeSkill } from "@/lib/practice-types";
+
+export type PlanTaskKind = "watch" | "practice" | "submit";
+
+const SKILLS_WITH_SUBMIT = new Set<PracticeSkill>(["writing", "speaking"]);
+
+/** Next step in the same skill stack (Watch → Practice → Submit). */
+export function nextPlanTask(
+  current: PlanTaskKind | null | undefined,
+  skill: PracticeSkill,
+): PlanTaskKind | null {
+  if (current === "watch") return "practice";
+  if (current === "practice" && SKILLS_WITH_SUBMIT.has(skill)) return "submit";
+  return null;
+}
+
+/** Swap task type segment inside `t-{date}-{skill}-{type}-s{slot}`. */
+export function swapPlanTaskId(
+  taskId: string | null | undefined,
+  nextType: PlanTaskKind,
+): string | null {
+  if (!taskId) return null;
+  const next = taskId.replace(
+    /-(watch|practice|submit)-/,
+    `-${nextType}-`,
+  );
+  return next === taskId ? null : next;
+}
+
+/** Odd bank → Mock Test 1, even → Mock Test 2. */
+export function planMockSlugForBank(bankNumber: number): MockSlug {
+  return bankNumber % 2 === 0 ? "m02" : "m01";
+}
+
+export function planMockTestIdForBank(bankNumber: number): string {
+  return planMockSlugForBank(bankNumber) === "m02"
+    ? M02_MOCK_TEST_ID
+    : M01_MOCK_TEST_ID;
+}
+
+/** Practice → Task 1, Submit → Task 2 (Writing). */
+export function planWritingPart(task: PlanTaskKind): 1 | 2 {
+  return task === "submit" ? 2 : 1;
+}
+
+export function planHubHref(opts: {
+  skill: PracticeSkill;
+  hubId: string;
+  task: PlanTaskKind;
+  taskId?: string | null;
+}): string {
+  const q = new URLSearchParams({ from: "plan", task: opts.task });
+  if (opts.taskId) q.set("taskId", opts.taskId);
+  return `/practice/${opts.skill}/${opts.hubId}?${q.toString()}`;
+}
+
+export function planExerciseHref(opts: {
+  skill: PracticeSkill;
+  hubId: string;
+  task: PlanTaskKind;
+  taskId?: string | null;
+}): string {
+  const q = new URLSearchParams({ from: "plan", task: opts.task });
+  if (opts.taskId) q.set("taskId", opts.taskId);
+  return `/practice/${opts.skill}/${opts.hubId}/exercise?${q.toString()}`;
+}
+
+/** Real Writing module (MT1/MT2 prompts + exam UI), not the thin bank form. */
+export function planWritingModuleHref(opts: {
+  hubId: string;
+  task: PlanTaskKind;
+  taskId?: string | null;
+  bankNumber: number;
+}): string {
+  const part = planWritingPart(opts.task);
+  const mock = planMockSlugForBank(opts.bankNumber);
+  const q = new URLSearchParams({
+    auto: "1",
+    skill_context: "writing",
+    from: "plan",
+    task: opts.task,
+    hubId: opts.hubId,
+    mock,
+  });
+  if (opts.taskId) q.set("taskId", opts.taskId);
+  return `/test/writing/task/${part}?${q.toString()}`;
+}
+
+/**
+ * Real Listening module — always MT1 Part 1 for plan Practice
+ * (same IELTS set as Test 1 Listening), not thin bank smoke questions.
+ */
+export function planListeningModuleHref(opts: {
+  hubId: string;
+  task: PlanTaskKind;
+  taskId?: string | null;
+  bankNumber?: number;
+}): string {
+  void opts.bankNumber;
+  const q = new URLSearchParams({
+    part: "1",
+    auto: "1",
+    skill_context: "listening",
+    from: "plan",
+    task: opts.task,
+    hubId: opts.hubId,
+  });
+  if (opts.taskId) q.set("taskId", opts.taskId);
+  return `/test/1/listening?${q.toString()}`;
+}
+
+/**
+ * Real Reading module — always MT1 Passage 1 (question set 1),
+ * not thin bank smoke questions.
+ */
+export function planReadingModuleHref(opts: {
+  hubId: string;
+  task: PlanTaskKind;
+  taskId?: string | null;
+  bankNumber?: number;
+}): string {
+  void opts.bankNumber;
+  const q = new URLSearchParams({
+    passage: "1",
+    auto: "1",
+    skill_context: "reading",
+    from: "plan",
+    task: opts.task,
+    hubId: opts.hubId,
+  });
+  if (opts.taskId) q.set("taskId", opts.taskId);
+  return `/test/1/reading?${q.toString()}`;
+}
+
+/** Href to open the active plan step (skill-aware). */
+export function planStepOpenHref(opts: {
+  skill: PracticeSkill;
+  hubId: string;
+  task: PlanTaskKind;
+  taskId?: string | null;
+  bankNumber?: number;
+}): string {
+  if (opts.skill === "writing") {
+    return planWritingModuleHref({
+      hubId: opts.hubId,
+      task: opts.task,
+      taskId: opts.taskId,
+      bankNumber: opts.bankNumber ?? 1,
+    });
+  }
+  if (opts.skill === "listening") {
+    return planListeningModuleHref({
+      hubId: opts.hubId,
+      task: opts.task,
+      taskId: opts.taskId,
+      bankNumber: opts.bankNumber ?? 1,
+    });
+  }
+  if (opts.skill === "reading") {
+    return planReadingModuleHref({
+      hubId: opts.hubId,
+      task: opts.task,
+      taskId: opts.taskId,
+      bankNumber: opts.bankNumber ?? 1,
+    });
+  }
+  return planExerciseHref({
+    skill: opts.skill,
+    hubId: opts.hubId,
+    task: opts.task,
+    taskId: opts.taskId,
+  });
+}
+
+/** After finishing a plan step: next exercise/hub/module, or Today. */
+export function afterPlanStepHref(opts: {
+  skill: PracticeSkill;
+  hubId: string;
+  currentTask: PlanTaskKind | null | undefined;
+  currentTaskId?: string | null;
+  bankNumber?: number;
+  /**
+   * When true, open the exercise/module for the next step.
+   * Default: only auto-open when moving into Practice (not Submit hub).
+   */
+  preferExercise?: boolean;
+}): string {
+  const next = nextPlanTask(opts.currentTask, opts.skill);
+  if (!next) return "/study-plan/today";
+  const nextId = swapPlanTaskId(opts.currentTaskId, next);
+  const openExercise =
+    opts.preferExercise === true
+      ? next === "practice" || next === "submit"
+      : opts.preferExercise === false
+        ? false
+        : next === "practice";
+
+  if (openExercise) {
+    return planStepOpenHref({
+      skill: opts.skill,
+      hubId: opts.hubId,
+      task: next,
+      taskId: nextId,
+      bankNumber: opts.bankNumber,
+    });
+  }
+  return planHubHref({
+    skill: opts.skill,
+    hubId: opts.hubId,
+    task: next,
+    taskId: nextId,
+  });
+}
+
+/** Resolve a Today checklist task to its fastest open URL (skip hub for practice). */
+export function resolveTodayTaskHref(opts: {
+  skill: string | null | undefined;
+  hubId: string | null | undefined;
+  taskType: string | null | undefined;
+  taskId: string;
+  fallbackHref?: string | null;
+  bankNumber?: number;
+}): string {
+  const skill = opts.skill;
+  const hubId = opts.hubId;
+  const task =
+    opts.taskType === "watch" ||
+    opts.taskType === "practice" ||
+    opts.taskType === "submit"
+      ? opts.taskType
+      : null;
+  if (!hubId || !skill || !task) {
+    return opts.fallbackHref || "/study-plan";
+  }
+  if (
+    skill !== "listening" &&
+    skill !== "reading" &&
+    skill !== "writing" &&
+    skill !== "speaking"
+  ) {
+    return opts.fallbackHref || "/study-plan";
+  }
+  if (task === "watch") {
+    return planHubHref({
+      skill,
+      hubId,
+      task: "watch",
+      taskId: opts.taskId,
+    });
+  }
+  return planStepOpenHref({
+    skill,
+    hubId,
+    task,
+    taskId: opts.taskId,
+    bankNumber: opts.bankNumber ?? 1,
+  });
+}

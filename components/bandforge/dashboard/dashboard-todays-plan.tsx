@@ -6,6 +6,7 @@ import {
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
 import type { LearningStudyTask } from "@/lib/learning-types";
+import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
 import type { ComponentType, SVGProps } from "react";
 
 const moduleIcons: Record<
@@ -65,7 +66,13 @@ export function DashboardTodaysPlan({ tasks = [] }: Props) {
             return (
               <Link
                 key={`${task.id}-${index}`}
-                href={task.href || "/mocks"}
+                href={resolveTodayTaskHref({
+                  skill: task.module,
+                  hubId: task.hub_id,
+                  taskType: task.task_type,
+                  taskId: task.id,
+                  fallbackHref: task.href || "/study-plan/today",
+                })}
                 className="flex w-[300px] shrink-0 items-center gap-[15px] rounded-[0.9375rem] border border-border-soft bg-white px-5 py-[18px] transition-colors hover:border-cyan/40"
               >
                 <div className="flex size-[42px] shrink-0 items-center justify-center rounded-[11px] bg-cyan-soft text-cyan">

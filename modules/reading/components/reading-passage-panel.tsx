@@ -10,8 +10,8 @@ export function ReadingPassagePanel({ passageText }: Props) {
   const blocks = parsePassageBlocks(passageText);
 
   return (
-    <div className="reading-passage-scroll h-full overflow-y-auto bg-[var(--reading-paper)] px-5 py-6 sm:px-8 sm:py-8">
-      <div className="mx-auto max-w-prose">
+    <div className="reading-passage-scroll h-full max-h-full overflow-y-auto overscroll-contain bg-[var(--reading-paper)] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+      <div className="mx-auto w-full max-w-prose">
         {blocks.length > 0 ? (
           <div className="space-y-6">
             {blocks.map((block, i) => {

@@ -62,9 +62,25 @@ export async function fetchPracticeHub(
         timeoutMs: FETCH_MS,
       },
     );
+    if (res.status === 403) {
+      const err = new Error("HUB_LOCKED");
+      (err as Error & { code?: string }).code = "HUB_LOCKED";
+      throw err;
+    }
     if (!res.ok) return null;
     return (await res.json()) as PracticeHubDetail;
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && (e as Error & { code?: string }).code === "HUB_LOCKED") {
+      throw e;
+    }
     return null;
   }
+}
+
+export function isHubLockedError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    ((error as Error & { code?: string }).code === "HUB_LOCKED" ||
+      error.message === "HUB_LOCKED")
+  );
 }

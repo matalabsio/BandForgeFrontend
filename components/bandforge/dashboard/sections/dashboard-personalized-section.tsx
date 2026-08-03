@@ -5,7 +5,7 @@ import { DashboardTimelineSection } from "@/components/bandforge/dashboard/secti
 import { DashboardWelcomeSection } from "@/components/bandforge/dashboard/sections/dashboard-welcome-section";
 import { TodaysPlanPanel } from "@/components/bandforge/dashboard/todays-plan-panel";
 import { fetchDashboardSummary } from "@/lib/dashboard-server";
-import type { LearningProfile } from "@/lib/learning-types";
+import type { LearningProfile, LearningStudyPlan } from "@/lib/learning-types";
 
 type UserProps = {
   firstName: string;
@@ -20,6 +20,24 @@ type Props = {
   user: UserProps;
   userId: string;
 };
+
+function overallPlanPercent(plan: LearningStudyPlan): number {
+  const skillModules = ["listening", "reading", "writing", "speaking"];
+  const today = new Date().toISOString().slice(0, 10);
+  let done = 0;
+  let total = 0;
+  for (const week of plan.weeks) {
+    for (const day of week.days) {
+      if (day.date > today) continue;
+      for (const task of day.tasks) {
+        if (!skillModules.includes(task.module)) continue;
+        total += 1;
+        if (task.status === "done") done += 1;
+      }
+    }
+  }
+  return total > 0 ? Math.round((done / total) * 100) : 0;
+}
 
 export async function DashboardPersonalizedSection({
   cookieHeader,
@@ -57,11 +75,16 @@ export async function DashboardPersonalizedSection({
         studyPlan={learning.study_plan}
       />
       <DashboardBandGapSection learning={learning} />
-      <DashboardHubProgressSection learning={learning} />
       <TodaysPlanPanel
         initialTasks={learning.todays_tasks}
         userId={userId}
+        hubProgress={learning.hub_progress}
+        moduleSummary={learning.module_summary}
+        currentBand={learning.current_band}
+        targetBand={learning.target_band}
+        overallPlanPct={overallPlanPercent(learning.study_plan)}
       />
+      <DashboardHubProgressSection learning={learning} />
     </div>
   );
 }

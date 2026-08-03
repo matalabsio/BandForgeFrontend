@@ -18,6 +18,8 @@ type Props = {
   submitLabel?: string;
   sectionHint?: string;
   showSubmit?: boolean;
+  /** Hide IELTS/mock marketing eyebrow (plan practice). */
+  plainHeader?: boolean;
   onSubmit: () => void;
 };
 
@@ -34,6 +36,7 @@ export function ReadingExamToolbar({
   submitLabel = "Submit",
   sectionHint,
   showSubmit = true,
+  plainHeader = false,
   onSubmit,
 }: Props) {
   const warning = remainingSeconds <= 300 && timerActive;
@@ -50,11 +53,21 @@ export function ReadingExamToolbar({
         {hubLabel}
       </Link>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-white/60">
-          IELTS Academic Reading
-          {sectionHint ? ` · ${sectionHint}` : ` · Passage ${passage}`}
-        </p>
-        <p className="truncate text-[13px] font-medium leading-tight">{testTitle}</p>
+        {plainHeader ? (
+          <p className="truncate text-[13px] font-medium leading-tight">
+            {testTitle || `Passage ${passage}`}
+          </p>
+        ) : (
+          <>
+            <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-white/60">
+              IELTS Academic Reading
+              {sectionHint ? ` · ${sectionHint}` : ` · Passage ${passage}`}
+            </p>
+            <p className="truncate text-[13px] font-medium leading-tight">
+              {testTitle}
+            </p>
+          </>
+        )}
       </div>
       <div className="hidden items-center gap-2 sm:flex">
         <span className="text-[10px] font-medium text-white/50">Progress</span>

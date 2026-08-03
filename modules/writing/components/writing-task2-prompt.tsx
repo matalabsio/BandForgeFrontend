@@ -36,6 +36,7 @@ type Props = {
   minutes?: number;
   minWords?: number;
   showChecklist?: boolean;
+  plainHeader?: boolean;
 };
 
 export function WritingTask2Prompt({
@@ -43,6 +44,7 @@ export function WritingTask2Prompt({
   minutes = 40,
   minWords = 250,
   showChecklist = true,
+  plainHeader = false,
 }: Props) {
   const parsed = parseTask2Prompt(task.prompt);
 
@@ -53,6 +55,7 @@ export function WritingTask2Prompt({
         options={task.options}
         minutes={minutes}
         minWords={minWords}
+        plainHeader={plainHeader}
       />
 
       {parsed.intro ? (

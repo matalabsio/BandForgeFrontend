@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getApiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
 import { serverAuthHeaders } from "@/lib/server-auth-headers";
@@ -51,25 +52,26 @@ export function emptyLearningProfile(userId = ""): LearningProfile {
   };
 }
 
-export async function fetchLearningProfile(
-  cookieHeader: string,
-): Promise<LearningProfile | null> {
-  if (!isAuthEnabled() || !cookieHeader.trim()) return null;
-  try {
-    const res = await fetchWithTimeout(`${getApiUrl()}/api/learning/profile`, {
-      headers: serverAuthHeaders(cookieHeader),
-      cache: "no-store",
-      timeoutMs: FETCH_MS,
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as LearningProfile;
-  } catch (err) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("[learning] profile fetch failed:", err);
+/** Deduped per RSC request — layout + page share one profile round-trip. */
+export const fetchLearningProfile = cache(
+  async (cookieHeader: string): Promise<LearningProfile | null> => {
+    if (!isAuthEnabled() || !cookieHeader.trim()) return null;
+    try {
+      const res = await fetchWithTimeout(`${getApiUrl()}/api/learning/profile`, {
+        headers: serverAuthHeaders(cookieHeader),
+        cache: "no-store",
+        timeoutMs: FETCH_MS,
+      });
+      if (!res.ok) return null;
+      return (await res.json()) as LearningProfile;
+    } catch (err) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[learning] profile fetch failed:", err);
+      }
+      return null;
     }
-    return null;
-  }
-}
+  },
+);
 
 export async function refreshLearningProfileServer(
   cookieHeader: string,

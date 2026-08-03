@@ -24,6 +24,8 @@ export type PracticeHub = {
   sort_order: number;
   status: HubStatus;
   completed_at: string | null;
+  accessible?: boolean;
+  locked_reason?: string | null;
 };
 
 export type PracticeHubDetail = PracticeHub & {

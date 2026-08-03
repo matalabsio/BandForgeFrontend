@@ -60,6 +60,7 @@ function ReadingMatchingHeadingsBlockBase({
           poolTitle="List of headings"
           slotPlaceholder="Drop heading here"
           pendingHint="Tap a heading, then tap an empty paragraph row to assign."
+          poolSticky={false}
         />
       </div>
     </article>

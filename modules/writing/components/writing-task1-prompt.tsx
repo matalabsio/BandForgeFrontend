@@ -10,6 +10,7 @@ type Props = {
   task: WritingTask;
   minutes?: number;
   minWords?: number;
+  plainHeader?: boolean;
 };
 
 type PromptParts = {
@@ -169,6 +170,7 @@ export function WritingTask1Prompt({
   task,
   minutes = 20,
   minWords = 150,
+  plainHeader = false,
 }: Props) {
   const chart =
     parseChartSpec(task.options?.chart) ??
@@ -217,6 +219,7 @@ export function WritingTask1Prompt({
         options={task.options}
         minutes={minutes}
         minWords={minWords}
+        plainHeader={plainHeader}
       />
 
       {beforeChart ? (

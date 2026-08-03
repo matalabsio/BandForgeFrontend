@@ -15,6 +15,7 @@ export const readingApi = {
       part?: number;
       mockAttemptId?: string;
       skillContext?: PracticeSkill;
+      fromPlan?: boolean;
     },
   ): Promise<StartReadingPayload> {
     const params = new URLSearchParams();
@@ -26,6 +27,9 @@ export const readingApi = {
     }
     if (options?.skillContext) {
       params.set("skill_context", options.skillContext);
+    }
+    if (options?.fromPlan) {
+      params.set("from_plan", "true");
     }
     const qs = `?${params.toString()}`;
     return examApiCall<StartReadingPayload>(

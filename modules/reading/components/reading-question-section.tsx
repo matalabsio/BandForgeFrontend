@@ -112,7 +112,7 @@ export function ReadingQuestionSection({
               return (
                 <article
                   key={q.id}
-                  className="rounded-lg border border-[var(--reading-border)] bg-white p-4 shadow-sm"
+                  className="rounded-lg border border-[var(--reading-border)] bg-white p-3 shadow-sm sm:p-4"
                 >
                   {useInline ? (
                     <ReadingSentenceInline

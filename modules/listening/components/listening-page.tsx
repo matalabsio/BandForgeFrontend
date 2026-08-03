@@ -77,6 +77,13 @@ import {
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
+import {
+  afterPlanStepHref,
+  type PlanTaskKind,
+} from "@/lib/plan-task-flow";
+import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
+import { patchLearningTask } from "@/lib/learning-api";
+import { completePracticeHub } from "@/lib/practice-api";
 
 function readConsent(moduleKey: string, attemptScope: string): boolean {
   if (typeof window === "undefined") return false;
@@ -106,6 +113,10 @@ type Props = {
   testNumber?: number;
   flow?: "mock" | "diagnostic";
   skillContext?: PracticeSkill | null;
+  fromPlan?: boolean;
+  planTask?: PlanTaskKind | null;
+  planTaskId?: string | null;
+  planHubId?: string | null;
 };
 
 export function ListeningPage({
@@ -118,6 +129,10 @@ export function ListeningPage({
   testNumber: testNumberProp,
   flow = "mock",
   skillContext = null,
+  fromPlan = false,
+  planTask = null,
+  planTaskId = null,
+  planHubId = null,
 }: Props) {
   const isDiagnostic = isDiagnosticFlow(flow, testId);
   const isExam = variant === "exam";
@@ -262,7 +277,44 @@ export function ListeningPage({
     [mockAttemptId, mockSlug, replace, resolvedTestNumber],
   );
 
-      const submitAnswers = useMemo(
+  const finishPlanListening = useCallback(
+    (score?: {
+      band?: number | null;
+      raw_score?: number | null;
+      total_questions?: number | null;
+    }) => {
+      if (!fromPlan || !planHubId) return false;
+      const current = planTask ?? "practice";
+      if (current === "practice") {
+        recordPlanDayOutcome({
+          skill: "listening",
+          taskType: "practice",
+          band: score?.band ?? null,
+          rawScore: score?.raw_score ?? null,
+          totalQuestions: score?.total_questions ?? null,
+        });
+      }
+      if (planTaskId) {
+        void patchLearningTask(planTaskId, "done").catch(() => {});
+      }
+      // Listening has Watch + Practice only — Practice completes the hub.
+      void completePracticeHub(planHubId).catch(() => {});
+      push(
+        afterPlanStepHref({
+          skill: "listening",
+          hubId: planHubId,
+          currentTask: current,
+          currentTaskId: planTaskId,
+          bankNumber: 1,
+          preferExercise: true,
+        }),
+      );
+      return true;
+    },
+    [fromPlan, planHubId, planTask, planTaskId, push],
+  );
+
+  const submitAnswers = useMemo(
     () =>
       allQuestions.map((q) => ({
         question_id: q.id,
@@ -304,6 +356,14 @@ export function ListeningPage({
       }
       dispatch({ type: "completed", payload });
       clearSnapshot(state.attemptId);
+      if (
+        finishPlanListening({
+          band: payload.band,
+          raw_score: payload.raw_score,
+          total_questions: payload.total_questions,
+        })
+      )
+        return;
       if (mockAttemptId && !isDiagnostic) {
         goToMockSectionResults(payload.attempt_id, part);
         return;
@@ -327,10 +387,12 @@ export function ListeningPage({
     dispatch,
     goToResults,
     goToMockSectionResults,
+    finishPlanListening,
     isDiagnostic,
     mockAttemptId,
     part,
     flushNow,
+    listeningPartCount,
   ]);
 
   const expiryFiredRef = useRef(false);
@@ -398,7 +460,8 @@ export function ListeningPage({
           part,
           mockAttemptId: mockAttemptId ?? undefined,
           includeQuestions: true,
-          skillContext: skillContext ?? undefined,
+          skillContext: fromPlan ? "listening" : (skillContext ?? undefined),
+          fromPlan: fromPlan || undefined,
         });
         dispatch({ type: "started", payload: start });
         if (start.parts?.length && start.test) {
@@ -471,7 +534,7 @@ export function ListeningPage({
         beginAttemptInFlightRef.current = null;
       }
     },
-    [testId, part, mockAttemptId, sectionStart, dispatch, mockSlug, replace, skillContext],
+    [testId, part, mockAttemptId, sectionStart, dispatch, mockSlug, replace, skillContext, fromPlan, resolvedTestNumber],
   );
 
   useEffect(() => {
@@ -519,7 +582,7 @@ export function ListeningPage({
   }, [isExam, part, mockAttemptId, testId, initialBoot, dispatch]);
 
   useListeningMockGuard({
-    enabled: isExam && !isDiagnostic,
+    enabled: isExam && !isDiagnostic && !fromPlan,
     mockAttemptId,
     mockSlug,
     part,
@@ -529,7 +592,7 @@ export function ListeningPage({
   });
 
   useEffect(() => {
-    if (!isExam || part !== 1) {
+    if (!isExam || part !== 1 || fromPlan) {
       setIntroSeen(true);
       setIntroAgreed(true);
       return;
@@ -538,7 +601,7 @@ export function ListeningPage({
     const seen = readConsent("listening", introStorageKey);
     setIntroSeen(seen);
     setIntroAgreed(seen);
-  }, [isExam, part, introStorageKey]);
+  }, [isExam, part, introStorageKey, fromPlan]);
 
   useEffect(() => {
     if (!isExam) return;
@@ -631,8 +694,13 @@ export function ListeningPage({
     if (state.status === "idle" || state.status === "starting") {
       return (
         <IeltsExamSkeleton
+          light={fromPlan}
           title={`Loading Listening · Part ${part}`}
-          subtitle="Fetching questions and audio for this part."
+          subtitle={
+            fromPlan
+              ? "Opening your plan practice…"
+              : "Fetching questions and audio for this part."
+          }
         />
       );
     }
@@ -666,15 +734,19 @@ export function ListeningPage({
         state.parts.find((p) => p.part === part) ?? state.parts[0];
       const instruction = audioPanelInstruction(examPart, mockSlug);
       const questionsVisible = questionsBrowsable(partAudioPhase);
-      const testTitle = mockAttemptId
-        ? mockMeta.displayLabel
-        : (state.test?.title ?? stageMeta?.context ?? "Listening");
+      const testTitle = fromPlan
+        ? stageMeta?.title ?? `Part ${part}`
+        : mockAttemptId
+          ? mockMeta.displayLabel
+          : (state.test?.title ?? stageMeta?.context ?? "Listening");
       const stageLabel = mockAttemptId
         ? `Part ${part} of ${listeningPartCount}`
         : (stageMeta?.title ?? `Part ${part}`);
-      const hubHref = mockAttemptId
-        ? mockHubPath(mockSlug, mockAttemptId)
-        : listeningTestHubPath();
+      const hubHref = fromPlan
+        ? "/study-plan/today"
+        : mockAttemptId
+          ? mockHubPath(mockSlug, mockAttemptId)
+          : listeningTestHubPath();
       const nextPartLabel = mockAttemptId
         ? part >= listeningPartCount
           ? "Finish listening"
@@ -689,14 +761,18 @@ export function ListeningPage({
           {submitting ? (
             <ExamBusyOverlay
               title={
-                part >= listeningPartCount
-                  ? "Finishing listening…"
-                  : `Submitting Part ${part}…`
+                fromPlan
+                  ? "Submitting…"
+                  : part >= listeningPartCount
+                    ? "Finishing listening…"
+                    : `Submitting Part ${part}…`
               }
               subtitle={
-                part >= listeningPartCount
-                  ? "Saving your answers and opening reading."
-                  : `Saving your answers and loading Part ${part + 1}.`
+                fromPlan
+                  ? "Saving your answers…"
+                  : part >= listeningPartCount
+                    ? "Saving your answers and opening reading."
+                    : `Saving your answers and loading Part ${part + 1}.`
               }
             />
           ) : null}
@@ -705,12 +781,21 @@ export function ListeningPage({
             stageLabel={stageLabel}
             testTitle={testTitle}
             hubHref={hubHref}
-            hubLabel={mockAttemptId ? `← ${mockMeta.displayLabel}` : "← Back"}
-            sectionHint={
-              mockAttemptId
-                ? `Listening · Part ${part} of ${listeningPartCount} · ${mockMeta.listeningMinutes} min total`
-                : undefined
+            hubLabel={
+              fromPlan
+                ? "← Today’s plan"
+                : mockAttemptId
+                  ? `← ${mockMeta.displayLabel}`
+                  : "← Back"
             }
+            sectionHint={
+              fromPlan
+                ? undefined
+                : mockAttemptId
+                  ? `Listening · Part ${part} of ${listeningPartCount} · ${mockMeta.listeningMinutes} min total`
+                  : undefined
+            }
+            plainHeader={fromPlan}
             submitLabel={mockSubmitLabel}
             remainingSeconds={remaining}
             timerActive={submissionActive}
@@ -781,6 +866,7 @@ export function ListeningPage({
 
     return (
       <IeltsExamSkeleton
+        light={fromPlan}
         title={`Loading Listening · Part ${part}`}
         subtitle="Preparing your session."
       />
@@ -888,6 +974,14 @@ export function ListeningPage({
           onSubmitted={(payload) => {
             dispatch({ type: "completed", payload });
             if (state.attemptId) clearSnapshot(state.attemptId);
+            if (
+              finishPlanListening({
+                band: payload.band,
+                raw_score: payload.raw_score,
+                total_questions: payload.total_questions,
+              })
+            )
+              return;
             if (mockAttemptId && !isDiagnostic) {
               goToMockSectionResults(payload.attempt_id, part);
               return;

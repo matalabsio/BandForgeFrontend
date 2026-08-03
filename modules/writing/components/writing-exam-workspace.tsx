@@ -32,6 +32,8 @@ type Props = {
   essay: string;
   onEssayChange: (value: string) => void;
   onSubmit: () => void;
+  /** Hide mock / IELTS subtitle (plan practice). */
+  plainHeader?: boolean;
 };
 
 function wordProgress(count: number, min: number): number {
@@ -55,6 +57,7 @@ export function WritingExamWorkspace({
   essay,
   onEssayChange,
   onSubmit,
+  plainHeader = false,
 }: Props) {
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("write");
   const progress = wordProgress(wordCount, minWords);
@@ -73,10 +76,12 @@ export function WritingExamWorkspace({
               <p className="truncate text-[14px] font-bold leading-tight text-ink">
                 Writing · Task {activePart}
               </p>
-              <p className="truncate text-[11px] text-[#64748B]">
-                {displayLabel ?? "IELTS Academic"}
-                {isMock ? " · Full mock" : ""}
-              </p>
+              {plainHeader ? null : (
+                <p className="truncate text-[11px] text-[#64748B]">
+                  {displayLabel ?? "IELTS Academic"}
+                  {isMock ? " · Full mock" : ""}
+                </p>
+              )}
             </div>
           </div>
 

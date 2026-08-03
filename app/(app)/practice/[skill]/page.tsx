@@ -44,6 +44,7 @@ export default async function PracticeSkillPage({
     redirect(`/practice/${skill}/${hubParam}`);
   }
   const mockLockedMessage = sp.mock === "locked";
+  const hubLockedMessage = hubParam === "locked";
 
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerSession(cookieHeader);
@@ -66,6 +67,7 @@ export default async function PracticeSkillPage({
         hubs={hubs ?? []}
         mockUnlock={mockUnlock}
         mockLockedMessage={mockLockedMessage}
+        hubLockedMessage={hubLockedMessage}
       />
     </EntitledRouteGate>
   );

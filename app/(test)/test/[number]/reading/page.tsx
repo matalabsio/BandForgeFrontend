@@ -6,6 +6,7 @@ import {
 } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { parseSkillContext } from "@/lib/practice-submit";
+import type { PlanTaskKind } from "@/lib/plan-task-flow";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { fetchReadingBootServer, resolveCatalogSlotServer } from "@/lib/mock-server";
 import { getCachedCookieHeader } from "@/lib/server-cache";
@@ -24,8 +25,17 @@ type Props = {
     mock_attempt?: string;
     auto?: string;
     skill_context?: string;
+    from?: string;
+    task?: string;
+    taskId?: string;
+    hubId?: string;
   }>;
 };
+
+function parsePlanTask(value: string | undefined): PlanTaskKind | null {
+  if (value === "watch" || value === "practice" || value === "submit") return value;
+  return null;
+}
 
 export default async function TestReadingPage({ params, searchParams }: Props) {
   const { number: numberRaw } = await params;
@@ -36,8 +46,9 @@ export default async function TestReadingPage({ params, searchParams }: Props) {
   }
 
   const passage = sp.passage ? Number.parseInt(sp.passage, 10) : 1;
-  const autoStart = sp.auto === "1" || sp.auto === "true";
+  const autoStart = sp.auto === "1" || sp.auto === "true" || sp.from === "plan";
   const skillContext = parseSkillContext(sp.skill_context);
+  const fromPlan = sp.from === "plan";
   const returnPath = shortModuleExamPath(testNumber, "reading", { passage });
 
   const cookieHeader = await getCachedCookieHeader();
@@ -64,7 +75,7 @@ export default async function TestReadingPage({ params, searchParams }: Props) {
   return (
     <MockLayout>
       <ReadingPage
-        key={`${passage}-${sp.mock_attempt ?? "solo"}`}
+        key={`${passage}-${sp.mock_attempt ?? "solo"}-${fromPlan ? "plan" : "exam"}`}
         testId={mockTestId}
         mockSlug={mockSlug}
         mockMeta={mockMeta}
@@ -73,6 +84,10 @@ export default async function TestReadingPage({ params, searchParams }: Props) {
         initialBoot={initialBoot}
         testNumber={testNumber}
         skillContext={skillContext}
+        fromPlan={fromPlan}
+        planTask={parsePlanTask(sp.task)}
+        planTaskId={sp.taskId ?? null}
+        planHubId={sp.hubId ?? null}
       />
     </MockLayout>
   );
