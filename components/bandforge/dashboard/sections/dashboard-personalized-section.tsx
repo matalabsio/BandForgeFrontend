@@ -4,7 +4,7 @@ import { DashboardHubProgressSection } from "@/components/bandforge/dashboard/se
 import { DashboardTimelineSection } from "@/components/bandforge/dashboard/sections/dashboard-timeline-section";
 import { DashboardWelcomeSection } from "@/components/bandforge/dashboard/sections/dashboard-welcome-section";
 import { TodaysPlanPanel } from "@/components/bandforge/dashboard/todays-plan-panel";
-import { fetchDashboardSummary } from "@/lib/dashboard-server";
+import type { DashboardSummary } from "@/components/bandforge/dashboard/types";
 import type { LearningProfile, LearningStudyPlan } from "@/lib/learning-types";
 
 type UserProps = {
@@ -15,8 +15,8 @@ type UserProps = {
 };
 
 type Props = {
-  cookieHeader: string;
   learning: LearningProfile;
+  summary: DashboardSummary;
   user: UserProps;
   userId: string;
 };
@@ -40,12 +40,11 @@ function overallPlanPercent(plan: LearningStudyPlan): number {
 }
 
 export async function DashboardPersonalizedSection({
-  cookieHeader,
   learning,
+  summary,
   user,
   userId,
 }: Props) {
-  const summary = await fetchDashboardSummary(cookieHeader);
   const streak = summary.stats.current_streak ?? 0;
 
   return (

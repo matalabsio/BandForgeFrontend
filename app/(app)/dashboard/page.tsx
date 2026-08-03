@@ -12,6 +12,7 @@ import {
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
 import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
+import { fetchDashboardSummary } from "@/lib/dashboard-server";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
@@ -55,8 +56,11 @@ type DashboardBodyProps = {
 };
 
 async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps) {
-  const subscription = await fetchSubscription(cookieHeader);
-  const learning = await fetchLearningProfile(cookieHeader);
+  const [subscription, learning, summary] = await Promise.all([
+    fetchSubscription(cookieHeader),
+    fetchLearningProfile(cookieHeader),
+    fetchDashboardSummary(cookieHeader),
+  ]);
   const profile = learning ?? emptyLearningProfile(userId);
 
   // Stay on dashboard: unpaid users see the plan paywall (start vs unlock).
@@ -79,8 +83,8 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
   return (
     <DashboardGate learning={profile} subscription={subscription}>
       <DashboardPersonalizedSection
-        cookieHeader={cookieHeader}
         learning={profile}
+        summary={summary}
         user={user}
         userId={userId}
       />
