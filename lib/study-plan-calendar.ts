@@ -102,3 +102,139 @@ export function dayStatusLabel(status: DayAccessStatus): string {
       return "Open";
   }
 }
+
+const SKILL_ORDER = ["listening", "reading", "writing", "speaking"] as const;
+
+const TASK_TYPE_ORDER: Record<string, number> = {
+  watch: 0,
+  practice: 1,
+  submit: 2,
+};
+
+/** Flatten all study-plan days across weeks (sorted by date). */
+export function flattenPlanDays(weeks: LearningStudyWeek[]): LearningStudyDay[] {
+  const days: LearningStudyDay[] = [];
+  for (const week of weeks) {
+    for (const day of week.days) {
+      days.push(day);
+    }
+  }
+  return days.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function findPlanDay(
+  weeks: LearningStudyWeek[],
+  date: string,
+): LearningStudyDay | null {
+  for (const week of weeks) {
+    const found = week.days.find((d) => d.date === date);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Primary skill focus + task types for a day (e.g. Listening · Watch + Practice). */
+export function dayFocusSummary(day: LearningStudyDay): {
+  skills: string[];
+  label: string;
+  taskCount: number;
+  doneCount: number;
+} {
+  const tasks = countableTasks(day);
+  const skillSet = new Set<string>();
+  const typesBySkill = new Map<string, Set<string>>();
+
+  for (const task of tasks) {
+    const skill = (task.module || "other").toLowerCase();
+    skillSet.add(skill);
+    if (!typesBySkill.has(skill)) typesBySkill.set(skill, new Set());
+    if (task.task_type) typesBySkill.get(skill)!.add(task.task_type);
+  }
+
+  const skills: string[] = [
+    ...SKILL_ORDER.filter((s) => skillSet.has(s)),
+    ...[...skillSet].filter(
+      (s) => !(SKILL_ORDER as readonly string[]).includes(s),
+    ),
+  ];
+
+  const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const typeLabel = (t: string) => titleCase(t);
+
+  const parts = skills.slice(0, 2).map((skill) => {
+    const types = [...(typesBySkill.get(skill) ?? [])].sort(
+      (a, b) => (TASK_TYPE_ORDER[a] ?? 99) - (TASK_TYPE_ORDER[b] ?? 99),
+    );
+    const typeBit =
+      types.length > 0 ? ` · ${types.map(typeLabel).join(" + ")}` : "";
+    return `${titleCase(skill)}${typeBit}`;
+  });
+
+  return {
+    skills,
+    label: parts.join(" · ") || "Rest / catch-up",
+    taskCount: tasks.length,
+    doneCount: tasks.filter((t) => t.status === "done").length,
+  };
+}
+
+export type CalendarCell = {
+  date: string;
+  inMonth: boolean;
+  day: LearningStudyDay | null;
+};
+
+/** Build a Sunday-start month grid for a given YYYY-MM month key. */
+export function buildMonthCells(
+  monthKey: string,
+  weeks: LearningStudyWeek[],
+): CalendarCell[] {
+  const [yStr, mStr] = monthKey.split("-");
+  const year = Number(yStr);
+  const month = Number(mStr) - 1;
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return [];
+
+  const first = new Date(year, month, 1);
+  const startPad = first.getDay(); // 0 = Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const byDate = new Map(
+    flattenPlanDays(weeks).map((d) => [d.date, d] as const),
+  );
+
+  const cells: CalendarCell[] = [];
+  for (let i = 0; i < startPad; i += 1) {
+    const d = new Date(year, month, 1 - (startPad - i));
+    const iso = localIso(d);
+    cells.push({ date: iso, inMonth: false, day: byDate.get(iso) ?? null });
+  }
+  for (let dayNum = 1; dayNum <= daysInMonth; dayNum += 1) {
+    const d = new Date(year, month, dayNum);
+    const iso = localIso(d);
+    cells.push({ date: iso, inMonth: true, day: byDate.get(iso) ?? null });
+  }
+  while (cells.length % 7 !== 0) {
+    const last = cells[cells.length - 1];
+    const next = new Date(`${last.date}T12:00:00`);
+    next.setDate(next.getDate() + 1);
+    const iso = localIso(next);
+    cells.push({ date: iso, inMonth: false, day: byDate.get(iso) ?? null });
+  }
+  return cells;
+}
+
+function localIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function monthKeyFromIso(iso: string): string {
+  return iso.slice(0, 7);
+}
+
+export function shiftMonthKey(monthKey: string, delta: number): string {
+  const [yStr, mStr] = monthKey.split("-");
+  const d = new Date(Number(yStr), Number(mStr) - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}

@@ -11,7 +11,7 @@ import {
   PencilLine,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookIcon,
   HeadphonesIcon,
@@ -28,6 +28,8 @@ import {
   type SkillStepperStep,
 } from "@/components/bandforge/dashboard/skill-progress-stepper";
 import { DailyImprovementsPanel } from "@/components/bandforge/plan/daily-improvements-panel";
+import { DailyGrowthReportModal } from "@/components/bandforge/plan/daily-growth-report-modal";
+import { localPlanDateKey } from "@/lib/plan-step-completion";
 import type {
   LearningStudyTask,
   SkillHubProgress,
@@ -75,6 +77,7 @@ type SkillStack = {
 type Props = {
   initialTasks: LearningStudyTask[];
   userId: string;
+  studentName?: string;
   hubProgress?: Record<string, SkillHubProgress>;
   moduleSummary?: Record<
     string,
@@ -119,6 +122,11 @@ function stackTasksBySkill(tasks: TaskRow[]): SkillStack[] {
 
 function sumMinutes(tasks: LearningStudyTask[]): number {
   return tasks.reduce((acc, t) => acc + (t.duration_min ?? 0), 0);
+}
+
+function progressPercent(done: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((done / total) * 100);
 }
 
 function isUnavailable(task: LearningStudyTask): boolean {
@@ -167,7 +175,7 @@ function nextPracticeSkillHref(
       };
     }
   }
-  return { href: "/mocks", label: "Start a mock test" };
+  return { href: "/test", label: "Start a mock test" };
 }
 
 const SKILL_GRID_ORDER = [
@@ -263,9 +271,7 @@ function SkillPlanCard({
   const doneCount = tasks.filter((t) => t.status === "done").length;
   const hasTasks = tasks.length > 0;
   const allDone = hasTasks && doneCount === tasks.length;
-  const progressPct = hasTasks
-    ? Math.round((doneCount / tasks.length) * 100)
-    : 0;
+  const progressPct = progressPercent(doneCount, tasks.length);
   const nextTask = findNextStartTask(tasks);
   const fallbackHref = `/practice/${skill}`;
   const stepperSteps = useMemo(
@@ -332,32 +338,9 @@ function SkillPlanCard({
         {hasTasks ? (
           <SkillProgressStepper steps={stepperSteps} compact animate />
         ) : (
-          <SkillProgressStepper
-            steps={[
-              {
-                id: "hub",
-                label: "Hub",
-                icon: Icon,
-                state: "upcoming",
-                href: fallbackHref,
-              },
-              {
-                id: "practice",
-                label: "Practice",
-                icon: PencilLine,
-                state: "upcoming",
-                href: fallbackHref,
-              },
-              {
-                id: "score",
-                label: "Score",
-                icon: ClipboardCheck,
-                state: "upcoming",
-              },
-            ]}
-            compact
-            animate
-          />
+          <p className="rounded-xl border border-dashed border-ink/8 bg-surface/50 px-3 py-4 text-center text-[12.5px] text-muted">
+            Nothing scheduled for {title.toLowerCase()} today.
+          </p>
         )}
       </div>
 
@@ -379,12 +362,16 @@ function SkillPlanCard({
             {quietCta ? "Continue" : startLabelForTask(nextTask)}
             <ArrowRight className="size-3.5" strokeWidth={2.5} aria-hidden />
           </Link>
+        ) : hasTasks ? (
+          <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl border border-ink/8 bg-surface px-3 text-[13px] font-semibold text-muted">
+            Unavailable
+          </span>
         ) : (
           <Link
             href={fallbackHref}
             className="inline-flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-white px-3 text-[13px] font-semibold text-teal transition-colors hover:border-cyan/30 hover:bg-cyan-soft/40"
           >
-            Open hub
+            Browse practice
             <ArrowRight className="size-3.5" strokeWidth={2.5} aria-hidden />
           </Link>
         )}
@@ -494,7 +481,8 @@ function SkillPlanCard({
 
 export function TodaysPlanPanel({
   initialTasks,
-  userId: _userId,
+  userId,
+  studentName,
   hubProgress,
   moduleSummary,
   currentBand = null,
@@ -502,13 +490,32 @@ export function TodaysPlanPanel({
   overallPlanPct = 0,
   embedded = false,
 }: Props) {
-  const [tasks] = useState(() => withClientKeys(initialTasks));
+  const [tasks, setTasks] = useState(() => withClientKeys(initialTasks));
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const wasAllDoneRef = useRef(false);
+  const reportShownRef = useRef(false);
+
+  // Keep checklist in sync when server profile refreshes after task patches.
+  useEffect(() => {
+    setTasks(withClientKeys(initialTasks));
+  }, [initialTasks]);
 
   const stacks = useMemo(() => stacksForSkillGrid(tasks), [tasks]);
-  const hasScheduledTasks = useMemo(
-    () => tasks.some((t) => t.status !== "skipped"),
+  const actionable = useMemo(
+    () => tasks.filter((t) => t.status !== "skipped"),
     [tasks],
+  );
+  const hasTasks = actionable.length > 0;
+  const doneCount = useMemo(
+    () => actionable.filter((t) => t.status === "done").length,
+    [actionable],
+  );
+  const totalMinutes = useMemo(() => sumMinutes(actionable), [actionable]);
+  const allDone = hasTasks && doneCount === actionable.length;
+  const dayPct = progressPercent(doneCount, actionable.length);
+  const hasSubmit = stacks.some((s) =>
+    s.tasks.some((t) => t.task_type === "submit"),
   );
 
   const dateLabel = new Intl.DateTimeFormat("en-GB", {
@@ -516,21 +523,6 @@ export function TodaysPlanPanel({
     day: "numeric",
     month: "short",
   }).format(new Date());
-
-  const hasTasks = hasScheduledTasks;
-  const actionable = tasks.filter((t) => t.status !== "skipped");
-  const doneCount = actionable.filter((t) => t.status === "done").length;
-  const totalMinutes = sumMinutes(actionable);
-  const allDone =
-    actionable.length > 0 &&
-    actionable.every((t) => t.status === "done");
-  const dayPct =
-    actionable.length > 0
-      ? Math.round((doneCount / actionable.length) * 100)
-      : 0;
-  const hasSubmit = stacks.some((s) =>
-    s.tasks.some((t) => t.task_type === "submit"),
-  );
 
   const nextStart = useMemo(() => findNextStartTask(tasks), [tasks]);
   const showPrimaryBanner = !allDone && Boolean(nextStart);
@@ -541,24 +533,125 @@ export function TodaysPlanPanel({
 
   /** On dashboard when day is done: check-in is primary; checklist is optional. */
   const compactDone = embedded && allDone;
-  const showChecklist = !compactDone || checklistOpen;
   const reduce = useReducedMotion();
+  const reportDate = useMemo(() => new Date(), []);
+  const displayName = (studentName?.trim() || "BandForge Student").slice(0, 60);
+
+  const skillChecklistGrid = (
+    <motion.div
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5"
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.1 }}
+      variants={{
+        hidden: {},
+        show: {
+          transition: { staggerChildren: 0.07, delayChildren: 0.04 },
+        },
+      }}
+    >
+      {stacks.map((stack) => {
+        const Icon = moduleIcons[stack.skill] ?? BookIcon;
+        return (
+          <motion.div
+            key={stack.skill}
+            className="min-h-0 h-full"
+            variants={{
+              hidden: reduce
+                ? { opacity: 1 }
+                : { opacity: 0, y: 14, scale: 0.98 },
+              show: {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: { duration: 0.45, ease: DASH_EASE },
+              },
+            }}
+          >
+            <SkillPlanCard
+              skill={stack.skill}
+              title={MODULE_LABEL[stack.skill] ?? stack.skill}
+              icon={Icon}
+              tasks={stack.tasks}
+              quietCta={showPrimaryBanner}
+            />
+          </motion.div>
+        );
+      })}
+    </motion.div>
+  );
+
+  const doneChecklistSlot = (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-muted">
+          {compactDone
+            ? "Task checklist available for reference."
+            : "Today's completed checklist"}
+        </p>
+        {compactDone ? (
+          <button
+            type="button"
+            onClick={() => setChecklistOpen((v) => !v)}
+            className="cursor-pointer rounded-lg border border-ink/10 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-teal transition-colors hover:border-cyan/30 hover:bg-cyan-soft/40"
+          >
+            {checklistOpen ? "Hide checklist" : "Show checklist"}
+          </button>
+        ) : null}
+      </div>
+      {(!compactDone || checklistOpen) && hasTasks ? skillChecklistGrid : null}
+    </div>
+  );
+
+  useEffect(() => {
+    const storageKey = `bf-daily-report-shown:${
+      userId || "anon"
+    }:${localPlanDateKey()}`;
+
+    if (!allDone) {
+      wasAllDoneRef.current = false;
+      return;
+    }
+
+    // Auto-open once when the day first reaches complete (not on every remount
+    // after the same-day flag is set). Also works on first load if already done.
+    if (reportShownRef.current) {
+      wasAllDoneRef.current = true;
+      return;
+    }
+
+    let shown = false;
+    try {
+      shown = sessionStorage.getItem(storageKey) === "1";
+    } catch {
+      shown = false;
+    }
+
+    if (!shown) {
+      setReportOpen(true);
+      reportShownRef.current = true;
+      try {
+        sessionStorage.setItem(storageKey, "1");
+      } catch {
+        // Ignore storage quota errors.
+      }
+    }
+    wasAllDoneRef.current = true;
+  }, [allDone, userId]);
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {allDone ? (
-        <DailyImprovementsPanel
-          tasks={tasks}
-          hubProgress={hubProgress}
-          moduleSummary={moduleSummary}
-          currentBand={currentBand}
-          targetBand={targetBand}
-          overallPlanPct={overallPlanPct}
-          embedded={embedded}
-          nextActionHref={continuePractice.href}
-          nextActionLabel={continuePractice.label}
-        />
-      ) : null}
+      <DailyGrowthReportModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        studentName={displayName}
+        reportDate={reportDate}
+        tasks={tasks}
+        hubProgress={hubProgress}
+        currentBand={currentBand}
+        targetBand={targetBand}
+        overallPlanPct={overallPlanPct}
+      />
 
       {!allDone && nextStart ? (
         <DashReveal className="relative overflow-hidden rounded-[24px] border border-navy/15 bg-navy p-4 text-white sm:p-5">
@@ -604,24 +697,21 @@ export function TodaysPlanPanel({
         </DashReveal>
       ) : null}
 
-      {compactDone ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[13px] text-muted">
-            Task checklist available for reference.
-          </p>
-          <button
-            type="button"
-            onClick={() => setChecklistOpen((v) => !v)}
-            className="cursor-pointer rounded-lg border border-ink/10 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-teal transition-colors hover:border-cyan/30 hover:bg-cyan-soft/40"
-          >
-            {checklistOpen ? "Hide checklist" : "Show checklist"}
-          </button>
-        </div>
-      ) : null}
-
-      {showChecklist ? (
-      <DashReveal as="section" aria-labelledby="todays-plan-heading">
-        {!compactDone ? (
+      {allDone ? (
+        <DailyImprovementsPanel
+          tasks={tasks}
+          hubProgress={hubProgress}
+          moduleSummary={moduleSummary}
+          currentBand={currentBand}
+          targetBand={targetBand}
+          overallPlanPct={overallPlanPct}
+          embedded={embedded}
+          nextActionHref={continuePractice.href}
+          nextActionLabel={continuePractice.label}
+          checklist={doneChecklistSlot}
+        />
+      ) : (
+        <DashReveal as="section" aria-labelledby="todays-plan-heading">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
               <h2
@@ -640,39 +730,26 @@ export function TodaysPlanPanel({
                   <Clock3 className="size-3.5 text-teal" aria-hidden />
                   ~{totalMinutes} min
                 </span>
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[12px] font-semibold tabular-nums",
-                    allDone
-                      ? "bg-teal/10 text-teal"
-                      : "bg-cyan-soft text-teal",
-                  )}
-                >
+                <span className="inline-flex items-center rounded-full bg-cyan-soft px-2.5 py-1 font-mono text-[12px] font-semibold tabular-nums text-teal">
                   {doneCount}/{actionable.length} done
                 </span>
               </div>
             ) : null}
           </div>
-        ) : (
-          <h2 id="todays-plan-heading" className="sr-only">
-            Today&apos;s checklist
-          </h2>
-        )}
 
-        {!hasTasks ? (
-          <div className="rounded-[24px] border border-ink/8 bg-white px-5 py-8 text-center sm:px-6">
-            <p className="text-sm text-muted">No tasks scheduled for today.</p>
-            <Link
-              href="/study-plan"
-              className="mt-3 inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-teal transition-colors hover:text-cyan"
-            >
-              View full study plan
-              <ArrowRight className="size-4" aria-hidden />
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-[24px] border border-ink/8 bg-white shadow-[0_1px_0_rgba(255,255,255,0.8)_inset]">
-            {!allDone ? (
+          {!hasTasks ? (
+            <div className="rounded-[24px] border border-ink/8 bg-white px-5 py-8 text-center sm:px-6">
+              <p className="text-sm text-muted">No tasks scheduled for today.</p>
+              <Link
+                href="/study-plan"
+                className="mt-3 inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-teal transition-colors hover:text-cyan"
+              >
+                View full study plan
+                <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-[24px] border border-ink/8 bg-white shadow-[0_1px_0_rgba(255,255,255,0.8)_inset]">
               <div className="border-b border-ink/[0.05] bg-[linear-gradient(160deg,rgba(224,247,250,0.55),rgba(255,255,255,0.95)_60%)] px-4 py-3.5 sm:px-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="max-w-xl text-[13px] leading-relaxed text-muted">
@@ -695,62 +772,33 @@ export function TodaysPlanPanel({
                   </div>
                 </div>
               </div>
-            ) : null}
 
-            <motion.div
-              className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:gap-3.5 sm:p-4"
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.1 }}
-              variants={{
-                hidden: {},
-                show: {
-                  transition: { staggerChildren: 0.07, delayChildren: 0.04 },
-                },
-              }}
-            >
-              {stacks.map((stack) => {
-                const Icon = moduleIcons[stack.skill] ?? BookIcon;
-                return (
-                  <motion.div
-                    key={stack.skill}
-                    className="min-h-0 h-full"
-                    variants={{
-                      hidden: reduce
-                        ? { opacity: 1 }
-                        : { opacity: 0, y: 14, scale: 0.98 },
-                      show: {
-                        opacity: 1,
-                        y: 0,
-                        scale: 1,
-                        transition: { duration: 0.45, ease: DASH_EASE },
-                      },
-                    }}
-                  >
-                    <SkillPlanCard
-                      skill={stack.skill}
-                      title={MODULE_LABEL[stack.skill] ?? stack.skill}
-                      icon={Icon}
-                      tasks={stack.tasks}
-                      quietCta={showPrimaryBanner}
-                    />
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+              <div className="p-3 sm:p-4">{skillChecklistGrid}</div>
 
-            <div className="border-t border-ink/[0.05] px-4 py-3 sm:px-5">
-              <Link
-                href="/study-plan"
-                className="inline-flex cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-teal transition-colors hover:text-cyan"
-              >
-                View full study plan
-                <ArrowRight className="size-3.5" aria-hidden />
-              </Link>
+              <div className="border-t border-ink/[0.05] px-4 py-3 sm:px-5">
+                <Link
+                  href="/study-plan"
+                  className="inline-flex cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-teal transition-colors hover:text-cyan"
+                >
+                  View full study plan
+                  <ArrowRight className="size-3.5" aria-hidden />
+                </Link>
+              </div>
             </div>
-          </div>
-        )}
-      </DashReveal>
+          )}
+        </DashReveal>
+      )}
+
+      {allDone ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setReportOpen(true)}
+            className="cursor-pointer rounded-lg border border-ink/10 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-teal transition-colors hover:border-cyan/30 hover:bg-cyan-soft/40"
+          >
+            View report card
+          </button>
+        </div>
       ) : null}
     </div>
   );

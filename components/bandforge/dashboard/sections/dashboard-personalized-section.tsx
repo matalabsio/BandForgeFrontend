@@ -101,6 +101,7 @@ export async function DashboardPersonalizedSection({
           bandGapScoredCount={bandGap.scoredCount}
           bandGapIsPartial={bandGap.isPartial}
           resolvedTargetBand={bandGap.targetBand}
+          studyPlan={studyPlan}
         />
       </DashPageItem>
 
@@ -109,6 +110,7 @@ export async function DashboardPersonalizedSection({
           <TodaysPlanPanel
             initialTasks={learning.todays_tasks}
             userId={userId}
+            studentName={user.displayName}
             hubProgress={learning.hub_progress}
             moduleSummary={learning.module_summary}
             currentBand={learning.current_band}

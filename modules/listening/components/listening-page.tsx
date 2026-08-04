@@ -77,13 +77,12 @@ import {
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
-import {
-  afterPlanStepHref,
-  type PlanTaskKind,
-} from "@/lib/plan-task-flow";
+import { type PlanTaskKind } from "@/lib/plan-task-flow";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
-import { patchLearningTask } from "@/lib/learning-api";
-import { completePracticeHub } from "@/lib/practice-api";
+import {
+  completePlanStepAndGetNextHref,
+  shouldCompleteHubForPlanTask,
+} from "@/lib/plan-step-completion";
 
 function readConsent(moduleKey: string, attemptScope: string): boolean {
   if (typeof window === "undefined") return false;
@@ -294,20 +293,18 @@ export function ListeningPage({
           totalQuestions: score?.total_questions ?? null,
         });
       }
-      if (planTaskId) {
-        void patchLearningTask(planTaskId, "done").catch(() => {});
-      }
-      // Listening has Watch + Practice only — Practice completes the hub.
-      void completePracticeHub(planHubId).catch(() => {});
+      const nextHref = completePlanStepAndGetNextHref({
+        fromPlan,
+        skill: "listening",
+        hubId: planHubId,
+        currentTask: current,
+        currentTaskId: planTaskId,
+        bankNumber: 1,
+        preferExercise: true,
+        completeHub: shouldCompleteHubForPlanTask("listening", current),
+      });
       push(
-        afterPlanStepHref({
-          skill: "listening",
-          hubId: planHubId,
-          currentTask: current,
-          currentTaskId: planTaskId,
-          bankNumber: 1,
-          preferExercise: true,
-        }),
+        nextHref ?? "/study-plan/today",
       );
       return true;
     },

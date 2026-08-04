@@ -6,6 +6,7 @@ import {
 } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { parseSkillContext } from "@/lib/practice-submit";
+import type { PlanTaskKind } from "@/lib/plan-task-flow";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
 import { resolveCatalogSlotServer } from "@/lib/mock-server";
@@ -19,8 +20,19 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ skill_context?: string }>;
+  searchParams: Promise<{
+    skill_context?: string;
+    from?: string;
+    task?: string;
+    taskId?: string;
+    hubId?: string;
+  }>;
 };
+
+function parsePlanTask(value: string | undefined): PlanTaskKind | null {
+  if (value === "watch" || value === "practice" || value === "submit") return value;
+  return null;
+}
 
 export default async function TestSpeakingPage({ params, searchParams }: Props) {
   const { number: numberRaw } = await params;
@@ -40,6 +52,7 @@ export default async function TestSpeakingPage({ params, searchParams }: Props) 
   const { mockTestId, mockMeta } = resolved;
   const mockSlug = canonicalMockSlug(mockTestId);
   const skillContext = parseSkillContext(sp.skill_context);
+  const fromPlan = sp.from === "plan";
 
   return (
     <MockLayout>
@@ -49,6 +62,10 @@ export default async function TestSpeakingPage({ params, searchParams }: Props) 
         mockMeta={mockMeta}
         testNumber={testNumber}
         skillContext={skillContext}
+        fromPlan={fromPlan}
+        planTask={parsePlanTask(sp.task)}
+        planTaskId={sp.taskId ?? null}
+        planHubId={sp.hubId ?? null}
       />
     </MockLayout>
   );

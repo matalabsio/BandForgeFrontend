@@ -19,10 +19,12 @@ import {
 import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistMockAttemptId, persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
-import { afterPlanStepHref, type PlanTaskKind } from "@/lib/plan-task-flow";
+import { type PlanTaskKind } from "@/lib/plan-task-flow";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
-import { patchLearningTask } from "@/lib/learning-api";
-import { completePracticeHub } from "@/lib/practice-api";
+import {
+  completePlanStepAndGetNextHref,
+  shouldCompleteHubForPlanTask,
+} from "@/lib/plan-step-completion";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
@@ -446,22 +448,17 @@ export function WritingPage({
           rawScore: null,
           totalQuestions: null,
         });
-        if (planTaskId) {
-          void patchLearningTask(planTaskId, "done").catch(() => {});
-        }
-        if (current === "submit") {
-          void completePracticeHub(planHubId).catch(() => {});
-        }
-        router.push(
-          afterPlanStepHref({
-            skill: "writing",
-            hubId: planHubId,
-            currentTask: current,
-            currentTaskId: planTaskId,
-            bankNumber: mockSlug === "m02" ? 2 : 1,
-            preferExercise: true,
-          }),
-        );
+        const nextHref = completePlanStepAndGetNextHref({
+          fromPlan,
+          skill: "writing",
+          hubId: planHubId,
+          currentTask: current,
+          currentTaskId: planTaskId,
+          bankNumber: mockSlug === "m02" ? 2 : 1,
+          preferExercise: true,
+          completeHub: shouldCompleteHubForPlanTask("writing", current),
+        });
+        router.push(nextHref ?? "/study-plan/today");
         return;
       }
 

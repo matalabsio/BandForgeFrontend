@@ -137,6 +137,25 @@ export function planReadingModuleHref(opts: {
   return `/test/1/reading?${q.toString()}`;
 }
 
+/** Real Speaking module — uses full speaking exam flow from MTS prompts. */
+export function planSpeakingModuleHref(opts: {
+  hubId: string;
+  task: PlanTaskKind;
+  taskId?: string | null;
+  bankNumber?: number;
+}): string {
+  const testNumber = (opts.bankNumber ?? 1) % 2 === 0 ? "2" : "1";
+  const q = new URLSearchParams({
+    auto: "1",
+    skill_context: "speaking",
+    from: "plan",
+    task: opts.task,
+    hubId: opts.hubId,
+  });
+  if (opts.taskId) q.set("taskId", opts.taskId);
+  return `/test/${testNumber}/speaking?${q.toString()}`;
+}
+
 /** Href to open the active plan step (skill-aware). */
 export function planStepOpenHref(opts: {
   skill: PracticeSkill;
@@ -163,6 +182,14 @@ export function planStepOpenHref(opts: {
   }
   if (opts.skill === "reading") {
     return planReadingModuleHref({
+      hubId: opts.hubId,
+      task: opts.task,
+      taskId: opts.taskId,
+      bankNumber: opts.bankNumber ?? 1,
+    });
+  }
+  if (opts.skill === "speaking") {
+    return planSpeakingModuleHref({
       hubId: opts.hubId,
       task: opts.task,
       taskId: opts.taskId,

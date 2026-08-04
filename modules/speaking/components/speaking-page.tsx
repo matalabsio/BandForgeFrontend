@@ -15,6 +15,12 @@ import {
 import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
+import type { PlanTaskKind } from "@/lib/plan-task-flow";
+import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
+import {
+  completePlanStepAndGetNextHref,
+  shouldCompleteHubForPlanTask,
+} from "@/lib/plan-step-completion";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { mockApi } from "@/modules/mock/services/mock-api";
@@ -73,6 +79,10 @@ type Props = {
   mockMeta?: MockMeta;
   testNumber?: number;
   skillContext?: PracticeSkill | null;
+  fromPlan?: boolean;
+  planTask?: PlanTaskKind | null;
+  planTaskId?: string | null;
+  planHubId?: string | null;
 };
 
 export function SpeakingPage({
@@ -80,6 +90,10 @@ export function SpeakingPage({
   mockSlug = DEFAULT_MOCK_SLUG,
   testNumber: testNumberProp,
   skillContext = null,
+  fromPlan = false,
+  planTask = null,
+  planTaskId = null,
+  planHubId = null,
 }: Props) {
   const router = useRouter();
   const mockAttemptId = useResolvedMockAttemptId(mockTestId);
@@ -312,6 +326,7 @@ export function SpeakingPage({
         part: 1,
         mockAttemptId: mockAttemptId ?? undefined,
         skillContext: skillContext ?? undefined,
+        fromPlan: fromPlan || undefined,
       });
       setAttemptId(boot.attempt_id);
       setStudentName(boot.student_name);
@@ -362,7 +377,7 @@ export function SpeakingPage({
     } finally {
       setLoading(false);
     }
-  }, [mockAttemptId, mockSlug, mockTestId, recoverResponses, router, skillContext]);
+  }, [fromPlan, mockAttemptId, mockSlug, mockTestId, recoverResponses, router, skillContext, testNumber]);
 
   const handleMicBegin = useCallback(() => {
     writeMicCheckPassed(micScope);
@@ -483,6 +498,28 @@ export function SpeakingPage({
         }
         void clearSpeakingResponseMetadata(micScope).catch(() => undefined);
         persistModuleResultAttempt(testNumber, "speaking", resultAttemptId);
+        if (fromPlan && planHubId) {
+          const current = planTask ?? "submit";
+          recordPlanDayOutcome({
+            skill: "speaking",
+            taskType: current,
+            band: null,
+            rawScore: null,
+            totalQuestions: null,
+          });
+          const nextHref = completePlanStepAndGetNextHref({
+            fromPlan,
+            skill: "speaking",
+            hubId: planHubId,
+            currentTask: current,
+            currentTaskId: planTaskId,
+            bankNumber: testNumber === 2 ? 2 : 1,
+            preferExercise: true,
+            completeHub: shouldCompleteHubForPlanTask("speaking", current),
+          });
+          router.replace(nextHref ?? "/study-plan/today");
+          return;
+        }
         // Pending status while AI / human score is processing.
         router.replace(
           speakingPendingPath(testNumber, resultAttemptId, mockAttemptId),
@@ -575,9 +612,13 @@ export function SpeakingPage({
       attemptId,
       busy,
       expectedResponses,
+      fromPlan,
       micScope,
       mockAttemptId,
       mockTestId,
+      planHubId,
+      planTask,
+      planTaskId,
       router,
       testNumber,
       persistJobStatus,

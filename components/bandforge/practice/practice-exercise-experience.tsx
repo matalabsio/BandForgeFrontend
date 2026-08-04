@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { BfSectionEyebrow, BfSectionHeading } from "@/components/bandforge/ui";
-import { patchLearningTask } from "@/lib/learning-api";
 import { afterPlanStepHref, type PlanTaskKind } from "@/lib/plan-task-flow";
+import { completePlanStepAndGetNextHref } from "@/lib/plan-step-completion";
 import {
   startPracticeExercise,
   submitPracticeExercise,
@@ -128,11 +128,15 @@ export function PracticeExerciseExperience({
         exercise.attempt_id,
         answers,
       );
-      if (fromPlan && planTaskId) {
-        void patchLearningTask(planTaskId, "done").catch(() => {
-          /* best-effort */
-        });
-      }
+      const planNext =
+        completePlanStepAndGetNextHref({
+          fromPlan,
+          skill,
+          hubId,
+          currentTask,
+          currentTaskId: planTaskId,
+          completeHub: false,
+        }) ?? nextHref;
       if (res.score) {
         setResult(
           `Scored ${res.score.correct}/${res.score.total} (${res.score.percent}%). Hub marked complete.`,
@@ -141,7 +145,7 @@ export function PracticeExerciseExperience({
         setResult("Submitted. Hub marked complete.");
       }
       if (fromPlan) {
-        router.push(nextHref);
+        router.push(planNext);
         return;
       }
     } catch (e) {

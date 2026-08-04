@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useRef } from "react";
+import Link from "next/link";
 import {
   ArrowUpRight,
+  CalendarDays,
   Focus,
   Sparkles,
   Target,
@@ -16,6 +18,7 @@ import {
   DASH_EASE,
   DashProgressBar,
 } from "@/components/bandforge/dashboard/motion";
+import type { LearningStudyPlan } from "@/lib/learning-types";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -34,6 +37,7 @@ type Props = {
   bandGapScoredCount: number;
   bandGapIsPartial: boolean;
   resolvedTargetBand: number;
+  studyPlan?: LearningStudyPlan | null;
 };
 
 const SKILL_ORDER = ["listening", "reading", "writing", "speaking"] as const;
@@ -102,6 +106,7 @@ export function DashboardWelcomeSection({
   bandGapScoredCount,
   bandGapIsPartial,
   resolvedTargetBand,
+  studyPlan = null,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const rootRef = useRef<HTMLElement>(null);
@@ -478,80 +483,157 @@ export function DashboardWelcomeSection({
         </div>
 
         <motion.div
-          className="rounded-2xl border border-ink/8 bg-white/95 p-4 shadow-[0_8px_30px_rgba(15,23,42,0.04)]"
           initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }}
           whileInView={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.08, ease: DASH_EASE }}
         >
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-light">
-                Plan day
-              </p>
-              <p
-                ref={dayRef}
-                className="mt-1 font-display text-2xl font-bold tabular-nums text-ink"
-              >
-                {day}
-                {total > 0 ? (
-                  <span className="text-base font-semibold text-muted">
-                    {" "}
-                    / {total}
+          {studyPlan && (studyPlan.weeks?.length ?? 0) > 0 ? (
+            <Link
+              href="/study-plan"
+              className="block w-full cursor-pointer rounded-2xl border border-ink/8 bg-white/95 p-4 text-left shadow-[0_8px_30px_rgba(15,23,42,0.04)] transition-[border-color,box-shadow] duration-200 hover:border-cyan/35 hover:shadow-[0_12px_32px_rgba(15,23,42,0.07)]"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-light">
+                    Plan day
+                    <CalendarDays
+                      className="size-3 text-teal"
+                      aria-hidden
+                    />
+                  </p>
+                  <p
+                    ref={dayRef}
+                    className="mt-1 font-display text-2xl font-bold tabular-nums text-ink"
+                  >
+                    {day}
+                    {total > 0 ? (
+                      <span className="text-base font-semibold text-muted">
+                        {" "}
+                        / {total}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-cyan/20 bg-cyan-soft/70 px-2.5 py-0.5 text-[11px] font-semibold text-teal">
+                    <Target className="size-3" aria-hidden />
+                    {targetLabel}
                   </span>
-                ) : null}
+                  <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">
+                    {planPct}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <DashProgressBar
+                  value={planPct}
+                  heightClassName="h-2"
+                  label={`Plan progress ${planPct} percent`}
+                />
+              </div>
+
+              <dl className="mt-3.5 grid grid-cols-3 gap-2 border-t border-ink/[0.05] pt-3">
+                {(
+                  [
+                    ["To exam", countdownLabel],
+                    ["Exam", examLabel ?? "—"],
+                    [
+                      "Studied",
+                      studyDaysCompleted > 0 ? `${studyDaysCompleted}d` : "—",
+                    ],
+                  ] as const
+                ).map(([label, value], i) => (
+                  <motion.div
+                    key={label}
+                    initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                    whileInView={
+                      reduceMotion ? undefined : { opacity: 1, y: 0 }
+                    }
+                    viewport={{ once: true }}
+                    transition={{
+                      duration: 0.35,
+                      delay: 0.18 + i * 0.05,
+                      ease: DASH_EASE,
+                    }}
+                  >
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-light">
+                      {label}
+                    </dt>
+                    <dd className="mt-0.5 text-[12.5px] font-semibold text-ink">
+                      {value}
+                    </dd>
+                  </motion.div>
+                ))}
+              </dl>
+
+              <p className="mt-3 text-[11.5px] font-semibold text-teal">
+                Open full plan →
               </p>
-            </div>
-            <div className="flex flex-col items-end gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full border border-cyan/20 bg-cyan-soft/70 px-2.5 py-0.5 text-[11px] font-semibold text-teal">
-                <Target className="size-3" aria-hidden />
-                {targetLabel}
-              </span>
-              <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">
-                {planPct}%
-              </span>
-            </div>
-          </div>
+            </Link>
+          ) : (
+            <div className="rounded-2xl border border-ink/8 bg-white/95 p-4 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-light">
+                    Plan day
+                  </p>
+                  <p
+                    ref={dayRef}
+                    className="mt-1 font-display text-2xl font-bold tabular-nums text-ink"
+                  >
+                    {day}
+                    {total > 0 ? (
+                      <span className="text-base font-semibold text-muted">
+                        {" "}
+                        / {total}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-cyan/20 bg-cyan-soft/70 px-2.5 py-0.5 text-[11px] font-semibold text-teal">
+                    <Target className="size-3" aria-hidden />
+                    {targetLabel}
+                  </span>
+                  <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">
+                    {planPct}%
+                  </span>
+                </div>
+              </div>
 
-          <div className="mt-3">
-            <DashProgressBar
-              value={planPct}
-              heightClassName="h-2"
-              label={`Plan progress ${planPct} percent`}
-            />
-          </div>
+              <div className="mt-3">
+                <DashProgressBar
+                  value={planPct}
+                  heightClassName="h-2"
+                  label={`Plan progress ${planPct} percent`}
+                />
+              </div>
 
-          <dl className="mt-3.5 grid grid-cols-3 gap-2 border-t border-ink/[0.05] pt-3">
-            {(
-              [
-                ["To exam", countdownLabel],
-                ["Exam", examLabel ?? "—"],
-                [
-                  "Studied",
-                  studyDaysCompleted > 0 ? `${studyDaysCompleted}d` : "—",
-                ],
-              ] as const
-            ).map(([label, value], i) => (
-              <motion.div
-                key={label}
-                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{
-                  duration: 0.35,
-                  delay: 0.18 + i * 0.05,
-                  ease: DASH_EASE,
-                }}
-              >
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-light">
-                  {label}
-                </dt>
-                <dd className="mt-0.5 text-[12.5px] font-semibold text-ink">
-                  {value}
-                </dd>
-              </motion.div>
-            ))}
-          </dl>
+              <dl className="mt-3.5 grid grid-cols-3 gap-2 border-t border-ink/[0.05] pt-3">
+                {(
+                  [
+                    ["To exam", countdownLabel],
+                    ["Exam", examLabel ?? "—"],
+                    [
+                      "Studied",
+                      studyDaysCompleted > 0 ? `${studyDaysCompleted}d` : "—",
+                    ],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-light">
+                      {label}
+                    </dt>
+                    <dd className="mt-0.5 text-[12.5px] font-semibold text-ink">
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
         </motion.div>
       </div>
     </section>

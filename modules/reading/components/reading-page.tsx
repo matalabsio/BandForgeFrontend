@@ -35,12 +35,13 @@ import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
 import {
-  afterPlanStepHref,
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
-import { patchLearningTask } from "@/lib/learning-api";
-import { completePracticeHub } from "@/lib/practice-api";
+import {
+  completePlanStepAndGetNextHref,
+  shouldCompleteHubForPlanTask,
+} from "@/lib/plan-step-completion";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
@@ -434,19 +435,18 @@ export function ReadingPage({
           totalQuestions: score?.total_questions ?? null,
         });
       }
-      if (planTaskId) {
-        void patchLearningTask(planTaskId, "done").catch(() => {});
-      }
-      void completePracticeHub(planHubId).catch(() => {});
+      const nextHref = completePlanStepAndGetNextHref({
+        fromPlan,
+        skill: "reading",
+        hubId: planHubId,
+        currentTask: current,
+        currentTaskId: planTaskId,
+        bankNumber: 1,
+        preferExercise: true,
+        completeHub: shouldCompleteHubForPlanTask("reading", current),
+      });
       push(
-        afterPlanStepHref({
-          skill: "reading",
-          hubId: planHubId,
-          currentTask: current,
-          currentTaskId: planTaskId,
-          bankNumber: 1,
-          preferExercise: true,
-        }),
+        nextHref ?? "/study-plan/today",
       );
       return true;
     },

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { ArrowRight, Check, TrendingUp } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -58,6 +58,8 @@ type Props = {
   /** Primary action: jump straight into the next practice/test. */
   nextActionHref?: string;
   nextActionLabel?: string;
+  /** Optional checklist block rendered in the same card under the check-in header. */
+  checklist?: ReactNode;
 };
 
 function sumMinutes(tasks: LearningStudyTask[]): number {
@@ -97,6 +99,7 @@ export function DailyImprovementsPanel({
   embedded = false,
   nextActionHref,
   nextActionLabel,
+  checklist,
 }: Props) {
   const outcomes = useMemo(() => readPlanDayOutcomes(), []);
   const visible = tasks.filter((t) => t.status !== "skipped");
@@ -185,6 +188,12 @@ export function DailyImprovementsPanel({
           ) : null}
         </div>
       </div>
+
+      {checklist ? (
+        <div className="border-b border-ink/[0.05] px-4 py-3.5 sm:px-5">
+          {checklist}
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-3 gap-px border-b border-ink/[0.05] bg-ink/[0.05]">
         {stats.map((stat) => (

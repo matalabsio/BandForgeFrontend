@@ -168,6 +168,7 @@ export const speakingApi = {
       forceNew?: boolean;
       mockAttemptId?: string;
       skillContext?: PracticeSkill;
+      fromPlan?: boolean;
     },
   ): Promise<StartSpeakingPayload> {
     const params = new URLSearchParams();
@@ -178,6 +179,9 @@ export const speakingApi = {
     }
     if (options?.skillContext) {
       params.set("skill_context", options.skillContext);
+    }
+    if (options?.fromPlan) {
+      params.set("from_plan", "true");
     }
     return examJsonCall<StartSpeakingPayload>(
       `/api/speaking/${encodeURIComponent(mockTestId)}/start?${params.toString()}`,

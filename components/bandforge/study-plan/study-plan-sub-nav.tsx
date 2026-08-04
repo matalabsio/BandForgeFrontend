@@ -20,7 +20,8 @@ export function StudyPlanSubNav() {
       {TABS.map((tab) => {
         const active =
           tab.href === "/study-plan"
-            ? pathname === "/study-plan"
+            ? pathname === "/study-plan" ||
+              pathname.startsWith("/study-plan/calendar")
             : pathname.startsWith(tab.href);
         return (
           <Link

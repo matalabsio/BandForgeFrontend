@@ -6,15 +6,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Clock, Loader2, Play } from "lucide-react";
 import { BfSectionEyebrow, BfSectionHeading } from "@/components/bandforge/ui";
 import { PlanOpeningSkeleton } from "@/components/bandforge/plan/plan-skeletons";
-import { patchLearningTask } from "@/lib/learning-api";
 import { completePracticeHub } from "@/lib/practice-api";
 import {
-  afterPlanStepHref,
   nextPlanTask,
   planExerciseHref,
   planStepOpenHref,
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
+import {
+  completePlanStepAndGetNextHref,
+  shouldCompleteHubForPlanTask,
+} from "@/lib/plan-step-completion";
 import {
   appendSkillContext,
   parseVideoEmbed,
@@ -196,9 +198,12 @@ export function PracticeHubExperience({
     task: planTask === "submit" ? "submit" : "practice",
     taskId: planTaskId,
   });
-  // Writing/Listening/Reading plan steps use real MT exam UI; other skills keep bank/module href.
+  // Plan steps that must run in real module exam UI.
   const practiceCtaHref =
-    (skill === "writing" || skill === "listening" || skill === "reading") &&
+    (skill === "writing" ||
+      skill === "listening" ||
+      skill === "reading" ||
+      skill === "speaking") &&
     fromPlan
       ? exerciseHref
       : (hub.submit_config as { type?: string } | null)?.type === "bank"
@@ -208,11 +213,12 @@ export function PracticeHubExperience({
   const setIndex = hub.sort_order > 0 ? hub.set_number : hub.set_number;
   const totalSets = mockUnlock?.required ?? 12;
 
-  // Plan practice → real MT module (Writing / Listening / Reading); bank → exercise page.
+  // Plan practice/submit → real MT module where supported; otherwise bank exercise.
   useEffect(() => {
     if (!fromPlan || (focus !== "practice" && focus !== "submit")) return;
     if (
       skill === "writing" ||
+      skill === "speaking" ||
       ((skill === "listening" || skill === "reading") && focus === "practice")
     ) {
       router.replace(exerciseHref);
@@ -231,36 +237,28 @@ export function PracticeHubExperience({
     router,
   ]);
 
-  function syncPlanTaskFireAndForget(taskId: string | null | undefined) {
-    if (!fromPlan || !taskId) return;
-    void patchLearningTask(taskId, "done").catch(() => {
-      /* best-effort checklist sync */
-    });
-  }
-
   const goToNextAfterWatch = useCallback(() => {
     if (advancingRef.current) return;
     advancingRef.current = true;
     setWatchDone(true);
-    if (fromPlan && planTaskId) {
-      void patchLearningTask(planTaskId, "done").catch(() => {});
-    }
-    const next = nextPlanTask("watch", skill);
-    if (next) {
-      setProgressMsg("Watch done — opening practice…");
-      router.push(
-        afterPlanStepHref({
-          skill,
-          hubId: hub.id,
-          currentTask: "watch",
-          currentTaskId: planTaskId,
-          bankNumber: hub.bank_number,
-          preferExercise: true,
-        }),
-      );
-    } else {
-      router.push("/study-plan/today");
-    }
+    const nextHref =
+      completePlanStepAndGetNextHref({
+        fromPlan,
+        skill,
+        hubId: hub.id,
+        currentTask: "watch",
+        currentTaskId: planTaskId,
+        bankNumber: hub.bank_number,
+        preferExercise: true,
+        completeHub: false,
+      }) ?? "/study-plan/today";
+    const goingToPractice = nextHref !== "/study-plan/today";
+    setProgressMsg(
+      goingToPractice
+        ? "Watch done — opening practice…"
+        : "Watch done — back to today’s plan…",
+    );
+    router.push(nextHref);
   }, [fromPlan, hub.bank_number, hub.id, planTaskId, router, skill]);
 
   function handleVideoEnded() {
@@ -286,11 +284,26 @@ export function PracticeHubExperience({
   }
 
   function handleSubmitStepDone() {
-    if (completing || watchDone) return;
+    if (completing || watchDone || advancingRef.current) return;
+    advancingRef.current = true;
     setCompleting(true);
-    syncPlanTaskFireAndForget(planTaskId);
-    setProgressMsg("Submit done — back to today’s plan…");
-    router.push("/study-plan/today");
+    const nextHref =
+      completePlanStepAndGetNextHref({
+        fromPlan,
+        skill,
+        hubId: hub.id,
+        currentTask: "submit",
+        currentTaskId: planTaskId,
+        bankNumber: hub.bank_number,
+        preferExercise: true,
+        completeHub: shouldCompleteHubForPlanTask(skill, "submit"),
+      }) ?? "/study-plan/today";
+    setProgressMsg(
+      nextHref === "/study-plan/today"
+        ? "Submit done — back to today’s plan…"
+        : "Submit done — continuing…",
+    );
+    router.push(nextHref);
   }
 
   async function handleComplete() {
@@ -300,7 +313,6 @@ export function PracticeHubExperience({
     try {
       const result = await completePracticeHub(hub.id);
       setStatus(result.status);
-      syncPlanTaskFireAndForget(planTaskId);
       const { completed_count, required_for_mock, mock_unlocked } = result.skill_progress;
       setProgressMsg(
         mock_unlocked
@@ -308,15 +320,16 @@ export function PracticeHubExperience({
           : `${completed_count} of ${required_for_mock} sets complete`,
       );
       if (fromPlan) {
-        router.push(
-          afterPlanStepHref({
-            skill,
-            hubId: hub.id,
-            currentTask: planTask,
-            currentTaskId: planTaskId,
-            bankNumber: hub.bank_number,
-          }),
-        );
+        const nextHref = completePlanStepAndGetNextHref({
+          fromPlan,
+          skill,
+          hubId: hub.id,
+          currentTask: planTask,
+          currentTaskId: planTaskId,
+          bankNumber: hub.bank_number,
+          completeHub: false,
+        });
+        router.push(nextHref ?? "/study-plan/today");
       }
     } catch {
       setError("Could not mark hub complete. Please try again.");
@@ -333,11 +346,12 @@ export function PracticeHubExperience({
   const activeVideo = videos[videoIndex];
   const nextAfterWatch = nextPlanTask("watch", skill);
 
-  // Brief skeleton while redirecting plan Writing/Listening/Reading / bank practice → real session
+  // Brief skeleton while redirecting plan module steps to real test session.
   if (
     fromPlan &&
-    (focus === "practice" || (focus === "submit" && skill === "writing")) &&
+    (focus === "practice" || focus === "submit") &&
     (skill === "writing" ||
+      skill === "speaking" ||
       skill === "listening" ||
       skill === "reading" ||
       (hub.submit_config as { type?: string } | null)?.type === "bank")
@@ -349,6 +363,8 @@ export function PracticeHubExperience({
           ? "Opening Listening test…"
           : skill === "reading"
             ? "Opening Reading passage…"
+            : skill === "speaking"
+              ? "Opening Speaking test…"
             : "Opening practice…";
     return <PlanOpeningSkeleton label={label} />;
   }

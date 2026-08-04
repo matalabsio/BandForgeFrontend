@@ -55,6 +55,7 @@ export default async function StudyPlanTodayPage() {
       <TodaysPlanPanel
         initialTasks={profile.todays_tasks}
         userId={user?.id ?? ""}
+        studentName={user?.full_name ?? user?.email ?? "BandForge Student"}
         hubProgress={profile.hub_progress}
         moduleSummary={profile.module_summary}
         currentBand={profile.current_band}
