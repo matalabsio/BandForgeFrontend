@@ -1,14 +1,9 @@
 import type { ComponentType, SVGProps } from "react";
 import {
   BarChartIcon,
-  BookIcon,
   FileTextIcon,
   HeadphonesIcon,
   HomeIcon,
-  LayoutGridIcon,
-  MicIcon,
-  PencilIcon,
-  UserIcon,
 } from "@/components/bandforge/dashboard/icons";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -26,69 +21,42 @@ export type NavGroup = {
   items: NavLink[];
 };
 
+/** Primary destinations — flat list, no section titles. */
 export const DASHBOARD_NAV: NavGroup[] = [
   {
     title: "",
-    items: [{ label: "Dashboard", href: "/dashboard", Icon: HomeIcon }],
-  },
-  {
-    title: "Study Plan",
     items: [
-      { label: "Today's Plan", href: "/study-plan/today", Icon: FileTextIcon },
-      { label: "Full Plan", href: "/study-plan", Icon: FileTextIcon, indent: true },
-    ],
-  },
-  {
-    title: "Practice",
-    items: [
-      { label: "Listening", href: "/practice/listening", Icon: HeadphonesIcon },
-      { label: "Reading", href: "/practice/reading", Icon: BookIcon },
-      { label: "Writing", href: "/practice/writing", Icon: PencilIcon },
-      { label: "Speaking", href: "/practice/speaking", Icon: MicIcon },
-    ],
-  },
-  {
-    title: "Progress",
-    items: [
-      { label: "Performance", href: "/scores", Icon: BarChartIcon },
-      { label: "Diagnostic Report", href: "/diagnostic/report", Icon: FileTextIcon },
-    ],
-  },
-  {
-    title: "Resources",
-    items: [
-      { label: "Content Library", href: "/content-library", Icon: LayoutGridIcon },
+      { label: "Dashboard", href: "/dashboard", Icon: HomeIcon },
+      { label: "Study Plan", href: "/study-plan", Icon: FileTextIcon },
+      { label: "Practice", href: "/practice/listening", Icon: HeadphonesIcon },
       { label: "Mock tests", href: "/test", Icon: FileTextIcon },
+      { label: "Progress", href: "/scores", Icon: BarChartIcon },
     ],
-  },
-  {
-    title: "",
-    items: [{ label: "Settings", href: "/profile", Icon: UserIcon }],
   },
 ];
 
 export const MOBILE_BOTTOM_NAV: NavLink[] = [
   { label: "Home", href: "/dashboard", Icon: HomeIcon },
-  { label: "Today", href: "/study-plan/today", Icon: FileTextIcon },
+  { label: "Plan", href: "/study-plan", Icon: FileTextIcon },
   { label: "Practice", href: "/practice/listening", Icon: HeadphonesIcon },
-  { label: "Scores", href: "/scores", Icon: BarChartIcon },
-  { label: "Profile", href: "/profile", Icon: UserIcon },
+  { label: "Mocks", href: "/test", Icon: FileTextIcon },
+  { label: "Progress", href: "/scores", Icon: BarChartIcon },
 ];
 
 export function isNavItemActive(pathname: string, href: string): boolean {
   if (pathname === href) return true;
   if (href === "/dashboard") return false;
   if (href === "/study-plan") {
-    return pathname === "/study-plan";
-  }
-  if (href === "/study-plan/today") {
-    return pathname.startsWith("/study-plan/today");
+    return pathname === "/study-plan" || pathname.startsWith("/study-plan/");
   }
   if (href.startsWith("/practice/")) {
-    return pathname === href || pathname.startsWith(`${href}/`);
+    return pathname === "/practice" || pathname.startsWith("/practice/");
   }
   if (href === "/test") {
     return pathname === "/test" || pathname.startsWith("/test/");
+  }
+  if (href === "/scores") {
+    return pathname === "/scores" || pathname.startsWith("/scores/");
   }
   if (href !== "/dashboard" && href !== "/profile") {
     return pathname.startsWith(href);

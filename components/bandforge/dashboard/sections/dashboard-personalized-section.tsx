@@ -1,11 +1,19 @@
+import { Suspense } from "react";
 import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
+import {
+  DashPageItem,
+  DashPageMotion,
+} from "@/components/bandforge/dashboard/motion";
 import { DashboardBandGapSection } from "@/components/bandforge/dashboard/sections/dashboard-band-gap-section";
 import { DashboardHubProgressSection } from "@/components/bandforge/dashboard/sections/dashboard-hub-progress-section";
-import { DashboardTimelineSection } from "@/components/bandforge/dashboard/sections/dashboard-timeline-section";
+import { countStudyDaysCompleted } from "@/components/bandforge/dashboard/sections/dashboard-timeline-section";
 import { DashboardWelcomeSection } from "@/components/bandforge/dashboard/sections/dashboard-welcome-section";
 import { TodaysPlanPanel } from "@/components/bandforge/dashboard/todays-plan-panel";
-import type { DashboardSummary } from "@/components/bandforge/dashboard/types";
-import type { LearningProfile, LearningStudyPlan } from "@/lib/learning-types";
+import {
+  computeBandGapFromLearning,
+  overallPlanPercent,
+} from "@/lib/dashboard-plan-math";
+import type { LearningProfile } from "@/lib/learning-types";
 
 type UserProps = {
   firstName: string;
@@ -16,74 +24,117 @@ type UserProps = {
 
 type Props = {
   learning: LearningProfile;
-  summary: DashboardSummary;
+  streakDays: number;
   user: UserProps;
   userId: string;
 };
 
-function overallPlanPercent(plan: LearningStudyPlan): number {
-  const skillModules = ["listening", "reading", "writing", "speaking"];
-  const today = new Date().toISOString().slice(0, 10);
-  let done = 0;
-  let total = 0;
-  for (const week of plan.weeks) {
-    for (const day of week.days) {
-      if (day.date > today) continue;
-      for (const task of day.tasks) {
-        if (!skillModules.includes(task.module)) continue;
-        total += 1;
-        if (task.status === "done") done += 1;
-      }
-    }
-  }
-  return total > 0 ? Math.round((done / total) * 100) : 0;
+function PlanSkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden>
+      <div className="h-24 animate-pulse rounded-[22px] bg-ink/[0.06]" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="h-36 animate-pulse rounded-2xl bg-ink/[0.06]" />
+        <div className="h-36 animate-pulse rounded-2xl bg-ink/[0.06]" />
+        <div className="h-36 animate-pulse rounded-2xl bg-ink/[0.06]" />
+        <div className="h-36 animate-pulse rounded-2xl bg-ink/[0.06]" />
+      </div>
+    </div>
+  );
+}
+
+function SkillsSkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden>
+      <div className="h-8 w-40 animate-pulse rounded-lg bg-ink/[0.06]" />
+      <div className="h-28 animate-pulse rounded-2xl bg-ink/[0.06]" />
+      <div className="h-28 animate-pulse rounded-2xl bg-ink/[0.06]" />
+      <div className="mt-6 h-8 w-36 animate-pulse rounded-lg bg-ink/[0.06]" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="h-24 animate-pulse rounded-2xl bg-ink/[0.06]" />
+        <div className="h-24 animate-pulse rounded-2xl bg-ink/[0.06]" />
+      </div>
+    </div>
+  );
 }
 
 export async function DashboardPersonalizedSection({
   learning,
-  summary,
+  streakDays,
   user,
   userId,
 }: Props) {
-  const streak = summary.stats.current_streak ?? 0;
+  const studyPlan = learning.study_plan;
+  const studyDaysCompleted = countStudyDaysCompleted(studyPlan);
+  const totalDays = learning.total_days ?? studyPlan.total_days ?? null;
+  const currentDay = learning.current_day ?? null;
+  const examDate = learning.exam_date ?? studyPlan.exam_date ?? null;
+  const planPct = overallPlanPercent(studyPlan);
+  const bandGap = computeBandGapFromLearning(learning);
 
   return (
-    <div className="space-y-6">
-      <DashboardTopHeader
-        firstName={user.firstName}
-        displayName={user.displayName}
-        email={user.email}
-        avatarUrl={user.avatarUrl}
-        streakDays={streak}
-      />
-      <DashboardWelcomeSection
-        firstName={user.firstName}
-        targetBand={learning.target_band}
-        currentDay={learning.current_day ?? null}
-        totalDays={learning.total_days ?? learning.study_plan.total_days ?? null}
-        weeklyFocus={learning.study_plan.weekly_focus}
-        skillDifficulty={
-          learning.skill_difficulty ?? learning.study_plan.skill_difficulty ?? null
-        }
-      />
-      <DashboardTimelineSection
-        currentDay={learning.current_day ?? null}
-        totalDays={learning.total_days ?? learning.study_plan.total_days ?? null}
-        daysRemaining={learning.days_remaining ?? null}
-        examDate={learning.exam_date ?? learning.study_plan.exam_date ?? null}
-        studyPlan={learning.study_plan}
-      />
-      <DashboardBandGapSection learning={learning} />
-      <TodaysPlanPanel
-        initialTasks={learning.todays_tasks}
-        userId={userId}
-        hubProgress={learning.hub_progress}
-        moduleSummary={learning.module_summary}
-        currentBand={learning.current_band}
-        targetBand={learning.target_band}
-        overallPlanPct={overallPlanPercent(learning.study_plan)}
-      />
-      <DashboardHubProgressSection learning={learning} />
-    </div>
+    <DashPageMotion>
+      <DashPageItem>
+        <DashboardTopHeader
+          firstName={user.firstName}
+          displayName={user.displayName}
+          email={user.email}
+          avatarUrl={user.avatarUrl}
+          streakDays={streakDays}
+        />
+      </DashPageItem>
+
+      <DashPageItem>
+        <DashboardWelcomeSection
+          targetBand={learning.target_band}
+          currentDay={currentDay}
+          totalDays={totalDays}
+          weeklyFocus={studyPlan.weekly_focus}
+          skillDifficulty={
+            learning.skill_difficulty ?? studyPlan.skill_difficulty ?? null
+          }
+          daysRemaining={learning.days_remaining ?? null}
+          examDate={examDate}
+          studyDaysCompleted={studyDaysCompleted}
+          bandGapCurrent={bandGap.currentBand}
+          bandGapDelta={bandGap.gap}
+          bandGapScoredCount={bandGap.scoredCount}
+          bandGapIsPartial={bandGap.isPartial}
+          resolvedTargetBand={bandGap.targetBand}
+        />
+      </DashPageItem>
+
+      <DashPageItem>
+        <Suspense fallback={<PlanSkeleton />}>
+          <TodaysPlanPanel
+            initialTasks={learning.todays_tasks}
+            userId={userId}
+            hubProgress={learning.hub_progress}
+            moduleSummary={learning.module_summary}
+            currentBand={learning.current_band}
+            targetBand={learning.target_band}
+            overallPlanPct={planPct}
+            embedded
+          />
+        </Suspense>
+      </DashPageItem>
+
+      <DashPageItem>
+        <Suspense fallback={<SkillsSkeleton />}>
+          <div className="space-y-5 sm:space-y-7">
+            <DashboardBandGapSection
+              bands={bandGap.bands}
+              targetBand={bandGap.targetBand}
+              isPartial={bandGap.isPartial}
+              scoredCount={bandGap.scoredCount}
+            />
+            <DashboardHubProgressSection
+              learning={learning}
+              overallPlanPct={planPct}
+            />
+          </div>
+        </Suspense>
+      </DashPageItem>
+    </DashPageMotion>
   );
 }

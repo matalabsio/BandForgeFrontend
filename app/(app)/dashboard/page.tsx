@@ -12,7 +12,7 @@ import {
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
 import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
-import { fetchDashboardSummary } from "@/lib/dashboard-server";
+import { fetchDashboardStreak } from "@/lib/dashboard-server";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
@@ -56,10 +56,10 @@ type DashboardBodyProps = {
 };
 
 async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps) {
-  const [subscription, learning, summary] = await Promise.all([
+  const [subscription, learning, streak] = await Promise.all([
     fetchSubscription(cookieHeader),
     fetchLearningProfile(cookieHeader),
-    fetchDashboardSummary(cookieHeader),
+    fetchDashboardStreak(cookieHeader),
   ]);
   const profile = learning ?? emptyLearningProfile(userId);
 
@@ -84,7 +84,7 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
     <DashboardGate learning={profile} subscription={subscription}>
       <DashboardPersonalizedSection
         learning={profile}
-        summary={summary}
+        streakDays={streak.current_streak}
         user={user}
         userId={userId}
       />

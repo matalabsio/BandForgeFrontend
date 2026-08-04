@@ -1,6 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import { Lock, Unlock } from "lucide-react";
-import type { LearningProfile, LearningStudyPlan } from "@/lib/learning-types";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  DASH_EASE,
+  DashProgressBar,
+  DashReveal,
+} from "@/components/bandforge/dashboard/motion";
+import { LazyMount } from "@/components/bandforge/dashboard/lazy-mount";
+import { overallPlanPercent } from "@/lib/dashboard-plan-math";
+import type { LearningProfile } from "@/lib/learning-types";
 import { cn } from "@/lib/utils";
 
 const SKILL_ORDER = [
@@ -12,98 +22,115 @@ const SKILL_ORDER = [
 
 type Props = {
   learning: LearningProfile;
+  overallPlanPct?: number;
 };
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function overallPlanPercent(plan: LearningStudyPlan): number {
-  const skillModules = ["listening", "reading", "writing", "speaking"];
-  const today = todayIso();
-  let done = 0;
-  let total = 0;
-
-  for (const week of plan.weeks) {
-    for (const day of week.days) {
-      if (day.date > today) continue;
-      for (const task of day.tasks) {
-        if (!skillModules.includes(task.module)) continue;
-        total += 1;
-        if (task.status === "done") done += 1;
-      }
-    }
-  }
-
-  return total > 0 ? Math.round((done / total) * 100) : 0;
-}
-
-export function DashboardHubProgressSection({ learning }: Props) {
+export function DashboardHubProgressSection({
+  learning,
+  overallPlanPct,
+}: Props) {
+  const reduce = useReducedMotion();
   const hubProgress = learning.hub_progress ?? {};
-  const overallPct = overallPlanPercent(learning.study_plan);
+  const overallPct =
+    overallPlanPct ?? overallPlanPercent(learning.study_plan);
 
   return (
-    <section className="bf-dash-enter">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-        <p className="font-mono text-xs tracking-[0.1em] text-muted-light uppercase">
-          Study plan progress
-        </p>
-        <p className="text-[12px] font-semibold text-cyan sm:text-[13px]">
-          Overall plan {overallPct}%
-        </p>
+    <DashReveal as="section" aria-labelledby="hub-progress-heading">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2
+            id="hub-progress-heading"
+            className="font-display text-lg font-bold tracking-tight text-ink sm:text-xl"
+          >
+            Practice hubs
+          </h2>
+          <p className="mt-0.5 text-[13px] text-muted">
+            Unlock mocks by completing skill hubs
+          </p>
+        </div>
+        <span className="rounded-full bg-cyan-soft px-2.5 py-1 font-mono text-[12px] font-semibold tabular-nums text-teal ring-1 ring-cyan/20">
+          Plan {overallPct}%
+        </span>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {SKILL_ORDER.map(({ key, label }) => {
-          const row = hubProgress[key];
-          const completed = row?.completed_count ?? 0;
-          const total = row?.total_count ?? 12;
-          const pct =
-            total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
-          const mockUnlocked = row?.mock_unlocked ?? false;
+      <LazyMount className="min-h-[160px]">
+        <motion.div
+          className="grid gap-3 sm:grid-cols-2"
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.12 }}
+          variants={{
+            hidden: {},
+            show: {
+              transition: { staggerChildren: 0.07, delayChildren: 0.04 },
+            },
+          }}
+        >
+          {SKILL_ORDER.map(({ key, label }) => {
+            const row = hubProgress[key];
+            const completed = row?.completed_count ?? 0;
+            const total = row?.total_count ?? 12;
+            const pct =
+              total > 0
+                ? Math.min(100, Math.round((completed / total) * 100))
+                : 0;
+            const mockUnlocked = row?.mock_unlocked ?? false;
 
-          return (
-            <Link
-              key={key}
-              href={`/practice/${key}`}
-              className="rounded-2xl border border-border-soft bg-white px-4 py-4 transition-colors hover:border-cyan/40 sm:px-5"
-            >
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="font-display text-sm font-bold text-navy">{label}</p>
-                <span className="font-mono text-xs font-semibold text-cyan">
-                  {completed} / {total}
-                </span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-border-soft">
-                <div
-                  className="h-full rounded-full bg-cyan transition-all"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold",
-                    mockUnlocked
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-ink/5 text-ink/55",
-                  )}
+            return (
+              <motion.div
+                key={key}
+                variants={{
+                  hidden: reduce ? { opacity: 1 } : { opacity: 0, y: 14 },
+                  show: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.45, ease: DASH_EASE },
+                  },
+                }}
+              >
+                <Link
+                  href={`/practice/${key}`}
+                  className="group block cursor-pointer rounded-2xl border border-ink/8 bg-white px-4 py-4 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-cyan/35 hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] sm:px-5"
                 >
-                  {mockUnlocked ? (
-                    <Unlock className="size-3" strokeWidth={2.5} />
-                  ) : (
-                    <Lock className="size-3" strokeWidth={2.5} />
-                  )}
-                  Mock {mockUnlocked ? "unlocked" : "locked"}
-                </span>
-                <span className="text-[11px] font-semibold text-cyan">
-                  Open practice →
-                </span>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
+                  <div className="mb-2.5 flex items-center justify-between gap-2">
+                    <p className="font-display text-sm font-bold text-ink">
+                      {label}
+                    </p>
+                    <span className="font-mono text-xs font-semibold tabular-nums text-teal">
+                      {completed}/{total}
+                    </span>
+                  </div>
+                  <DashProgressBar
+                    value={pct}
+                    heightClassName="h-2"
+                    label={`${label} hub progress`}
+                  />
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold",
+                        mockUnlocked
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-ink/5 text-ink/55",
+                      )}
+                    >
+                      {mockUnlocked ? (
+                        <Unlock className="size-3" strokeWidth={2.5} />
+                      ) : (
+                        <Lock className="size-3" strokeWidth={2.5} />
+                      )}
+                      Mock {mockUnlocked ? "unlocked" : "locked"}
+                    </span>
+                    <span className="text-[11px] font-semibold text-teal transition-transform duration-200 group-hover:translate-x-0.5">
+                      Open →
+                    </span>
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </LazyMount>
+    </DashReveal>
   );
 }

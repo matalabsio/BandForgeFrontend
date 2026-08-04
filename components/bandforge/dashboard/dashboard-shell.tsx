@@ -169,7 +169,12 @@ export function DashboardShell({
                 className="hidden lg:flex"
               />
             ) : null}
-            <BandForgeLogoLink href="/dashboard" size="sm" />
+            {/* Logo lives in the sidebar when it's open (desktop). Keep it in the top bar on mobile / when sidebar is closed. */}
+            <BandForgeLogoLink
+              href="/dashboard"
+              size="sm"
+              className={cn("min-w-0", sidebarOpen && "lg:hidden")}
+            />
           </header>
         ) : (
           <header className="sticky top-0 z-20 border-b border-ink/8 bg-white/95 backdrop-blur-md">
@@ -192,7 +197,17 @@ export function DashboardShell({
               ) : (
                 <span className="hidden size-10 shrink-0 lg:block" aria-hidden />
               )}
-              <BandForgeLogoLink href="/dashboard" size="sm" className="min-w-0 flex-1" />
+              <BandForgeLogoLink
+                href="/dashboard"
+                size="sm"
+                className={cn(
+                  "min-w-0 flex-1",
+                  sidebarOpen && "lg:hidden",
+                )}
+              />
+              {sidebarOpen ? (
+                <span className="hidden flex-1 lg:block" aria-hidden />
+              ) : null}
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"

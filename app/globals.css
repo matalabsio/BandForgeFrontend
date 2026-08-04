@@ -781,7 +781,14 @@ html {
 
 .bf-dash-enter {
   opacity: 1;
-  animation: bf-dash-enter 0.2s ease-out forwards;
+  animation: bf-dash-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Soft surface lift used by animated dashboard cards */
+.bf-dash-surface {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 8px 28px rgba(15, 23, 42, 0.04);
 }
 
 .bf-below-fold {

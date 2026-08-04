@@ -1,3 +1,22 @@
+"use client";
+
+import { useState, useMemo, type ComponentType, type SVGProps } from "react";
+import {
+  BookOpen,
+  ChevronDown,
+  Headphones,
+  Mic,
+  PenLine,
+  Sparkles,
+  Target,
+  TrendingUp,
+  TriangleAlert,
+} from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  SkillProgressStepper,
+  type SkillStepperStep,
+} from "@/components/bandforge/dashboard/skill-progress-stepper";
 import {
   skillLabel,
   skillStatuses,
@@ -9,96 +28,329 @@ import { cn } from "@/lib/utils";
 
 const SKILL_ORDER: SkillKey[] = ["listening", "reading", "writing", "speaking"];
 
-type BarStyle = {
-  score: string;
-  gap: string;
-  fill: string;
+const SKILL_ICONS: Record<
+  SkillKey,
+  ComponentType<SVGProps<SVGSVGElement>>
+> = {
+  listening: Headphones,
+  reading: BookOpen,
+  writing: PenLine,
+  speaking: Mic,
 };
 
-const BAR_STYLES: Record<SkillStatus, BarStyle> = {
+type Tone = {
+  score: string;
+  iconWrap: string;
+  badge: string;
+  border: string;
+};
+
+const TONES: Record<SkillStatus, Tone> = {
   on_track: {
-    score: "text-[#0097A7]",
-    gap: "text-[#0097A7]",
-    fill: "bg-[#00BCD4]",
+    score: "text-teal",
+    iconWrap: "bg-cyan-soft text-teal",
+    badge: "bg-cyan-soft text-teal ring-cyan/25",
+    border: "border-cyan/25",
   },
   strongest: {
-    score: "text-[#0097A7]",
-    gap: "text-[#0097A7]",
-    fill: "bg-[#00BCD4]",
+    score: "text-teal",
+    iconWrap: "bg-teal text-white",
+    badge: "bg-teal/10 text-teal ring-teal/20",
+    border: "border-cyan/25",
   },
   focus_area: {
-    score: "text-[#9A6B12]",
-    gap: "text-[#9A6B12]",
-    fill: "bg-[#D9A441]",
+    score: "text-amber-800",
+    iconWrap: "bg-amber-50 text-amber-700",
+    badge: "bg-amber-50 text-amber-900 ring-amber-200/70",
+    border: "border-amber-200/60",
   },
   priority: {
-    score: "text-[#B23B30]",
-    gap: "text-[#B23B30]",
-    fill: "bg-[#E05A4D]",
+    score: "text-red-700",
+    iconWrap: "bg-red-50 text-red-600",
+    badge: "bg-red-50 text-red-700 ring-red-200/70",
+    border: "border-red-200/60",
   },
 };
 
-function SkillRow({
+function GrowthIcon({
+  status,
+  scored,
+  className,
+}: {
+  status: SkillStatus;
+  scored: boolean;
+  className?: string;
+}) {
+  if (!scored) {
+    return <Target className={className} strokeWidth={2.25} aria-hidden />;
+  }
+  if (status === "strongest" || status === "on_track") {
+    return <Sparkles className={className} strokeWidth={2.25} aria-hidden />;
+  }
+  if (status === "focus_area") {
+    return <TrendingUp className={className} strokeWidth={2.25} aria-hidden />;
+  }
+  return <TriangleAlert className={className} strokeWidth={2.25} aria-hidden />;
+}
+
+function growthLabel(status: SkillStatus, scored: boolean, gap: number): string {
+  if (!scored) return "Awaiting score";
+  if (gap <= 0) return "On target";
+  if (status === "strongest") return "Strongest skill";
+  if (status === "on_track") return "Closing in";
+  if (status === "focus_area") return "Room to grow";
+  return "Priority lift";
+}
+
+function bandMilestoneValues(score: number, target: number): number[] {
+  const start = Number(score.toFixed(1));
+  const end = Number(target.toFixed(1));
+  if (end <= start) return [start];
+
+  const mids: number[] = [];
+  for (let b = Math.floor(start) + 1; b < end; b += 1) {
+    mids.push(b);
+  }
+
+  let values = [start, ...mids, end];
+  values = values.filter(
+    (v, i, arr) => i === 0 || Math.abs(v - arr[i - 1]) > 0.05,
+  );
+
+  if (values.length <= 4) return values;
+
+  return [
+    values[0],
+    values[Math.floor((values.length - 1) / 3)],
+    values[Math.floor((2 * (values.length - 1)) / 3)],
+    values[values.length - 1],
+  ].map((v) => Number(v.toFixed(1)));
+}
+
+function buildBandStepperSteps(
+  skillKey: SkillKey,
+  band: number,
+  targetBand: number,
+): SkillStepperStep[] {
+  const SkillIcon = SKILL_ICONS[skillKey];
+  const values = bandMilestoneValues(band, targetBand);
+  const midIcons = [TrendingUp, Sparkles] as const;
+  let currentSet = false;
+
+  return values.map((value, index) => {
+    const isFirst = index === 0;
+    const isLast = index === values.length - 1;
+    const reached = band + 0.001 >= value;
+    let state: SkillStepperStep["state"] = "upcoming";
+    if (reached) {
+      state = "done";
+    } else if (!currentSet) {
+      state = "current";
+      currentSet = true;
+    }
+    if (isFirst) state = "done";
+
+    const icon = isFirst
+      ? SkillIcon
+      : isLast
+        ? Target
+        : midIcons[(index - 1) % midIcons.length];
+
+    return {
+      id: `${skillKey}-${value}`,
+      label: isFirst
+        ? "Now"
+        : isLast
+          ? "Target"
+          : index === 1
+            ? "Grow"
+            : "Close",
+      detail: value.toFixed(1),
+      icon,
+      state,
+    };
+  });
+}
+
+function badgeCopy(scored: boolean, skillGap: number, score: number): string {
+  if (!scored) return "Pending";
+  if (score > 0 && score < 1) return "Early score";
+  if (skillGap > 0) return `+${skillGap.toFixed(1)}`;
+  return "On target";
+}
+
+function SkillAccordionRow({
   skillKey,
   band,
   targetBand,
   status,
+  index,
+  animate,
+  reduceMotion,
+  open,
+  onToggle,
 }: {
   skillKey: SkillKey;
   band: number | null;
   targetBand: number;
   status: SkillStatus;
+  index: number;
+  animate: boolean;
+  reduceMotion: boolean | null;
+  open: boolean;
+  onToggle: () => void;
 }) {
-  const score = band != null && band > 0 ? band : 0;
-  const widthPct = Math.min(100, Math.max(4, (score / 9) * 100));
-  const targetPct = Math.min(100, (targetBand / 9) * 100);
-  const skillGap = score > 0 ? Math.max(0, targetBand - score) : 0;
-  const styles = BAR_STYLES[status];
+  const Icon = SKILL_ICONS[skillKey];
+  const scored = band != null && band > 0;
+  const score = scored ? band : 0;
+  const skillGap = scored ? Math.max(0, targetBand - score) : 0;
+  const tone = scored ? TONES[status] : null;
+  const early = scored && score < 1;
+
+  const steps = useMemo(
+    () => (scored ? buildBandStepperSteps(skillKey, band!, targetBand) : []),
+    [scored, skillKey, band, targetBand],
+  );
+
+  const row = (
+    <div
+      data-skill-gap-card=""
+      className={cn(
+        "overflow-hidden rounded-2xl border border-ink/8 bg-white",
+        scored && tone?.border,
+        !scored && "bg-surface/40",
+        open && "shadow-[0_1px_0_rgba(255,255,255,0.85)_inset]",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-cyan-soft/20 sm:px-4 sm:py-3.5"
+      >
+        <span
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-xl",
+            scored ? tone!.iconWrap : "bg-ink/[0.04] text-muted",
+          )}
+        >
+          <Icon className="size-4" strokeWidth={2.1} aria-hidden />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <p className="text-[13px] font-bold text-ink">
+              {skillLabel(skillKey)}
+            </p>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1",
+                scored
+                  ? early
+                    ? "bg-amber-50 text-amber-900 ring-amber-200/70"
+                    : tone!.badge
+                  : "bg-surface text-muted ring-ink/8",
+              )}
+            >
+              {badgeCopy(scored, skillGap, score)}
+            </span>
+          </div>
+          <p className="mt-0.5 flex items-center gap-1 text-[11.5px] text-muted">
+            <GrowthIcon
+              status={status}
+              scored={scored}
+              className={cn("size-3", scored ? tone!.score : "text-muted-light")}
+            />
+            {growthLabel(status, scored, skillGap)}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="text-right">
+            <p
+              className={cn(
+                "font-mono text-base font-semibold tabular-nums sm:text-lg",
+                scored ? tone!.score : "text-muted-light",
+              )}
+            >
+              {scored ? score.toFixed(1) : "—"}
+            </p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-light">
+              {scored ? "Now" : "Pending"}
+            </p>
+          </div>
+          <ChevronDown
+            className={cn(
+              "size-4 text-muted transition-transform duration-200",
+              open && "rotate-180",
+            )}
+            aria-hidden
+          />
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="panel"
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-ink/[0.05] px-3.5 pb-4 pt-3 sm:px-4">
+              {scored ? (
+                <>
+                  <p className="mb-3 text-[11px] font-medium text-muted">
+                    Now → grow → close → target
+                  </p>
+                  <SkillProgressStepper steps={steps} compact animate />
+                  <p
+                    className={cn(
+                      "mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ring-1",
+                      early
+                        ? "bg-amber-50 text-amber-900 ring-amber-200/70"
+                        : tone!.badge,
+                    )}
+                  >
+                    <GrowthIcon status={status} scored className="size-3" />
+                    {early
+                      ? "Early score · keep practicing"
+                      : skillGap > 0
+                        ? `+${skillGap.toFixed(1)} band to close`
+                        : "Target met"}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[13px] leading-relaxed text-muted">
+                  No scored band yet. Finish a practice or diagnostic for this
+                  skill to unlock the growth path.
+                </p>
+              )}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+
+  if (!animate) return row;
 
   return (
-    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-      <span className="w-12 shrink-0 truncate text-[11px] font-semibold text-[#0D1F3C] sm:w-16 sm:text-[12.5px]">
-        {skillLabel(skillKey)}
-      </span>
-      <span
-        className={cn(
-          "w-9 shrink-0 text-left text-[10px] font-semibold sm:w-[48px] sm:text-[11px]",
-          score > 0
-            ? cn("font-mono font-medium sm:text-[13.5px]", styles.score)
-            : "text-[#94A3B8]",
-        )}
-        title={score > 0 ? undefined : "Pending review"}
-      >
-        {score > 0 ? score.toFixed(1) : (
-          <>
-            <span className="sm:hidden">—</span>
-            <span className="hidden sm:inline">Pending</span>
-          </>
-        )}
-      </span>
-      <div className="relative h-2 min-w-0 flex-1 rounded-full bg-[#EEF2F7] sm:h-2.5">
-        {score > 0 ? (
-          <div
-            className={cn("absolute inset-y-0 left-0 rounded-full", styles.fill)}
-            style={{ width: `${widthPct}%` }}
-          />
-        ) : null}
-        <div
-          className="absolute top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-[#0D1F3C] sm:h-4"
-          style={{ left: `${targetPct}%` }}
-          aria-hidden
-        />
-      </div>
-      <span
-        className={cn(
-          "w-8 shrink-0 text-right font-mono text-[11.5px] font-medium sm:w-[38px] sm:text-[13px]",
-          skillGap > 0 ? styles.gap : "text-[#94A3B8]",
-        )}
-        title={score > 0 ? undefined : "Pending review"}
-      >
-        {score > 0 ? (skillGap > 0 ? `+${skillGap.toFixed(1)}` : "—") : "—"}
-      </span>
-    </div>
+    <motion.div
+      className="w-full"
+      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{
+        duration: 0.35,
+        delay: 0.03 + index * 0.05,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+    >
+      {row}
+    </motion.div>
   );
 }
 
@@ -106,45 +358,68 @@ type Props = {
   bands: SkillBands;
   targetBand: number;
   statuses?: Record<SkillKey, SkillStatus>;
+  animate?: boolean;
 };
 
-export function BandGapTable({ bands, targetBand, statuses }: Props) {
+export function BandGapTable({
+  bands,
+  targetBand,
+  statuses,
+  animate = false,
+}: Props) {
+  const reduceMotion = useReducedMotion();
   const resolvedStatuses = statuses ?? skillStatuses(bands, targetBand);
+
+  /** Open the highest-gap scored skill by default; else none. */
+  const defaultOpen = useMemo(() => {
+    let best: SkillKey | null = null;
+    let bestGap = -1;
+    for (const key of SKILL_ORDER) {
+      const band = bands[key];
+      if (band == null || band <= 0) continue;
+      const gap = Math.max(0, targetBand - band);
+      if (gap > bestGap) {
+        bestGap = gap;
+        best = key;
+      }
+    }
+    return best;
+  }, [bands, targetBand]);
+
+  const [openKey, setOpenKey] = useState<SkillKey | null>(defaultOpen);
 
   return (
     <div className="min-w-0 flex-1">
-      <div className="mb-2 flex items-baseline justify-between sm:mb-2.5">
-        <span className="text-[10px] font-semibold tracking-[0.06em] text-[#94A3B8] uppercase sm:text-[11px]">
-          <span className="sm:hidden">Skill · now · gap</span>
-          <span className="hidden sm:inline">By skill</span>
-        </span>
-        <span className="text-[10px] font-medium text-[#94A3B8] sm:text-[11px]">
-          <span className="sm:hidden">│ = target {targetBand.toFixed(1)}</span>
-          <span className="hidden sm:inline">
-            │ = Band {targetBand.toFixed(1)} target
-          </span>
-        </span>
+      <div className="mb-3.5 flex flex-wrap items-baseline justify-between gap-2 sm:gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-light">
+            Skill queue
+          </p>
+          <p className="mt-0.5 text-[12px] text-muted">
+            Tap a skill to expand the growth path
+          </p>
+        </div>
+        <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted">
+          <Target className="size-3 text-teal" aria-hidden />
+          Band {targetBand.toFixed(1)} target
+        </p>
       </div>
 
-      <div className="mb-2 hidden items-center gap-3 sm:flex">
-        <span className="w-16" />
-        <span className="w-[48px] text-[9.5px] font-semibold tracking-[0.05em] text-[#94A3B8] uppercase">
-          Now
-        </span>
-        <span className="flex-1" />
-        <span className="w-[38px] text-right text-[9.5px] font-semibold tracking-[0.05em] text-[#94A3B8] uppercase">
-          Gap
-        </span>
-      </div>
-
-      <div className="flex flex-col gap-2.5 sm:gap-[11px]">
-        {SKILL_ORDER.map((key) => (
-          <SkillRow
+      <div className="flex flex-col gap-2">
+        {SKILL_ORDER.map((key, index) => (
+          <SkillAccordionRow
             key={key}
             skillKey={key}
             band={bands[key]}
             targetBand={targetBand}
             status={resolvedStatuses[key]}
+            index={index}
+            animate={animate}
+            reduceMotion={reduceMotion}
+            open={openKey === key}
+            onToggle={() =>
+              setOpenKey((prev) => (prev === key ? null : key))
+            }
           />
         ))}
       </div>

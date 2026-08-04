@@ -134,3 +134,55 @@ export async function fetchDashboardSummary(
 ): Promise<DashboardSummary> {
   return getSummary(cookieHeader);
 }
+
+export type DashboardStreak = {
+  current_streak: number;
+  longest_streak: number;
+};
+
+const EMPTY_STREAK: DashboardStreak = {
+  current_streak: 0,
+  longest_streak: 0,
+};
+
+const STREAK_FETCH_MS = 4_000;
+
+export async function fetchDashboardStreak(
+  cookieHeader: string,
+): Promise<DashboardStreak> {
+  if (!shouldFetchDashboardApi(cookieHeader)) return EMPTY_STREAK;
+  const key = `dashboard:streak:${cookieHeader}`;
+  const cached = getMemCached<DashboardStreak>(key);
+  if (cached) return cached;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= DASHBOARD_FETCH_RETRIES; attempt++) {
+    try {
+      const res = await fetchWithTimeout(
+        `${getApiUrl()}/api/dashboard/streak`,
+        {
+          headers: serverAuthHeaders(cookieHeader),
+          cache: "no-store",
+          timeoutMs: STREAK_FETCH_MS,
+        },
+      );
+      if (!res.ok) {
+        lastError = new Error(`HTTP ${res.status}`);
+        continue;
+      }
+      const data = (await res.json()) as DashboardStreak;
+      const value = {
+        current_streak: Number(data?.current_streak) || 0,
+        longest_streak: Number(data?.longest_streak) || 0,
+      };
+      setMemCached(key, value, 30_000);
+      return value;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  if (process.env.NODE_ENV === "development" && lastError) {
+    console.warn(`[dashboard] streak failed:`, lastError);
+  }
+  return EMPTY_STREAK;
+}
