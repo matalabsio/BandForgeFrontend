@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Copy, Download, FileText, Share2, X } from "lucide-react";
+import { Download, FileText, Share2, X } from "lucide-react";
 import { FaTelegram, FaWhatsapp } from "react-icons/fa";
 import { DailyGrowthReportCard } from "@/components/bandforge/plan/daily-growth-report-card";
 import { DASH_EASE } from "@/components/bandforge/dashboard/motion";
@@ -115,15 +115,6 @@ export function DailyGrowthReportModal({
     }
   };
 
-  const copyShareText = async () => {
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setShareHint("Copied branded caption.");
-    } catch {
-      setShareHint("Could not copy caption.");
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center p-3 sm:items-center sm:p-4">
       <button
@@ -170,7 +161,7 @@ export function DailyGrowthReportModal({
           />
         </div>
 
-        <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-ink/[0.06] bg-white px-4 py-3 sm:grid-cols-4">
+        <div className="grid shrink-0 grid-cols-3 gap-2 border-t border-ink/[0.06] bg-white px-4 py-3">
           <button
             type="button"
             onClick={() => void shareNative()}
@@ -205,14 +196,6 @@ export function DailyGrowthReportModal({
           >
             <FaTelegram className="size-3.5 shrink-0 text-[#229ED9]" aria-hidden />
             Telegram
-          </button>
-          <button
-            type="button"
-            onClick={() => void copyShareText()}
-            className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-white px-2 py-2 text-[12px] font-semibold text-ink transition-colors hover:bg-ink/5"
-          >
-            <Copy className="size-3.5 shrink-0" aria-hidden />
-            Copy text
           </button>
         </div>
         {shareHint ? (
