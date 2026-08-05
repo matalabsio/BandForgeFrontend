@@ -5,6 +5,7 @@ import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
 import { resolveCatalogSlotServer } from "@/lib/mock-server";
+import { appendPlanResultParams } from "@/lib/plan-day-tasks";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { WritingPendingPage } from "@/modules/writing/components/writing-pending-page";
 
@@ -15,7 +16,13 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ attempt?: string }>;
+  searchParams: Promise<{
+    attempt?: string;
+    from?: string;
+    task?: string;
+    taskId?: string;
+    hubId?: string;
+  }>;
 };
 
 export default async function TestWritingPendingPage({ params, searchParams }: Props) {
@@ -31,7 +38,12 @@ export default async function TestWritingPendingPage({ params, searchParams }: P
     redirect(`/test/${testNumber}/writing`);
   }
 
-  const returnPath = shortModuleWritingPendingPath(testNumber, attemptId);
+  const returnPath = appendPlanResultParams(
+    shortModuleWritingPendingPath(testNumber, attemptId),
+    sp.from === "plan"
+      ? { task: sp.task, taskId: sp.taskId, hubId: sp.hubId }
+      : null,
+  );
 
   const cookieHeader = await getCachedCookieHeader();
   await guardMockModulePage(cookieHeader, returnPath);
@@ -45,6 +57,10 @@ export default async function TestWritingPendingPage({ params, searchParams }: P
         attemptId={attemptId}
         testNumber={testNumber}
         mockTestId={resolved.mockTestId}
+        planFrom={sp.from}
+        planTask={sp.task}
+        planTaskId={sp.taskId}
+        planHubId={sp.hubId}
       />
     </MockLayout>
   );

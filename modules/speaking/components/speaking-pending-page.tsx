@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { mockTestNumberPath, testHubPath } from "@/lib/mock-catalog";
+import { appendPlanResultParams, type PlanResultContext } from "@/lib/plan-day-tasks";
+import { usePlanResultsNav } from "@/components/bandforge/plan/plan-results-cta-bar";
 import { speakingApi } from "@/modules/speaking/services/speaking-api";
 import {
   shouldNavigateToSpeakingReport,
@@ -28,6 +30,7 @@ import type {
   SpeakingReleaseState,
 } from "@/modules/speaking/types";
 import { TestShell } from "@/modules/shared";
+import { SectionResultsCtaBar } from "@/modules/shared/components/section-results";
 
 const POLL_MS = 30_000;
 const AI_READY_STATUSES = new Set(["ai_complete", "ai_stub"]);
@@ -42,10 +45,30 @@ type Props = {
   attemptId: string;
   testNumber: number;
   mockTestId: string;
+  planFrom?: string | null;
+  planTask?: string | null;
+  planTaskId?: string | null;
+  planHubId?: string | null;
 };
 
-export function SpeakingPendingPage({ attemptId, testNumber, mockTestId }: Props) {
+export function SpeakingPendingPage({
+  attemptId,
+  testNumber,
+  mockTestId,
+  planFrom,
+  planTask,
+  planTaskId,
+  planHubId,
+}: Props) {
   const router = useRouter();
+  const planCtx = useMemo(
+    (): PlanResultContext | null =>
+      planFrom === "plan"
+        ? { task: planTask, taskId: planTaskId, hubId: planHubId }
+        : null,
+    [planFrom, planTask, planTaskId, planHubId],
+  );
+  const planNav = usePlanResultsNav(planCtx);
   const [payload, setPayload] = useState<SpeakingPendingPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +120,12 @@ export function SpeakingPendingPage({ attemptId, testNumber, mockTestId }: Props
       setPayload(data);
       if (shouldNavigateToSpeakingReport(data, navigatedRef.current)) {
         navigatedRef.current = true;
-        router.replace(speakingStatusPath(testNumber, attemptId, data));
+        router.replace(
+          appendPlanResultParams(
+            speakingStatusPath(testNumber, attemptId, data),
+            planCtx,
+          ),
+        );
       }
     } catch (e) {
       if (!mountedRef.current) return;
@@ -112,7 +140,7 @@ export function SpeakingPendingPage({ attemptId, testNumber, mockTestId }: Props
         if (nextState) schedulePoll(nextState);
       }
     }
-  }, [attemptId, router, schedulePoll, testNumber]);
+  }, [attemptId, planCtx, router, schedulePoll, testNumber]);
 
   useEffect(() => {
     loadRef.current = load;
@@ -390,38 +418,67 @@ export function SpeakingPendingPage({ attemptId, testNumber, mockTestId }: Props
               </div>
             ) : null}
 
-            <div className="mx-auto mt-8 flex w-full max-w-xs flex-col gap-2">
+            <div className="mx-auto mt-8 flex w-full max-w-sm flex-col gap-2.5">
               {reportReady ? (
                 <Link
-                  href={`/test/${testNumber}/speaking/results?attempt=${encodeURIComponent(attemptId)}`}
-                  className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg bg-teal px-5 py-3 text-body font-semibold text-white hover:bg-cyan-light"
+                  href={appendPlanResultParams(
+                    `/test/${testNumber}/speaking/results?attempt=${encodeURIComponent(attemptId)}`,
+                    planCtx,
+                  )}
+                  className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
                 >
                   View Speaking Feedback
                 </Link>
               ) : aiReady ? (
                 <Link
-                  href={`/test/${testNumber}/speaking/results?attempt=${encodeURIComponent(attemptId)}`}
-                  className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg bg-teal px-5 py-3 text-body font-semibold text-white hover:bg-cyan-light"
+                  href={appendPlanResultParams(
+                    `/test/${testNumber}/speaking/results?attempt=${encodeURIComponent(attemptId)}`,
+                    planCtx,
+                  )}
+                  className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
                 >
                   View provisional AI result
                 </Link>
               ) : null}
-              <Link
-                href={testHubPath(mockTestId, null, testNumber)}
-                className={`inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-body font-semibold ${
-                  reportReady || aiReady
-                    ? "border border-border bg-surface text-ink hover:bg-cyan-soft/40"
-                    : "bg-teal text-white hover:bg-cyan-light"
-                }`}
-              >
-                Back to test hub
-              </Link>
-              <Link
-                href={mockTestNumberPath(testNumber)}
-                className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-surface px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
-              >
-                View all sections
-              </Link>
+
+              {planNav ? (
+                <SectionResultsCtaBar
+                  layout="stack"
+                  primaryLabel={planNav.continueLabel}
+                  onPrimary={() => router.push(planNav.continueHref)}
+                  primaryLoading={planNav.loading}
+                  primaryDisabled={planNav.loading}
+                  secondaryLabel={
+                    planNav.showSecondaryBack
+                      ? "Back to Today's plan"
+                      : undefined
+                  }
+                  onSecondary={
+                    planNav.showSecondaryBack
+                      ? () => router.push(planNav.todayHref)
+                      : undefined
+                  }
+                />
+              ) : (
+                <>
+                  <Link
+                    href={testHubPath(mockTestId, null, testNumber)}
+                    className={`inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-body font-semibold ${
+                      reportReady || aiReady
+                        ? "border border-border bg-surface text-ink hover:bg-cyan-soft/40"
+                        : "bg-teal text-white hover:bg-cyan-light"
+                    }`}
+                  >
+                    Back to test hub
+                  </Link>
+                  <Link
+                    href={mockTestNumberPath(testNumber)}
+                    className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-surface px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+                  >
+                    View all sections
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         ) : null}

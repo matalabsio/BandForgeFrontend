@@ -5,6 +5,7 @@ import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { getCachedCookieHeader } from "@/lib/server-cache";
 import { resolveCatalogSlotServer } from "@/lib/mock-server";
+import { appendPlanResultParams } from "@/lib/plan-day-tasks";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { SpeakingPendingPage } from "@/modules/speaking/components/speaking-pending-page";
 
@@ -15,7 +16,14 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ attempt?: string; mock_attempt?: string }>;
+  searchParams: Promise<{
+    attempt?: string;
+    mock_attempt?: string;
+    from?: string;
+    task?: string;
+    taskId?: string;
+    hubId?: string;
+  }>;
 };
 
 export default async function TestSpeakingPendingPage({ params, searchParams }: Props) {
@@ -32,9 +40,14 @@ export default async function TestSpeakingPendingPage({ params, searchParams }: 
   }
 
   const mockAttemptId = sp.mock_attempt?.trim() || null;
-  const returnPath = shortModuleSpeakingPendingPath(testNumber, attemptId, {
-    mockAttemptId,
-  });
+  const returnPath = appendPlanResultParams(
+    shortModuleSpeakingPendingPath(testNumber, attemptId, {
+      mockAttemptId,
+    }),
+    sp.from === "plan"
+      ? { task: sp.task, taskId: sp.taskId, hubId: sp.hubId }
+      : null,
+  );
 
   const cookieHeader = await getCachedCookieHeader();
   await guardMockModulePage(cookieHeader, returnPath);
@@ -48,6 +61,10 @@ export default async function TestSpeakingPendingPage({ params, searchParams }: 
         attemptId={attemptId}
         testNumber={testNumber}
         mockTestId={resolved.mockTestId}
+        planFrom={sp.from}
+        planTask={sp.task}
+        planTaskId={sp.taskId}
+        planHubId={sp.hubId}
       />
     </MockLayout>
   );

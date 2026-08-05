@@ -4,6 +4,7 @@ import { getServerUser, resolveAuthRedirectPath } from "@/lib/auth";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-live";
 import { resolveCatalogSlotServer } from "@/lib/mock-server";
 import { shortModuleResultsPath } from "@/lib/module-results-path";
+import { parsePlanResultSearchParams } from "@/lib/plan-day-tasks";
 import { isMockSectionResultsUrl } from "@/lib/section-results-path";
 import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { MockSectionResultsClient } from "@/modules/results/components/mock-section-results-client";
@@ -16,7 +17,16 @@ export const metadata = {
 
 type PageProps = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ attempt?: string; part?: string; mock_attempt?: string; coach?: string }>;
+  searchParams: Promise<{
+    attempt?: string;
+    part?: string;
+    mock_attempt?: string;
+    coach?: string;
+    from?: string;
+    task?: string;
+    taskId?: string;
+    hubId?: string;
+  }>;
 };
 
 export default async function WritingResultsPage({ params, searchParams }: PageProps) {
@@ -47,6 +57,7 @@ export default async function WritingResultsPage({ params, searchParams }: PageP
   const part = Number.parseInt(sp.part ?? "1", 10);
   const resolvedPart = Number.isFinite(part) && part >= 1 ? part : 1;
   const coachOpen = sp.coach === "1";
+  const plan = parsePlanResultSearchParams(sp);
 
   const resolved = await resolveCatalogSlotServer(cookieHeader, testNumber);
   if (!resolved) notFound();
@@ -77,6 +88,7 @@ export default async function WritingResultsPage({ params, searchParams }: PageP
       attemptFromQuery={sp.attempt}
       targetBand={user.target_band ?? null}
       coachOpen={coachOpen}
+      plan={plan}
     />
   );
 }

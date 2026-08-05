@@ -78,9 +78,10 @@ import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
 import { type PlanTaskKind } from "@/lib/plan-task-flow";
+import { appendPlanResultParams } from "@/lib/plan-day-tasks";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
 import {
-  completePlanStepAndGetNextHref,
+  markPlanStepDone,
   shouldCompleteHubForPlanTask,
 } from "@/lib/plan-step-completion";
 
@@ -277,11 +278,14 @@ export function ListeningPage({
   );
 
   const finishPlanListening = useCallback(
-    (score?: {
-      band?: number | null;
-      raw_score?: number | null;
-      total_questions?: number | null;
-    }) => {
+    (
+      attemptId: string,
+      score?: {
+        band?: number | null;
+        raw_score?: number | null;
+        total_questions?: number | null;
+      },
+    ) => {
       if (!fromPlan || !planHubId) return false;
       const current = planTask ?? "practice";
       if (current === "practice") {
@@ -293,23 +297,33 @@ export function ListeningPage({
           totalQuestions: score?.total_questions ?? null,
         });
       }
-      const nextHref = completePlanStepAndGetNextHref({
-        fromPlan,
-        skill: "listening",
+      markPlanStepDone({
+        fromPlan: true,
         hubId: planHubId,
-        currentTask: current,
         currentTaskId: planTaskId,
-        catalogNumber: resolvedTestNumber,
-        part,
-        preferExercise: true,
         completeHub: shouldCompleteHubForPlanTask("listening", current),
       });
+      persistModuleResultAttempt(resolvedTestNumber, "listening", attemptId);
       push(
-        nextHref ?? "/study-plan/today",
+        appendPlanResultParams(
+          shortModuleResultsPath(resolvedTestNumber, "listening"),
+          {
+            task: current,
+            taskId: planTaskId,
+            hubId: planHubId,
+          },
+        ),
       );
       return true;
     },
-    [fromPlan, planHubId, planTask, planTaskId, part, push, resolvedTestNumber],
+    [
+      fromPlan,
+      planHubId,
+      planTask,
+      planTaskId,
+      push,
+      resolvedTestNumber,
+    ],
   );
 
   const submitAnswers = useMemo(
@@ -355,7 +369,7 @@ export function ListeningPage({
       dispatch({ type: "completed", payload });
       clearSnapshot(state.attemptId);
       if (
-        finishPlanListening({
+        finishPlanListening(payload.attempt_id, {
           band: payload.band,
           raw_score: payload.raw_score,
           total_questions: payload.total_questions,
@@ -973,7 +987,7 @@ export function ListeningPage({
             dispatch({ type: "completed", payload });
             if (state.attemptId) clearSnapshot(state.attemptId);
             if (
-              finishPlanListening({
+              finishPlanListening(payload.attempt_id, {
                 band: payload.band,
                 raw_score: payload.raw_score,
                 total_questions: payload.total_questions,

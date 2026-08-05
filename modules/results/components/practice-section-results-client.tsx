@@ -23,6 +23,11 @@ type Props = {
   backHref: string;
   primaryHref: string;
   primaryLabel?: string;
+  primaryLoading?: boolean;
+  secondaryLabel?: string;
+  secondaryHref?: string;
+  /** Hide solo catalog practice link; use plan CTAs. */
+  planMode?: boolean;
   showBandNotice?: boolean;
 };
 
@@ -45,6 +50,10 @@ export function PracticeSectionResultsClient({
   backHref,
   primaryHref,
   primaryLabel = "Back to practice",
+  primaryLoading = false,
+  secondaryLabel,
+  secondaryHref,
+  planMode = false,
   showBandNotice = false,
 }: Props) {
   const router = useRouter();
@@ -59,6 +68,30 @@ export function PracticeSectionResultsClient({
     setView("review");
   }, []);
 
+  const footer = (
+    <SectionResultsCtaBar
+      layout="split"
+      primaryLabel={primaryLabel}
+      onPrimary={() => router.push(primaryHref)}
+      primaryLoading={primaryLoading}
+      primaryDisabled={primaryLoading}
+      secondaryLabel={
+        view === "summary" && !planMode
+          ? "Review Answers"
+          : secondaryLabel
+      }
+      onSecondary={
+        view === "summary" && !planMode
+          ? () => openReview()
+          : secondaryHref
+            ? () => router.push(secondaryHref)
+            : secondaryLabel
+              ? () => router.push(secondaryHref ?? backHref)
+              : undefined
+      }
+    />
+  );
+
   if (view === "review") {
     return (
       <SectionResultsShell
@@ -70,8 +103,20 @@ export function PracticeSectionResultsClient({
         card={false}
         footer={
           <SectionResultsCtaBar
+            layout="split"
             primaryLabel={primaryLabel}
             onPrimary={() => router.push(primaryHref)}
+            primaryLoading={primaryLoading}
+            primaryDisabled={primaryLoading}
+            secondaryLabel={secondaryLabel ?? "Back to summary"}
+            onSecondary={
+              secondaryHref
+                ? () => router.push(secondaryHref)
+                : () => {
+                    setView("summary");
+                    setHighlightQuestion(null);
+                  }
+            }
           />
         }
       >
@@ -88,16 +133,8 @@ export function PracticeSectionResultsClient({
     <SectionResultsShell
       backHref={backHref}
       showBrandBar
-      logoHref={backHref}
-      footer={
-        <SectionResultsCtaBar
-          layout="split"
-          primaryLabel={primaryLabel}
-          onPrimary={() => router.push(primaryHref)}
-          secondaryLabel="Review Answers"
-          onSecondary={() => openReview()}
-        />
-      }
+      logoHref={planMode ? "/study-plan/today" : backHref}
+      footer={footer}
     >
       <SectionResultsSummary
         title={title}
@@ -109,11 +146,25 @@ export function PracticeSectionResultsClient({
         allCorrectMessage="Nice work — every question correct."
         onQuestionClick={(n) => openReview(n)}
       />
-      <p className="mt-4 text-center text-[12.5px] text-muted">
-        <Link href={primaryHref} className="font-semibold text-cyan">
-          {module === "listening" ? "Continue listening practice" : "Continue reading practice"}
-        </Link>
-      </p>
+      {planMode ? (
+        <p className="mt-4 text-center text-[12.5px] text-muted">
+          <button
+            type="button"
+            onClick={() => openReview()}
+            className="cursor-pointer font-semibold text-cyan"
+          >
+            Review answers
+          </button>
+        </p>
+      ) : (
+        <p className="mt-4 text-center text-[12.5px] text-muted">
+          <Link href={primaryHref} className="font-semibold text-cyan">
+            {module === "listening"
+              ? "Continue listening practice"
+              : "Continue reading practice"}
+          </Link>
+        </p>
+      )}
     </SectionResultsShell>
   );
 }

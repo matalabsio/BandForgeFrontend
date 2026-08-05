@@ -20,9 +20,10 @@ import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistMockAttemptId, persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
 import { type PlanTaskKind } from "@/lib/plan-task-flow";
+import { appendPlanResultParams } from "@/lib/plan-day-tasks";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
 import {
-  completePlanStepAndGetNextHref,
+  markPlanStepDone,
   shouldCompleteHubForPlanTask,
 } from "@/lib/plan-step-completion";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
@@ -438,32 +439,32 @@ export function WritingPage({
       }
 
       // Personalized plan Writing: sync checklist; hub complete only on final Submit.
-      if (fromPlan && planHubId) {
-        const current =
-          planTask ?? (part === 2 ? "submit" : "practice");
+      // Then show pending/results (same as solo) with plan Continue CTAs.
+      const planCtx =
+        fromPlan && planHubId
+          ? {
+              task: (planTask ?? (part === 2 ? "submit" : "practice")) as PlanTaskKind,
+              taskId: planTaskId,
+              hubId: planHubId,
+            }
+          : null;
+      if (planCtx) {
         recordPlanDayOutcome({
           skill: "writing",
-          taskType: current,
+          taskType: planCtx.task,
           band: null,
           rawScore: null,
           totalQuestions: null,
         });
-        const nextHref = completePlanStepAndGetNextHref({
-          fromPlan,
-          skill: "writing",
+        markPlanStepDone({
+          fromPlan: true,
           hubId: planHubId,
-          currentTask: current,
           currentTaskId: planTaskId,
-          catalogNumber: resolvedTestNumber,
-          part,
-          preferExercise: true,
-          completeHub: shouldCompleteHubForPlanTask("writing", current),
+          completeHub: shouldCompleteHubForPlanTask("writing", planCtx.task),
         });
-        router.push(nextHref ?? "/study-plan/today");
-        return;
       }
 
-      if (mockAttemptId) {
+      if (mockAttemptId && !fromPlan) {
         const testNum = resolvedTestNumber;
         cacheMockNavHint({
           mock_attempt_id: mockAttemptId,
@@ -556,14 +557,25 @@ export function WritingPage({
         return;
       }
 
-      if (result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1) {
+      if (
+        result.next_part === 2 &&
+        part === 1 &&
+        !isDiagnostic &&
+        !fromPlan &&
+        TEST1_WRITING_TASK_COUNT > 1
+      ) {
         router.push(`/test/writing/task/2?auto=1`);
         return;
       }
 
       const testNum = resolvedTestNumber;
       if (result.saved_for_review && testNum) {
-        router.push(shortModuleWritingPendingPath(testNum, result.attempt_id));
+        router.push(
+          appendPlanResultParams(
+            shortModuleWritingPendingPath(testNum, result.attempt_id),
+            planCtx,
+          ),
+        );
         return;
       }
 
@@ -573,7 +585,10 @@ export function WritingPage({
         result.attempt_id,
       );
       router.push(
-        writingResultsPath(resolvedTestNumber, result.attempt_id),
+        appendPlanResultParams(
+          writingResultsPath(resolvedTestNumber, result.attempt_id),
+          planCtx,
+        ),
       );
     } catch (e) {
       autosaveBlockedRef.current = false;

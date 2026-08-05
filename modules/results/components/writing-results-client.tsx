@@ -10,6 +10,9 @@ import { WritingResultsView } from "@/modules/writing/components/writing-results
 import { WritingTaskTabs } from "@/modules/writing/components/writing-task-tabs";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { resolveSectionResultsBackHref } from "@/lib/section-results-back";
+import type { PlanResultContext } from "@/lib/plan-day-tasks";
+import { usePlanResultsNav } from "@/components/bandforge/plan/plan-results-cta-bar";
+import { useRouter } from "next/navigation";
 
 type Props = {
   testNumber: number;
@@ -17,6 +20,7 @@ type Props = {
   attemptFromQuery?: string;
   targetBand?: number | null;
   coachOpen?: boolean;
+  plan?: PlanResultContext | null;
 };
 
 export function WritingResultsClient({
@@ -25,7 +29,10 @@ export function WritingResultsClient({
   attemptFromQuery,
   targetBand = null,
   coachOpen = false,
+  plan = null,
 }: Props) {
+  const router = useRouter();
+  const planNav = usePlanResultsNav(plan);
   const mockAttemptId = useResolvedMockAttemptId(mockTestId);
   const queryAttempt = attemptFromQuery?.trim() || null;
   // Only seed from URL so server and client first paint match (no sessionStorage on SSR).
@@ -124,7 +131,7 @@ export function WritingResultsClient({
     );
   }
 
-  const showContinueTask2 = review.part === 1 && !mockAttemptId;
+  const showContinueTask2 = review.part === 1 && !mockAttemptId && !planNav;
   const sessionTasks = review.session_tasks ?? [];
 
   return (
@@ -145,7 +152,20 @@ export function WritingResultsClient({
         showContinueTask2={showContinueTask2}
         targetBand={targetBand}
         coachOpen={coachOpen}
-        backHref={backNav.href}
+        backHref={planNav?.todayHref ?? backNav.href}
+        dashboardHref={planNav?.todayHref ?? "/dashboard"}
+        primaryActionLabel={planNav?.continueLabel}
+        onPrimaryAction={
+          planNav ? () => router.push(planNav.continueHref) : undefined
+        }
+        secondaryActionLabel={
+          planNav?.showSecondaryBack ? "Back to Today's plan" : undefined
+        }
+        onSecondaryAction={
+          planNav?.showSecondaryBack
+            ? () => router.push(planNav.todayHref)
+            : undefined
+        }
       />
     </div>
   );

@@ -39,6 +39,8 @@ type Props = {
   coachOpen?: boolean;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
 };
 
 export function WritingFeedbackView({
@@ -54,6 +56,8 @@ export function WritingFeedbackView({
   coachOpen = false,
   primaryActionLabel,
   onPrimaryAction,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: Props) {
   const router = useRouter();
   const isDiagnostic = mode === "diagnostic";
@@ -299,8 +303,9 @@ export function WritingFeedbackView({
                 primaryHref={nextHref}
                 primaryLabel={primaryActionLabel ?? nextLabel}
                 secondaryHref={dashboardHref}
-                secondaryLabel="Back to Dashboard"
+                secondaryLabel={secondaryActionLabel ?? "Back to Dashboard"}
                 onPrimaryClick={onPrimaryAction}
+                onSecondaryClick={onSecondaryAction}
               />
             )}
           </aside>

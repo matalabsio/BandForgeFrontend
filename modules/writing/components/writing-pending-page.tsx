@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Clock3, Loader2, Pencil } from "lucide-react";
@@ -11,10 +11,15 @@ import {
   testHubPath,
   writingModuleLabel,
 } from "@/lib/mock-catalog";
+import { appendPlanResultParams, type PlanResultContext } from "@/lib/plan-day-tasks";
+import {
+  usePlanResultsNav,
+} from "@/components/bandforge/plan/plan-results-cta-bar";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { writingApi } from "@/modules/writing/services/writing-api";
 import type { WritingSessionTask } from "@/modules/writing/types";
 import { TestShell } from "@/modules/shared";
+import { SectionResultsCtaBar } from "@/modules/shared/components/section-results";
 
 const POLL_MS = 5_000;
 
@@ -22,6 +27,10 @@ type Props = {
   attemptId: string;
   testNumber: number;
   mockTestId: string;
+  planFrom?: string | null;
+  planTask?: string | null;
+  planTaskId?: string | null;
+  planHubId?: string | null;
 };
 
 function aiReady(status: string | null | undefined): boolean {
@@ -32,9 +41,25 @@ function aiPending(status: string | null | undefined): boolean {
   return status === "pending" || status == null;
 }
 
-export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props) {
+export function WritingPendingPage({
+  attemptId,
+  testNumber,
+  mockTestId,
+  planFrom,
+  planTask,
+  planTaskId,
+  planHubId,
+}: Props) {
   const router = useRouter();
   const mockAttemptId = useResolvedMockAttemptId(mockTestId);
+  const planCtx = useMemo(
+    (): PlanResultContext | null =>
+      planFrom === "plan"
+        ? { task: planTask, taskId: planTaskId, hubId: planHubId }
+        : null,
+    [planFrom, planTask, planTaskId, planHubId],
+  );
+  const planNav = usePlanResultsNav(planCtx);
   const [message, setMessage] = useState<string | null>(null);
   const [humanBand, setHumanBand] = useState<number | null>(null);
   const [aiStatus, setAiStatus] = useState<string | null>(null);
@@ -92,12 +117,15 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
     const preferred = sorted.find((task) => task.part === 2) ?? sorted[0];
     if (!preferred) return;
     router.replace(
-      shortModuleWritingResultsPath(testNumber, preferred.attempt_id, {
-        mockAttemptId,
-        part: preferred.part,
-      }),
+      appendPlanResultParams(
+        shortModuleWritingResultsPath(testNumber, preferred.attempt_id, {
+          mockAttemptId,
+          part: preferred.part,
+        }),
+        planCtx,
+      ),
     );
-  }, [mockAttemptId, router, sessionTasks, testNumber]);
+  }, [mockAttemptId, planCtx, router, sessionTasks, testNumber]);
 
   const title = scored
     ? `Your Writing band is ${humanBand!.toFixed(1)}`
@@ -206,10 +234,13 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
                         </div>
                         {canView ? (
                           <Link
-                            href={shortModuleWritingResultsPath(
-                              testNumber,
-                              task.attempt_id,
-                              { mockAttemptId, part: task.part },
+                            href={appendPlanResultParams(
+                              shortModuleWritingResultsPath(
+                                testNumber,
+                                task.attempt_id,
+                                { mockAttemptId, part: task.part },
+                              ),
+                              planCtx,
                             )}
                             className={`mt-2 inline-flex min-h-[40px] w-full cursor-pointer items-center justify-center rounded-lg px-4 py-2 text-[13px] font-semibold ${
                               isCurrent
@@ -235,37 +266,62 @@ export function WritingPendingPage({ attemptId, testNumber, mockTestId }: Props)
               </section>
             ) : null}
 
-            <div className="mt-10 flex w-full max-w-xs flex-col gap-2">
-              {!showTaskList ? (
-                feedbackReady ? (
-                  <Link
-                    href={shortModuleWritingResultsPath(testNumber, attemptId)}
-                    className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg bg-teal px-5 py-3 text-body font-semibold text-white hover:bg-cyan-light"
-                  >
-                    {scored ? "View Writing Feedback" : "View AI Writing Feedback"}
-                  </Link>
-                ) : analyzing ? (
-                  <Button variant="secondary" disabled className="min-h-[44px]">
-                    Analyzing essay…
-                  </Button>
-                ) : null
+            <div className="mt-10 flex w-full max-w-sm flex-col gap-2.5">
+              {!showTaskList && feedbackReady ? (
+                <Link
+                  href={appendPlanResultParams(
+                    shortModuleWritingResultsPath(testNumber, attemptId),
+                    planCtx,
+                  )}
+                  className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+                >
+                  {scored ? "View Writing Feedback" : "View AI Writing Feedback"}
+                </Link>
               ) : null}
-              <Link
-                href={testHubPath(mockTestId, null, testNumber)}
-                className={`inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-body font-semibold ${
-                  feedbackReady || showTaskList
-                    ? "border border-border bg-surface text-ink hover:bg-cyan-soft/40"
-                    : "bg-teal text-white hover:bg-cyan-light"
-                }`}
-              >
-                Back to test hub
-              </Link>
-              <Link
-                href={mockTestNumberPath(testNumber)}
-                className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-surface px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
-              >
-                View all sections
-              </Link>
+              {!showTaskList && analyzing && !planCtx ? (
+                <Button variant="secondary" disabled className="min-h-[44px]">
+                  Analyzing essay…
+                </Button>
+              ) : null}
+
+              {planNav ? (
+                <SectionResultsCtaBar
+                  layout="stack"
+                  primaryLabel={planNav.continueLabel}
+                  onPrimary={() => router.push(planNav.continueHref)}
+                  primaryLoading={planNav.loading}
+                  primaryDisabled={planNav.loading}
+                  secondaryLabel={
+                    planNav.showSecondaryBack
+                      ? "Back to Today's plan"
+                      : undefined
+                  }
+                  onSecondary={
+                    planNav.showSecondaryBack
+                      ? () => router.push(planNav.todayHref)
+                      : undefined
+                  }
+                />
+              ) : (
+                <>
+                  <Link
+                    href={testHubPath(mockTestId, null, testNumber)}
+                    className={`inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-body font-semibold ${
+                      feedbackReady || showTaskList
+                        ? "border border-border bg-surface text-ink hover:bg-cyan-soft/40"
+                        : "bg-teal text-white hover:bg-cyan-light"
+                    }`}
+                  >
+                    Back to test hub
+                  </Link>
+                  <Link
+                    href={mockTestNumberPath(testNumber)}
+                    className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-surface px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+                  >
+                    View all sections
+                  </Link>
+                </>
+              )}
             </div>
           </>
         )}

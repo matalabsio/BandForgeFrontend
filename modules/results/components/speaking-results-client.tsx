@@ -30,6 +30,8 @@ import type {
   SpeakingPendingPayload,
   SpeakingReportPayload,
 } from "@/modules/speaking/types";
+import type { PlanResultContext } from "@/lib/plan-day-tasks";
+import { usePlanResultsNav } from "@/components/bandforge/plan/plan-results-cta-bar";
 
 type Props = {
   testNumber: number;
@@ -41,6 +43,7 @@ type Props = {
   onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
+  plan?: PlanResultContext | null;
 };
 
 const subscribeToHydration = () => () => {};
@@ -51,12 +54,27 @@ export function SpeakingResultsClient({
   attemptFromQuery,
   targetBand = null,
   mockAttemptId = null,
-  primaryActionLabel,
-  onPrimaryAction,
-  secondaryActionLabel,
-  onSecondaryAction,
+  primaryActionLabel: primaryActionLabelProp,
+  onPrimaryAction: onPrimaryActionProp,
+  secondaryActionLabel: secondaryActionLabelProp,
+  onSecondaryAction: onSecondaryActionProp,
+  plan = null,
 }: Props) {
   const router = useRouter();
+  const planNav = usePlanResultsNav(plan);
+  const primaryActionLabel =
+    primaryActionLabelProp ?? planNav?.continueLabel;
+  const onPrimaryAction =
+    onPrimaryActionProp ??
+    (planNav ? () => router.push(planNav.continueHref) : undefined);
+  const secondaryActionLabel =
+    secondaryActionLabelProp ??
+    (planNav?.showSecondaryBack ? "Back to Today's plan" : undefined);
+  const onSecondaryAction =
+    onSecondaryActionProp ??
+    (planNav?.showSecondaryBack
+      ? () => router.push(planNav.todayHref)
+      : undefined);
   const mockTestId = mockTestIdProp ?? mockTestIdForNumber(testNumber);
   const queryAttempt = attemptFromQuery?.trim() || null;
   const hydrated = useSyncExternalStore(

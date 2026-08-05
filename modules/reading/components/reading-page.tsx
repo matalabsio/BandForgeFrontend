@@ -37,9 +37,10 @@ import type { PracticeSkill } from "@/lib/practice-types";
 import {
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
+import { appendPlanResultParams } from "@/lib/plan-day-tasks";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
 import {
-  completePlanStepAndGetNextHref,
+  markPlanStepDone,
   shouldCompleteHubForPlanTask,
 } from "@/lib/plan-step-completion";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
@@ -419,11 +420,14 @@ export function ReadingPage({
   );
 
   const finishPlanReading = useCallback(
-    (score?: {
-      band?: number | null;
-      raw_score?: number | null;
-      total_questions?: number | null;
-    }) => {
+    (
+      attemptId: string,
+      score?: {
+        band?: number | null;
+        raw_score?: number | null;
+        total_questions?: number | null;
+      },
+    ) => {
       if (!fromPlan || !planHubId) return false;
       const current = planTask ?? "practice";
       if (current === "practice") {
@@ -435,23 +439,33 @@ export function ReadingPage({
           totalQuestions: score?.total_questions ?? null,
         });
       }
-      const nextHref = completePlanStepAndGetNextHref({
-        fromPlan,
-        skill: "reading",
+      markPlanStepDone({
+        fromPlan: true,
         hubId: planHubId,
-        currentTask: current,
         currentTaskId: planTaskId,
-        catalogNumber: resolvedTestNumber,
-        part: passage,
-        preferExercise: true,
         completeHub: shouldCompleteHubForPlanTask("reading", current),
       });
+      persistModuleResultAttempt(resolvedTestNumber, "reading", attemptId);
       push(
-        nextHref ?? "/study-plan/today",
+        appendPlanResultParams(
+          shortModuleResultsPath(resolvedTestNumber, "reading"),
+          {
+            task: current,
+            taskId: planTaskId,
+            hubId: planHubId,
+          },
+        ),
       );
       return true;
     },
-    [fromPlan, planHubId, planTask, planTaskId, passage, push, resolvedTestNumber],
+    [
+      fromPlan,
+      planHubId,
+      planTask,
+      planTaskId,
+      push,
+      resolvedTestNumber,
+    ],
   );
 
   const flushAutosaves = useCallback(
@@ -517,7 +531,7 @@ export function ReadingPage({
       const readingComplete =
         result.mock_reading_complete === true || passage >= readingPassageCount;
       if (
-        finishPlanReading({
+        finishPlanReading(result.attempt_id, {
           band: result.band,
           raw_score: result.raw_score,
           total_questions: result.total_questions,

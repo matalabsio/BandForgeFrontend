@@ -16,9 +16,10 @@ import { sectionResultsPathForMockSubmit } from "@/lib/mock-section-continue";
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
 import type { PlanTaskKind } from "@/lib/plan-task-flow";
+import { appendPlanResultParams } from "@/lib/plan-day-tasks";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
 import {
-  completePlanStepAndGetNextHref,
+  markPlanStepDone,
   shouldCompleteHubForPlanTask,
 } from "@/lib/plan-step-completion";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
@@ -507,17 +508,22 @@ export function SpeakingPage({
             rawScore: null,
             totalQuestions: null,
           });
-          const nextHref = completePlanStepAndGetNextHref({
-            fromPlan,
-            skill: "speaking",
+          markPlanStepDone({
+            fromPlan: true,
             hubId: planHubId,
-            currentTask: current,
             currentTaskId: planTaskId,
-            catalogNumber: testNumber,
-            preferExercise: true,
             completeHub: shouldCompleteHubForPlanTask("speaking", current),
           });
-          router.replace(nextHref ?? "/study-plan/today");
+          router.replace(
+            appendPlanResultParams(
+              speakingPendingPath(testNumber, resultAttemptId, mockAttemptId),
+              {
+                task: current,
+                taskId: planTaskId,
+                hubId: planHubId,
+              },
+            ),
+          );
           return;
         }
         // Pending status while AI / human score is processing.

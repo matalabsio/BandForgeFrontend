@@ -20,6 +20,8 @@ type Props = {
   coachOpen?: boolean;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
 };
 
 export function WritingResultsView({
@@ -35,6 +37,8 @@ export function WritingResultsView({
   coachOpen = false,
   primaryActionLabel,
   onPrimaryAction,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: Props) {
   const feedback = buildWritingFeedback(review, { targetBand });
 
@@ -52,6 +56,8 @@ export function WritingResultsView({
       coachOpen={coachOpen}
       primaryActionLabel={primaryActionLabel}
       onPrimaryAction={onPrimaryAction}
+      secondaryActionLabel={secondaryActionLabel}
+      onSecondaryAction={onSecondaryAction}
     />
   );
 }

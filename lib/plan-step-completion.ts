@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  markCachedPlanTaskDone,
+  resolvePlanContinueHref,
+} from "@/lib/plan-day-tasks";
 import { patchLearningTask } from "@/lib/learning-api";
 import {
   afterPlanStepHref,
@@ -23,6 +27,13 @@ type BuildNextHrefInput = {
 
 type CompletePlanStepInput = BuildNextHrefInput & {
   fromPlan: boolean;
+  completeHub?: boolean;
+};
+
+type MarkPlanStepInput = {
+  fromPlan: boolean;
+  hubId?: string | null;
+  currentTaskId?: string | null;
   completeHub?: boolean;
 };
 
@@ -53,7 +64,7 @@ export function shouldCompleteHubForPlanTask(
 }
 
 export function buildPlanNextHref(input: BuildNextHrefInput): string {
-  return afterPlanStepHref({
+  const withinSkill = afterPlanStepHref({
     skill: input.skill,
     hubId: input.hubId,
     currentTask: input.currentTask,
@@ -64,6 +75,23 @@ export function buildPlanNextHref(input: BuildNextHrefInput): string {
     submitConfig: input.submitConfig,
     preferExercise: input.preferExercise,
   });
+  if (withinSkill !== "/study-plan/today") return withinSkill;
+  return resolvePlanContinueHref(input.currentTaskId) || "/study-plan/today";
+}
+
+/**
+ * Best-effort checklist/hub sync without navigating.
+ * Used when results are shown before Continue.
+ */
+export function markPlanStepDone(input: MarkPlanStepInput): void {
+  if (!input.fromPlan) return;
+  if (input.currentTaskId) {
+    markCachedPlanTaskDone(input.currentTaskId);
+    void patchLearningTask(input.currentTaskId, "done").catch(() => {});
+  }
+  if (input.completeHub && input.hubId) {
+    void completePracticeHub(input.hubId).catch(() => {});
+  }
 }
 
 /**
@@ -75,11 +103,11 @@ export function completePlanStepAndGetNextHref(
   input: CompletePlanStepInput,
 ): string | null {
   if (!input.fromPlan) return null;
-  if (input.currentTaskId) {
-    void patchLearningTask(input.currentTaskId, "done").catch(() => {});
-  }
-  if (input.completeHub) {
-    void completePracticeHub(input.hubId).catch(() => {});
-  }
+  markPlanStepDone({
+    fromPlan: true,
+    hubId: input.hubId,
+    currentTaskId: input.currentTaskId,
+    completeHub: input.completeHub,
+  });
   return buildPlanNextHref(input) || "/study-plan/today";
 }

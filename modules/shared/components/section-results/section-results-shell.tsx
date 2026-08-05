@@ -37,7 +37,7 @@ export function SectionResultsShell({
   const useCard = card && !showHeader;
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#F4F7FB]">
+    <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-[#F4F7FB]">
       {showHeader ? (
         <header className="shrink-0 border-b border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
           <div className="mx-auto flex h-12 w-full max-w-3xl items-center gap-2 px-4 sm:h-14 sm:gap-3 sm:px-6 lg:max-w-4xl">
@@ -74,14 +74,16 @@ export function SectionResultsShell({
       ) : null}
 
       <div
-        className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain ${
-          centered || showHeader ? "flex flex-col" : ""
+        className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] ${
+          centered ? "flex flex-col" : ""
         }`}
       >
         <div
           className={`mx-auto w-full max-w-3xl px-4 py-4 sm:px-6 sm:py-6 lg:max-w-4xl ${
-            centered ? "flex flex-1 flex-col items-center justify-center py-8 sm:py-10" : ""
-          } ${showHeader ? "flex min-h-0 flex-1 flex-col py-4 sm:py-5" : ""}`}
+            centered
+              ? "flex flex-1 flex-col items-center justify-center py-8 sm:py-10"
+              : ""
+          } ${showHeader || footer ? "pb-6 sm:pb-8" : ""}`}
         >
           {showBrandBar ? (
             <SectionResultsBrandBar logoHref={logoHref} badgeVariant={badgeVariant} />
@@ -92,7 +94,7 @@ export function SectionResultsShell({
               {children}
             </div>
           ) : showHeader ? (
-            <div className="flex min-h-0 flex-1 flex-col rounded-[20px] border border-border-soft bg-white p-5 shadow-[0_8px_22px_rgb(13_31_60/0.05)] sm:p-6 lg:p-7">
+            <div className="rounded-[20px] border border-border-soft bg-white p-5 shadow-[0_8px_22px_rgb(13_31_60/0.05)] sm:p-6 lg:p-7">
               {children}
             </div>
           ) : (

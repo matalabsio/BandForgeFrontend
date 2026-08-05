@@ -38,6 +38,7 @@ import type {
   SkillHubProgress,
 } from "@/lib/learning-types";
 import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
+import { cachePlanDayTasks } from "@/lib/plan-day-tasks";
 import { getOldestCatchUpTarget } from "@/lib/study-plan-calendar";
 import { cn } from "@/lib/utils";
 import type { ComponentType, SVGProps } from "react";
@@ -358,6 +359,7 @@ function SkillPlanCard({
         ) : nextTask ? (
           <Link
             href={taskOpenHref(nextTask)}
+            onClick={() => cachePlanDayTasks(tasks)}
             className={cn(
               "inline-flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 text-[13px] transition-colors",
               quietCta
@@ -510,6 +512,11 @@ export function TodaysPlanPanel({
   useEffect(() => {
     setTasks(withClientKeys(initialTasks));
   }, [initialTasks]);
+
+  // Cache ordered day tasks for mid-exam next/prev without re-fetching profile.
+  useEffect(() => {
+    cachePlanDayTasks(tasks);
+  }, [tasks]);
 
   const stacks = useMemo(() => stacksForSkillGrid(tasks), [tasks]);
   const actionable = useMemo(
@@ -778,6 +785,7 @@ export function TodaysPlanPanel({
             >
               <Link
                 href={taskOpenHref(nextStart)}
+                onClick={() => cachePlanDayTasks(actionable)}
                 className="inline-flex min-h-12 w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan px-5 py-3 text-[15px] font-bold text-navy shadow-[0_0_24px_rgba(0,188,212,0.35)] transition-colors hover:bg-brand-sky-hover sm:w-auto sm:min-w-[200px]"
               >
                 Start test

@@ -6,6 +6,9 @@ import { readModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { ResultModule } from "@/lib/exam-session-storage";
 import { listeningTestHubPath } from "@/lib/listening-test";
 import { readingTestHubPath } from "@/lib/reading-test";
+import {
+  type PlanResultContext,
+} from "@/lib/plan-day-tasks";
 import { ApiError } from "@/lib/api";
 import { listeningApi } from "@/modules/listening/services/listening-api";
 import type { ListeningScoreReport } from "@/modules/listening/types";
@@ -13,11 +16,13 @@ import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingScoreReport } from "@/modules/reading/types";
 import { PracticeSectionResultsClient } from "@/modules/results/components/practice-section-results-client";
 import { SectionResultsShell } from "@/modules/shared/components/section-results";
+import { usePlanResultsNav } from "@/components/bandforge/plan/plan-results-cta-bar";
 
 type Props = {
   testNumber: number;
   module: "listening" | "reading";
   targetBand: number | null;
+  plan?: PlanResultContext | null;
 };
 
 function hubPath(module: ResultModule): string {
@@ -29,7 +34,9 @@ export function ModuleScoreResultsClient({
   testNumber,
   module,
   targetBand: _targetBand,
+  plan = null,
 }: Props) {
+  const planNav = usePlanResultsNav(plan);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [report, setReport] = useState<
     ListeningScoreReport | ReadingScoreReport | null
@@ -73,7 +80,8 @@ export function ModuleScoreResultsClient({
   }, [testNumber, module]);
 
   const moduleLabel = module === "listening" ? "Listening" : "Reading";
-  const practiceHref = hubPath(module);
+  const practiceHref = planNav?.todayHref ?? hubPath(module);
+  const fallbackHref = hubPath(module);
 
   if (loading) {
     return (
@@ -95,7 +103,7 @@ export function ModuleScoreResultsClient({
           href={practiceHref}
           className="mt-4 text-sm font-semibold text-cyan"
         >
-          Back to {moduleLabel}
+          {planNav ? "Back to Today's plan" : `Back to ${moduleLabel}`}
         </Link>
       </SectionResultsShell>
     );
@@ -110,7 +118,7 @@ export function ModuleScoreResultsClient({
             : "Could not load score report. Please try again."}
         </p>
         <Link href={practiceHref} className="mt-4 text-sm font-semibold text-cyan">
-          Back to {moduleLabel}
+          {planNav ? "Back to Today's plan" : `Back to ${moduleLabel}`}
         </Link>
       </SectionResultsShell>
     );
@@ -129,9 +137,17 @@ export function ModuleScoreResultsClient({
       rawScore={report.raw_score}
       total={report.total_questions}
       questions={report.questions}
-      backHref={practiceHref}
-      primaryHref={practiceHref}
-      primaryLabel={`Back to ${moduleLabel}`}
+      backHref={planNav?.hasPrevious ? planNav.previousHref : practiceHref}
+      primaryHref={planNav?.continueHref ?? fallbackHref}
+      primaryLabel={
+        planNav?.continueLabel ?? `Back to ${moduleLabel}`
+      }
+      primaryLoading={Boolean(planNav && !planNav.ready)}
+      secondaryLabel={
+        planNav?.showSecondaryBack ? "Back to Today's plan" : undefined
+      }
+      secondaryHref={planNav?.showSecondaryBack ? planNav.todayHref : undefined}
+      planMode={Boolean(planNav)}
       showBandNotice={false}
     />
   );
