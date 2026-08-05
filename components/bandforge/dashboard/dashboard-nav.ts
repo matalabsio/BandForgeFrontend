@@ -2,6 +2,7 @@ import type { ComponentType, SVGProps } from "react";
 import {
   BarChartIcon,
   FileTextIcon,
+  FlameIcon,
   HeadphonesIcon,
   HomeIcon,
 } from "@/components/bandforge/dashboard/icons";
@@ -31,6 +32,7 @@ export const DASHBOARD_NAV: NavGroup[] = [
       { label: "Practice", href: "/practice/listening", Icon: HeadphonesIcon },
       { label: "Mock tests", href: "/test", Icon: FileTextIcon },
       { label: "Progress", href: "/scores", Icon: BarChartIcon },
+      { label: "Streak", href: "/streak", Icon: FlameIcon },
     ],
   },
 ];

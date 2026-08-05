@@ -7,6 +7,15 @@ import type { PracticeSkill } from "@/lib/practice-types";
 
 export type PlanTaskKind = "watch" | "practice" | "submit";
 
+export type ModuleTargetConfig = {
+  type?: string;
+  module?: string;
+  href?: string;
+  catalog_number?: number;
+  part?: number;
+  hub_id?: string;
+};
+
 const SKILLS_WITH_SUBMIT = new Set<PracticeSkill>(["writing", "speaking"]);
 
 /** Next step in the same skill stack (Watch → Practice → Submit). */
@@ -43,9 +52,28 @@ export function planMockTestIdForBank(bankNumber: number): string {
     : M01_MOCK_TEST_ID;
 }
 
-/** Practice → Task 1, Submit → Task 2 (Writing). */
+/** Practice → Task 1, Submit → Task 2 (Writing) when no hub part. */
 export function planWritingPart(task: PlanTaskKind): 1 | 2 {
   return task === "submit" ? 2 : 1;
+}
+
+function catalogFromOpts(
+  catalogNumber?: number | null,
+  bankNumber?: number | null,
+): 1 | 2 {
+  if (catalogNumber === 1 || catalogNumber === 2) return catalogNumber;
+  if (bankNumber != null && bankNumber % 2 === 0) return 2;
+  return 1;
+}
+
+function partFromConfig(
+  submitConfig?: ModuleTargetConfig | null,
+  fallback?: number | null,
+): number | null {
+  const raw = submitConfig?.part ?? fallback;
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 export function planHubHref(opts: {
@@ -75,10 +103,18 @@ export function planWritingModuleHref(opts: {
   hubId: string;
   task: PlanTaskKind;
   taskId?: string | null;
-  bankNumber: number;
+  bankNumber?: number;
+  catalogNumber?: number | null;
+  part?: number | null;
+  submitConfig?: ModuleTargetConfig | null;
 }): string {
-  const part = planWritingPart(opts.task);
-  const mock = planMockSlugForBank(opts.bankNumber);
+  const catalog = catalogFromOpts(
+    opts.submitConfig?.catalog_number ?? opts.catalogNumber,
+    opts.bankNumber,
+  );
+  const configured = partFromConfig(opts.submitConfig, opts.part);
+  const part = (configured ?? planWritingPart(opts.task)) as 1 | 2;
+  const mock = catalog === 2 ? "m02" : "m01";
   const q = new URLSearchParams({
     auto: "1",
     skill_context: "writing",
@@ -91,19 +127,23 @@ export function planWritingModuleHref(opts: {
   return `/test/writing/task/${part}?${q.toString()}`;
 }
 
-/**
- * Real Listening module — always MT1 Part 1 for plan Practice
- * (same IELTS set as Test 1 Listening), not thin bank smoke questions.
- */
+/** Real Listening module — hub catalog_number + part when known. */
 export function planListeningModuleHref(opts: {
   hubId: string;
   task: PlanTaskKind;
   taskId?: string | null;
   bankNumber?: number;
+  catalogNumber?: number | null;
+  part?: number | null;
+  submitConfig?: ModuleTargetConfig | null;
 }): string {
-  void opts.bankNumber;
+  const catalog = catalogFromOpts(
+    opts.submitConfig?.catalog_number ?? opts.catalogNumber,
+    opts.bankNumber,
+  );
+  const part = partFromConfig(opts.submitConfig, opts.part) ?? 1;
   const q = new URLSearchParams({
-    part: "1",
+    part: String(part),
     auto: "1",
     skill_context: "listening",
     from: "plan",
@@ -111,22 +151,26 @@ export function planListeningModuleHref(opts: {
     hubId: opts.hubId,
   });
   if (opts.taskId) q.set("taskId", opts.taskId);
-  return `/test/1/listening?${q.toString()}`;
+  return `/test/${catalog}/listening?${q.toString()}`;
 }
 
-/**
- * Real Reading module — always MT1 Passage 1 (question set 1),
- * not thin bank smoke questions.
- */
+/** Real Reading module — hub catalog_number + passage when known. */
 export function planReadingModuleHref(opts: {
   hubId: string;
   task: PlanTaskKind;
   taskId?: string | null;
   bankNumber?: number;
+  catalogNumber?: number | null;
+  part?: number | null;
+  submitConfig?: ModuleTargetConfig | null;
 }): string {
-  void opts.bankNumber;
+  const catalog = catalogFromOpts(
+    opts.submitConfig?.catalog_number ?? opts.catalogNumber,
+    opts.bankNumber,
+  );
+  const passage = partFromConfig(opts.submitConfig, opts.part) ?? 1;
   const q = new URLSearchParams({
-    passage: "1",
+    passage: String(passage),
     auto: "1",
     skill_context: "reading",
     from: "plan",
@@ -134,7 +178,7 @@ export function planReadingModuleHref(opts: {
     hubId: opts.hubId,
   });
   if (opts.taskId) q.set("taskId", opts.taskId);
-  return `/test/1/reading?${q.toString()}`;
+  return `/test/${catalog}/reading?${q.toString()}`;
 }
 
 /** Real Speaking module — uses full speaking exam flow from MTS prompts. */
@@ -143,8 +187,13 @@ export function planSpeakingModuleHref(opts: {
   task: PlanTaskKind;
   taskId?: string | null;
   bankNumber?: number;
+  catalogNumber?: number | null;
+  submitConfig?: ModuleTargetConfig | null;
 }): string {
-  const testNumber = (opts.bankNumber ?? 1) % 2 === 0 ? "2" : "1";
+  const catalog = catalogFromOpts(
+    opts.submitConfig?.catalog_number ?? opts.catalogNumber,
+    opts.bankNumber,
+  );
   const q = new URLSearchParams({
     auto: "1",
     skill_context: "speaking",
@@ -153,48 +202,47 @@ export function planSpeakingModuleHref(opts: {
     hubId: opts.hubId,
   });
   if (opts.taskId) q.set("taskId", opts.taskId);
-  return `/test/${testNumber}/speaking?${q.toString()}`;
+  return `/test/${catalog}/speaking?${q.toString()}`;
 }
 
-/** Href to open the active plan step (skill-aware). */
+/**
+ * Prefer hub submit_config.href (module UI) when present; else skill builders.
+ */
 export function planStepOpenHref(opts: {
   skill: PracticeSkill;
   hubId: string;
   task: PlanTaskKind;
   taskId?: string | null;
   bankNumber?: number;
+  catalogNumber?: number | null;
+  part?: number | null;
+  submitConfig?: ModuleTargetConfig | null;
 }): string {
+  const cfg = opts.submitConfig;
+  if (cfg?.href && typeof cfg.href === "string" && cfg.href.includes("/test/")) {
+    const url = new URL(cfg.href, "http://localhost");
+    url.searchParams.set("from", "plan");
+    url.searchParams.set("task", opts.task);
+    url.searchParams.set("hubId", opts.hubId);
+    if (opts.taskId) url.searchParams.set("taskId", opts.taskId);
+    if (!url.searchParams.get("skill_context")) {
+      url.searchParams.set("skill_context", opts.skill);
+    }
+    if (!url.searchParams.get("auto")) url.searchParams.set("auto", "1");
+    return `${url.pathname}${url.search}`;
+  }
+
   if (opts.skill === "writing") {
-    return planWritingModuleHref({
-      hubId: opts.hubId,
-      task: opts.task,
-      taskId: opts.taskId,
-      bankNumber: opts.bankNumber ?? 1,
-    });
+    return planWritingModuleHref(opts);
   }
   if (opts.skill === "listening") {
-    return planListeningModuleHref({
-      hubId: opts.hubId,
-      task: opts.task,
-      taskId: opts.taskId,
-      bankNumber: opts.bankNumber ?? 1,
-    });
+    return planListeningModuleHref(opts);
   }
   if (opts.skill === "reading") {
-    return planReadingModuleHref({
-      hubId: opts.hubId,
-      task: opts.task,
-      taskId: opts.taskId,
-      bankNumber: opts.bankNumber ?? 1,
-    });
+    return planReadingModuleHref(opts);
   }
   if (opts.skill === "speaking") {
-    return planSpeakingModuleHref({
-      hubId: opts.hubId,
-      task: opts.task,
-      taskId: opts.taskId,
-      bankNumber: opts.bankNumber ?? 1,
-    });
+    return planSpeakingModuleHref(opts);
   }
   return planExerciseHref({
     skill: opts.skill,
@@ -211,6 +259,9 @@ export function afterPlanStepHref(opts: {
   currentTask: PlanTaskKind | null | undefined;
   currentTaskId?: string | null;
   bankNumber?: number;
+  catalogNumber?: number | null;
+  part?: number | null;
+  submitConfig?: ModuleTargetConfig | null;
   /**
    * When true, open the exercise/module for the next step.
    * Default: only auto-open when moving into Practice (not Submit hub).
@@ -234,6 +285,9 @@ export function afterPlanStepHref(opts: {
       task: next,
       taskId: nextId,
       bankNumber: opts.bankNumber,
+      catalogNumber: opts.catalogNumber,
+      part: opts.part,
+      submitConfig: opts.submitConfig,
     });
   }
   return planHubHref({
@@ -252,6 +306,9 @@ export function resolveTodayTaskHref(opts: {
   taskId: string;
   fallbackHref?: string | null;
   bankNumber?: number;
+  catalogNumber?: number | null;
+  part?: number | null;
+  submitConfig?: ModuleTargetConfig | null;
 }): string {
   const skill = opts.skill;
   const hubId = opts.hubId;
@@ -280,11 +337,18 @@ export function resolveTodayTaskHref(opts: {
       taskId: opts.taskId,
     });
   }
+  // Backend serve-time rewrite is hub-aware — prefer it for Practice/Submit.
+  if (opts.fallbackHref && opts.fallbackHref.includes("/test/")) {
+    return opts.fallbackHref;
+  }
   return planStepOpenHref({
     skill,
     hubId,
     task,
     taskId: opts.taskId,
     bankNumber: opts.bankNumber ?? 1,
+    catalogNumber: opts.catalogNumber,
+    part: opts.part,
+    submitConfig: opts.submitConfig,
   });
 }

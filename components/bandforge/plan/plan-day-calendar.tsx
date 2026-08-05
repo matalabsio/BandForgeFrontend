@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowRight,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -15,8 +16,6 @@ import type {
   LearningStudyPlan,
   LearningStudyTask,
 } from "@/lib/learning-types";
-import { localPlanDateKey } from "@/lib/plan-step-completion";
-import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
 import {
   buildMonthCells,
   dayFocusSummary,
@@ -26,11 +25,15 @@ import {
   isDayAccessible,
   monthKeyFromIso,
   shiftMonthKey,
+  sortPlanTasks,
   type DayAccessStatus,
 } from "@/lib/study-plan-calendar";
+import { localPlanDateKey } from "@/lib/plan-step-completion";
+import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
 import { cn } from "@/lib/utils";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"] as const;
+const HOVER_MQ = "(hover: hover) and (pointer: fine)";
 
 const SKILL_DOT: Record<string, string> = {
   listening: "bg-[#0891B2]",
@@ -58,6 +61,8 @@ const TASK_TYPE_LABEL: Record<string, string> = {
   practice: "Practice",
   submit: "Submit",
 };
+
+type PanelMode = "preview" | "detail";
 
 type Props = {
   studyPlan: LearningStudyPlan;
@@ -98,41 +103,43 @@ function taskHref(task: LearningStudyTask): string {
   });
 }
 
-function DayPlanPanel({
+function useFinePointerHover(): boolean {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia(HOVER_MQ);
+    const sync = () => setEnabled(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  return enabled;
+}
+
+function DayHeader({
   day,
   status,
-  locked,
-  emptyDate,
+  mode,
 }: {
-  day: LearningStudyDay | null;
-  status: DayAccessStatus | null;
-  locked: boolean;
-  emptyDate?: string | null;
+  day: LearningStudyDay;
+  status: DayAccessStatus;
+  mode: PanelMode;
 }) {
-  if (!day || !status) {
-    return (
-      <div className="flex h-full min-h-[220px] flex-col items-center justify-center px-4 text-center">
-        <p className="font-display text-lg font-semibold text-ink/80">
-          {emptyDate ? formatDayHeader(emptyDate) : "Pick a day"}
-        </p>
-        <p className="mt-1.5 max-w-[16rem] text-[13px] leading-relaxed text-muted">
-          Hover or tap a date to preview that day&apos;s plan.
-        </p>
-      </div>
-    );
-  }
-
   const focus = dayFocusSummary(day);
-  const isTodayish = status === "today" || status === "in_progress";
-  const tasks = day.tasks.filter((t) => t.status !== "skipped");
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-white/40 px-5 pb-4 pt-5 sm:px-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="font-display text-[1.15rem] font-bold tracking-tight text-ink sm:text-xl">
-            {formatDayHeader(day.date)}
-          </p>
+    <div className="border-b border-white/40 px-5 pb-4 pt-5 sm:px-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-display text-[1.15rem] font-bold tracking-tight text-ink sm:text-xl">
+          {formatDayHeader(day.date)}
+        </p>
+        {mode === "preview" ? (
+          <span className="inline-flex rounded-full bg-ink/5 px-2.5 py-0.5 text-[10px] font-semibold text-ink/55 backdrop-blur-sm">
+            Preview
+          </span>
+        ) : (
           <span
             className={cn(
               "inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold backdrop-blur-sm",
@@ -145,32 +152,111 @@ function DayPlanPanel({
           >
             {dayStatusLabel(status)}
           </span>
-        </div>
-        <p className="mt-2 text-[14px] font-medium leading-snug text-[#0E7490]">
-          {focus.label}
-        </p>
-        {focus.taskCount > 0 ? (
-          <p className="mt-1 text-[12px] text-muted">
-            {focus.doneCount}/{focus.taskCount} tasks
-            {day.label ? ` · ${day.label}` : ""}
-          </p>
-        ) : null}
-        {focus.skills.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {focus.skills.map((skill) => (
-              <span
-                key={skill}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                  SKILL_SOFT[skill] ?? "bg-ink/5 text-ink/60",
-                )}
-              >
-                {MODULE_LABEL[skill] ?? skill}
-              </span>
-            ))}
-          </div>
-        ) : null}
+        )}
       </div>
+      <p className="mt-2 text-[14px] font-semibold leading-snug text-[#0E7490]">
+        {focus.label}
+      </p>
+      {focus.detailLabel && focus.detailLabel !== focus.label ? (
+        <p className="mt-1 text-[12px] leading-relaxed text-muted">
+          {focus.detailLabel}
+        </p>
+      ) : null}
+      {focus.taskCount > 0 ? (
+        <p className="mt-1 text-[12px] text-muted">
+          {focus.doneCount}/{focus.taskCount} tasks done
+        </p>
+      ) : null}
+      {focus.skills.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {focus.skills.map((skill) => (
+            <span
+              key={skill}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                SKILL_SOFT[skill] ?? "bg-ink/5 text-ink/60",
+              )}
+            >
+              {MODULE_LABEL[skill] ?? skill}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DayPlanPanel({
+  day,
+  status,
+  locked,
+  emptyDate,
+  today,
+  mode,
+  hoverCapable,
+}: {
+  day: LearningStudyDay | null;
+  status: DayAccessStatus | null;
+  locked: boolean;
+  emptyDate?: string | null;
+  today: string;
+  mode: PanelMode;
+  hoverCapable: boolean;
+}) {
+  if (!day || !status) {
+    return (
+      <div className="flex h-full min-h-[220px] flex-col items-center justify-center px-4 text-center">
+        <p className="font-display text-lg font-semibold text-ink/80">
+          {emptyDate ? formatDayHeader(emptyDate) : "Pick a day"}
+        </p>
+        <p className="mt-1.5 max-w-[16rem] text-[13px] leading-relaxed text-muted">
+          {hoverCapable
+            ? "Hover to preview, click to open that day's plan."
+            : "Tap a date to see that day's plan."}
+        </p>
+      </div>
+    );
+  }
+
+  const isToday = day.date === today;
+  const isPast = day.date < today;
+  const tasks = sortPlanTasks(
+    day.tasks.filter((t) => t.status !== "skipped"),
+  );
+  const focus = dayFocusSummary(day);
+  const incomplete = tasks.filter((t) => t.status !== "done");
+  const allDone =
+    tasks.length > 0 && incomplete.length === 0;
+  const firstIncomplete = incomplete[0] ?? null;
+
+  if (mode === "preview") {
+    return (
+      <div className="flex h-full flex-col">
+        <DayHeader day={day} status={status} mode="preview" />
+        <div className="flex flex-1 flex-col justify-between px-5 py-4 sm:px-6">
+          {locked ? (
+            <p className="flex items-start gap-2.5 rounded-2xl border border-white/50 bg-white/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted backdrop-blur-md">
+              <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              Locked until you reach this day.
+            </p>
+          ) : (
+            <p className="text-[13px] leading-relaxed text-muted">
+              {focus.taskCount > 0
+                ? `${focus.taskCount} tasks scheduled across ${focus.skills.length} skill${focus.skills.length === 1 ? "" : "s"}.`
+                : "No tasks scheduled."}
+            </p>
+          )}
+          <p className="mt-4 text-[12px] font-semibold text-teal">
+            Click to open full plan
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <DayHeader day={day} status={status} mode="detail" />
 
       <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
         {locked ? (
@@ -178,89 +264,132 @@ function DayPlanPanel({
             <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             This day unlocks when you reach it. Focus on today first.
           </p>
-        ) : tasks.length === 0 ? (
-          <p className="text-[13px] text-muted">No tasks scheduled.</p>
         ) : (
-          <ul className="space-y-2">
-            {tasks.map((task, i) => {
-              const done = task.status === "done";
-              const typeLabel =
-                TASK_TYPE_LABEL[task.task_type ?? ""] ??
-                (task.task_type
-                  ? task.task_type.charAt(0).toUpperCase() +
-                    task.task_type.slice(1)
-                  : "Task");
-              const row = (
-                <>
-                  <span
-                    className={cn(
-                      "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full",
-                      done
-                        ? "bg-teal text-white"
-                        : "bg-white/70 text-teal ring-1 ring-white/60",
-                    )}
-                  >
-                    {done ? (
-                      <Check className="size-3.5" strokeWidth={3} />
-                    ) : (
-                      <PlayCircle className="size-3.5" />
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className={cn(
-                        "block text-[13px] font-semibold",
-                        done
-                          ? "text-muted line-through decoration-ink/20"
-                          : "text-ink",
-                      )}
-                    >
-                      {task.title}
-                    </span>
-                    <span className="mt-0.5 block text-[11.5px] text-muted">
-                      {MODULE_LABEL[task.module] ?? task.module}
-                      {" · "}
-                      {typeLabel}
-                      {task.duration_min
-                        ? ` · ~${task.duration_min} min`
-                        : ""}
-                    </span>
-                  </span>
-                </>
-              );
+          <>
+            {isPast && !allDone && tasks.length > 0 ? (
+              <div className="mb-3 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-3.5 py-3">
+                <p className="text-[13px] font-semibold text-amber-950">
+                  Catch up when you can
+                </p>
+                <p className="mt-0.5 text-[12px] leading-relaxed text-amber-900/90">
+                  {incomplete.length} incomplete task
+                  {incomplete.length === 1 ? "" : "s"} from this day. Today's
+                  plan stays the same.
+                </p>
+              </div>
+            ) : null}
 
-              return (
-                <li key={`${task.id}-${i}`}>
-                  {locked ? (
-                    <div className="flex items-start gap-3 rounded-2xl border border-white/40 bg-white/35 px-3 py-2.5 opacity-70 backdrop-blur-md">
-                      {row}
-                    </div>
-                  ) : (
-                    <Link
-                      href={taskHref(task)}
-                      className={cn(
-                        "flex cursor-pointer items-start gap-3 rounded-2xl border border-white/50 bg-white/55 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] backdrop-blur-md transition-[transform,background-color,box-shadow] duration-300 hover:bg-white/80 hover:shadow-[0_8px_24px_rgba(8,145,178,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50",
-                        !done && "hover:-translate-y-0.5",
-                        done && "opacity-75",
-                      )}
-                    >
-                      {row}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+            {tasks.length === 0 ? (
+              <p className="text-[13px] text-muted">No tasks scheduled.</p>
+            ) : (
+              <ul className="space-y-2">
+                {tasks.map((task, i) => {
+                  const done = task.status === "done";
+                  const typeLabel =
+                    TASK_TYPE_LABEL[task.task_type ?? ""] ??
+                    (task.task_type
+                      ? task.task_type.charAt(0).toUpperCase() +
+                        task.task_type.slice(1)
+                      : "Task");
+                  const moduleLabel = MODULE_LABEL[task.module] ?? task.module;
+                  const titleLooksLikeStep =
+                    /—|-/.test(task.title) &&
+                    /watch|practice|submit/i.test(task.title);
+                  const row = (
+                    <>
+                      <span
+                        className={cn(
+                          "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full",
+                          done
+                            ? "bg-teal text-white"
+                            : "bg-white/70 text-teal ring-1 ring-white/60",
+                        )}
+                      >
+                        {done ? (
+                          <Check className="size-3.5" strokeWidth={3} />
+                        ) : (
+                          <PlayCircle className="size-3.5" />
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={cn(
+                            "block text-[13px] font-semibold",
+                            done
+                              ? "text-muted line-through decoration-ink/20"
+                              : "text-ink",
+                          )}
+                        >
+                          {titleLooksLikeStep
+                            ? `${moduleLabel} · ${typeLabel}`
+                            : task.title}
+                        </span>
+                        <span className="mt-0.5 block text-[11.5px] text-muted">
+                          {titleLooksLikeStep
+                            ? task.duration_min
+                              ? `~${task.duration_min} min`
+                              : typeLabel
+                            : [
+                                moduleLabel,
+                                typeLabel,
+                                task.duration_min
+                                  ? `~${task.duration_min} min`
+                                  : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                        </span>
+                      </span>
+                    </>
+                  );
+
+                  return (
+                    <li key={`${task.id}-${i}`}>
+                      <Link
+                        href={taskHref(task)}
+                        className={cn(
+                          "flex cursor-pointer items-start gap-3 rounded-2xl border border-white/50 bg-white/55 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] backdrop-blur-md transition-[transform,background-color,box-shadow] duration-300 hover:bg-white/80 hover:shadow-[0_8px_24px_rgba(8,145,178,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50",
+                          !done && "hover:-translate-y-0.5",
+                          done && "opacity-75",
+                        )}
+                      >
+                        {row}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {isPast && allDone ? (
+              <p className="mt-3 text-[12px] font-medium text-teal">
+                All tasks done for this day.
+              </p>
+            ) : null}
+          </>
         )}
       </div>
 
-      {!locked && isTodayish ? (
+      {!locked && isToday ? (
         <div className="border-t border-white/40 px-4 py-3 sm:px-5">
           <Link
             href="/study-plan/today"
-            className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-2xl bg-navy px-4 text-[13px] font-bold text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] transition-colors hover:bg-navy/90"
+            className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-navy px-4 text-[13px] font-bold text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] transition-colors hover:bg-navy/90"
           >
             Open today&apos;s plan
+            <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden />
+          </Link>
+        </div>
+      ) : null}
+
+      {!locked && isPast && firstIncomplete ? (
+        <div className="border-t border-white/40 px-4 py-3 sm:px-5">
+          <Link
+            href={taskHref(firstIncomplete)}
+            className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-navy px-4 text-[13px] font-bold text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] transition-colors hover:bg-navy/90"
+          >
+            Catch up on this day
+            <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden />
           </Link>
         </div>
       ) : null}
@@ -281,6 +410,7 @@ export function PlanDayCalendar({
   const resolvedExam = examDate ?? studyPlan.exam_date ?? null;
   const isPage = variant === "page";
   const reduce = useReducedMotion();
+  const hoverCapable = useFinePointerHover();
 
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isPage ? true : (openProp ?? internalOpen);
@@ -292,8 +422,34 @@ export function PlanDayCalendar({
   const [monthKey, setMonthKey] = useState(() => monthKeyFromIso(today));
   const [selectedDate, setSelectedDate] = useState<string | null>(today);
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  /** While pointer is over the detail panel, ignore calendar-cell hover previews. */
+  const panelPointerInsideRef = useRef(false);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** After a click, briefly ignore hover so the pointer can cross other days to the panel. */
+  const ignoreHoverUntilRef = useRef(0);
+
+  // Clear sticky hover when device cannot use fine-pointer hover.
+  useEffect(() => {
+    if (!hoverCapable) setHoveredDate(null);
+  }, [hoverCapable]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
+
+  const clearHoverPreview = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setHoveredDate(null);
+  };
 
   const activeDate = hoveredDate ?? selectedDate ?? today;
+  const panelMode: PanelMode =
+    hoveredDate && hoveredDate !== selectedDate ? "preview" : "detail";
 
   const cells = useMemo(
     () => buildMonthCells(monthKey, weeks),
@@ -317,6 +473,26 @@ export function PlanDayCalendar({
     "backdrop-blur-[28px] backdrop-saturate-[160%]",
   );
 
+  const pinDay = (date: string) => {
+    setSelectedDate(date);
+    clearHoverPreview();
+    // Ignore accidental hover while moving from the cell to the detail panel.
+    ignoreHoverUntilRef.current = Date.now() + 450;
+  };
+
+  const setPreviewDate = (date: string) => {
+    if (!hoverCapable) return;
+    if (panelPointerInsideRef.current) return;
+    if (Date.now() < ignoreHoverUntilRef.current) return;
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    // Debounce so crossing neighboring cells en route to the panel does not flicker.
+    hoverTimerRef.current = setTimeout(() => {
+      if (panelPointerInsideRef.current) return;
+      if (Date.now() < ignoreHoverUntilRef.current) return;
+      setHoveredDate(date);
+    }, 140);
+  };
+
   return (
     <div className={cn("relative", className)}>
       {isPage ? (
@@ -337,14 +513,17 @@ export function PlanDayCalendar({
             ? "grid gap-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.9fr)]"
             : "p-4 sm:p-5",
         )}
-        onMouseLeave={() => setHoveredDate(null)}
       >
-        {/* Calendar column */}
         <div
           className={cn(
             isPage &&
               "border-b border-white/40 p-5 sm:p-6 lg:border-b-0 lg:border-r",
           )}
+          onMouseLeave={() => {
+            // Leaving the month grid (including toward the detail panel) restores
+            // the clicked day's full plan — not the last hovered neighbor.
+            if (hoverCapable) clearHoverPreview();
+          }}
         >
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-[1.35rem] font-bold tracking-tight text-ink sm:text-[1.6rem]">
@@ -363,8 +542,7 @@ export function PlanDayCalendar({
                 type="button"
                 onClick={() => {
                   setMonthKey(monthKeyFromIso(today));
-                  setSelectedDate(today);
-                  setHoveredDate(null);
+                  pinDay(today);
                 }}
                 className="cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-semibold text-teal transition-colors duration-200 hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
               >
@@ -409,16 +587,15 @@ export function PlanDayCalendar({
                   disabled={!hasPlan}
                   onClick={() => {
                     if (!hasPlan) return;
-                    setSelectedDate(cell.date);
-                    setHoveredDate(null);
+                    pinDay(cell.date);
                   }}
                   onMouseEnter={() => {
                     if (!hasPlan) return;
-                    setHoveredDate(cell.date);
+                    setPreviewDate(cell.date);
                   }}
                   onFocus={() => {
                     if (!hasPlan) return;
-                    setHoveredDate(cell.date);
+                    setPreviewDate(cell.date);
                   }}
                   className={cn(
                     "group relative flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[18px] transition-[transform,background-color,box-shadow,color] duration-300 ease-out",
@@ -505,21 +682,31 @@ export function PlanDayCalendar({
               <span className="size-1 rounded-full bg-teal" />
               Skill focus
             </span>
-            <span className="text-ink/35">Hover a day for details</span>
+            <span className="text-ink/35">
+              {hoverCapable
+                ? "Hover to preview · click to open"
+                : "Tap a day to open"}
+            </span>
           </div>
         </div>
 
-        {/* Detail column — page: side panel; embed: below */}
         <div
           className={cn(
             "relative min-h-[260px] bg-gradient-to-b from-white/35 via-white/25 to-cyan-soft/30",
             !isPage && "mt-4 overflow-hidden rounded-2xl border border-white/50",
           )}
           aria-live="polite"
+          onMouseEnter={() => {
+            panelPointerInsideRef.current = true;
+            clearHoverPreview();
+          }}
+          onMouseLeave={() => {
+            panelPointerInsideRef.current = false;
+          }}
         >
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeDate ?? "empty"}
+              key={`${activeDate ?? "empty"}-${panelMode}`}
               initial={
                 reduce ? false : { opacity: 0, y: 8, filter: "blur(4px)" }
               }
@@ -541,6 +728,9 @@ export function PlanDayCalendar({
                     : false
                 }
                 emptyDate={activeDate}
+                today={today}
+                mode={panelMode}
+                hoverCapable={hoverCapable}
               />
             </motion.div>
           </AnimatePresence>

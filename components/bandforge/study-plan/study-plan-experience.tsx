@@ -253,9 +253,21 @@ export function StudyPlanExperience({ profile }: Props) {
             {goals.map((g) => (
               <li
                 key={g.id}
-                className="rounded-xl border border-border-soft bg-white px-4 py-3 text-sm text-navy"
+                className="flex items-start gap-3 rounded-xl border border-border-soft bg-white px-4 py-3 text-sm text-navy"
               >
-                {g.title}
+                <span
+                  className={
+                    g.done
+                      ? "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border border-teal bg-teal text-white"
+                      : "mt-0.5 size-5 shrink-0 rounded border border-border-soft bg-white"
+                  }
+                  aria-hidden
+                >
+                  {g.done ? "✓" : null}
+                </span>
+                <span className={g.done ? "text-muted line-through" : undefined}>
+                  {g.title}
+                </span>
               </li>
             ))}
           </ul>

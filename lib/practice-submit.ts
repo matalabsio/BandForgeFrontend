@@ -3,18 +3,83 @@ import { isPracticeSkill } from "@/lib/practice-types";
 import { shortModuleExamPath } from "@/lib/mock-catalog";
 import { writingTaskPath } from "@/lib/writing-test";
 
-type SubmitConfig = {
+export type SubmitConfig = {
   type?: string;
   module?: string;
   href?: string;
   submit_route?: string;
+  catalog_number?: number;
+  part?: number;
+  hub_id?: string;
 };
+
+function catalogNumber(config: SubmitConfig): 1 | 2 {
+  const n = Number(config.catalog_number);
+  return n === 2 ? 2 : 1;
+}
+
+function partNumber(config: SubmitConfig, fallback = 1): number {
+  const n = Number(config.part);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+/** True when hub should open mock module UI instead of thin bank exercise. */
+export function isModuleSubmitTarget(
+  submitConfig: SubmitConfig | Record<string, unknown> | null | undefined,
+): boolean {
+  const config = (submitConfig ?? {}) as SubmitConfig;
+  if (config.type === "module") return true;
+  if (typeof config.href === "string" && config.href.includes("/test/")) {
+    return true;
+  }
+  if (config.catalog_number != null) return true;
+  return false;
+}
+
+/** Build mock module path from submit_config (no plan query params). */
+export function moduleHrefFromSubmitConfig(
+  submitConfig: SubmitConfig | Record<string, unknown> | null | undefined,
+  skill: PracticeSkill,
+): string | null {
+  const config = (submitConfig ?? {}) as SubmitConfig;
+  if (config.href && typeof config.href === "string" && config.href.includes("/test/")) {
+    return config.href;
+  }
+  if (!isModuleSubmitTarget(config) && config.type === "bank") {
+    return null;
+  }
+  if (!isModuleSubmitTarget(config) && config.type && config.type !== "module") {
+    return null;
+  }
+
+  const catalog = catalogNumber(config);
+  const part = partNumber(config);
+
+  switch (skill) {
+    case "listening":
+      return `/test/${catalog}/listening?part=${part}&auto=1&skill_context=listening`;
+    case "reading":
+      return `/test/${catalog}/reading?passage=${part}&auto=1&skill_context=reading`;
+    case "writing": {
+      const task = part >= 2 ? 2 : 1;
+      const mock = catalog === 2 ? "m02" : "m01";
+      return `/test/writing/task/${task}?auto=1&skill_context=writing&mock=${mock}`;
+    }
+    case "speaking":
+      return `/test/${catalog}/speaking?auto=1&skill_context=speaking`;
+    default:
+      return null;
+  }
+}
 
 export function resolveSubmitHref(
   submitConfig: SubmitConfig | Record<string, unknown> | null | undefined,
   skill: PracticeSkill,
 ): string {
   const config = (submitConfig ?? {}) as SubmitConfig;
+  const moduleHref = moduleHrefFromSubmitConfig(config, skill);
+  if (moduleHref) return moduleHref;
+
   if (config.href && typeof config.href === "string") {
     return config.href;
   }
@@ -84,7 +149,10 @@ export function parseVideoEmbed(url: string): VideoEmbed {
   }
 
   if (/^https?:\/\//i.test(trimmed)) {
-    return { kind: "direct", embedUrl: trimmed };
+    return {
+      kind: "direct",
+      embedUrl: trimmed,
+    };
   }
 
   return { kind: "none" };

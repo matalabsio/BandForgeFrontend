@@ -61,6 +61,8 @@ export default async function StudyPlanTodayPage() {
         currentBand={profile.current_band}
         targetBand={profile.target_band}
         overallPlanPct={overallPlanPercent(profile.study_plan)}
+        studyPlan={profile.study_plan}
+        examDate={profile.exam_date ?? profile.study_plan.exam_date ?? null}
       />
     </div>
   );

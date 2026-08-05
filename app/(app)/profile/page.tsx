@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { NotificationPreferencesPanel } from "@/components/bandforge/profile/notification-preferences-panel";
 import { ProfileForm } from "@/components/bandforge/profile/profile-form";
 import { ProfileSettingsHub } from "@/components/bandforge/profile/profile-settings-hub";
 import { authGuardRedirectPath } from "@/lib/auth";
@@ -25,16 +26,19 @@ export default async function ProfilePage() {
       email={user.email}
       avatarInitial={initial}
     >
-      <div className="rounded-2xl border border-border-soft bg-white p-6 shadow-sm sm:p-8">
-        <header className="mb-6">
-          <p className="font-mono text-[0.6875rem] tracking-wide text-cyan uppercase">
-            Account details
-          </p>
-          <h2 className="font-display mt-1 text-lg font-bold text-navy">
-            Edit profile
-          </h2>
-        </header>
-        <ProfileForm user={user} />
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-border-soft bg-white p-6 shadow-sm sm:p-8">
+          <header className="mb-6">
+            <p className="font-mono text-[0.6875rem] tracking-wide text-cyan uppercase">
+              Account details
+            </p>
+            <h2 className="font-display mt-1 text-lg font-bold text-navy">
+              Edit profile
+            </h2>
+          </header>
+          <ProfileForm user={user} />
+        </div>
+        <NotificationPreferencesPanel />
       </div>
     </ProfileSettingsHub>
   );

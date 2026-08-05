@@ -60,6 +60,9 @@ type Props = {
   nextActionLabel?: string;
   /** Optional checklist block rendered in the same card under the check-in header. */
   checklist?: ReactNode;
+  /** Incomplete past plan days — secondary catch-up entry. */
+  missedDayCount?: number;
+  onOpenCatchUp?: () => void;
 };
 
 function sumMinutes(tasks: LearningStudyTask[]): number {
@@ -100,6 +103,8 @@ export function DailyImprovementsPanel({
   nextActionHref,
   nextActionLabel,
   checklist,
+  missedDayCount = 0,
+  onOpenCatchUp,
 }: Props) {
   const outcomes = useMemo(() => readPlanDayOutcomes(), []);
   const visible = tasks.filter((t) => t.status !== "skipped");
@@ -178,6 +183,16 @@ export function DailyImprovementsPanel({
           >
             Full plan
           </Link>
+          {missedDayCount > 0 && onOpenCatchUp ? (
+            <button
+              type="button"
+              onClick={onOpenCatchUp}
+              className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-amber-800 transition-colors hover:bg-amber-50"
+            >
+              Catch up on {missedDayCount} incomplete day
+              {missedDayCount === 1 ? "" : "s"}
+            </button>
+          ) : null}
           {!embedded ? (
             <Link
               href="/dashboard"

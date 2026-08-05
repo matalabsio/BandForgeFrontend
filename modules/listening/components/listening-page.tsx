@@ -299,7 +299,8 @@ export function ListeningPage({
         hubId: planHubId,
         currentTask: current,
         currentTaskId: planTaskId,
-        bankNumber: 1,
+        catalogNumber: resolvedTestNumber,
+        part,
         preferExercise: true,
         completeHub: shouldCompleteHubForPlanTask("listening", current),
       });
@@ -308,7 +309,7 @@ export function ListeningPage({
       );
       return true;
     },
-    [fromPlan, planHubId, planTask, planTaskId, push],
+    [fromPlan, planHubId, planTask, planTaskId, part, push, resolvedTestNumber],
   );
 
   const submitAnswers = useMemo(

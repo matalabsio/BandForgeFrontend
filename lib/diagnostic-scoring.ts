@@ -63,6 +63,11 @@ export type ModuleScoreResult = {
   band: number;
 };
 
+/**
+ * Client mirror of backend `app.scoring.answers.is_answer_correct`.
+ * Keep rules in lockstep: lowercase, collapse whitespace, `/` = OR alternatives.
+ * Tests: `diagnostic-scoring.test.mjs` + `backend/tests/scoring/`.
+ */
 function normalize(value: string | null | undefined): string {
   if (value == null) return "";
   return value.trim().toLowerCase().replace(/\s+/g, " ");

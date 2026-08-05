@@ -178,6 +178,7 @@ export type SpeakingPendingPayload = {
 
 export type SpeakingNotificationPreferences = {
   email_enabled: boolean;
+  plan_reminders_email: boolean;
   whatsapp_enabled: boolean;
   whatsapp_eligible: boolean;
   masked_phone: string | null;
@@ -191,6 +192,12 @@ export type SpeakingNotificationPreferencesPatch =
     }
   | {
       whatsapp_enabled: false;
+    }
+  | {
+      email_enabled: boolean;
+    }
+  | {
+      plan_reminders_email: boolean;
     };
 
 export type SpeakingHumanCriteria = {

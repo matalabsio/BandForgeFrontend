@@ -138,11 +138,15 @@ export async function fetchDashboardSummary(
 export type DashboardStreak = {
   current_streak: number;
   longest_streak: number;
+  activity_days?: Array<{ date: string; count: number }>;
+  week_active_days?: number;
 };
 
 const EMPTY_STREAK: DashboardStreak = {
   current_streak: 0,
   longest_streak: 0,
+  activity_days: [],
+  week_active_days: 0,
 };
 
 const STREAK_FETCH_MS = 4_000;
@@ -174,6 +178,10 @@ export async function fetchDashboardStreak(
       const value = {
         current_streak: Number(data?.current_streak) || 0,
         longest_streak: Number(data?.longest_streak) || 0,
+        activity_days: Array.isArray(data?.activity_days)
+          ? data.activity_days
+          : [],
+        week_active_days: Number(data?.week_active_days) || 0,
       };
       setMemCached(key, value, 30_000);
       return value;

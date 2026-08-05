@@ -1,7 +1,11 @@
 "use client";
 
 import { patchLearningTask } from "@/lib/learning-api";
-import { afterPlanStepHref, type PlanTaskKind } from "@/lib/plan-task-flow";
+import {
+  afterPlanStepHref,
+  type ModuleTargetConfig,
+  type PlanTaskKind,
+} from "@/lib/plan-task-flow";
 import { completePracticeHub } from "@/lib/practice-api";
 import type { PracticeSkill } from "@/lib/practice-types";
 
@@ -11,6 +15,9 @@ type BuildNextHrefInput = {
   currentTask: PlanTaskKind | null | undefined;
   currentTaskId?: string | null;
   bankNumber?: number;
+  catalogNumber?: number | null;
+  part?: number | null;
+  submitConfig?: ModuleTargetConfig | null;
   preferExercise?: boolean;
 };
 
@@ -52,6 +59,9 @@ export function buildPlanNextHref(input: BuildNextHrefInput): string {
     currentTask: input.currentTask,
     currentTaskId: input.currentTaskId,
     bankNumber: input.bankNumber,
+    catalogNumber: input.catalogNumber,
+    part: input.part,
+    submitConfig: input.submitConfig,
     preferExercise: input.preferExercise,
   });
 }

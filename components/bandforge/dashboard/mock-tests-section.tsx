@@ -9,7 +9,12 @@ import {
   TrophyIcon,
 } from "@/components/bandforge/dashboard/icons";
 import { DashboardCard } from "@/components/bandforge/dashboard/dashboard-card";
-import { MOCK_TEST_PANEL, mockTestsIndexPath } from "@/lib/mock-catalog";
+import {
+  getMockMeta,
+  MOCK_TEST_PANEL,
+  mockTestsIndexPath,
+  type MockSlug,
+} from "@/lib/mock-catalog";
 import {
   liveCatalogSlots,
   type MockCatalogSlot,
@@ -26,6 +31,33 @@ type Props = {
   catalogSlots?: MockCatalogSlot[];
 };
 
+function fallbackSlotMeta(slug: MockSlug | null | undefined) {
+  if (slug === "m01" || slug === "m02") {
+    const meta = getMockMeta(slug);
+    return {
+      listeningPartCount: meta.listeningPartCount,
+      readingPassageCount: meta.readingPassageCount,
+      writingTaskCount: meta.writingTaskCount,
+      listeningMinutes: meta.listeningMinutes,
+      readingMinutes: meta.readingMinutes,
+      writingMinutes: meta.writingMinutes,
+      totalMinutes: meta.totalMinutes,
+      flowHint: meta.flowHint,
+    };
+  }
+  // Unavailable panel slots — keep neutral placeholder counts
+  return {
+    listeningPartCount: 4,
+    readingPassageCount: 2,
+    writingTaskCount: 2,
+    listeningMinutes: 30,
+    readingMinutes: 30,
+    writingMinutes: 60,
+    totalMinutes: 120,
+    flowHint: "",
+  };
+}
+
 export function MockTestsSection({ catalogSlots }: Props) {
   const panel = catalogSlots ?? MOCK_TEST_PANEL.map((slot) => ({
     number: slot.number,
@@ -34,14 +66,7 @@ export function MockTestsSection({ catalogSlots }: Props) {
     displayLabel: slot.displayLabel,
     examTitle: slot.examTitle,
     available: slot.available,
-    listeningPartCount: 4,
-    readingPassageCount: 3,
-    writingTaskCount: 2,
-    listeningMinutes: 30,
-    readingMinutes: 30,
-    writingMinutes: 60,
-    totalMinutes: 120,
-    flowHint: "",
+    ...fallbackSlotMeta(slot.slug),
   }));
 
   const liveTests: Array<{ number: number; displayLabel: string }> = catalogSlots

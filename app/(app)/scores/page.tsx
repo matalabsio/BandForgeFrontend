@@ -61,6 +61,7 @@ async function ScoresPageContent({ searchParams }: PageProps) {
       mockSlug={mockSlug}
       recommendations={learning?.recommendations ?? []}
       topWeaknesses={learning?.top_weaknesses ?? []}
+      learning={learning}
     />
   );
 }

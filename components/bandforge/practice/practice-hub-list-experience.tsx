@@ -27,6 +27,7 @@ import type { MockUnlock, PracticeHub, PracticeSkill } from "@/lib/practice-type
 import { practiceSkillLabel } from "@/lib/practice-types";
 import { skillMockPath } from "@/lib/practice-submit";
 import { cn } from "@/lib/utils";
+import { PrefetchHrefs } from "@/components/bandforge/prefetch-hrefs";
 
 type Props = {
   skill: PracticeSkill;
@@ -105,6 +106,17 @@ export function PracticeHubListExperience({
     (h) => isHubAccessible(h) && h.status !== "completed",
   );
   const banks = useMemo(() => groupByBank(hubs), [hubs]);
+  const prefetchHrefs = useMemo(() => {
+    const hrefs: string[] = [];
+    if (currentHub) hrefs.push(`/practice/${skill}/${currentHub.id}`);
+    for (const h of hubs) {
+      if (isHubAccessible(h) && h.status !== "completed") {
+        hrefs.push(`/practice/${skill}/${h.id}`);
+        if (hrefs.length >= 4) break;
+      }
+    }
+    return hrefs;
+  }, [currentHub, hubs, skill]);
 
   useEffect(() => {
     if (highlightHubId && highlightRef.current) {
@@ -117,6 +129,7 @@ export function PracticeHubListExperience({
 
   return (
     <div className="relative space-y-6 pb-2 sm:space-y-8">
+      <PrefetchHrefs hrefs={prefetchHrefs} />
       <div
         className="pointer-events-none absolute -inset-x-4 -top-6 -z-10 h-72 overflow-hidden sm:-inset-x-8"
         aria-hidden

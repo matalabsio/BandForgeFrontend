@@ -138,15 +138,25 @@ export function DashboardTopHeader({
         transition={{ duration: 0.45, delay: 0.15, ease: DASH_EASE }}
       >
         {streakDays > 0 ? (
-          <motion.span
-            className="inline-flex items-center gap-1.5 rounded-full border border-orange-200/80 bg-orange-50 px-3 py-1.5 text-[12px] font-semibold text-orange-800 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset]"
-            whileHover={reduce ? undefined : { scale: 1.03 }}
-            transition={{ duration: 0.2 }}
+          <Link href="/streak">
+            <motion.span
+              className="inline-flex items-center gap-1.5 rounded-full border border-orange-200/80 bg-orange-50 px-3 py-1.5 text-[12px] font-semibold text-orange-800 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset]"
+              whileHover={reduce ? undefined : { scale: 1.03 }}
+              transition={{ duration: 0.2 }}
+            >
+              <FlameIcon className="size-4 text-orange-500" />
+              {streakDays} day{streakDays === 1 ? "" : "s"} streak
+            </motion.span>
+          </Link>
+        ) : (
+          <Link
+            href="/streak"
+            className="inline-flex items-center gap-1.5 rounded-full border border-ink/8 bg-white/90 px-3 py-1.5 text-[12px] font-semibold text-muted shadow-sm"
           >
-            <FlameIcon className="size-4 text-orange-500" />
-            {streakDays} day{streakDays === 1 ? "" : "s"} streak
-          </motion.span>
-        ) : null}
+            <FlameIcon className="size-4 text-orange-400" />
+            Start streak
+          </Link>
+        )}
 
         <button
           type="button"

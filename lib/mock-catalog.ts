@@ -495,9 +495,9 @@ export const TEST1_READING_PASSAGE_COUNT = 2;
 export const TEST1_WRITING_TASK_COUNT = 2;
 
 /**
- * Where to go after finishing a section inside a full mock (Test 1).
- * Listening parts 1–3 → next part; part 4 → Reading passage 1;
- * Reading passages 1–3 → next passage; passage 4 → /scores.
+ * Where to go after finishing a section inside a full mock.
+ * Listening parts → next part, then Reading passage 1;
+ * Reading passages use each mock's live passage count (Test 1 = 2).
  */
 export function mockAfterSectionSubmitPath(
   slugOrId: string,

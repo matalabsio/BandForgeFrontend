@@ -1,4 +1,8 @@
-import type { LearningStudyDay, LearningStudyWeek } from "@/lib/learning-types";
+import type {
+  LearningStudyDay,
+  LearningStudyTask,
+  LearningStudyWeek,
+} from "@/lib/learning-types";
 
 export type DayAccessStatus =
   | "locked"
@@ -133,10 +137,11 @@ export function findPlanDay(
   return null;
 }
 
-/** Primary skill focus + task types for a day (e.g. Listening · Watch + Practice). */
+/** Primary skill focus + task types for a day. */
 export function dayFocusSummary(day: LearningStudyDay): {
   skills: string[];
   label: string;
+  detailLabel: string;
   taskCount: number;
   doneCount: number;
 } {
@@ -161,21 +166,78 @@ export function dayFocusSummary(day: LearningStudyDay): {
   const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const typeLabel = (t: string) => titleCase(t);
 
-  const parts = skills.slice(0, 2).map((skill) => {
+  const skillNames = skills.map(titleCase);
+  const label =
+    skillNames.length === 0
+      ? "Rest / catch-up"
+      : skillNames.length === 1
+        ? skillNames[0]
+        : skillNames.length === 2
+          ? `${skillNames[0]} & ${skillNames[1]}`
+          : `${skillNames.slice(0, -1).join(", ")} & ${skillNames[skillNames.length - 1]}`;
+
+  const detailParts = skills.map((skill) => {
     const types = [...(typesBySkill.get(skill) ?? [])].sort(
       (a, b) => (TASK_TYPE_ORDER[a] ?? 99) - (TASK_TYPE_ORDER[b] ?? 99),
     );
     const typeBit =
-      types.length > 0 ? ` · ${types.map(typeLabel).join(" + ")}` : "";
+      types.length > 0 ? ` (${types.map(typeLabel).join(" + ")})` : "";
     return `${titleCase(skill)}${typeBit}`;
   });
 
   return {
     skills,
-    label: parts.join(" · ") || "Rest / catch-up",
+    label,
+    detailLabel: detailParts.join(" · ") || label,
     taskCount: tasks.length,
     doneCount: tasks.filter((t) => t.status === "done").length,
   };
+}
+
+/** Sort plan tasks: Listening → Reading → Writing → Speaking, then Watch → Practice → Submit. */
+export function sortPlanTasks<T extends { module?: string; task_type?: string }>(
+  tasks: T[],
+): T[] {
+  return [...tasks].sort((a, b) => {
+    const aSkill = (a.module || "").toLowerCase();
+    const bSkill = (b.module || "").toLowerCase();
+    const ai = (SKILL_ORDER as readonly string[]).indexOf(aSkill);
+    const bi = (SKILL_ORDER as readonly string[]).indexOf(bSkill);
+    const aOrder = ai === -1 ? 99 : ai;
+    const bOrder = bi === -1 ? 99 : bi;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return (
+      (TASK_TYPE_ORDER[a.task_type ?? ""] ?? 99) -
+      (TASK_TYPE_ORDER[b.task_type ?? ""] ?? 99)
+    );
+  });
+}
+
+export type CatchUpTarget = {
+  missed: MissedDay[];
+  date: string;
+  task: LearningStudyTask;
+};
+
+/** Oldest incomplete past day + first incomplete task (sorted skill/type order). */
+export function getOldestCatchUpTarget(
+  weeks: LearningStudyWeek[],
+  today: string,
+  examDate?: string | null,
+): CatchUpTarget | null {
+  const missed = countMissedDays(weeks, today, examDate);
+  if (missed.length === 0) return null;
+
+  const date = missed[0].date;
+  const day = findPlanDay(weeks, date);
+  if (!day) return null;
+
+  const incomplete = sortPlanTasks(countableTasks(day)).find(
+    (t) => t.status !== "done",
+  );
+  if (!incomplete) return null;
+
+  return { missed, date, task: incomplete };
 }
 
 export type CalendarCell = {

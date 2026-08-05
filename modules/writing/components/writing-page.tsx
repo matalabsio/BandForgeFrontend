@@ -454,7 +454,8 @@ export function WritingPage({
           hubId: planHubId,
           currentTask: current,
           currentTaskId: planTaskId,
-          bankNumber: mockSlug === "m02" ? 2 : 1,
+          catalogNumber: resolvedTestNumber,
+          part,
           preferExercise: true,
           completeHub: shouldCompleteHubForPlanTask("writing", current),
         });

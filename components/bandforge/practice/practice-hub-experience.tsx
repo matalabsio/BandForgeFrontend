@@ -176,8 +176,14 @@ export function PracticeHubExperience({
         ? DUMMY_VIDEOS
         : hub.videos;
 
+  const submitConfig = (hub.submit_config ?? {}) as {
+    type?: string;
+    catalog_number?: number;
+    part?: number;
+    href?: string;
+  };
   const baseSubmitHref = appendSkillContext(
-    resolveSubmitHref(hub.submit_config, skill),
+    resolveSubmitHref(submitConfig, skill),
     skill,
   );
   const submitHref = appendPlanParams(baseSubmitHref, {
@@ -191,6 +197,9 @@ export function PracticeHubExperience({
     task: planTask === "submit" ? "submit" : "practice",
     taskId: planTaskId,
     bankNumber: hub.bank_number,
+    catalogNumber: submitConfig.catalog_number,
+    part: submitConfig.part,
+    submitConfig,
   });
   const bankExerciseHref = planExerciseHref({
     skill,
@@ -198,42 +207,39 @@ export function PracticeHubExperience({
     task: planTask === "submit" ? "submit" : "practice",
     taskId: planTaskId,
   });
-  // Plan steps that must run in real module exam UI.
+  const isBankOnly = submitConfig.type === "bank" && !submitConfig.href?.includes("/test/");
+  // Prefer mock module UI (plan or hub CTA); thin bank exercise only as fallback.
   const practiceCtaHref =
+    !isBankOnly &&
     (skill === "writing" ||
       skill === "listening" ||
       skill === "reading" ||
-      skill === "speaking") &&
-    fromPlan
-      ? exerciseHref
-      : (hub.submit_config as { type?: string } | null)?.type === "bank"
+      skill === "speaking")
+      ? fromPlan
+        ? exerciseHref
+        : submitHref
+      : isBankOnly
         ? bankExerciseHref
         : submitHref;
 
   const setIndex = hub.sort_order > 0 ? hub.set_number : hub.set_number;
   const totalSets = mockUnlock?.required ?? 12;
 
-  // Plan practice/submit → real MT module where supported; otherwise bank exercise.
+  // Practice/submit → real MT module when hub is module-targeted.
   useEffect(() => {
     if (!fromPlan || (focus !== "practice" && focus !== "submit")) return;
-    if (
-      skill === "writing" ||
-      skill === "speaking" ||
-      ((skill === "listening" || skill === "reading") && focus === "practice")
-    ) {
+    if (!isBankOnly) {
       router.replace(exerciseHref);
       return;
     }
     if (focus !== "practice") return;
-    if ((hub.submit_config as { type?: string } | null)?.type !== "bank") return;
     router.replace(bankExerciseHref);
   }, [
     fromPlan,
     focus,
-    skill,
     exerciseHref,
     bankExerciseHref,
-    hub.submit_config,
+    isBankOnly,
     router,
   ]);
 
@@ -249,6 +255,9 @@ export function PracticeHubExperience({
         currentTask: "watch",
         currentTaskId: planTaskId,
         bankNumber: hub.bank_number,
+        catalogNumber: submitConfig.catalog_number,
+        part: submitConfig.part,
+        submitConfig,
         preferExercise: true,
         completeHub: false,
       }) ?? "/study-plan/today";
@@ -259,7 +268,15 @@ export function PracticeHubExperience({
         : "Watch done — back to today’s plan…",
     );
     router.push(nextHref);
-  }, [fromPlan, hub.bank_number, hub.id, planTaskId, router, skill]);
+  }, [
+    fromPlan,
+    hub.bank_number,
+    hub.id,
+    planTaskId,
+    router,
+    skill,
+    submitConfig,
+  ]);
 
   function handleVideoEnded() {
     if (videoIndex < videos.length - 1) {
@@ -295,6 +312,9 @@ export function PracticeHubExperience({
         currentTask: "submit",
         currentTaskId: planTaskId,
         bankNumber: hub.bank_number,
+        catalogNumber: submitConfig.catalog_number,
+        part: submitConfig.part,
+        submitConfig,
         preferExercise: true,
         completeHub: shouldCompleteHubForPlanTask(skill, "submit"),
       }) ?? "/study-plan/today";
@@ -327,6 +347,9 @@ export function PracticeHubExperience({
           currentTask: planTask,
           currentTaskId: planTaskId,
           bankNumber: hub.bank_number,
+          catalogNumber: submitConfig.catalog_number,
+          part: submitConfig.part,
+          submitConfig,
           completeHub: false,
         });
         router.push(nextHref ?? "/study-plan/today");
@@ -350,11 +373,7 @@ export function PracticeHubExperience({
   if (
     fromPlan &&
     (focus === "practice" || focus === "submit") &&
-    (skill === "writing" ||
-      skill === "speaking" ||
-      skill === "listening" ||
-      skill === "reading" ||
-      (hub.submit_config as { type?: string } | null)?.type === "bank")
+    (!isBankOnly || focus === "practice")
   ) {
     const label =
       skill === "writing"

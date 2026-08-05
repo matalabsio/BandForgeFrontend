@@ -28,13 +28,17 @@ import {
   type SkillStepperStep,
 } from "@/components/bandforge/dashboard/skill-progress-stepper";
 import { DailyImprovementsPanel } from "@/components/bandforge/plan/daily-improvements-panel";
+import { PrefetchHrefs } from "@/components/bandforge/prefetch-hrefs";
 import { DailyGrowthReportModal } from "@/components/bandforge/plan/daily-growth-report-modal";
+import { CatchUpDaysModal } from "@/components/bandforge/plan/catch-up-days-modal";
 import { localPlanDateKey } from "@/lib/plan-step-completion";
 import type {
+  LearningStudyPlan,
   LearningStudyTask,
   SkillHubProgress,
 } from "@/lib/learning-types";
 import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
+import { getOldestCatchUpTarget } from "@/lib/study-plan-calendar";
 import { cn } from "@/lib/utils";
 import type { ComponentType, SVGProps } from "react";
 
@@ -88,6 +92,8 @@ type Props = {
   overallPlanPct?: number;
   /** Dashboard embed: hide duplicate labels / collapse checklist when day is done. */
   embedded?: boolean;
+  studyPlan?: LearningStudyPlan | null;
+  examDate?: string | null;
 };
 
 function withClientKeys(tasks: LearningStudyTask[]): TaskRow[] {
@@ -489,12 +495,16 @@ export function TodaysPlanPanel({
   targetBand = null,
   overallPlanPct = 0,
   embedded = false,
+  studyPlan = null,
+  examDate = null,
 }: Props) {
   const [tasks, setTasks] = useState(() => withClientKeys(initialTasks));
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [catchUpOpen, setCatchUpOpen] = useState(false);
   const wasAllDoneRef = useRef(false);
   const reportShownRef = useRef(false);
+  const catchUpOfferedRef = useRef(false);
 
   // Keep checklist in sync when server profile refreshes after task patches.
   useEffect(() => {
@@ -513,6 +523,14 @@ export function TodaysPlanPanel({
   );
   const totalMinutes = useMemo(() => sumMinutes(actionable), [actionable]);
   const allDone = hasTasks && doneCount === actionable.length;
+  const prefetchHrefs = useMemo(
+    () =>
+      actionable
+        .filter((t) => t.status !== "done" && !isUnavailable(t))
+        .map((t) => taskOpenHref(t))
+        .filter((h) => h.includes("/test/") || h.includes("/practice/")),
+    [actionable],
+  );
   const dayPct = progressPercent(doneCount, actionable.length);
   const hasSubmit = stacks.some((s) =>
     s.tasks.some((t) => t.task_type === "submit"),
@@ -531,11 +549,66 @@ export function TodaysPlanPanel({
     [hubProgress],
   );
 
+  const catchUpTarget = useMemo(() => {
+    if (!studyPlan?.weeks?.length) return null;
+    return getOldestCatchUpTarget(
+      studyPlan.weeks,
+      localPlanDateKey(),
+      examDate ?? studyPlan.exam_date ?? null,
+    );
+  }, [studyPlan, examDate]);
+
+  const catchUpHref = useMemo(() => {
+    if (!catchUpTarget?.task) return "/study-plan";
+    return resolveTodayTaskHref({
+      skill: catchUpTarget.task.module,
+      hubId: catchUpTarget.task.hub_id,
+      taskType: catchUpTarget.task.task_type,
+      taskId: catchUpTarget.task.id,
+      fallbackHref: catchUpTarget.task.href,
+    });
+  }, [catchUpTarget]);
+
   /** On dashboard when day is done: check-in is primary; checklist is optional. */
   const compactDone = embedded && allDone;
   const reduce = useReducedMotion();
   const reportDate = useMemo(() => new Date(), []);
   const displayName = (studentName?.trim() || "BandForge Student").slice(0, 60);
+
+  const catchUpStorageKey = `bf-catchup-offered:${
+    userId || "anon"
+  }:${localPlanDateKey()}`;
+
+  const markCatchUpOffered = () => {
+    catchUpOfferedRef.current = true;
+    try {
+      sessionStorage.setItem(catchUpStorageKey, "1");
+    } catch {
+      // Ignore storage errors.
+    }
+  };
+
+  const dismissCatchUp = () => {
+    markCatchUpOffered();
+    setCatchUpOpen(false);
+  };
+
+  const maybeOpenCatchUp = () => {
+    if (!allDone || !catchUpTarget || catchUpTarget.missed.length === 0) return;
+    if (catchUpOfferedRef.current) return;
+    let offered = false;
+    try {
+      offered = sessionStorage.getItem(catchUpStorageKey) === "1";
+    } catch {
+      offered = false;
+    }
+    if (offered) {
+      catchUpOfferedRef.current = true;
+      return;
+    }
+    setCatchUpOpen(true);
+    markCatchUpOffered();
+  };
 
   const skillChecklistGrid = (
     <motion.div
@@ -635,15 +708,25 @@ export function TodaysPlanPanel({
       } catch {
         // Ignore storage quota errors.
       }
+    } else {
+      reportShownRef.current = true;
+      // Report already shown this day — offer catch-up after settle.
+      queueMicrotask(() => maybeOpenCatchUp());
     }
     wasAllDoneRef.current = true;
-  }, [allDone, userId]);
+    // maybeOpenCatchUp reads latest catchUpTarget via closure on each effect run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: gate on allDone/userId
+  }, [allDone, userId, catchUpTarget]);
 
   return (
     <div className="space-y-4 sm:space-y-5">
+      <PrefetchHrefs hrefs={prefetchHrefs} />
       <DailyGrowthReportModal
         open={reportOpen}
-        onClose={() => setReportOpen(false)}
+        onClose={() => {
+          setReportOpen(false);
+          maybeOpenCatchUp();
+        }}
         studentName={displayName}
         reportDate={reportDate}
         tasks={tasks}
@@ -651,6 +734,14 @@ export function TodaysPlanPanel({
         currentBand={currentBand}
         targetBand={targetBand}
         overallPlanPct={overallPlanPct}
+      />
+
+      <CatchUpDaysModal
+        open={catchUpOpen}
+        onClose={dismissCatchUp}
+        missed={catchUpTarget?.missed ?? []}
+        catchUpHref={catchUpHref}
+        onCatchUp={markCatchUpOffered}
       />
 
       {!allDone && nextStart ? (
@@ -709,6 +800,8 @@ export function TodaysPlanPanel({
           nextActionHref={continuePractice.href}
           nextActionLabel={continuePractice.label}
           checklist={doneChecklistSlot}
+          missedDayCount={catchUpTarget?.missed.length ?? 0}
+          onOpenCatchUp={() => setCatchUpOpen(true)}
         />
       ) : (
         <DashReveal as="section" aria-labelledby="todays-plan-heading">
@@ -731,7 +824,7 @@ export function TodaysPlanPanel({
                   ~{totalMinutes} min
                 </span>
                 <span className="inline-flex items-center rounded-full bg-cyan-soft px-2.5 py-1 font-mono text-[12px] font-semibold tabular-nums text-teal">
-                  {doneCount}/{actionable.length} done
+                  Daily goal · {doneCount}/{actionable.length}
                 </span>
               </div>
             ) : null}

@@ -5,11 +5,14 @@ import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import { fetchEntitlementGate } from "@/lib/entitled-route-server";
 import { isUuid } from "@/lib/mock-ids";
 import {
-  planListeningModuleHref,
-  planReadingModuleHref,
-  planWritingModuleHref,
+  planStepOpenHref,
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
+import {
+  isModuleSubmitTarget,
+  moduleHrefFromSubmitConfig,
+} from "@/lib/practice-submit";
+import { fetchPracticeHub } from "@/lib/practice-server";
 import { isPracticeSkill, practiceSkillLabel } from "@/lib/practice-types";
 import {
   getCachedCookieHeader,
@@ -58,36 +61,6 @@ export default async function PracticeExercisePage({
       ? planTaskRaw
       : "practice";
 
-  // Writing / Listening / Reading plan practice uses real MT exam UI, not bank smoke.
-  if (fromPlan && skill === "listening") {
-    redirect(
-      planListeningModuleHref({
-        hubId,
-        task: planTask,
-        taskId: planTaskId,
-      }),
-    );
-  }
-  if (fromPlan && skill === "reading") {
-    redirect(
-      planReadingModuleHref({
-        hubId,
-        task: planTask,
-        taskId: planTaskId,
-      }),
-    );
-  }
-  if (fromPlan && skill === "writing") {
-    redirect(
-      planWritingModuleHref({
-        hubId,
-        task: planTask,
-        taskId: planTaskId,
-        bankNumber: 1,
-      }),
-    );
-  }
-
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerSession(cookieHeader);
   redirectIfUnauthenticated(
@@ -95,6 +68,53 @@ export default async function PracticeExercisePage({
     `/practice/${skill}/${hubId}/exercise`,
     cookieHeader,
   );
+
+  const hub = await fetchPracticeHub(cookieHeader, hubId);
+  const submitConfig = (hub?.submit_config ?? {}) as {
+    type?: string;
+    catalog_number?: number;
+    part?: number;
+    href?: string;
+  };
+
+  // Phase 2: module-targeted hubs open mock L/R/W/S UIs — thin form is fallback only.
+  if (isModuleSubmitTarget(submitConfig)) {
+    if (fromPlan) {
+      redirect(
+        planStepOpenHref({
+          skill,
+          hubId,
+          task: planTask,
+          taskId: planTaskId,
+          bankNumber: hub?.bank_number,
+          catalogNumber: submitConfig.catalog_number,
+          part: submitConfig.part,
+          submitConfig,
+        }),
+      );
+    }
+    const moduleHref = moduleHrefFromSubmitConfig(submitConfig, skill);
+    if (moduleHref) redirect(moduleHref);
+  }
+
+  // Legacy: plan entry without hub config still routes L/R/W/S to mock UI.
+  if (
+    fromPlan &&
+    (skill === "listening" ||
+      skill === "reading" ||
+      skill === "writing" ||
+      skill === "speaking")
+  ) {
+    redirect(
+      planStepOpenHref({
+        skill,
+        hubId,
+        task: planTask,
+        taskId: planTaskId,
+        bankNumber: hub?.bank_number ?? 1,
+      }),
+    );
+  }
 
   const { profile, subscription } = await fetchEntitlementGate(
     cookieHeader,

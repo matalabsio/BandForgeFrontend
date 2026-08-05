@@ -25,7 +25,7 @@ const settingsGroups = [
     title: "Account",
     rows: [
       { label: "Edit Profile", icon: User, href: "#account-form" },
-      { label: "Notification Preferences", icon: Bell, href: "#" },
+      { label: "Notification Preferences", icon: Bell, href: "#notification-preferences" },
       { label: "Language", icon: Globe, value: "English", href: "#" },
     ],
   },
@@ -142,7 +142,7 @@ export function ProfileSettingsHub({
         <SignOutButton className="text-sm font-medium text-[#e5484d] hover:text-[#c9343a]" />
       </div>
 
-      <div id="account-form" className="rounded-2xl border border-border-soft bg-white p-6 shadow-sm">
+      <div id="account-form" className="space-y-6">
         {children}
       </div>
     </div>

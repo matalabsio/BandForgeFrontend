@@ -513,7 +513,7 @@ export function SpeakingPage({
             hubId: planHubId,
             currentTask: current,
             currentTaskId: planTaskId,
-            bankNumber: testNumber === 2 ? 2 : 1,
+            catalogNumber: testNumber,
             preferExercise: true,
             completeHub: shouldCompleteHubForPlanTask("speaking", current),
           });

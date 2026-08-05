@@ -11,7 +11,8 @@ import { ScoresInsightsPanel } from "@/components/scores/scores-insights-panel";
 import { ScoresPageHeader } from "@/components/scores/scores-page-header";
 import { ScoresStatRow } from "@/components/scores/scores-stat-row";
 import { dashboardModuleBands } from "@/components/scores/scores-utils";
-import type { LearningRecommendation, LearningWeakness } from "@/lib/learning-types";
+import type { LearningProfile, LearningRecommendation, LearningWeakness } from "@/lib/learning-types";
+import { ScoresCompletionAnalytics } from "@/components/scores/scores-completion-analytics";
 
 import type { MockSlug } from "@/lib/mock-catalog";
 
@@ -23,6 +24,7 @@ type Props = {
   mockSlug?: MockSlug | null;
   recommendations?: LearningRecommendation[];
   topWeaknesses?: LearningWeakness[];
+  learning?: LearningProfile | null;
 };
 
 export function ScoresExperience({
@@ -33,6 +35,7 @@ export function ScoresExperience({
   mockSlug = null,
   recommendations = [],
   topWeaknesses = [],
+  learning = null,
 }: Props) {
   const router = useRouter();
   const moduleBands = dashboardModuleBands(summary.recent, summary.latest_mock);
@@ -59,6 +62,11 @@ export function ScoresExperience({
         fresh={fresh}
         highlightAttemptId={highlightAttemptId}
         mockSlug={mockSlug}
+      />
+
+      <ScoresCompletionAnalytics
+        learning={learning}
+        streakDays={summary.stats.current_streak ?? 0}
       />
 
       <ScoresStatRow

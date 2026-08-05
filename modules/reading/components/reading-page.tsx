@@ -441,7 +441,8 @@ export function ReadingPage({
         hubId: planHubId,
         currentTask: current,
         currentTaskId: planTaskId,
-        bankNumber: 1,
+        catalogNumber: resolvedTestNumber,
+        part: passage,
         preferExercise: true,
         completeHub: shouldCompleteHubForPlanTask("reading", current),
       });
@@ -450,7 +451,7 @@ export function ReadingPage({
       );
       return true;
     },
-    [fromPlan, planHubId, planTask, planTaskId, push],
+    [fromPlan, planHubId, planTask, planTaskId, passage, push, resolvedTestNumber],
   );
 
   const flushAutosaves = useCallback(

@@ -115,9 +115,11 @@ export async function DashboardPersonalizedSection({
             moduleSummary={learning.module_summary}
             currentBand={learning.current_band}
             targetBand={learning.target_band}
-            overallPlanPct={planPct}
-            embedded
-          />
+          overallPlanPct={planPct}
+          embedded
+          studyPlan={studyPlan}
+          examDate={examDate}
+        />
         </Suspense>
       </DashPageItem>
 
