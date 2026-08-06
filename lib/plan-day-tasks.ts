@@ -123,6 +123,45 @@ export function markCachedPlanTaskDone(taskId: string | null | undefined): void 
   if (changed) writeBucket({ ...bucket, tasks });
 }
 
+type MergeableTaskStatus = "pending" | "done" | "skipped";
+
+/**
+ * Overlay sessionStorage plan-day statuses onto server tasks.
+ * Prefer `done` when either side says done — never downgrade done→pending
+ * from a stale RSC payload after fire-and-forget task patches.
+ */
+export function mergePlanDayStatusesIntoTasks<
+  T extends { id: string; status: MergeableTaskStatus },
+>(tasks: T[]): T[] {
+  const cached = readPlanDayTasks();
+  if (cached.length === 0 || tasks.length === 0) return tasks;
+
+  const byId = new Map(cached.map((row) => [row.id, row.status]));
+  let changed = false;
+  const next = tasks.map((task) => {
+    const cachedStatus = byId.get(task.id);
+    if (!cachedStatus) return task;
+    if (task.status === "done" || task.status === "skipped") return task;
+    if (cachedStatus !== "done") return task;
+    changed = true;
+    return { ...task, status: "done" as const };
+  });
+  return changed ? next : tasks;
+}
+
+/** True when two task lists differ only by per-id status (same length + ids). */
+export function planTaskStatusesDiffer(
+  a: Array<{ id: string; status: string }>,
+  b: Array<{ id: string; status: string }>,
+): boolean {
+  if (a.length !== b.length) return true;
+  const bById = new Map(b.map((t) => [t.id, t.status]));
+  for (const task of a) {
+    if (bById.get(task.id) !== task.status) return true;
+  }
+  return false;
+}
+
 function actionableTasks(): PlanDayTaskCacheRow[] {
   return readPlanDayTasks().filter((t) => t.status !== "skipped");
 }

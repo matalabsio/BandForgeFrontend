@@ -44,6 +44,7 @@ export async function DashboardStatsSection({ cookieHeader, user }: Props) {
         email={user.email}
         avatarUrl={user.avatarUrl}
         streakDays={streak}
+        showReportButton={false}
       />
       {hasAttempts ? (
         <>

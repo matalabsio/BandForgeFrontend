@@ -90,14 +90,10 @@ export function releaseCheckoutOpeningLock(): void {
 export function shouldResumeDiagnosticCheckout(): boolean {
   if (typeof window === "undefined") return false;
   try {
+    // Only auto-resume when the URL explicitly asks for checkout. A stale
+    // pending flag alone must not blank /diagnostic/results after speaking.
     const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") === "1") return true;
-    const pending = peekPendingCheckoutResume();
-    if (!pending) return false;
-    return (
-      pending.planSlug === FULL_SKILL_PROGRAM_SLUG ||
-      pending.returnTo.includes("checkout=1")
-    );
+    return params.get("checkout") === "1";
   } catch {
     return false;
   }

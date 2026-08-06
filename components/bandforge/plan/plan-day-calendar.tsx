@@ -148,6 +148,7 @@ function DayHeader({
               status === "in_progress" && "bg-amber-400/20 text-amber-900",
               status === "locked" && "bg-ink/5 text-ink/45",
               status === "open" && "bg-white/50 text-ink/60",
+              status === "ahead" && "bg-cyan/20 text-teal",
             )}
           >
             {dayStatusLabel(status)}
@@ -462,7 +463,7 @@ export function PlanDayCalendar({
   }, [activeDate, weeks]);
 
   const activeStatus = activeDay
-    ? dayStatus(activeDay, today, resolvedExam)
+    ? dayStatus(activeDay, today, resolvedExam, weeks)
     : null;
 
   if (!open) return null;
@@ -571,7 +572,7 @@ export function PlanDayCalendar({
 
             {cells.map((cell) => {
               const status = cell.day
-                ? dayStatus(cell.day, today, resolvedExam)
+                ? dayStatus(cell.day, today, resolvedExam, weeks)
                 : null;
               const focus = cell.day ? dayFocusSummary(cell.day) : null;
               const hasPlan = Boolean(cell.day);
@@ -665,6 +666,12 @@ export function PlanDayCalendar({
                       aria-hidden
                     />
                   ) : null}
+                  {status === "ahead" ? (
+                    <span
+                      className="pointer-events-none absolute right-1.5 top-1.5 size-1.5 rounded-full bg-cyan"
+                      aria-hidden
+                    />
+                  ) : null}
                 </button>
               );
             })}
@@ -724,7 +731,12 @@ export function PlanDayCalendar({
                 status={activeStatus}
                 locked={
                   activeDay
-                    ? !isDayAccessible(activeDay.date, today, resolvedExam)
+                    ? !isDayAccessible(
+                        activeDay.date,
+                        today,
+                        resolvedExam,
+                        weeks,
+                      )
                     : false
                 }
                 emptyDate={activeDate}

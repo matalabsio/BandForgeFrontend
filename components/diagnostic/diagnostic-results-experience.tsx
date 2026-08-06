@@ -44,7 +44,15 @@ function bandLabel(
 ): string {
   if (pendingHuman) return "Pending";
   if (band == null || band <= 0) return "—";
-  return band.toFixed(1);
+  const n = Number(band);
+  if (!Number.isFinite(n) || n <= 0) return "—";
+  return n.toFixed(1);
+}
+
+function formatTargetBand(band: number | null | undefined): string {
+  const n = Number(band);
+  if (!Number.isFinite(n) || n <= 0) return "7.0";
+  return n.toFixed(1);
 }
 
 function ResultsSkeleton() {
@@ -299,7 +307,7 @@ export function DiagnosticResultsExperience() {
                       We&apos;re finishing examiner review on remaining skills.
                       Your target is{" "}
                       <strong className="font-bold text-[#0B1B33]">
-                        Band {targetBand.toFixed(1)}
+                        Band {formatTargetBand(targetBand)}
                       </strong>
                       .
                     </>
@@ -311,7 +319,7 @@ export function DiagnosticResultsExperience() {
                       </strong>
                       . Your target is{" "}
                       <strong className="font-bold text-[#0B1B33]">
-                        Band {targetBand.toFixed(1)}
+                        Band {formatTargetBand(targetBand)}
                       </strong>{" "}
                       — here&apos;s exactly what&apos;s holding you back, skill by
                       skill, and the plan to close it.

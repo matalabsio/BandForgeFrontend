@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   adjacentPlanDayTask,
   ensurePlanDayTasksCached,
+  markCachedPlanTaskDone,
   nextPendingPlanDayTask,
   planTaskShortLabel,
   resolveTodayTaskHrefFromCache,
@@ -13,6 +14,19 @@ import {
 import { SectionResultsCtaBar } from "@/modules/shared/components/section-results";
 
 export const PLAN_TODAY_HREF = "/study-plan/today";
+
+function goToPlanHref(
+  router: ReturnType<typeof useRouter>,
+  href: string,
+  taskId: string | null,
+) {
+  // Defensive: results already ran ensurePlanDayTasksCached, but soft-nav to
+  // Today must see this task as done in sessionStorage before TodaysPlanPanel mounts.
+  if (href === PLAN_TODAY_HREF) {
+    markCachedPlanTaskDone(taskId);
+  }
+  router.push(href);
+}
 
 export function usePlanResultsNav(plan: PlanResultContext | null) {
   const taskId = plan?.taskId ?? null;
@@ -101,7 +115,7 @@ export function PlanResultsCtaBar({ plan, fallback = null }: Props) {
     <SectionResultsCtaBar
       layout="split"
       primaryLabel={nav.continueLabel}
-      onPrimary={() => router.push(nav.continueHref)}
+      onPrimary={() => goToPlanHref(router, nav.continueHref, nav.taskId)}
       primaryLoading={nav.loading}
       primaryDisabled={nav.loading}
       secondaryLabel={
@@ -109,7 +123,7 @@ export function PlanResultsCtaBar({ plan, fallback = null }: Props) {
       }
       onSecondary={
         nav.showSecondaryBack
-          ? () => router.push(nav.todayHref)
+          ? () => goToPlanHref(router, nav.todayHref, nav.taskId)
           : undefined
       }
     />

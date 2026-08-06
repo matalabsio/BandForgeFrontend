@@ -498,14 +498,10 @@ export function SpeakingExamFlow({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [footerDisabled, handleNextQuestion]);
 
-  if (!current) {
-    return (
-      <p className="text-sm text-[#5A6B82]">No speaking questions configured.</p>
-    );
-  }
-
-  const cueCard = isPart2 ? parseSpeakingCueCard(current.prompt) : null;
-  const recordPromptText = cueCard?.title ?? current.prompt;
+  const cueCard = current && isPart2 ? parseSpeakingCueCard(current.prompt) : null;
+  const recordPromptText = current
+    ? (cueCard?.title ?? current.prompt)
+    : "";
   const recordPromptPlan = useMemo(
     () =>
       planTimedTextType(
@@ -514,6 +510,12 @@ export function SpeakingExamFlow({
       ),
     [recordPromptText],
   );
+
+  if (!current) {
+    return (
+      <p className="text-sm text-[#5A6B82]">No speaking questions configured.</p>
+    );
+  }
 
   const content = (
     <div className="flex flex-col gap-5">
@@ -537,7 +539,7 @@ export function SpeakingExamFlow({
             partLabel={partLabel}
             prompt={current.prompt}
             videoUrl={current.videoUrl}
-            passiveListening
+            examinerStatus={subPhase === "ready" ? "CAPTURED" : "LISTENING"}
           />
           <div
             className={cn(
@@ -748,6 +750,7 @@ export function SpeakingExamFlow({
         partTotalSteps={currentPartSteps.length}
         part={current.part}
         partLabel={partLabel}
+        showLogo={!isDiagnostic}
       />
       <div
         className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]"

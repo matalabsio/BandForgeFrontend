@@ -11,6 +11,8 @@ type Props = {
   part: 1 | 2 | 3;
   partLabel: string;
   className?: string;
+  /** Hide brand mark when the parent shell already shows BandForge. */
+  showLogo?: boolean;
 };
 
 export function SpeakingProgressHeader({
@@ -21,16 +23,24 @@ export function SpeakingProgressHeader({
   part,
   partLabel,
   className,
+  showLogo = true,
 }: Props) {
   return (
     <header
       className={cn("shrink-0 border-b border-navy/10 bg-white px-4 py-3 sm:px-6 lg:px-10 lg:py-5", className)}
     >
       <div className="mx-auto w-full max-w-[1200px]">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex shrink-0 items-center" aria-label="BandForge">
-            <BandForgeLogoMark size="sm" />
-          </div>
+        <div
+          className={cn(
+            "flex items-center gap-3",
+            showLogo ? "justify-between" : "justify-end",
+          )}
+        >
+          {showLogo ? (
+            <div className="flex shrink-0 items-center" aria-label="BandForge">
+              <BandForgeLogoMark size="sm" />
+            </div>
+          ) : null}
           <p className="text-right font-mono text-[10px] tracking-[0.07em] text-[#5A6B82] uppercase sm:text-xs">
             Part {part} ·{" "}
             {part === 2 ? "Cue card" : `Question ${partStepIndex + 1} of ${partTotalSteps}`}

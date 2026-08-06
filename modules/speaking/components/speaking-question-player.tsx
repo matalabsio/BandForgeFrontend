@@ -42,7 +42,7 @@ function ExaminerPanel({
   playKey?: string;
   onEnded?: () => void;
   active: boolean;
-  status: "ASKING" | "LISTENING" | "PREPARING";
+  status: "ASKING" | "LISTENING" | "PREPARING" | "CAPTURED";
   compact?: boolean;
   onDuration?: (seconds: number) => void;
 }) {
@@ -444,21 +444,22 @@ export function SpeakingQuestionCard({
   partLabel,
   videoUrl,
   variant = "mock",
-  passiveListening = false,
+  examinerStatus = "LISTENING",
 }: {
   prompt: string;
   partLabel: string;
   /** When present, video is primary — do not show examiner text. */
   videoUrl?: string;
   variant?: "mock" | "diagnostic";
-  passiveListening?: boolean;
+  /** Examiner pill — LISTENING while recording, CAPTURED after save. */
+  examinerStatus?: "ASKING" | "LISTENING" | "PREPARING" | "CAPTURED";
 }) {
   return (
     <div className={cn("flex h-full min-w-0", variant === "diagnostic" && "min-w-0")}>
       <ExaminerPanel
         videoUrl={videoUrl}
         active={false}
-        status={passiveListening ? "LISTENING" : "PREPARING"}
+        status={examinerStatus}
       />
       <span className="sr-only">
         {partLabel}. {prompt}

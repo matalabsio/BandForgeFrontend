@@ -167,7 +167,6 @@ export function DiagnosticPlanRevealExperience() {
   const [hasSubscription, setHasSubscription] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planPrice, setPlanPrice] = useState("—");
-  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [overlay, setOverlay] = useState<OverlayState>(null);
   const [statusModal, setStatusModal] = useState<StatusModal>(null);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(
@@ -203,16 +202,18 @@ export function DiagnosticPlanRevealExperience() {
 
     (async () => {
       try {
-        const [{ plans, payments_enabled: enabled }, sub, session] =
-          await Promise.all([
-            getPlans(),
-            getSubscription().catch(() => null),
-            ensureSession().catch(() => null),
-          ]);
+        const [plansRes, sub, session] = await Promise.all([
+          getPlans().catch(() => null),
+          getSubscription().catch(() => null),
+          ensureSession().catch(() => null),
+        ]);
 
-        const program = plans.find((p) => p.slug === FULL_SKILL_PROGRAM_SLUG);
-        if (program) setPlanPrice(formatPlanPriceInr(program.amount));
-        setPaymentsEnabled(enabled);
+        if (plansRes) {
+          const program = plansRes.plans.find(
+            (p) => p.slug === FULL_SKILL_PROGRAM_SLUG,
+          );
+          if (program) setPlanPrice(formatPlanPriceInr(program.amount));
+        }
         const subscribed = hasFullSkillProgram(sub);
         setHasSubscription(subscribed);
         if (subscribed) {
@@ -442,7 +443,7 @@ export function DiagnosticPlanRevealExperience() {
               bundle={FULL_SKILL_PROGRAM}
               price={planPrice}
               onCheckout={handleCheckout}
-              checkoutDisabled={hasSubscription || !paymentsEnabled}
+              checkoutDisabled={hasSubscription}
               checkoutLoading={checkoutBusy}
             />
 

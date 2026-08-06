@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   BookIcon,
   HeadphonesIcon,
@@ -27,10 +28,12 @@ import {
   SkillProgressStepper,
   type SkillStepperStep,
 } from "@/components/bandforge/dashboard/skill-progress-stepper";
-import { DailyImprovementsPanel } from "@/components/bandforge/plan/daily-improvements-panel";
+import { DailyImprovementsPanel, DoneChecklistDisclosure } from "@/components/bandforge/plan/daily-improvements-panel";
 import { PrefetchHrefs } from "@/components/bandforge/prefetch-hrefs";
 import { DailyGrowthReportModal } from "@/components/bandforge/plan/daily-growth-report-modal";
+import { OPEN_DAILY_REPORT_EVENT } from "@/components/bandforge/dashboard/dashboard-top-header";
 import { CatchUpDaysModal } from "@/components/bandforge/plan/catch-up-days-modal";
+import { getLearningProfile } from "@/lib/learning-api";
 import { localPlanDateKey } from "@/lib/plan-step-completion";
 import type {
   LearningStudyPlan,
@@ -38,8 +41,16 @@ import type {
   SkillHubProgress,
 } from "@/lib/learning-types";
 import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
-import { cachePlanDayTasks } from "@/lib/plan-day-tasks";
-import { getOldestCatchUpTarget } from "@/lib/study-plan-calendar";
+import {
+  cachePlanDayTasks,
+  mergePlanDayStatusesIntoTasks,
+  planTaskStatusesDiffer,
+} from "@/lib/plan-day-tasks";
+import {
+  findPlanDay,
+  getNextAheadTarget,
+  getOldestCatchUpTarget,
+} from "@/lib/study-plan-calendar";
 import { cn } from "@/lib/utils";
 import type { ComponentType, SVGProps } from "react";
 
@@ -500,18 +511,99 @@ export function TodaysPlanPanel({
   studyPlan = null,
   examDate = null,
 }: Props) {
-  const [tasks, setTasks] = useState(() => withClientKeys(initialTasks));
+  const router = useRouter();
+  const [tasks, setTasks] = useState(() =>
+    withClientKeys(mergePlanDayStatusesIntoTasks(initialTasks)),
+  );
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [catchUpOpen, setCatchUpOpen] = useState(false);
   const wasAllDoneRef = useRef(false);
   const reportShownRef = useRef(false);
   const catchUpOfferedRef = useRef(false);
+  const refreshedOnceRef = useRef(false);
+  const reconcileInFlightRef = useRef(false);
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
 
-  // Keep checklist in sync when server profile refreshes after task patches.
+  const applyTaskList = (next: LearningStudyTask[]) => {
+    const merged = mergePlanDayStatusesIntoTasks(next);
+    const withKeys = withClientKeys(merged);
+    setTasks((prev) =>
+      planTaskStatusesDiffer(prev, withKeys) || prev.length !== withKeys.length
+        ? withKeys
+        : prev,
+    );
+    cachePlanDayTasks(merged);
+    return merged;
+  };
+
+  // Hydrate from sessionStorage immediately when server props arrive (covers soft-nav
+  // with stale RSC while results already marked tasks done in bf-plan-day-tasks).
   useEffect(() => {
-    setTasks(withClientKeys(initialTasks));
+    applyTaskList(initialTasks);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- applyTaskList is stable enough via refs
   }, [initialTasks]);
+
+  // Network reconcile + visibility/pageshow so returning from results opens the report
+  // without a hard refresh.
+  useEffect(() => {
+    let cancelled = false;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const reconcile = async (opts?: { allowRefresh?: boolean }) => {
+      if (reconcileInFlightRef.current) return;
+      reconcileInFlightRef.current = true;
+      try {
+        const profile = await getLearningProfile();
+        if (cancelled) return;
+        const incoming = profile.todays_tasks ?? [];
+        if (incoming.length === 0) return;
+
+        const before = tasksRef.current;
+        const merged = applyTaskList(incoming);
+        const changed = planTaskStatusesDiffer(before, merged);
+
+        if (
+          opts?.allowRefresh !== false &&
+          !refreshedOnceRef.current &&
+          changed
+        ) {
+          refreshedOnceRef.current = true;
+          router.refresh();
+        }
+      } catch {
+        // Keep cache-merged state — degraded but usable for report allDone.
+      } finally {
+        reconcileInFlightRef.current = false;
+      }
+    };
+
+    const scheduleReconcile = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        void reconcile({ allowRefresh: true });
+      }, 300);
+    };
+
+    void reconcile({ allowRefresh: true });
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") scheduleReconcile();
+    };
+    const onPageShow = () => scheduleReconcile();
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", onPageShow);
+
+    return () => {
+      cancelled = true;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + router identity
+  }, [router]);
 
   // Cache ordered day tasks for mid-exam next/prev without re-fetching profile.
   useEffect(() => {
@@ -575,6 +667,75 @@ export function TodaysPlanPanel({
       fallbackHref: catchUpTarget.task.href,
     });
   }, [catchUpTarget]);
+
+  const aheadTarget = useMemo(() => {
+    if (!studyPlan?.weeks?.length) return null;
+    // Catch-up backlog blocks practice-ahead (strict day-wise progression).
+    if (catchUpTarget && catchUpTarget.missed.length > 0) return null;
+    return getNextAheadTarget(
+      studyPlan.weeks,
+      localPlanDateKey(),
+      examDate ?? studyPlan.exam_date ?? null,
+    );
+  }, [studyPlan, examDate, catchUpTarget]);
+
+  const aheadHref = useMemo(() => {
+    if (!aheadTarget?.task) return null;
+    return resolveTodayTaskHref({
+      skill: aheadTarget.task.module,
+      hubId: aheadTarget.task.hub_id,
+      taskType: aheadTarget.task.task_type,
+      taskId: aheadTarget.task.id,
+      fallbackHref: aheadTarget.task.href,
+    });
+  }, [aheadTarget]);
+
+  const donePrimaryAction = useMemo(() => {
+    const missedCount = catchUpTarget?.missed.length ?? 0;
+    if (missedCount > 0) {
+      return {
+        href: catchUpHref,
+        label:
+          missedCount === 1
+            ? "Catch up on previous day"
+            : `Catch up on ${missedCount} previous days`,
+        hint: "Finish previous plan days before unlocking tomorrow.",
+        catchUpIsPrimary: true as const,
+        onClick: () => {
+          if (!studyPlan?.weeks?.length || !catchUpTarget) return;
+          const day = findPlanDay(studyPlan.weeks, catchUpTarget.date);
+          if (day?.tasks?.length) cachePlanDayTasks(day.tasks);
+        },
+      };
+    }
+    if (aheadHref && aheadTarget) {
+      return {
+        href: aheadHref,
+        label: "Start tomorrow's plan",
+        hint: "You're clear through today — practice tomorrow early to advance hubs toward your full mock.",
+        catchUpIsPrimary: false as const,
+        onClick: () => {
+          if (!studyPlan?.weeks?.length) return;
+          const day = findPlanDay(studyPlan.weeks, aheadTarget.date);
+          if (day?.tasks?.length) cachePlanDayTasks(day.tasks);
+        },
+      };
+    }
+    return {
+      href: continuePractice.href,
+      label: continuePractice.label,
+      hint: undefined as string | undefined,
+      catchUpIsPrimary: false as const,
+      onClick: undefined as (() => void) | undefined,
+    };
+  }, [
+    catchUpTarget,
+    catchUpHref,
+    aheadHref,
+    aheadTarget,
+    continuePractice,
+    studyPlan,
+  ]);
 
   /** On dashboard when day is done: check-in is primary; checklist is optional. */
   const compactDone = embedded && allDone;
@@ -662,26 +823,22 @@ export function TodaysPlanPanel({
   );
 
   const doneChecklistSlot = (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[13px] text-muted">
-          {compactDone
-            ? "Task checklist available for reference."
-            : "Today's completed checklist"}
-        </p>
-        {compactDone ? (
-          <button
-            type="button"
-            onClick={() => setChecklistOpen((v) => !v)}
-            className="cursor-pointer rounded-lg border border-ink/10 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-teal transition-colors hover:border-cyan/30 hover:bg-cyan-soft/40"
-          >
-            {checklistOpen ? "Hide checklist" : "Show checklist"}
-          </button>
-        ) : null}
-      </div>
-      {(!compactDone || checklistOpen) && hasTasks ? skillChecklistGrid : null}
-    </div>
+    <DoneChecklistDisclosure
+      open={checklistOpen}
+      onToggle={() => setChecklistOpen((v) => !v)}
+      hasTasks={hasTasks}
+    >
+      {skillChecklistGrid}
+    </DoneChecklistDisclosure>
   );
+
+  useEffect(() => {
+    const onOpenReport = () => setReportOpen(true);
+    window.addEventListener(OPEN_DAILY_REPORT_EVENT, onOpenReport);
+    return () => {
+      window.removeEventListener(OPEN_DAILY_REPORT_EVENT, onOpenReport);
+    };
+  }, []);
 
   useEffect(() => {
     const storageKey = `bf-daily-report-shown:${
@@ -805,10 +962,13 @@ export function TodaysPlanPanel({
           targetBand={targetBand}
           overallPlanPct={overallPlanPct}
           embedded={embedded}
-          nextActionHref={continuePractice.href}
-          nextActionLabel={continuePractice.label}
+          nextActionHref={donePrimaryAction.href}
+          nextActionLabel={donePrimaryAction.label}
+          nextActionHint={donePrimaryAction.hint}
+          onNextActionClick={donePrimaryAction.onClick}
           checklist={doneChecklistSlot}
           missedDayCount={catchUpTarget?.missed.length ?? 0}
+          catchUpIsPrimary={donePrimaryAction.catchUpIsPrimary}
           onOpenCatchUp={() => setCatchUpOpen(true)}
         />
       ) : (
@@ -889,18 +1049,6 @@ export function TodaysPlanPanel({
           )}
         </DashReveal>
       )}
-
-      {allDone ? (
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setReportOpen(true)}
-            className="cursor-pointer rounded-lg border border-ink/10 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-teal transition-colors hover:border-cyan/30 hover:bg-cyan-soft/40"
-          >
-            View report card
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

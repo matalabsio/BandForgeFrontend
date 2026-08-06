@@ -2,24 +2,49 @@ import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 
 const PULSE = "animate-pulse bg-ink/[0.06]";
 
-/** Lightweight main-area placeholders inside the app shell. */
-function DashboardShellMainSkeleton() {
+/** Mirrors DashboardTopHeader (greeting card + streak / report / account). */
+function DashboardTopHeaderSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className={`h-14 rounded-2xl ${PULSE}`} />
-      <div className={`h-40 rounded-[20px] ${PULSE}`} />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className={`h-24 rounded-[20px] ${PULSE}`} />
-        <div className={`h-24 rounded-[20px] ${PULSE}`} />
+    <div className="rounded-[22px] border border-ink/[0.06] bg-white/80 p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 space-y-2">
+          <div className={`h-3 w-20 rounded ${PULSE}`} />
+          <div className={`h-8 w-40 max-w-full rounded-lg sm:h-9 sm:w-48 ${PULSE}`} />
+          <div className={`h-4 w-52 max-w-[90%] rounded ${PULSE}`} />
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className={`h-10 w-[5.5rem] rounded-xl ${PULSE}`} />
+          <div className={`h-10 w-[7rem] rounded-xl ${PULSE}`} />
+          <div className={`size-10 rounded-xl ${PULSE}`} />
+          <div className={`h-10 w-10 rounded-xl sm:w-32 ${PULSE}`} />
+        </div>
       </div>
-      <div className={`h-48 rounded-[20px] ${PULSE}`} />
     </div>
   );
 }
 
 /**
- * Full app shell loading state — mirrors DashboardShell dimensions (sidebar closed).
- * Used during (app) layout load and bootstrap session restore.
+ * Main-area placeholders inside the app shell (no outer padding — shell provides it).
+ * Shaped like dashboard: top header → hero/paywall → section cards.
+ */
+function DashboardShellMainSkeleton() {
+  return (
+    <div className="space-y-6">
+      <DashboardTopHeaderSkeleton />
+      <div className={`h-52 rounded-[22px] sm:h-56 ${PULSE}`} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className={`h-36 rounded-2xl ${PULSE}`} />
+        <div className={`h-36 rounded-2xl ${PULSE}`} />
+      </div>
+      <div className={`h-40 rounded-[20px] ${PULSE}`} />
+    </div>
+  );
+}
+
+/**
+ * Full app shell loading state — mirrors DashboardShell with hideHeader
+ * (dashboard / scores chrome: slim top bar + logo; profile controls live in content).
+ * Used during auth bootstrap / continue before (app) layout mounts.
  */
 export function DashboardAppShellSkeleton() {
   return (
@@ -30,26 +55,15 @@ export function DashboardAppShellSkeleton() {
       <span className="sr-only">Loading BandForge…</span>
 
       <div className="flex min-h-dvh flex-col">
-        <header className="sticky top-0 z-20 border-b border-ink/8 bg-white/95 backdrop-blur-md">
-          <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-            <div
-              className={`size-10 shrink-0 rounded-xl lg:hidden ${PULSE}`}
-              aria-hidden
-            />
-            <div
-              className={`hidden size-10 shrink-0 rounded-xl lg:block ${PULSE}`}
-              aria-hidden
-            />
-            <BandForgeLogoLink href="/dashboard" size="sm" className="min-w-0 flex-1" priority />
-            <div className="flex shrink-0 items-center gap-2">
-              <div className={`size-9 rounded-full ${PULSE}`} aria-hidden />
-              <div className={`size-9 rounded-full ${PULSE}`} aria-hidden />
-              <div className={`h-9 w-16 rounded-xl ${PULSE}`} aria-hidden />
-            </div>
-          </div>
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-ink/8 bg-white/95 px-4 backdrop-blur-md sm:px-6">
+          <div
+            className={`size-10 shrink-0 rounded-xl border border-ink/10 ${PULSE}`}
+            aria-hidden
+          />
+          <BandForgeLogoLink href="/dashboard" size="sm" className="min-w-0" priority />
         </header>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-20 sm:px-6 sm:py-8 lg:px-8 lg:pb-10">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-20 sm:px-6 lg:px-8 lg:py-8 lg:pb-10">
           <DashboardShellMainSkeleton />
         </main>
       </div>
@@ -72,17 +86,16 @@ export function DashboardAppShellSkeleton() {
   );
 }
 
-/** Loading placeholder for dashboard and profile RSC routes. */
+/** Loading placeholder for dashboard and profile RSC routes (inside DashboardShell). */
 export function DashboardContentSkeleton() {
   return (
-    <div className="bf-dash-enter mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-      <div className={`h-8 w-48 rounded-lg ${PULSE}`} />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className={`h-24 rounded-[20px] ${PULSE}`} />
-        ))}
+    <div className="bf-dash-enter space-y-6">
+      <DashboardTopHeaderSkeleton />
+      <div className={`h-52 rounded-[22px] sm:h-56 ${PULSE}`} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className={`h-36 rounded-2xl ${PULSE}`} />
+        <div className={`h-36 rounded-2xl ${PULSE}`} />
       </div>
-      <div className={`h-64 rounded-[20px] ${PULSE}`} />
       <div className={`h-40 rounded-[20px] ${PULSE}`} />
     </div>
   );

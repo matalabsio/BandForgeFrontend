@@ -46,6 +46,7 @@ const STATUS_CHIP: Record<DayAccessStatus, string> = {
   completed: "bg-emerald-50 text-emerald-700",
   in_progress: "bg-amber-50 text-amber-800",
   open: "bg-ink/5 text-ink/55",
+  ahead: "bg-cyan-soft text-teal",
 };
 
 type Props = {
@@ -238,9 +239,22 @@ export function StudyPlanExperience({ profile }: Props) {
           This week&apos;s focus
         </p>
         <p className="font-display mt-2 text-base font-bold text-navy">
-          {plan.weekly_focus ||
-            activeWeek?.focus ||
-            "Complete your first practice to personalize this plan."}
+          {(() => {
+            const raw =
+              plan.weekly_focus ||
+              activeWeek?.focus ||
+              "Complete your first practice to personalize this plan.";
+            const stripped = raw.replace(/^Focus:\s*/i, "").trim();
+            const skillMatch = /^(Listening|Reading|Writing|Speaking)(?:\s*&\s*(Listening|Reading|Writing|Speaking))?$/i.exec(
+              stripped,
+            );
+            if (skillMatch) {
+              return skillMatch[2]
+                ? `Prioritise ${skillMatch[1]} & ${skillMatch[2]}`
+                : `Strengthen ${skillMatch[1]}`;
+            }
+            return stripped;
+          })()}
         </p>
       </article>
 
@@ -324,7 +338,7 @@ export function StudyPlanExperience({ profile }: Props) {
 
       <div className="flex flex-wrap gap-2">
         {visibleDays.map((day) => {
-          const status = dayStatus(day, today, examDate);
+          const status = dayStatus(day, today, examDate, plan.weeks);
           const selected = selectedDay?.date === day.date;
           return (
             <button
@@ -363,15 +377,19 @@ export function StudyPlanExperience({ profile }: Props) {
             <span
               className={cn(
                 "rounded-full px-2.5 py-0.5 text-[0.6875rem] font-semibold",
-                STATUS_CHIP[dayStatus(selectedDay, today, examDate)],
+                STATUS_CHIP[dayStatus(selectedDay, today, examDate, plan.weeks)],
               )}
             >
-              {dayStatusLabel(dayStatus(selectedDay, today, examDate))}
+              {dayStatusLabel(
+                dayStatus(selectedDay, today, examDate, plan.weeks),
+              )}
             </span>
           </div>
           <DayTaskList
             day={selectedDay}
-            locked={!isDayAccessible(selectedDay.date, today, examDate)}
+            locked={
+              !isDayAccessible(selectedDay.date, today, examDate, plan.weeks)
+            }
             pending={pending}
             onToggle={toggleTask}
           />

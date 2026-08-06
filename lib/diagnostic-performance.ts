@@ -162,15 +162,22 @@ export function holdingBackNarrative(
     .filter((k) => !weakest.includes(k))
     .map((k) => SKILL_LABELS[k]);
 
-  const reachBand = Math.min(targetBand, Math.max(...ranked.map((r) => r.band)) + 1.5);
-  const reachLabel = `${reachBand.toFixed(1).replace(/\.0$/, "")}+ overall`;
+  const reachBand =
+    ranked.length === 0
+      ? targetBand
+      : Math.min(targetBand, Math.max(...ranked.map((r) => r.band)) + 1.5);
+  const reachLabel = `${Number(reachBand).toFixed(1).replace(/\.0$/, "")}+ overall`;
 
   let narrative: string;
 
   if (weakest.length >= 2 && strongLabels.length >= 1) {
     narrative = `Your ${weakLabels[0]} and ${weakLabels[1]} are roughly a full band below your ${strongLabels.join(" and ")}, and they're the two skills capping your overall result. In ${weakLabels[1]}, hesitation and limited range cost you fluency marks; in ${weakLabels[0]}, task response and cohesion are the gaps. Close these two and a ${reachLabel} is well within reach.`;
   } else if (weakest.length === 1) {
-    narrative = `Your ${weakLabels[0]} is the main skill holding your overall band back. Focused practice here could close your gap to Band ${targetBand.toFixed(1)}.`;
+    const safeTarget = Number(targetBand);
+    const targetLabel = Number.isFinite(safeTarget)
+      ? safeTarget.toFixed(1)
+      : "7.0";
+    narrative = `Your ${weakLabels[0]} is the main skill holding your overall band back. Focused practice here could close your gap to Band ${targetLabel}.`;
   } else {
     narrative = `You're building a solid foundation across all four skills. A ${reachLabel} is well within reach with consistent practice.`;
   }

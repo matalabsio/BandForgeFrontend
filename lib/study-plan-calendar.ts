@@ -4,24 +4,75 @@ import type {
   LearningStudyWeek,
 } from "@/lib/learning-types";
 
+/** Max future calendar days unlocked after the full prefix through today is done. */
+export const PLAN_AHEAD_MAX_DAYS = 1;
+
 export type DayAccessStatus =
   | "locked"
   | "today"
   | "completed"
   | "in_progress"
-  | "open";
+  | "open"
+  | "ahead";
 
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Add N calendar days to a YYYY-MM-DD key (local noon to avoid DST edge cases). */
+export function addCalendarDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return localIso(d);
+}
+
+function countableTasks(day: LearningStudyDay) {
+  return day.tasks.filter((t) => t.status !== "skipped");
+}
+
+/** Empty / missing day counts as complete (nothing left to do). */
+export function isPlanDayFullyComplete(
+  day: LearningStudyDay | null | undefined,
+): boolean {
+  if (!day) return true;
+  const tasks = countableTasks(day);
+  if (tasks.length === 0) return true;
+  return tasks.every((t) => t.status === "done");
+}
+
+/** Every plan day strictly before `date` is fully complete. */
+export function areAllPriorPlanDaysComplete(
+  weeks: LearningStudyWeek[],
+  date: string,
+): boolean {
+  for (const day of flattenPlanDays(weeks)) {
+    if (day.date >= date) continue;
+    if (!isPlanDayFullyComplete(day)) return false;
+  }
+  return true;
+}
+
+/**
+ * Sequential day access:
+ * - past / today: open (catch-up / today work), unless after exam
+ * - future: only within +PLAN_AHEAD_MAX_DAYS, and only when all prior plan days
+ *   (including today) are complete
+ */
 export function isDayAccessible(
   date: string,
   today: string,
   examDate: string | null | undefined,
+  weeks?: LearningStudyWeek[],
 ): boolean {
-  if (date > today) return false;
   if (examDate && date > examDate) return false;
+  if (date <= today) return true;
+
+  if (date > addCalendarDays(today, PLAN_AHEAD_MAX_DAYS)) return false;
+  if (!weeks) return false;
+
+  const todayDay = findPlanDay(weeks, today);
+  if (!isPlanDayFullyComplete(todayDay)) return false;
+  if (!areAllPriorPlanDaysComplete(weeks, date)) return false;
   return true;
 }
 
@@ -32,17 +83,14 @@ export function isDayAfterExam(
   return Boolean(examDate && date > examDate);
 }
 
-function countableTasks(day: LearningStudyDay) {
-  return day.tasks.filter((t) => t.status !== "skipped");
-}
-
 export function dayStatus(
   day: LearningStudyDay,
   today: string,
   examDate?: string | null,
+  weeks?: LearningStudyWeek[],
 ): DayAccessStatus {
   if (isDayAfterExam(day.date, examDate)) return "locked";
-  if (!isDayAccessible(day.date, today, examDate)) return "locked";
+  if (!isDayAccessible(day.date, today, examDate, weeks)) return "locked";
   if (day.date === today) {
     const tasks = countableTasks(day);
     if (tasks.length > 0 && tasks.every((t) => t.status === "done")) {
@@ -53,10 +101,11 @@ export function dayStatus(
   }
 
   const tasks = countableTasks(day);
-  if (tasks.length === 0) return "open";
+  const isAhead = day.date > today;
+  if (tasks.length === 0) return isAhead ? "ahead" : "open";
   if (tasks.every((t) => t.status === "done")) return "completed";
   if (tasks.some((t) => t.status === "done")) return "in_progress";
-  return "open";
+  return isAhead ? "ahead" : "open";
 }
 
 export type MissedDay = {
@@ -75,7 +124,7 @@ export function countMissedDays(
   for (const week of weeks) {
     for (const day of week.days) {
       if (day.date >= today) continue;
-      if (!isDayAccessible(day.date, today, examDate)) continue;
+      if (!isDayAccessible(day.date, today, examDate, weeks)) continue;
       const tasks = countableTasks(day);
       if (tasks.length === 0) continue;
       const incomplete = tasks.filter((t) => t.status !== "done").length;
@@ -102,6 +151,8 @@ export function dayStatusLabel(status: DayAccessStatus): string {
       return "Completed";
     case "in_progress":
       return "In progress";
+    case "ahead":
+      return "Ahead";
     default:
       return "Open";
   }
@@ -238,6 +289,34 @@ export function getOldestCatchUpTarget(
   if (!incomplete) return null;
 
   return { missed, date, task: incomplete };
+}
+
+export type AheadTarget = {
+  date: string;
+  task: LearningStudyTask;
+};
+
+/**
+ * Nearest unlocked future day’s first incomplete task.
+ * Null unless sequential prefix through today is clear and tomorrow is in plan.
+ */
+export function getNextAheadTarget(
+  weeks: LearningStudyWeek[],
+  today: string,
+  examDate?: string | null,
+): AheadTarget | null {
+  const tomorrow = addCalendarDays(today, 1);
+  if (!isDayAccessible(tomorrow, today, examDate, weeks)) return null;
+
+  const day = findPlanDay(weeks, tomorrow);
+  if (!day) return null;
+
+  const incomplete = sortPlanTasks(countableTasks(day)).find(
+    (t) => t.status !== "done",
+  );
+  if (!incomplete) return null;
+
+  return { date: tomorrow, task: incomplete };
 }
 
 export type CalendarCell = {

@@ -58,6 +58,7 @@ export function DashboardExperience({
         email={email}
         avatarUrl={avatarUrl}
         streakDays={streak}
+        showReportButton={false}
       />
 
       {hasAttempts ? (

@@ -110,17 +110,26 @@ function ReadingQuestionRow({
 }
 
 function PassageContent({ pack }: { pack: DiagnosticPack }) {
+  const title = pack.reading.title ?? "Reading Passage";
+  const passage = stripLeadingPassageTitle(pack.reading.passage, title);
   return (
     <>
       <p className="mb-2 font-mono text-[11px] tracking-wider text-teal uppercase lg:mb-2.5">
         Passage 1
       </p>
       <h2 className="mb-4 break-words font-display text-lg font-bold tracking-tight text-navy sm:text-[19px] lg:mb-5 lg:text-[27px] lg:leading-tight">
-        {pack.reading.title ?? "Reading Passage"}
+        {title}
       </h2>
-      <DiagnosticPassageText text={pack.reading.passage} />
+      <DiagnosticPassageText text={passage} />
     </>
   );
+}
+
+/** Pack passage often repeats the title as the first line — keep a single heading. */
+function stripLeadingPassageTitle(passage: string, title: string): string {
+  const trimmed = passage.trimStart();
+  if (!title || !trimmed.startsWith(title)) return passage;
+  return trimmed.slice(title.length).replace(/^\s*\n+/, "");
 }
 
 function QuestionsContent({

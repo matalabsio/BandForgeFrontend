@@ -33,15 +33,6 @@ export const metadata = {
   title: "Dashboard · BandForge",
 };
 
-function DashboardHeaderSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="h-14 animate-pulse rounded-2xl bg-ink/[0.06]" />
-      <div className="h-40 animate-pulse rounded-[20px] bg-ink/[0.06]" />
-    </div>
-  );
-}
-
 type UserProps = {
   firstName: string;
   displayName: string;
@@ -74,6 +65,7 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
           email={user.email}
           avatarUrl={user.avatarUrl}
           streakDays={0}
+          showReportButton={false}
         />
         <DashboardPlanPaywall hasDiagnostic={isDiagnosticComplete(profile)} />
       </>
@@ -113,14 +105,7 @@ export default async function DashboardPage() {
     <>
       <DashboardProfileSync />
       <div className="space-y-6">
-        <Suspense
-          fallback={
-            <>
-              <DashboardHeaderSkeleton />
-              <DashboardContentSkeleton />
-            </>
-          }
-        >
+        <Suspense fallback={<DashboardContentSkeleton />}>
           <DashboardBody
             cookieHeader={cookieHeader}
             user={userProps}

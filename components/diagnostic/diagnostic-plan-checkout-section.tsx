@@ -93,7 +93,6 @@ export function DiagnosticPlanCheckoutSection({
   const [hasSubscription, setHasSubscription] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planPrice, setPlanPrice] = useState("—");
-  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   // Start null/false so SSR matches hydration; resume effect sets these after mount.
   const [overlay, setOverlay] = useState<OverlayState>(null);
   const [statusModal, setStatusModal] = useState<StatusModal>(null);
@@ -157,17 +156,19 @@ export function DiagnosticPlanCheckoutSection({
 
     (async () => {
       try {
-        const [{ plans, payments_enabled: enabled }, sub, session] =
-          await Promise.all([
-            getPlans(),
-            getSubscription().catch(() => null),
-            ensureSession().catch(() => null),
-          ]);
+        const [plansRes, sub, session] = await Promise.all([
+          getPlans().catch(() => null),
+          getSubscription().catch(() => null),
+          ensureSession().catch(() => null),
+        ]);
         if (cancelled) return;
 
-        const program = plans.find((p) => p.slug === FULL_SKILL_PROGRAM_SLUG);
-        if (program) setPlanPrice(formatPlanPriceInr(program.amount));
-        setPaymentsEnabled(enabled);
+        if (plansRes) {
+          const program = plansRes.plans.find(
+            (p) => p.slug === FULL_SKILL_PROGRAM_SLUG,
+          );
+          if (program) setPlanPrice(formatPlanPriceInr(program.amount));
+        }
         setHasSubscription(hasFullSkillProgram(sub));
 
         if (session) {
@@ -314,10 +315,33 @@ export function DiagnosticPlanCheckoutSection({
 
   useEffect(() => {
     if (diagnosticCheckoutResumeClaimed || autoCheckoutStartedRef.current) {
+      // Strict Mode / remount: module claim survived but React state reset.
+      // Never leave resumeGate on an empty solid page.
+      if (resumeGate) {
+        if (!shouldResumeDiagnosticCheckout()) {
+          settleResumeGate();
+        } else {
+          setCheckoutBusy(true);
+        }
+      }
       return;
     }
-    if (!shouldResumeDiagnosticCheckout()) return;
-    if (!tryAcquireCheckoutOpeningLock()) return;
+    if (!shouldResumeDiagnosticCheckout()) {
+      if (resumeGate) settleResumeGate();
+      return;
+    }
+    if (!tryAcquireCheckoutOpeningLock()) {
+      if (resumeGate) {
+        // Another opener holds the lock — show busy chrome, then settle if stale.
+        setCheckoutBusy(true);
+        const t = window.setTimeout(() => {
+          releaseCheckoutOpeningLock();
+          settleResumeGate();
+        }, 2500);
+        return () => window.clearTimeout(t);
+      }
+      return;
+    }
 
     diagnosticCheckoutResumeClaimed = true;
     autoCheckoutStartedRef.current = true;
@@ -506,12 +530,10 @@ export function DiagnosticPlanCheckoutSection({
     <>
       {overlay ? (
         <ProcessingOverlay variant={overlay} />
-      ) : resumeGate && checkoutBusy ? (
-        // Solid backdrop while Razorpay modal is open — never flash results.
-        <div
-          className="fixed inset-0 z-[100] bg-[#F7F8FA]"
-          aria-hidden
-        />
+      ) : resumeGate ? (
+        // Never paint an empty solid page under the resume gate (Strict Mode /
+        // remount / Razorpay open). Always show the BandForge loader.
+        <ProcessingOverlay variant="creating" />
       ) : null}
       {statusModal ? (
         <PaymentStatusModal
@@ -614,7 +636,7 @@ export function DiagnosticPlanCheckoutSection({
             unlocked={hasSubscription}
             onUnlock={() => void handleCheckout()}
             unlockBusy={checkoutBusy}
-            unlockDisabled={hasSubscription || !paymentsEnabled}
+            unlockDisabled={hasSubscription}
             title="Purchase your plan to unlock it"
             subtitle="Difficulty tags, day split, and week-by-week path stay private until checkout."
             ctaLabel="Start my plan →"
@@ -653,7 +675,7 @@ export function DiagnosticPlanCheckoutSection({
             bundle={FULL_SKILL_PROGRAM}
             price={planPrice}
             onCheckout={() => void handleCheckout()}
-            checkoutDisabled={hasSubscription || !paymentsEnabled}
+            checkoutDisabled={hasSubscription}
             checkoutLoading={checkoutBusy}
           />
 

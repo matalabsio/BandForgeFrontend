@@ -71,6 +71,55 @@ export async function DashboardPersonalizedSection({
   const examDate = learning.exam_date ?? studyPlan.exam_date ?? null;
   const planPct = overallPlanPercent(studyPlan);
   const bandGap = computeBandGapFromLearning(learning);
+  const actionableToday = learning.todays_tasks.filter(
+    (t) => t.status !== "skipped",
+  );
+  const todayPlanComplete =
+    actionableToday.length > 0 &&
+    actionableToday.every((t) => t.status === "done");
+
+  const todayPlanBlock = (
+    <Suspense fallback={<PlanSkeleton />}>
+      <TodaysPlanPanel
+        initialTasks={learning.todays_tasks}
+        userId={userId}
+        studentName={user.displayName}
+        hubProgress={learning.hub_progress}
+        moduleSummary={learning.module_summary}
+        currentBand={learning.current_band}
+        targetBand={learning.target_band}
+        overallPlanPct={planPct}
+        embedded
+        studyPlan={studyPlan}
+        examDate={examDate}
+      />
+    </Suspense>
+  );
+
+  const welcomeBlock = (
+    <DashboardWelcomeSection
+      targetBand={learning.target_band}
+      currentDay={currentDay}
+      totalDays={totalDays}
+      weeklyFocus={studyPlan.weekly_focus}
+      skillDifficulty={
+        learning.skill_difficulty ?? studyPlan.skill_difficulty ?? null
+      }
+      daysRemaining={learning.days_remaining ?? null}
+      examDate={examDate}
+      studyDaysCompleted={studyDaysCompleted}
+      bandGapCurrent={bandGap.currentBand}
+      bandGapDelta={bandGap.gap}
+      bandGapScoredCount={bandGap.scoredCount}
+      bandGapIsPartial={bandGap.isPartial}
+      resolvedTargetBand={bandGap.targetBand}
+      studyPlan={studyPlan}
+      studentName={user.displayName}
+      hubProgress={learning.hub_progress}
+      currentBand={learning.current_band}
+      overallPlanPct={planPct}
+    />
+  );
 
   return (
     <DashPageMotion>
@@ -84,44 +133,18 @@ export async function DashboardPersonalizedSection({
         />
       </DashPageItem>
 
-      <DashPageItem>
-        <DashboardWelcomeSection
-          targetBand={learning.target_band}
-          currentDay={currentDay}
-          totalDays={totalDays}
-          weeklyFocus={studyPlan.weekly_focus}
-          skillDifficulty={
-            learning.skill_difficulty ?? studyPlan.skill_difficulty ?? null
-          }
-          daysRemaining={learning.days_remaining ?? null}
-          examDate={examDate}
-          studyDaysCompleted={studyDaysCompleted}
-          bandGapCurrent={bandGap.currentBand}
-          bandGapDelta={bandGap.gap}
-          bandGapScoredCount={bandGap.scoredCount}
-          bandGapIsPartial={bandGap.isPartial}
-          resolvedTargetBand={bandGap.targetBand}
-          studyPlan={studyPlan}
-        />
-      </DashPageItem>
-
-      <DashPageItem>
-        <Suspense fallback={<PlanSkeleton />}>
-          <TodaysPlanPanel
-            initialTasks={learning.todays_tasks}
-            userId={userId}
-            studentName={user.displayName}
-            hubProgress={learning.hub_progress}
-            moduleSummary={learning.module_summary}
-            currentBand={learning.current_band}
-            targetBand={learning.target_band}
-          overallPlanPct={planPct}
-          embedded
-          studyPlan={studyPlan}
-          examDate={examDate}
-        />
-        </Suspense>
-      </DashPageItem>
+      {/* When today is done, pin check-in CTAs into the first viewport. */}
+      {todayPlanComplete ? (
+        <>
+          <DashPageItem>{todayPlanBlock}</DashPageItem>
+          <DashPageItem>{welcomeBlock}</DashPageItem>
+        </>
+      ) : (
+        <>
+          <DashPageItem>{welcomeBlock}</DashPageItem>
+          <DashPageItem>{todayPlanBlock}</DashPageItem>
+        </>
+      )}
 
       <DashPageItem>
         <Suspense fallback={<SkillsSkeleton />}>
