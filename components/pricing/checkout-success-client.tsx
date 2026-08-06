@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 
 import { ApiError } from "@/lib/api";
 import { getMe } from "@/lib/auth";
+import { hasFullSkillProgram } from "@/lib/entitlement";
 import {
   type PaymentHistoryItem,
   type Subscription,
@@ -18,6 +19,20 @@ import {
 } from "@/lib/payments";
 
 const REDIRECT_DELAY_S = 12;
+const ACTIVATION_POLL_ATTEMPTS = 5;
+const ACTIVATION_POLL_MS = 1500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+/** Paid Full Skill path, or any active subscription after checkout. */
+function subscriptionUnlocksDashboard(sub: Subscription | null | undefined): boolean {
+  if (!sub) return false;
+  return hasFullSkillProgram(sub) || sub.is_active;
+}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -147,7 +162,7 @@ export function CheckoutSuccessClient() {
 
         // After login redirect mid-verify: re-verify once from pending payload.
         if (
-          !sub.is_active &&
+          !subscriptionUnlocksDashboard(sub) &&
           receiptCtx &&
           !reverifyAttemptedRef.current
         ) {
@@ -159,13 +174,30 @@ export function CheckoutSuccessClient() {
               sub = result.subscription;
             } catch (e) {
               if (!active) return;
-              setLoadError(
-                e instanceof ApiError
-                  ? e.message
-                  : "Could not verify your payment. Try again from pricing or contact support.",
-              );
-              setLoading(false);
-              return;
+              // Keep going into poll if receipt exists; only hard-fail without it.
+              if (!receiptCtx.signature) {
+                setLoadError(
+                  e instanceof ApiError
+                    ? e.message
+                    : "Could not verify your payment. Try again from pricing or contact support.",
+                );
+                setLoading(false);
+                return;
+              }
+            }
+          }
+        }
+
+        // Webhook / DB lag: poll subscription briefly before showing stuck state.
+        if (!subscriptionUnlocksDashboard(sub) && receiptCtx) {
+          for (let i = 0; i < ACTIVATION_POLL_ATTEMPTS; i++) {
+            await sleep(ACTIVATION_POLL_MS);
+            if (!active) return;
+            try {
+              sub = await getSubscription();
+              if (subscriptionUnlocksDashboard(sub)) break;
+            } catch {
+              /* keep polling */
             }
           }
         }
@@ -197,7 +229,7 @@ export function CheckoutSuccessClient() {
 
         if (latestPaid) setPayment(latestPaid);
 
-        if (!sub.is_active) {
+        if (!subscriptionUnlocksDashboard(sub)) {
           if (!receiptCtx?.signature) {
             router.replace("/pricing");
             return;
@@ -227,7 +259,8 @@ export function CheckoutSuccessClient() {
 
   // Countdown timer → redirect to dashboard
   useEffect(() => {
-    if (loading || !subscription?.is_active || countdown <= 0) return;
+    if (loading || !subscriptionUnlocksDashboard(subscription) || countdown <= 0)
+      return;
 
     const timeout = window.setTimeout(() => {
       setCountdown((prev) => Math.max(0, prev - 1));
@@ -237,7 +270,8 @@ export function CheckoutSuccessClient() {
   }, [countdown, loading, subscription]);
 
   useEffect(() => {
-    if (loading || !subscription?.is_active || countdown > 0) return;
+    if (loading || !subscriptionUnlocksDashboard(subscription) || countdown > 0)
+      return;
     router.replace("/dashboard");
   }, [countdown, loading, subscription, router]);
 

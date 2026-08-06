@@ -30,6 +30,7 @@ import type { DiagnosticResultsSnapshot } from "@/lib/diagnostic-session";
 import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
 import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
+import { navigateAfterCheckoutVerify } from "@/lib/checkout-navigate-client";
 import {
   DIAGNOSTIC_CHECKOUT_RETURN_PATH,
   clearPendingCheckoutResume,
@@ -169,7 +170,12 @@ export function DiagnosticPlanCheckoutSection({
           );
           if (program) setPlanPrice(formatPlanPriceInr(program.amount));
         }
-        setHasSubscription(hasFullSkillProgram(sub));
+        const paid = hasFullSkillProgram(sub);
+        setHasSubscription(paid);
+        if (paid) {
+          router.replace("/dashboard");
+          return;
+        }
 
         if (session) {
           const user = await getMe().catch(() => null);
@@ -188,7 +194,7 @@ export function DiagnosticPlanCheckoutSection({
     return () => {
       cancelled = true;
     };
-  }, [snapshot]);
+  }, [router, snapshot]);
 
   const handleCheckout = useCallback(async () => {
     if (checkoutInFlightRef.current || checkoutBusy || hasSubscription) return;
@@ -235,22 +241,21 @@ export function DiagnosticPlanCheckoutSection({
               order: response.razorpay_order_id,
               payment: response.razorpay_payment_id,
             });
-            const result = await verifyPayment(response);
-            if (hasFullSkillProgram(result.subscription)) {
-              router.replace("/checkout/success");
-              return;
-            }
-            setOverlay(null);
-            setHasSubscription(false);
-            setPaymentFailureMessage(
-              "Payment was received but the subscription was not activated.",
-            );
-            setStatusModal("verify_failed");
+            await verifyPayment(response);
+            navigateAfterCheckoutVerify({ router, verifyOk: true });
           } catch (e) {
             setOverlay(null);
             setHasSubscription(false);
             if (e instanceof ApiError && e.status === 401) {
               router.push(loginPathWithNext("/checkout/success"));
+            } else if (
+              navigateAfterCheckoutVerify({
+                router,
+                verifyOk: false,
+                hasReceipt: true,
+              })
+            ) {
+              return;
             } else {
               setPaymentFailureMessage(
                 e instanceof ApiError ? e.message : "Could not verify payment.",
@@ -377,6 +382,16 @@ export function DiagnosticPlanCheckoutSection({
           void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
         }
 
+        const existingSub = await getSubscription().catch(() => null);
+        if (hasFullSkillProgram(existingSub)) {
+          setHasSubscription(true);
+          clearBusy();
+          clearPendingCheckoutResume();
+          releaseCheckoutOpeningLock();
+          router.replace("/dashboard");
+          return;
+        }
+
         const order = await createOrder(FULL_SKILL_PROGRAM_SLUG);
 
         const opened = await openRazorpayCheckout({
@@ -396,23 +411,21 @@ export function DiagnosticPlanCheckoutSection({
                 order: response.razorpay_order_id,
                 payment: response.razorpay_payment_id,
               });
-              const result = await verifyPayment(response);
-              if (hasFullSkillProgram(result.subscription)) {
-                router.replace("/checkout/success");
-                return;
-              }
-              setOverlay(null);
-              setHasSubscription(false);
-              setPaymentFailureMessage(
-                "Payment was received but the subscription was not activated.",
-              );
-              setStatusModal("verify_failed");
-              settleResumeGate();
+              await verifyPayment(response);
+              navigateAfterCheckoutVerify({ router, verifyOk: true });
             } catch (e) {
               setOverlay(null);
               setHasSubscription(false);
               if (e instanceof ApiError && e.status === 401) {
                 router.push(loginPathWithNext("/checkout/success"));
+              } else if (
+                navigateAfterCheckoutVerify({
+                  router,
+                  verifyOk: false,
+                  hasReceipt: true,
+                })
+              ) {
+                return;
               } else {
                 setPaymentFailureMessage(
                   e instanceof ApiError ? e.message : "Could not verify payment.",
@@ -498,22 +511,21 @@ export function DiagnosticPlanCheckoutSection({
     setCheckoutBusy(true);
     setOverlay("verifying");
     try {
-      const result = await verifyPayment(payload);
-      if (hasFullSkillProgram(result.subscription)) {
-        router.replace("/checkout/success");
-        return;
-      }
-      setOverlay(null);
-      setHasSubscription(false);
-      setPaymentFailureMessage(
-        "Payment was received but the subscription was not activated.",
-      );
-      setStatusModal("verify_failed");
+      await verifyPayment(payload);
+      navigateAfterCheckoutVerify({ router, verifyOk: true });
     } catch (e) {
       setOverlay(null);
       setHasSubscription(false);
       if (e instanceof ApiError && e.status === 401) {
         router.push(loginPathWithNext("/checkout/success"));
+      } else if (
+        navigateAfterCheckoutVerify({
+          router,
+          verifyOk: false,
+          hasReceipt: true,
+        })
+      ) {
+        return;
       } else {
         setPaymentFailureMessage(
           e instanceof ApiError ? e.message : "Could not verify payment.",

@@ -241,6 +241,23 @@ function AssignedChip({
   );
 }
 
+function SlotChevron({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 function QuestionSlot({
   q,
   value,
@@ -279,21 +296,22 @@ function QuestionSlot({
   return (
     <li
       className={cn(
-        "flex flex-col gap-2.5 border-b border-dashed py-3.5 last:border-b-0 sm:flex-row sm:items-start sm:gap-4 sm:py-4",
+        "flex flex-col gap-2 border-b border-dashed py-3.5 last:border-b-0",
         theme.border,
-        isActive && cn(theme.accentSoft, "rounded-sm"),
+        isActive && cn(theme.accentSoft, "-mx-1 rounded-md px-1"),
       )}
     >
       <span
         className={cn(
-          "min-w-0 flex-1 text-[13px] leading-snug",
+          "text-[13px] leading-snug",
           theme.ink,
           theme.font,
         )}
       >
-        <strong className="tabular-nums">{num}</strong> {q.prompt}
+        <strong className="mr-1.5 tabular-nums">{num}</strong>
+        {q.prompt}
       </span>
-      <div className="flex w-full min-w-0 max-w-full items-start gap-2 sm:w-[min(100%,18rem)] sm:shrink-0">
+      <div className="flex w-full min-w-0 items-start gap-2">
         {isEmpty ? (
           <button
             type="button"
@@ -305,7 +323,7 @@ function QuestionSlot({
             onFocus={onFocus}
             aria-label={`Question ${num}: ${q.prompt}. ${slotPlaceholder}`}
             className={cn(
-              "min-h-[44px] w-full rounded-md border-2 border-dashed px-3 py-2 text-left transition-colors",
+              "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border-2 border-dashed px-3 py-2.5 text-left transition-colors",
               theme.border,
               theme.paper,
               isOver && cn(theme.accent, theme.accentSoft),
@@ -313,9 +331,10 @@ function QuestionSlot({
                 cn(theme.accent, theme.accentSoft, "ring-2", theme.accentRing),
             )}
           >
-            <span className={cn("text-[12px]", theme.muted)}>
+            <span className={cn("text-[12px] font-medium", theme.muted)}>
               {isPendingTarget ? "Tap to assign" : slotPlaceholder}
             </span>
+            <SlotChevron className={cn("size-4 shrink-0 opacity-70", theme.muted)} />
           </button>
         ) : (
           <>

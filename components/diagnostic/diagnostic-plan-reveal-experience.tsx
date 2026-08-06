@@ -37,6 +37,7 @@ import {
 import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
 import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
+import { navigateAfterCheckoutVerify } from "@/lib/checkout-navigate-client";
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import {
   createOrder,
@@ -280,20 +281,20 @@ export function DiagnosticPlanRevealExperience() {
               order: response.razorpay_order_id,
               payment: response.razorpay_payment_id,
             });
-            const result = await verifyPayment(response);
-            if (hasFullSkillProgram(result.subscription)) {
-              router.replace("/checkout/success");
-              return;
-            }
-            setOverlay(null);
-            setPaymentFailureMessage(
-              "Payment was received but the subscription was not activated.",
-            );
-            setStatusModal("verify_failed");
+            await verifyPayment(response);
+            navigateAfterCheckoutVerify({ router, verifyOk: true });
           } catch (e) {
             setOverlay(null);
             if (e instanceof ApiError && e.status === 401) {
               router.push(loginPathWithNext("/checkout/success"));
+            } else if (
+              navigateAfterCheckoutVerify({
+                router,
+                verifyOk: false,
+                hasReceipt: true,
+              })
+            ) {
+              return;
             } else {
               setPaymentFailureMessage(
                 e instanceof ApiError ? e.message : "Could not verify payment.",
@@ -351,20 +352,20 @@ export function DiagnosticPlanRevealExperience() {
     setCheckoutBusy(true);
     setOverlay("verifying");
     try {
-      const result = await verifyPayment(payload);
-      if (hasFullSkillProgram(result.subscription)) {
-        router.replace("/checkout/success");
-        return;
-      }
-      setOverlay(null);
-      setPaymentFailureMessage(
-        "Payment was received but the subscription was not activated.",
-      );
-      setStatusModal("verify_failed");
+      await verifyPayment(payload);
+      navigateAfterCheckoutVerify({ router, verifyOk: true });
     } catch (e) {
       setOverlay(null);
       if (e instanceof ApiError && e.status === 401) {
         router.push(loginPathWithNext("/checkout/success"));
+      } else if (
+        navigateAfterCheckoutVerify({
+          router,
+          verifyOk: false,
+          hasReceipt: true,
+        })
+      ) {
+        return;
       } else {
         setPaymentFailureMessage(
           e instanceof ApiError ? e.message : "Could not verify payment.",

@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
 import {
-  Bell,
-  Calendar,
-  ChevronRight,
-  CreditCard,
-  Globe,
-  HelpCircle,
-  MessageCircle,
-  User,
-} from "lucide-react";
+  BellIcon,
+  CalendarIcon,
+  CreditCardIcon,
+  CrownIcon,
+  GlobeIcon,
+  HelpCircleIcon,
+  MessageIcon,
+  UserIcon,
+} from "@/components/bandforge/dashboard/icons";
 import { BfSettingsRow } from "@/components/bandforge/ui";
 import { BRAND_PROFILE_STATS } from "@/lib/brand-mock-data";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
@@ -24,9 +24,13 @@ const settingsGroups = [
   {
     title: "Account",
     rows: [
-      { label: "Edit Profile", icon: User, href: "#account-form" },
-      { label: "Notification Preferences", icon: Bell, href: "#notification-preferences" },
-      { label: "Language", icon: Globe, value: "English", href: "#" },
+      { label: "Edit Profile", icon: UserIcon, href: "#account-form" },
+      {
+        label: "Notification Preferences",
+        icon: BellIcon,
+        href: "#notification-preferences",
+      },
+      { label: "Language", icon: GlobeIcon, value: "English", href: "#" },
     ],
   },
   {
@@ -34,27 +38,41 @@ const settingsGroups = [
     rows: [
       {
         label: "Current Plan Details",
-        icon: CreditCard,
+        icon: CreditCardIcon,
         value: BRAND_PROFILE_STATS.planName,
         href: "/profile/billing",
       },
-      { label: "Upgrade Plan", icon: ChevronRight, href: "/pricing" },
-      { label: "Billing History", icon: CreditCard, href: "/profile/billing" },
+      { label: "Upgrade Plan", icon: CrownIcon, href: "/pricing" },
+      {
+        label: "Billing History",
+        icon: CreditCardIcon,
+        href: "/profile/billing",
+      },
     ],
   },
   {
     title: "Test Preferences",
     rows: [
-      { label: "Test Date", icon: Calendar, value: "Aug 15, 2026", href: "#" },
-      { label: "Native Language", icon: Globe, value: "Telugu", href: "#" },
+      {
+        label: "Test Date",
+        icon: CalendarIcon,
+        value: "Aug 15, 2026",
+        href: "#",
+      },
+      {
+        label: "Native Language",
+        icon: GlobeIcon,
+        value: "Telugu",
+        href: "#",
+      },
     ],
   },
   {
     title: "Support",
     rows: [
-      { label: "WhatsApp Support", icon: MessageCircle, href: "#" },
-      { label: "FAQs", icon: HelpCircle, href: "/contact" },
-      { label: "Report an Issue", icon: HelpCircle, href: "/contact" },
+      { label: "WhatsApp Support", icon: MessageIcon, href: "#" },
+      { label: "FAQs", icon: HelpCircleIcon, href: "/contact" },
+      { label: "Report an Issue", icon: HelpCircleIcon, href: "/contact" },
     ],
   },
 ] as const;
@@ -122,17 +140,22 @@ export function ProfileSettingsHub({
               <p className="border-b border-border-soft px-4 py-3 font-mono text-[0.6875rem] tracking-wide text-muted-light uppercase">
                 {group.title}
               </p>
-              {group.rows.map((row) => (
-                <BfSettingsRow
-                  key={row.label}
-                  label={row.label}
-                  value={"value" in row ? row.value : undefined}
-                  href={row.href}
-                  icon={
-                    <row.icon className="size-[18px] text-cyan" strokeWidth={2} />
-                  }
-                />
-              ))}
+              {group.rows.map((row) => {
+                const Icon = row.icon;
+                return (
+                  <BfSettingsRow
+                    key={row.label}
+                    label={row.label}
+                    value={"value" in row ? row.value : undefined}
+                    href={row.href}
+                    icon={
+                      <span className="flex size-8 items-center justify-center rounded-lg bg-cyan-soft text-teal">
+                        <Icon className="size-[16px]" />
+                      </span>
+                    }
+                  />
+                );
+              })}
             </section>
           ))}
         </div>
