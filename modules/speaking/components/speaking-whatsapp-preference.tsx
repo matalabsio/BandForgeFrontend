@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, MessageCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { WhatsAppIcon } from "@/components/bandforge/dashboard/icons";
 import { Button } from "@/components/ui/button";
 import {
   canEnableSpeakingWhatsApp,
@@ -94,10 +95,10 @@ export function SpeakingWhatsAppPreference() {
     >
       <div className="flex gap-3">
         <div
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-cyan-soft text-teal"
+          className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#e7f7ee] text-[#25D366]"
           aria-hidden
         >
-          <MessageCircle className="size-5" />
+          <WhatsAppIcon className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <h2 id="whatsapp-alert-heading" className="font-display text-base font-bold text-navy">

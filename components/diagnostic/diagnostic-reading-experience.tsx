@@ -237,7 +237,10 @@ export function DiagnosticReadingExperience() {
     ["--reading-ink" as string]: "#0D1F3C",
     ["--reading-ink-muted" as string]: "#5A6B82",
     ["--reading-accent" as string]: "#0097A7",
+    ["--reading-accent-soft" as string]: "#E0F7FA",
     ["--reading-border" as string]: "rgb(13 31 60 / 0.12)",
+    ["--reading-surface" as string]: "#F5F7FA",
+    ["--reading-paper" as string]: "#FFFFFF",
   };
 
   const loading = !pack;

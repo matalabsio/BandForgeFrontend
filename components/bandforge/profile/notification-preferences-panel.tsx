@@ -1,14 +1,117 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bell, Loader2, Mail, MessageCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState, type ComponentType, type ReactNode, type SVGProps } from "react";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import {
+  BellIcon,
+  CalendarIcon,
+  MailIcon,
+  WhatsAppIcon,
+} from "@/components/bandforge/dashboard/icons";
+import { cn } from "@/lib/utils";
 import {
   canEnableSpeakingWhatsApp,
   speakingWhatsAppPreferencePatch,
 } from "@/modules/speaking/lib/speaking-notification-preferences";
 import { speakingApi } from "@/modules/speaking/services/speaking-api";
 import type { SpeakingNotificationPreferences } from "@/modules/speaking/types";
+
+type IconType = ComponentType<SVGProps<SVGSVGElement>>;
+
+type PrefRowProps = {
+  icon: IconType;
+  iconClassName?: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+  disabled?: boolean;
+  saving?: boolean;
+  onToggle: () => void;
+  footer?: ReactNode;
+};
+
+function PreferenceToggle({
+  enabled,
+  disabled,
+  saving,
+  onToggle,
+  label,
+}: {
+  enabled: boolean;
+  disabled?: boolean;
+  saving?: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
+      disabled={disabled || saving}
+      onClick={onToggle}
+      className={cn(
+        "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal/40 focus-visible:ring-offset-2",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        "motion-reduce:transition-none",
+        enabled ? "bg-teal" : "bg-ink/15",
+      )}
+    >
+      <span
+        className={cn(
+          "pointer-events-none absolute top-0.5 left-0.5 size-6 rounded-full bg-white shadow-sm transition-transform duration-200",
+          "motion-reduce:transition-none",
+          enabled && "translate-x-5",
+        )}
+      />
+    </button>
+  );
+}
+
+function PreferenceRow({
+  icon: Icon,
+  iconClassName,
+  title,
+  description,
+  enabled,
+  disabled,
+  saving,
+  onToggle,
+  footer,
+}: PrefRowProps) {
+  return (
+    <div className="flex gap-3.5 py-5 first:pt-0 last:pb-0">
+      <span
+        className={cn(
+          "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-cyan-soft text-teal",
+          iconClassName,
+        )}
+        aria-hidden
+      >
+        <Icon className="size-[18px]" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-[0.9375rem] font-semibold text-navy">{title}</h3>
+            <p className="mt-1 text-sm leading-relaxed text-muted">{description}</p>
+          </div>
+          <PreferenceToggle
+            enabled={enabled}
+            disabled={disabled}
+            saving={saving}
+            onToggle={onToggle}
+            label={`${enabled ? "Disable" : "Enable"} ${title}`}
+          />
+        </div>
+        {footer ? <div className="mt-2.5">{footer}</div> : null}
+      </div>
+    </div>
+  );
+}
 
 export function NotificationPreferencesPanel() {
   const [preferences, setPreferences] =
@@ -67,6 +170,10 @@ export function NotificationPreferencesPanel() {
     }
   };
 
+  const whatsappEligible = preferences
+    ? canEnableSpeakingWhatsApp(preferences)
+    : false;
+
   return (
     <section
       id="notification-preferences"
@@ -74,169 +181,137 @@ export function NotificationPreferencesPanel() {
       aria-labelledby="notification-prefs-heading"
       aria-busy={loading || Boolean(savingKey)}
     >
-      <header className="mb-6">
+      <header className="mb-2">
         <p className="font-mono text-[0.6875rem] tracking-wide text-cyan uppercase">
           Alerts
         </p>
         <h2
           id="notification-prefs-heading"
-          className="font-display mt-1 flex items-center gap-2 text-lg font-bold text-navy"
+          className="font-display mt-1 flex items-center gap-2.5 text-lg font-bold text-navy"
         >
-          <Bell className="size-5 text-cyan" aria-hidden />
+          <span className="flex size-8 items-center justify-center rounded-lg bg-cyan-soft text-teal">
+            <BellIcon className="size-4" />
+          </span>
           Notification preferences
         </h2>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1.5 text-sm text-muted">
           Choose which emails and WhatsApp alerts BandForge may send.
         </p>
       </header>
 
       {loading && !preferences ? (
-        <p className="flex min-h-11 items-center gap-2 text-sm text-muted" role="status">
-          <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
+        <p
+          className="mt-6 flex min-h-11 items-center gap-2 text-sm text-muted"
+          role="status"
+        >
+          <Loader2
+            className="size-4 animate-spin motion-reduce:animate-none"
+            aria-hidden
+          />
           Loading preferences…
         </p>
       ) : preferences ? (
-        <div className="space-y-6">
-          <div className="flex gap-3 border-b border-border-soft pb-6">
-            <div
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan-soft text-teal"
-              aria-hidden
-            >
-              <Mail className="size-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-navy">Speaking report email</h3>
-              <p className="mt-1 text-sm text-ink/65">
-                Email when your examiner-reviewed Speaking report is released.
-              </p>
-              <Button
-                variant={preferences.email_enabled ? "secondary" : "teal"}
-                className="mt-3"
-                disabled={savingKey === "email"}
-                onClick={() =>
-                  void patch(
-                    "email",
-                    { email_enabled: !preferences.email_enabled },
-                    preferences.email_enabled
-                      ? "Speaking report emails disabled."
-                      : "Speaking report emails enabled.",
-                  )
-                }
-              >
-                {savingKey === "email"
-                  ? "Saving…"
-                  : preferences.email_enabled
-                    ? "Disable email"
-                    : "Enable email"}
-              </Button>
-            </div>
-          </div>
+        <div className="mt-4 divide-y divide-border-soft">
+          <PreferenceRow
+            icon={MailIcon}
+            title="Speaking report email"
+            description="Email when your examiner-reviewed Speaking report is released."
+            enabled={preferences.email_enabled}
+            saving={savingKey === "email"}
+            onToggle={() =>
+              void patch(
+                "email",
+                { email_enabled: !preferences.email_enabled },
+                preferences.email_enabled
+                  ? "Speaking report emails disabled."
+                  : "Speaking report emails enabled.",
+              )
+            }
+          />
 
-          <div className="flex gap-3 border-b border-border-soft pb-6">
-            <div
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan-soft text-teal"
-              aria-hidden
-            >
-              <Bell className="size-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-navy">Daily plan reminder</h3>
-              <p className="mt-1 text-sm text-ink/65">
-                One email when you still have unfinished tasks on today&apos;s study plan.
-              </p>
-              <Button
-                variant={preferences.plan_reminders_email ? "secondary" : "teal"}
-                className="mt-3"
-                disabled={savingKey === "plan"}
-                onClick={() =>
-                  void patch(
-                    "plan",
-                    {
-                      plan_reminders_email: !preferences.plan_reminders_email,
-                    },
-                    preferences.plan_reminders_email
-                      ? "Plan reminders disabled."
-                      : "Plan reminders enabled.",
-                  )
-                }
-              >
-                {savingKey === "plan"
-                  ? "Saving…"
-                  : preferences.plan_reminders_email
-                    ? "Disable reminders"
-                    : "Enable reminders"}
-              </Button>
-            </div>
-          </div>
+          <PreferenceRow
+            icon={CalendarIcon}
+            title="Daily plan reminder"
+            description="One email when you still have unfinished tasks on today's study plan."
+            enabled={preferences.plan_reminders_email}
+            saving={savingKey === "plan"}
+            onToggle={() =>
+              void patch(
+                "plan",
+                {
+                  plan_reminders_email: !preferences.plan_reminders_email,
+                },
+                preferences.plan_reminders_email
+                  ? "Plan reminders disabled."
+                  : "Plan reminders enabled.",
+              )
+            }
+          />
 
-          <div className="flex gap-3">
-            <div
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan-soft text-teal"
-              aria-hidden
-            >
-              <MessageCircle className="size-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-navy">WhatsApp report alert</h3>
-              <p className="mt-1 text-sm text-ink/65">
-                One transactional message when your Speaking report is released. Requires a
-                verified phone number.
-              </p>
-              {preferences.whatsapp_enabled ? (
-                <p className="mt-2 text-sm text-ink/70">
+          <PreferenceRow
+            icon={WhatsAppIcon}
+            iconClassName="bg-[#e7f7ee] text-[#25D366]"
+            title="WhatsApp report alert"
+            description="One transactional message when your Speaking report is released. Requires a verified phone number."
+            enabled={preferences.whatsapp_enabled}
+            disabled={!preferences.whatsapp_enabled && !whatsappEligible}
+            saving={savingKey === "whatsapp"}
+            onToggle={() => {
+              if (preferences.whatsapp_enabled) {
+                void patch(
+                  "whatsapp",
+                  speakingWhatsAppPreferencePatch(false),
+                  "WhatsApp release alerts are disabled.",
+                );
+                return;
+              }
+              if (!whatsappEligible) return;
+              void patch(
+                "whatsapp",
+                speakingWhatsAppPreferencePatch(true),
+                "WhatsApp release alerts are enabled.",
+              );
+            }}
+            footer={
+              preferences.whatsapp_enabled ? (
+                <p className="text-sm text-muted">
                   Alerts are on
-                  {preferences.masked_phone ? ` for ${preferences.masked_phone}` : ""}.
+                  {preferences.masked_phone
+                    ? ` for ${preferences.masked_phone}`
+                    : ""}
+                  .
                 </p>
-              ) : canEnableSpeakingWhatsApp(preferences) ? (
-                <p className="mt-2 text-sm text-ink/70">
+              ) : whatsappEligible ? (
+                <p className="text-sm text-muted">
                   Your verified number
-                  {preferences.masked_phone ? ` (${preferences.masked_phone})` : ""} is
-                  eligible.
+                  {preferences.masked_phone
+                    ? ` (${preferences.masked_phone})`
+                    : ""}{" "}
+                  is eligible.
                 </p>
               ) : (
-                <p className="mt-2 text-sm leading-relaxed text-ink/70">
-                  Add and verify a phone number in your account before enabling WhatsApp
-                  alerts.
+                <p className="text-sm leading-relaxed text-muted">
+                  <Link
+                    href="#account-form"
+                    className="font-medium text-teal underline-offset-2 hover:underline"
+                  >
+                    Add and verify a phone number
+                  </Link>{" "}
+                  in your account before enabling WhatsApp alerts.
                 </p>
-              )}
-              {preferences.whatsapp_enabled ? (
-                <Button
-                  variant="secondary"
-                  className="mt-3"
-                  disabled={savingKey === "whatsapp"}
-                  onClick={() =>
-                    void patch(
-                      "whatsapp",
-                      speakingWhatsAppPreferencePatch(false),
-                      "WhatsApp release alerts are disabled.",
-                    )
-                  }
-                >
-                  {savingKey === "whatsapp" ? "Saving…" : "Disable WhatsApp alerts"}
-                </Button>
-              ) : canEnableSpeakingWhatsApp(preferences) ? (
-                <Button
-                  variant="teal"
-                  className="mt-3"
-                  disabled={savingKey === "whatsapp"}
-                  onClick={() =>
-                    void patch(
-                      "whatsapp",
-                      speakingWhatsAppPreferencePatch(true),
-                      "WhatsApp release alerts are enabled.",
-                    )
-                  }
-                >
-                  {savingKey === "whatsapp" ? "Saving…" : "Enable WhatsApp alerts"}
-                </Button>
-              ) : null}
-            </div>
-          </div>
+              )
+            }
+          />
         </div>
       ) : (
-        <Button variant="secondary" onClick={() => void load()} disabled={loading}>
+        <button
+          type="button"
+          onClick={() => void load()}
+          disabled={loading}
+          className="mt-6 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-navy/20 bg-white px-4 py-2.5 text-sm font-semibold text-navy transition-colors hover:border-teal hover:bg-surface disabled:opacity-50"
+        >
           Try again
-        </Button>
+        </button>
       )}
 
       <div className="mt-4 min-h-5 text-xs" aria-live="polite" aria-atomic="true">
