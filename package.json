@@ -14,6 +14,7 @@
     "test:auth-redirect": "node scripts/verify-auth-redirect-flow.mjs",
     "test:auth-session": "node scripts/verify-auth-session-flow.mjs",
     "test:post-login-destination": "node --experimental-strip-types lib/post-login-destination.test.mjs",
+    "test:checkout-navigate": "node --experimental-strip-types lib/checkout-navigate.test.mjs",
     "test:listening-inline-blank": "node modules/listening/lib/inline-blank.test.mjs",
     "test:jwt-expiry": "node lib/jwt-expiry.test.mjs",
     "test:exam-session": "node lib/exam-session.test.mjs",

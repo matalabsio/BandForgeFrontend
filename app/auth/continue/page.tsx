@@ -39,12 +39,18 @@ function PostLoginContinueInner() {
       let hasPaidFullSkillProgram = false;
 
       if (wantsCheckout) {
-        // Fast path: skip profile/subscription round-trips; go open Razorpay
+        // Fast path: one subscription check so already-paid users skip Razorpay.
+        try {
+          const subscription = await getSubscription();
+          hasPaidFullSkillProgram = hasFullSkillProgram(subscription);
+        } catch {
+          hasPaidFullSkillProgram = false;
+        }
         if (cancelled) return;
         window.location.replace(
           resolvePostLoginDestination(requestedPath, Boolean(snapshot), {
             hasServerDiagnostic,
-            hasPaidFullSkillProgram: false,
+            hasPaidFullSkillProgram,
           }),
         );
         return;
