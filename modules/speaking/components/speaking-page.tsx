@@ -66,6 +66,7 @@ import type {
   SpeakingSessionRecording,
 } from "@/modules/speaking/types";
 import { TestHeader, TestShell, TestTimer } from "@/modules/shared";
+import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
 import { useListeningTimer } from "@/modules/shared/hooks/use-exam-timer";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
 import {
@@ -125,14 +126,6 @@ export function SpeakingPage({
   );
   const [manifestHash, setManifestHash] = useState<string | null>(null);
 
-  const remaining = useListeningTimer({
-    startedAtIso,
-    serverTimeIso,
-    durationSeconds,
-    active: Boolean(attemptId),
-  });
-  useExamSessionGuard(Boolean(attemptId));
-
   const wakeLockRef = useRef<SpeakingWakeLockHandle | null>(null);
   const recordingsRef = useRef(new Map<string, SpeakingSessionRecording>());
   const uploadedQuestionIdsRef = useRef(new Set<string>());
@@ -140,6 +133,16 @@ export function SpeakingPage({
   const idempotencyKeysRef = useRef(new Map<string, string>());
   const finalizeInFlightRef = useRef(false);
   const uploadWorkerRef = useRef<SpeakingUploadWorker | null>(null);
+  const expiryHandlerRef = useRef<() => void>(() => {});
+
+  const remaining = useListeningTimer({
+    startedAtIso,
+    serverTimeIso,
+    durationSeconds,
+    active: Boolean(attemptId),
+    onExpire: () => expiryHandlerRef.current(),
+  });
+  useExamSessionGuard(Boolean(attemptId));
 
   useEffect(() => {
     let cancelled = false;
@@ -631,6 +634,28 @@ export function SpeakingPage({
       manifestHash,
     ],
   );
+
+  const canSubmitOnExpiry =
+    Boolean(attemptId) &&
+    recoveryReady &&
+    Boolean(manifestHash) &&
+    !busy;
+
+  const onTimerExpire = useCallback(() => {
+    if (!canSubmitOnExpiry) return;
+    void handleExamComplete(Array.from(recordingsRef.current.values()));
+  }, [canSubmitOnExpiry, handleExamComplete]);
+
+  useEffect(() => {
+    expiryHandlerRef.current = onTimerExpire;
+  }, [onTimerExpire]);
+
+  useExamExpiryCatchUp({
+    remaining,
+    canSubmit: canSubmitOnExpiry,
+    onExpire: onTimerExpire,
+    resetKey: startedAtIso,
+  });
 
   if (!micStateReady) {
     return <ExamSectionLoader title="Loading speaking…" />;

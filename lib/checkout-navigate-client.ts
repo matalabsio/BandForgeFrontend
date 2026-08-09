@@ -5,6 +5,7 @@ import {
 import {
   CHECKOUT_SUCCESS_PATH,
   shouldNavigateToCheckoutSuccess,
+  shouldSkipPaidBootstrapRedirect,
 } from "@/lib/checkout-navigate";
 import { readCheckoutReceiptContext } from "@/lib/payments";
 
@@ -42,4 +43,18 @@ export function navigateAfterCheckoutVerify(opts: {
   return true;
 }
 
-export { CHECKOUT_SUCCESS_PATH, shouldNavigateToCheckoutSuccess };
+/** Client wrapper: reads session receipt so remounts after Razorpay still skip dashboard. */
+export function shouldSkipPaidBootstrapRedirectNow(opts?: {
+  checkoutInFlight?: boolean;
+}): boolean {
+  return shouldSkipPaidBootstrapRedirect({
+    checkoutInFlight: opts?.checkoutInFlight,
+    hasReceipt: Boolean(readCheckoutReceiptContext()),
+  });
+}
+
+export {
+  CHECKOUT_SUCCESS_PATH,
+  shouldNavigateToCheckoutSuccess,
+  shouldSkipPaidBootstrapRedirect,
+};

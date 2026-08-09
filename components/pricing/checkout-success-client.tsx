@@ -6,21 +6,21 @@ import { Download } from "lucide-react";
 
 import { ApiError } from "@/lib/api";
 import { getMe } from "@/lib/auth";
+import { DASHBOARD_AFTER_CHECKOUT_PATH } from "@/lib/checkout-navigate";
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import {
   type PaymentHistoryItem,
   type Subscription,
-  clearCheckoutReceiptContext,
   getPaymentHistory,
   getSubscription,
   pendingVerifyPayloadFromReceipt,
   readCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
+import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 
-const REDIRECT_DELAY_S = 12;
-const ACTIVATION_POLL_ATTEMPTS = 5;
-const ACTIVATION_POLL_MS = 1500;
+const ACTIVATION_POLL_ATTEMPTS = 10;
+const ACTIVATION_POLL_MS = 2000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -28,10 +28,9 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-/** Paid Full Skill path, or any active subscription after checkout. */
+/** Same gate as dashboard — Full Skill Program, not merely any active sub. */
 function subscriptionUnlocksDashboard(sub: Subscription | null | undefined): boolean {
-  if (!sub) return false;
-  return hasFullSkillProgram(sub) || sub.is_active;
+  return hasFullSkillProgram(sub);
 }
 
 function formatDate(iso: string | null): string {
@@ -121,7 +120,7 @@ export function CheckoutSuccessClient() {
   const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(REDIRECT_DELAY_S);
+  const [activationRetry, setActivationRetry] = useState(0);
   const [receiptDownloaded, setReceiptDownloaded] = useState(false);
   const downloadedRef = useRef(false);
   const reverifyAttemptedRef = useRef(false);
@@ -138,7 +137,6 @@ export function CheckoutSuccessClient() {
       setReceiptDownloaded(true);
       const text = buildReceiptText(sub, pay, name, email);
       downloadReceipt(text, pay?.razorpay_payment_id ?? null);
-      clearCheckoutReceiptContext();
     },
     [],
   );
@@ -235,7 +233,7 @@ export function CheckoutSuccessClient() {
             return;
           }
           setLoadError(
-            "Payment is still pending activation. Contact support with your payment reference if this persists.",
+            "Payment received. Unlocking your Full Skill Program…",
           );
           setLoading(false);
           return;
@@ -255,25 +253,11 @@ export function CheckoutSuccessClient() {
       active = false;
       if (receiptTimer !== undefined) window.clearTimeout(receiptTimer);
     };
-  }, [router, doDownloadReceipt]);
+  }, [router, doDownloadReceipt, activationRetry]);
 
-  // Countdown timer → redirect to dashboard
-  useEffect(() => {
-    if (loading || !subscriptionUnlocksDashboard(subscription) || countdown <= 0)
-      return;
-
-    const timeout = window.setTimeout(() => {
-      setCountdown((prev) => Math.max(0, prev - 1));
-    }, 1000);
-
-    return () => window.clearTimeout(timeout);
-  }, [countdown, loading, subscription]);
-
-  useEffect(() => {
-    if (loading || !subscriptionUnlocksDashboard(subscription) || countdown > 0)
-      return;
-    router.replace("/dashboard");
-  }, [countdown, loading, subscription, router]);
+  if (loading) {
+    return <ProcessingOverlay variant="verifying" />;
+  }
 
   if (loadError) {
     return (
@@ -284,10 +268,22 @@ export function CheckoutSuccessClient() {
         <p className="mt-3 text-sm text-muted">{loadError}</p>
         <button
           type="button"
-          onClick={() => router.replace("/pricing")}
+          onClick={() => {
+            setLoadError(null);
+            setLoading(true);
+            reverifyAttemptedRef.current = false;
+            setActivationRetry((n) => n + 1);
+          }}
           className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep"
         >
-          Back to pricing
+          Retry activation
+        </button>
+        <button
+          type="button"
+          onClick={() => router.replace(DASHBOARD_AFTER_CHECKOUT_PATH)}
+          className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-soft bg-white px-4 text-sm font-semibold text-navy transition-colors duration-200 hover:bg-surface-alt"
+        >
+          Go to dashboard
         </button>
       </div>
     );
@@ -358,28 +354,13 @@ export function CheckoutSuccessClient() {
         </button>
       </div>
 
-      {/* Auto-redirect countdown */}
-      <div className="mt-6 w-full">
-        <div className="mb-2 flex items-center justify-between text-[12px] text-muted">
-          <span>Redirecting to dashboard</span>
-          <span className="font-mono">{countdown}s</span>
-        </div>
-        <div className="h-1 w-full overflow-hidden rounded-full bg-border-soft">
-          <div
-            className="h-full rounded-full bg-navy transition-all duration-1000 ease-linear"
-            style={{
-              width: `${((REDIRECT_DELAY_S - countdown) / REDIRECT_DELAY_S) * 100}%`,
-            }}
-          />
-        </div>
-      </div>
-
       <button
         type="button"
-        onClick={() => router.replace("/dashboard")}
-        className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep"
+        onClick={() => router.replace(DASHBOARD_AFTER_CHECKOUT_PATH)}
+        disabled={!subscriptionUnlocksDashboard(subscription)}
+        className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep disabled:opacity-50"
       >
-        Go to dashboard now
+        Go to dashboard
       </button>
 
       <p className="mt-3 font-mono text-[11px] text-muted-light">

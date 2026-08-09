@@ -37,7 +37,10 @@ import {
 import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
 import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
-import { navigateAfterCheckoutVerify } from "@/lib/checkout-navigate-client";
+import {
+  navigateAfterCheckoutVerify,
+  shouldSkipPaidBootstrapRedirectNow,
+} from "@/lib/checkout-navigate-client";
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import {
   createOrder,
@@ -217,7 +220,12 @@ export function DiagnosticPlanRevealExperience() {
         }
         const subscribed = hasFullSkillProgram(sub);
         setHasSubscription(subscribed);
-        if (subscribed) {
+        if (
+          subscribed &&
+          !shouldSkipPaidBootstrapRedirectNow({
+            checkoutInFlight: checkoutInFlightRef.current,
+          })
+        ) {
           router.replace("/dashboard");
           return;
         }

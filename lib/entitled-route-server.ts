@@ -23,7 +23,7 @@ export const fetchEntitledContext = cache(
 /**
  * Paywall gate only — skips the heavy learning profile (today rewrite, hubs).
  * Use on practice hub/exercise routes that don't render the study plan.
- * Subscription is still request-cached via fetchSubscription.
+ * Subscription is still request-cached via fetchSubscriptionResult.
  */
 export const fetchEntitlementGate = cache(
   async (cookieHeader: string, userId: string) => {

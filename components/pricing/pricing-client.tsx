@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
 import { ensureSession, loginPathWithNext } from "@/lib/auth";
+import { navigateAfterCheckoutVerify } from "@/lib/checkout-navigate-client";
 import {
   type Plan,
   type Subscription,
@@ -142,7 +143,7 @@ export function PricingClient() {
       });
       const result = await verifyPayment(response);
       if (result.subscription.is_active) {
-        router.push("/checkout/success");
+        navigateAfterCheckoutVerify({ router, verifyOk: true });
         return;
       }
       setOverlay(null);

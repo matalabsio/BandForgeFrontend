@@ -5,7 +5,7 @@ import { DashboardProfileSync } from "@/components/bandforge/dashboard/dashboard
 import { DashboardContentSkeleton } from "@/components/bandforge/dashboard/dashboard-shell-skeleton";
 import { DashboardPersonalizedSection } from "@/components/bandforge/dashboard/sections/dashboard-personalized-section";
 import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
-import { DashboardPlanPaywall } from "@/components/bandforge/dashboard/dashboard-plan-paywall";
+import { DashboardUnlockGate } from "@/components/bandforge/dashboard/dashboard-plan-activating";
 import {
   isProductionAuthMisconfigured,
   redirectIfUnauthenticated,
@@ -17,7 +17,7 @@ import {
   emptyLearningProfile,
   fetchLearningProfile,
 } from "@/lib/learning-server";
-import { fetchSubscription } from "@/lib/payments-server";
+import { fetchSubscriptionResult } from "@/lib/payments-server";
 import {
   getCachedCookieHeader,
   getCachedServerSession,
@@ -47,11 +47,12 @@ type DashboardBodyProps = {
 };
 
 async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps) {
-  const [subscription, learning, streak] = await Promise.all([
-    fetchSubscription(cookieHeader),
+  const [subResult, learning, streak] = await Promise.all([
+    fetchSubscriptionResult(cookieHeader),
     fetchLearningProfile(cookieHeader),
     fetchDashboardStreak(cookieHeader),
   ]);
+  const subscription = subResult.subscription;
   const profile = learning ?? emptyLearningProfile(userId);
 
   // Stay on dashboard: unpaid users see the plan paywall (start vs unlock).
@@ -67,7 +68,10 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
           streakDays={0}
           showReportButton={false}
         />
-        <DashboardPlanPaywall hasDiagnostic={isDiagnosticComplete(profile)} />
+        <DashboardUnlockGate
+          hasDiagnostic={isDiagnosticComplete(profile)}
+          subscriptionUnknown={!subResult.known}
+        />
       </>
     );
   }

@@ -1,97 +1,202 @@
-/**
- * Node tests for exam timer deadline math.
- * Keep in sync with use-exam-timer.ts.
- */
 import assert from "node:assert/strict";
 import test from "node:test";
 
+/**
+ * Mirror of frontend/modules/shared/hooks/use-exam-timer.ts
+ * Keep in sync when changing deadline math.
+ */
+function parseTimeMs(iso) {
+  if (!iso) return null;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function resolveClockOffsetMs({
+  serverTimeIso,
+  nowMs = Date.now(),
+  clockOffsetMs,
+}) {
+  if (typeof clockOffsetMs === "number" && Number.isFinite(clockOffsetMs)) {
+    return clockOffsetMs;
+  }
+  const serverMs = parseTimeMs(serverTimeIso ?? null);
+  if (serverMs == null) return 0;
+  return serverMs - nowMs;
+}
+
 function computeRemainingSeconds({
   startedAtIso,
-  serverTimeIso,
   durationSeconds,
   nowMs = Date.now(),
+  clockOffsetMs,
+  serverTimeIso = null,
 }) {
-  if (!startedAtIso) return durationSeconds;
-  const startedMs = new Date(startedAtIso).getTime();
-  const serverMs = serverTimeIso
-    ? new Date(serverTimeIso).getTime()
-    : nowMs;
-  const offset = serverMs - nowMs;
+  if (!startedAtIso) return Math.max(0, durationSeconds);
+  const startedMs = parseTimeMs(startedAtIso);
+  if (startedMs == null) return Math.max(0, durationSeconds);
+
+  const offset = resolveClockOffsetMs({
+    serverTimeIso,
+    nowMs,
+    clockOffsetMs,
+  });
   const endMs = startedMs + durationSeconds * 1000;
   const clientNow = nowMs + offset;
-  return Math.max(0, Math.round((endMs - clientNow) / 1000));
+  const left = Math.round((endMs - clientNow) / 1000);
+  return Number.isFinite(left) ? Math.max(0, left) : Math.max(0, durationSeconds);
 }
 
 test("computeRemainingSeconds returns full duration when not started", () => {
   assert.equal(
     computeRemainingSeconds({
       startedAtIso: null,
-      serverTimeIso: null,
-      durationSeconds: 3600,
+      durationSeconds: 120,
+      nowMs: 1_000_000,
     }),
-    3600,
+    120,
   );
 });
 
 test("computeRemainingSeconds subtracts elapsed wall time", () => {
-  const startedAtIso = "2026-06-03T10:00:00.000Z";
-  const serverTimeIso = "2026-06-03T10:10:00.000Z";
-  const nowMs = new Date("2026-06-03T10:10:00.000Z").getTime();
+  const started = new Date("2026-01-01T00:00:00.000Z").getTime();
+  const nowMs = started + 45_000;
   const left = computeRemainingSeconds({
-    startedAtIso,
-    serverTimeIso,
-    durationSeconds: 3600,
+    startedAtIso: new Date(started).toISOString(),
+    durationSeconds: 120,
     nowMs,
+    clockOffsetMs: 0,
   });
-  assert.equal(left, 3000);
+  assert.equal(left, 75);
 });
 
 test("computeRemainingSeconds clamps at zero after deadline", () => {
-  const startedAtIso = "2026-06-03T10:00:00.000Z";
-  const nowMs = new Date("2026-06-03T11:30:00.000Z").getTime();
+  const started = new Date("2026-01-01T00:00:00.000Z").getTime();
   const left = computeRemainingSeconds({
-    startedAtIso,
-    serverTimeIso: "2026-06-03T11:30:00.000Z",
-    durationSeconds: 3600,
-    nowMs,
+    startedAtIso: new Date(started).toISOString(),
+    durationSeconds: 60,
+    nowMs: started + 120_000,
+    clockOffsetMs: 0,
   });
   assert.equal(left, 0);
 });
 
-test("computeRemainingSeconds applies server-client offset", () => {
-  const startedAtIso = "2026-06-03T10:00:00.000Z";
-  const serverTimeIso = "2026-06-03T10:05:00.000Z";
-  const clientNowMs = new Date("2026-06-03T10:04:00.000Z").getTime();
+test("computeRemainingSeconds applies frozen clockOffsetMs", () => {
+  const started = new Date("2026-01-01T00:00:00.000Z").getTime();
+  // Client clock is 5s behind server → offset +5000
   const left = computeRemainingSeconds({
-    startedAtIso,
-    serverTimeIso,
-    durationSeconds: 3600,
-    nowMs: clientNowMs,
+    startedAtIso: new Date(started).toISOString(),
+    durationSeconds: 120,
+    nowMs: started + 10_000,
+    clockOffsetMs: 5_000,
   });
-  assert.equal(left, 3300);
+  // clientNow = now + 5s = started+15s → remaining 105
+  assert.equal(left, 105);
 });
 
-test("catch-up guard fires once when ready after expiry", () => {
-  let submitCount = 0;
-  let canSubmit = false;
-  let remaining = 0;
-  let fired = false;
+test("computeRemainingSeconds accepts legacy serverTimeIso as one-shot skew", () => {
+  const started = new Date("2026-01-01T00:00:00.000Z").getTime();
+  const nowMs = started + 10_000;
+  const serverTimeIso = new Date(started + 15_000).toISOString();
+  const left = computeRemainingSeconds({
+    startedAtIso: new Date(started).toISOString(),
+    durationSeconds: 120,
+    nowMs,
+    serverTimeIso,
+  });
+  // offset = +5s at this snapshot → remaining 105
+  assert.equal(left, 105);
+});
 
-  const maybeCatchUp = () => {
-    if (remaining > 0) return;
-    if (!canSubmit) return;
-    if (fired) return;
-    fired = true;
-    submitCount += 1;
-  };
+test("remaining decreases over time with a frozen boot server_time snapshot", () => {
+  const started = new Date("2026-01-01T00:00:00.000Z").getTime();
+  const bootServerTime = new Date(started).toISOString();
+  const bootClientNow = started;
+  const clockOffsetMs = resolveClockOffsetMs({
+    serverTimeIso: bootServerTime,
+    nowMs: bootClientNow,
+  });
+  assert.equal(clockOffsetMs, 0);
 
-  maybeCatchUp();
-  assert.equal(submitCount, 0);
+  const at0 = computeRemainingSeconds({
+    startedAtIso: bootServerTime,
+    durationSeconds: 3600,
+    nowMs: bootClientNow,
+    clockOffsetMs,
+  });
+  const at60 = computeRemainingSeconds({
+    startedAtIso: bootServerTime,
+    durationSeconds: 3600,
+    nowMs: bootClientNow + 60_000,
+    clockOffsetMs,
+  });
+  const at300 = computeRemainingSeconds({
+    startedAtIso: bootServerTime,
+    durationSeconds: 3600,
+    nowMs: bootClientNow + 300_000,
+    clockOffsetMs,
+  });
 
-  canSubmit = true;
-  maybeCatchUp();
-  assert.equal(submitCount, 1);
+  assert.equal(at0, 3600);
+  assert.equal(at60, 3540);
+  assert.equal(at300, 3300);
+  assert.equal(at0 - at60, 60);
+  assert.equal(at0 - at300, 300);
+});
 
-  maybeCatchUp();
-  assert.equal(submitCount, 1);
+test("frozen offset still advances when server_time snapshot is stale", () => {
+  const started = new Date("2026-01-01T00:00:00.000Z").getTime();
+  // Server was 2s ahead at boot
+  const bootServerTime = new Date(started + 2_000).toISOString();
+  const bootClientNow = started;
+  const clockOffsetMs = resolveClockOffsetMs({
+    serverTimeIso: bootServerTime,
+    nowMs: bootClientNow,
+  });
+  assert.equal(clockOffsetMs, 2_000);
+
+  const early = computeRemainingSeconds({
+    startedAtIso: new Date(started).toISOString(),
+    durationSeconds: 600,
+    nowMs: bootClientNow + 10_000,
+    clockOffsetMs,
+  });
+  const later = computeRemainingSeconds({
+    startedAtIso: new Date(started).toISOString(),
+    durationSeconds: 600,
+    nowMs: bootClientNow + 70_000,
+    // Intentionally still pass the SAME stale server_time — must NOT recompute offset
+    clockOffsetMs,
+  });
+
+  assert.equal(early, 588); // 600 - (10+2)
+  assert.equal(later, 528); // 600 - (70+2)
+  assert.equal(early - later, 60);
+});
+
+test("invalid startedAtIso does not yield NaN", () => {
+  const left = computeRemainingSeconds({
+    startedAtIso: "not-a-date",
+    durationSeconds: 90,
+    nowMs: 1_000_000,
+    clockOffsetMs: 0,
+  });
+  assert.equal(left, 90);
+  assert.equal(Number.isNaN(left), false);
+});
+
+test("invalid serverTimeIso resolves to zero offset", () => {
+  const started = new Date("2026-01-01T00:00:00.000Z").getTime();
+  const offset = resolveClockOffsetMs({
+    serverTimeIso: "bad",
+    nowMs: started,
+  });
+  assert.equal(offset, 0);
+  const left = computeRemainingSeconds({
+    startedAtIso: new Date(started).toISOString(),
+    durationSeconds: 100,
+    nowMs: started + 40_000,
+    serverTimeIso: "bad",
+  });
+  assert.equal(left, 60);
+  assert.equal(Number.isNaN(left), false);
 });

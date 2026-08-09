@@ -22,6 +22,8 @@ type Props = {
   children: React.ReactNode;
   /** Dashboard page uses its own greeting header */
   hideHeader?: boolean;
+  /** Checkout success: no sidebar, header, or mobile nav */
+  hideChrome?: boolean;
 };
 
 export function DashboardShell({
@@ -31,6 +33,7 @@ export function DashboardShell({
   sidebar,
   children,
   hideHeader = false,
+  hideChrome = false,
 }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -81,6 +84,16 @@ export function DashboardShell({
 
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
   const showTopNavToggle = !sidebarOpen;
+
+  if (hideChrome) {
+    return (
+      <div className="bf-dashboard relative min-h-dvh bg-surface text-ink">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="bf-dashboard relative min-h-dvh bg-surface text-ink">
