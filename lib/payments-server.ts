@@ -18,10 +18,18 @@ export function emptySubscription(): Subscription {
   };
 }
 
+export type SubscriptionFetchResult = {
+  subscription: Subscription;
+  /** False when the API errored/timed out — not the same as unpaid. */
+  known: boolean;
+};
+
 /** Deduped per RSC request — layout + page share one subscription round-trip. */
-export const fetchSubscription = cache(
-  async (cookieHeader: string): Promise<Subscription> => {
-    if (!isAuthEnabled() || !cookieHeader.trim()) return emptySubscription();
+export const fetchSubscriptionResult = cache(
+  async (cookieHeader: string): Promise<SubscriptionFetchResult> => {
+    if (!isAuthEnabled() || !cookieHeader.trim()) {
+      return { subscription: emptySubscription(), known: true };
+    }
     try {
       const res = await fetchWithTimeout(
         `${getApiUrl()}/api/payments/subscription`,
@@ -31,13 +39,24 @@ export const fetchSubscription = cache(
           timeoutMs: FETCH_MS,
         },
       );
-      if (!res.ok) return emptySubscription();
-      return (await res.json()) as Subscription;
+      if (!res.ok) {
+        return { subscription: emptySubscription(), known: false };
+      }
+      return {
+        subscription: (await res.json()) as Subscription,
+        known: true,
+      };
     } catch (err) {
       if (process.env.NODE_ENV === "development") {
         console.warn("[payments] subscription fetch failed:", err);
       }
-      return emptySubscription();
+      return { subscription: emptySubscription(), known: false };
     }
   },
 );
+
+export async function fetchSubscription(
+  cookieHeader: string,
+): Promise<Subscription> {
+  return (await fetchSubscriptionResult(cookieHeader)).subscription;
+}

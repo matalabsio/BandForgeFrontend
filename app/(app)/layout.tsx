@@ -6,11 +6,12 @@ import { DashboardShell } from "@/components/bandforge/dashboard/dashboard-shell
 import { AppFontsShell } from "@/components/fonts/app-fonts-shell";
 import {
   bandforgeHideShellHeader,
+  bandforgeQuietCheckoutChrome,
   getBandforgePathname,
 } from "@/lib/bandforge-pathname";
 import { authGuardRedirectPath } from "@/lib/auth";
 import { hasFullSkillProgram } from "@/lib/entitlement";
-import { fetchSubscription } from "@/lib/payments-server";
+import { fetchSubscriptionResult } from "@/lib/payments-server";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { formatUserDisplayName } from "@/lib/user-display";
 
@@ -30,20 +31,22 @@ export default async function BandforgeAppLayout({
     getBandforgePathname(),
   ]);
 
-  const [user, subscription] = await Promise.all([
+  const [user, subResult] = await Promise.all([
     getCachedServerSession(cookieHeader),
-    fetchSubscription(cookieHeader),
+    fetchSubscriptionResult(cookieHeader),
   ]);
   if (!user) {
     redirect(authGuardRedirectPath(pathname, cookieHeader));
   }
 
-  const hideHeader = bandforgeHideShellHeader(pathname);
+  const quietChrome = bandforgeQuietCheckoutChrome(pathname);
+  const hideHeader = bandforgeHideShellHeader(pathname) || quietChrome;
   const shellDisplayName = hideHeader
     ? "Account"
     : formatUserDisplayName(user);
   const shellAvatarUrl = hideHeader ? null : (user.avatar_display_url ?? null);
-  const showPremiumCta = !hasFullSkillProgram(subscription);
+  const showPremiumCta =
+    subResult.known && !hasFullSkillProgram(subResult.subscription);
 
   return (
     <AppFontsShell>
@@ -53,6 +56,7 @@ export default async function BandforgeAppLayout({
           avatarUrl={shellAvatarUrl}
           pathname={pathname}
           hideHeader={hideHeader}
+          hideChrome={quietChrome}
           sidebar={
             <DashboardSidebarNav
               pathname={pathname}

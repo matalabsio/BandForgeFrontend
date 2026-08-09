@@ -30,7 +30,10 @@ import type { DiagnosticResultsSnapshot } from "@/lib/diagnostic-session";
 import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
 import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
-import { navigateAfterCheckoutVerify } from "@/lib/checkout-navigate-client";
+import {
+  navigateAfterCheckoutVerify,
+  shouldSkipPaidBootstrapRedirectNow,
+} from "@/lib/checkout-navigate-client";
 import {
   DIAGNOSTIC_CHECKOUT_RETURN_PATH,
   clearPendingCheckoutResume,
@@ -103,6 +106,7 @@ export function DiagnosticPlanCheckoutSection({
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const checkoutInFlightRef = useRef(false);
   const autoCheckoutStartedRef = useRef(false);
+  const razorpayOpenRef = useRef(false);
 
   const redirectToLoginForCheckout = useCallback(
     (sessionExpired = false) => {
@@ -172,7 +176,12 @@ export function DiagnosticPlanCheckoutSection({
         }
         const paid = hasFullSkillProgram(sub);
         setHasSubscription(paid);
-        if (paid) {
+        if (
+          paid &&
+          !shouldSkipPaidBootstrapRedirectNow({
+            checkoutInFlight: checkoutInFlightRef.current,
+          })
+        ) {
           router.replace("/dashboard");
           return;
         }
@@ -242,8 +251,10 @@ export function DiagnosticPlanCheckoutSection({
               payment: response.razorpay_payment_id,
             });
             await verifyPayment(response);
+            razorpayOpenRef.current = false;
             navigateAfterCheckoutVerify({ router, verifyOk: true });
           } catch (e) {
+            razorpayOpenRef.current = false;
             setOverlay(null);
             setHasSubscription(false);
             if (e instanceof ApiError && e.status === 401) {
@@ -267,12 +278,14 @@ export function DiagnosticPlanCheckoutSection({
           }
         },
         onDismiss: () => {
+          razorpayOpenRef.current = false;
           setOverlay(null);
           clearBusy();
           forceLockThenRefresh();
           setStatusModal("cancelled");
         },
         onFailed: (message) => {
+          razorpayOpenRef.current = false;
           setOverlay(null);
           clearBusy();
           forceLockThenRefresh();
@@ -282,6 +295,7 @@ export function DiagnosticPlanCheckoutSection({
       });
 
       if (opened) {
+        razorpayOpenRef.current = true;
         // Razorpay modal owns the UI — drop our loader so it does not stack underneath.
         setOverlay(null);
       } else {
@@ -388,6 +402,14 @@ export function DiagnosticPlanCheckoutSection({
           clearBusy();
           clearPendingCheckoutResume();
           releaseCheckoutOpeningLock();
+          if (shouldSkipPaidBootstrapRedirectNow()) {
+            navigateAfterCheckoutVerify({
+              router,
+              verifyOk: true,
+              hasReceipt: true,
+            });
+            return;
+          }
           router.replace("/dashboard");
           return;
         }
@@ -412,8 +434,10 @@ export function DiagnosticPlanCheckoutSection({
                 payment: response.razorpay_payment_id,
               });
               await verifyPayment(response);
+              razorpayOpenRef.current = false;
               navigateAfterCheckoutVerify({ router, verifyOk: true });
             } catch (e) {
+              razorpayOpenRef.current = false;
               setOverlay(null);
               setHasSubscription(false);
               if (e instanceof ApiError && e.status === 401) {
@@ -438,6 +462,7 @@ export function DiagnosticPlanCheckoutSection({
             }
           },
           onDismiss: () => {
+            razorpayOpenRef.current = false;
             setOverlay(null);
             clearBusy();
             forceLockThenRefresh();
@@ -448,6 +473,7 @@ export function DiagnosticPlanCheckoutSection({
             }
           },
           onFailed: (message) => {
+            razorpayOpenRef.current = false;
             setOverlay(null);
             clearBusy();
             forceLockThenRefresh();
@@ -458,7 +484,8 @@ export function DiagnosticPlanCheckoutSection({
         });
 
         if (opened) {
-          // Keep solid backdrop behind Razorpay — do not reveal results yet.
+          razorpayOpenRef.current = true;
+          // Razorpay modal owns the UI — do not re-show the creating overlay.
           setOverlay(null);
         } else {
           setOverlay(null);
@@ -542,9 +569,8 @@ export function DiagnosticPlanCheckoutSection({
     <>
       {overlay ? (
         <ProcessingOverlay variant={overlay} />
-      ) : resumeGate ? (
-        // Never paint an empty solid page under the resume gate (Strict Mode /
-        // remount / Razorpay open). Always show the BandForge loader.
+      ) : resumeGate && !razorpayOpenRef.current ? (
+        // Solid loader while resume is opening checkout — not while Razorpay is open.
         <ProcessingOverlay variant="creating" />
       ) : null}
       {statusModal ? (
