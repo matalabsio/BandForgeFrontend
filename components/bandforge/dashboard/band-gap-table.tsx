@@ -189,6 +189,7 @@ function SkillAccordionRow({
   reduceMotion,
   open,
   onToggle,
+  embedded,
 }: {
   skillKey: SkillKey;
   band: number | null;
@@ -199,6 +200,7 @@ function SkillAccordionRow({
   reduceMotion: boolean | null;
   open: boolean;
   onToggle: () => void;
+  embedded?: boolean;
 }) {
   const Icon = SKILL_ICONS[skillKey];
   const scored = band != null && band > 0;
@@ -216,22 +218,30 @@ function SkillAccordionRow({
     <div
       data-skill-gap-card=""
       className={cn(
-        "overflow-hidden rounded-2xl border border-ink/8 bg-white",
-        scored && tone?.border,
-        !scored && "bg-surface/40",
-        open && "shadow-[0_1px_0_rgba(255,255,255,0.85)_inset]",
+        "overflow-hidden",
+        embedded
+          ? "border-b border-ink/[0.06] last:border-b-0"
+          : cn(
+              "rounded-2xl border border-ink/8 bg-white",
+              scored && tone?.border,
+              !scored && "bg-surface/40",
+              open && "shadow-[0_1px_0_rgba(255,255,255,0.85)_inset]",
+            ),
       )}
     >
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full cursor-pointer items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-cyan-soft/20 sm:px-4 sm:py-3.5"
+        className={cn(
+          "flex w-full cursor-pointer items-center gap-3 text-left transition-colors hover:bg-cyan-soft/25",
+          embedded ? "px-1 py-3 sm:py-3.5" : "px-3.5 py-3 sm:px-4 sm:py-3.5",
+        )}
       >
         <span
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-xl",
-            scored ? tone!.iconWrap : "bg-ink/[0.04] text-muted",
+            scored ? tone!.iconWrap : "bg-ink/[0.05] text-muted",
           )}
         >
           <Icon className="size-4" strokeWidth={2.1} aria-hidden />
@@ -244,44 +254,36 @@ function SkillAccordionRow({
             </p>
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1",
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1",
                 scored
                   ? early
                     ? "bg-amber-50 text-amber-900 ring-amber-200/70"
                     : tone!.badge
-                  : "bg-surface text-muted ring-ink/8",
+                  : "bg-ink/[0.04] text-muted ring-ink/8",
               )}
             >
               {badgeCopy(scored, skillGap, score)}
             </span>
           </div>
-          <p className="mt-0.5 flex items-center gap-1 text-[11.5px] text-muted">
-            <GrowthIcon
-              status={status}
-              scored={scored}
-              className={cn("size-3", scored ? tone!.score : "text-muted-light")}
-            />
-            {growthLabel(status, scored, skillGap)}
-          </p>
+          {scored ? (
+            <p className="mt-0.5 text-[12px] text-muted">
+              {growthLabel(status, scored, skillGap)}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className="text-right">
-            <p
-              className={cn(
-                "font-mono text-base font-semibold tabular-nums sm:text-lg",
-                scored ? tone!.score : "text-muted-light",
-              )}
-            >
-              {scored ? score.toFixed(1) : "—"}
-            </p>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-light">
-              {scored ? "Now" : "Pending"}
-            </p>
-          </div>
+          <p
+            className={cn(
+              "font-mono text-base font-semibold tabular-nums sm:text-lg",
+              scored ? tone!.score : "text-muted-light",
+            )}
+          >
+            {scored ? score.toFixed(1) : "—"}
+          </p>
           <ChevronDown
             className={cn(
-              "size-4 text-muted transition-transform duration-200",
+              "size-4 text-muted-light transition-transform duration-200",
               open && "rotate-180",
             )}
             aria-hidden
@@ -299,12 +301,16 @@ function SkillAccordionRow({
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-ink/[0.05] px-3.5 pb-4 pt-3 sm:px-4">
+            <div
+              className={cn(
+                "pb-3.5 pt-0.5",
+                embedded
+                  ? "px-1 pb-4"
+                  : "border-t border-ink/[0.05] px-3.5 pb-4 pt-3 sm:px-4",
+              )}
+            >
               {scored ? (
                 <>
-                  <p className="mb-3 text-[11px] font-medium text-muted">
-                    Now → grow → close → target
-                  </p>
                   <SkillProgressStepper steps={steps} compact animate />
                   <p
                     className={cn(
@@ -324,8 +330,7 @@ function SkillAccordionRow({
                 </>
               ) : (
                 <p className="text-[13px] leading-relaxed text-muted">
-                  No scored band yet. Finish a practice or diagnostic for this
-                  skill to unlock the growth path.
+                  Finish a practice or diagnostic to unlock this growth path.
                 </p>
               )}
             </div>
@@ -359,6 +364,8 @@ type Props = {
   targetBand: number;
   statuses?: Record<SkillKey, SkillStatus>;
   animate?: boolean;
+  /** Divider list without the Skill queue chrome — dashboard pair layout. */
+  embedded?: boolean;
 };
 
 export function BandGapTable({
@@ -366,46 +373,32 @@ export function BandGapTable({
   targetBand,
   statuses,
   animate = false,
+  embedded = false,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const resolvedStatuses = statuses ?? skillStatuses(bands, targetBand);
-
-  /** Open the highest-gap scored skill by default; else none. */
-  const defaultOpen = useMemo(() => {
-    let best: SkillKey | null = null;
-    let bestGap = -1;
-    for (const key of SKILL_ORDER) {
-      const band = bands[key];
-      if (band == null || band <= 0) continue;
-      const gap = Math.max(0, targetBand - band);
-      if (gap > bestGap) {
-        bestGap = gap;
-        best = key;
-      }
-    }
-    return best;
-  }, [bands, targetBand]);
-
-  const [openKey, setOpenKey] = useState<SkillKey | null>(defaultOpen);
+  const [openKey, setOpenKey] = useState<SkillKey | null>(null);
 
   return (
     <div className="min-w-0 flex-1">
-      <div className="mb-3.5 flex flex-wrap items-baseline justify-between gap-2 sm:gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-light">
-            Skill queue
-          </p>
-          <p className="mt-0.5 text-[12px] text-muted">
-            Tap a skill to expand the growth path
+      {embedded ? null : (
+        <div className="mb-3.5 flex flex-wrap items-baseline justify-between gap-2 sm:gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-light">
+              Skill queue
+            </p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              Tap a skill to expand the growth path
+            </p>
+          </div>
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted">
+            <Target className="size-3 text-teal" aria-hidden />
+            Band {targetBand.toFixed(1)} target
           </p>
         </div>
-        <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted">
-          <Target className="size-3 text-teal" aria-hidden />
-          Band {targetBand.toFixed(1)} target
-        </p>
-      </div>
+      )}
 
-      <div className="flex flex-col gap-2">
+      <div className={cn(embedded ? "flex flex-col" : "flex flex-col gap-2")}>
         {SKILL_ORDER.map((key, index) => (
           <SkillAccordionRow
             key={key}
@@ -416,6 +409,7 @@ export function BandGapTable({
             index={index}
             animate={animate}
             reduceMotion={reduceMotion}
+            embedded={embedded}
             open={openKey === key}
             onToggle={() =>
               setOpenKey((prev) => (prev === key ? null : key))

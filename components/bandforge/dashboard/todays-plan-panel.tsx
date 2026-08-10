@@ -899,11 +899,11 @@ export function TodaysPlanPanel({
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan">
-                Start now · test first
+                Start practice
               </p>
               <p className="mt-1 font-display text-lg font-bold tracking-tight sm:text-xl">
                 {nextStart.task_type === "practice"
-                  ? "Jump into today’s practice test"
+                  ? "Jump into today’s practice"
                   : nextStart.task_type === "submit"
                     ? "Finish today’s submit task"
                     : nextStart.title}
@@ -927,7 +927,7 @@ export function TodaysPlanPanel({
                 onClick={() => cachePlanDayTasks(actionable)}
                 className="inline-flex min-h-12 w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan px-5 py-3 text-[15px] font-bold text-navy shadow-[0_0_24px_rgba(0,188,212,0.35)] transition-colors hover:bg-brand-sky-hover sm:w-auto sm:min-w-[200px]"
               >
-                Start test
+                Start practice
                 <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden />
               </Link>
             </motion.div>

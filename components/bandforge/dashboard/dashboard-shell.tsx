@@ -87,7 +87,7 @@ export function DashboardShell({
 
   if (hideChrome) {
     return (
-      <div className="bf-dashboard relative min-h-dvh bg-surface text-ink">
+      <div className="bf-dashboard relative min-h-dvh text-ink">
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {children}
         </main>
@@ -96,7 +96,7 @@ export function DashboardShell({
   }
 
   return (
-    <div className="bf-dashboard relative min-h-dvh bg-surface text-ink">
+    <div className="bf-dashboard relative min-h-dvh text-ink">
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-ink/8 bg-white p-5 shadow-[4px_0_32px_rgba(15,23,42,0.06)] transition-transform duration-200 ease-out lg:flex",

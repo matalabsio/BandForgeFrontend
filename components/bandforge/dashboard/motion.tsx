@@ -142,13 +142,6 @@ export function DashPageMotion({ children, className }: DashPageProps) {
             }
       }
     >
-      <div
-        className="pointer-events-none absolute -inset-x-4 -top-6 h-[280px] sm:-inset-x-6"
-        aria-hidden
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(0,188,212,0.11),transparent_55%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_90%_10%,rgba(15,23,42,0.04),transparent_50%)]" />
-      </div>
       {children}
     </motion.div>
   );

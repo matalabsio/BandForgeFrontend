@@ -12,7 +12,6 @@ import {
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
 import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
-import { fetchDashboardStreak } from "@/lib/dashboard-server";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
@@ -47,10 +46,9 @@ type DashboardBodyProps = {
 };
 
 async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps) {
-  const [subResult, learning, streak] = await Promise.all([
+  const [subResult, learning] = await Promise.all([
     fetchSubscriptionResult(cookieHeader),
     fetchLearningProfile(cookieHeader),
-    fetchDashboardStreak(cookieHeader),
   ]);
   const subscription = subResult.subscription;
   const profile = learning ?? emptyLearningProfile(userId);
@@ -65,7 +63,6 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
           displayName={user.displayName}
           email={user.email}
           avatarUrl={user.avatarUrl}
-          streakDays={0}
           showReportButton={false}
         />
         <DashboardUnlockGate
@@ -80,7 +77,6 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
     <DashboardGate learning={profile} subscription={subscription}>
       <DashboardPersonalizedSection
         learning={profile}
-        streakDays={streak.current_streak}
         user={user}
         userId={userId}
       />
