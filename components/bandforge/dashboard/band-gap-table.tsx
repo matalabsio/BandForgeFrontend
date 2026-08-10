@@ -208,6 +208,9 @@ function SkillAccordionRow({
   const skillGap = scored ? Math.max(0, targetBand - score) : 0;
   const tone = scored ? TONES[status] : null;
   const early = scored && score < 1;
+  const badge = badgeCopy(scored, skillGap, score);
+  const growth = scored ? growthLabel(status, scored, skillGap) : null;
+  const showGrowth = Boolean(growth && growth !== badge);
 
   const steps = useMemo(
     () => (scored ? buildBandStepperSteps(skillKey, band!, targetBand) : []),
@@ -234,40 +237,38 @@ function SkillAccordionRow({
         onClick={onToggle}
         aria-expanded={open}
         className={cn(
-          "flex w-full cursor-pointer items-center gap-3 text-left transition-colors hover:bg-cyan-soft/25",
-          embedded ? "px-1 py-3 sm:py-3.5" : "px-3.5 py-3 sm:px-4 sm:py-3.5",
+          "flex w-full cursor-pointer items-center gap-2.5 text-left transition-colors duration-200 hover:bg-cyan-soft/25 sm:gap-3",
+          embedded ? "px-1 py-2.5" : "px-3.5 py-2.5 sm:px-4 sm:py-3",
         )}
       >
         <span
           className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-xl",
+            "flex size-8 shrink-0 items-center justify-center rounded-xl sm:size-9",
             scored ? tone!.iconWrap : "bg-ink/[0.05] text-muted",
           )}
         >
           <Icon className="size-4" strokeWidth={2.1} aria-hidden />
         </span>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <p className="text-[13px] font-bold text-ink">
-              {skillLabel(skillKey)}
-            </p>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1",
-                scored
-                  ? early
-                    ? "bg-amber-50 text-amber-900 ring-amber-200/70"
-                    : tone!.badge
-                  : "bg-ink/[0.04] text-muted ring-ink/8",
-              )}
-            >
-              {badgeCopy(scored, skillGap, score)}
-            </span>
-          </div>
-          {scored ? (
-            <p className="mt-0.5 text-[12px] text-muted">
-              {growthLabel(status, scored, skillGap)}
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <p className="shrink-0 text-[13px] font-bold text-ink">
+            {skillLabel(skillKey)}
+          </p>
+          <span
+            className={cn(
+              "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1",
+              scored
+                ? early
+                  ? "bg-amber-50 text-amber-900 ring-amber-200/70"
+                  : tone!.badge
+                : "bg-ink/[0.04] text-muted ring-ink/8",
+            )}
+          >
+            {badge}
+          </span>
+          {showGrowth ? (
+            <p className="min-w-0 truncate text-[12px] text-muted">
+              {growth}
             </p>
           ) : null}
         </div>

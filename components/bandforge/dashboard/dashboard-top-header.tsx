@@ -58,6 +58,20 @@ function formatExamDate(examDate: string | null | undefined): string | null {
   }).format(parsed);
 }
 
+function greetingSubheading(timeline: HeaderPlanTimeline | null): string {
+  const day = timeline?.currentDay ?? null;
+  const total = timeline?.totalDays ?? null;
+  if (day != null && day > 0 && total != null && total > 0) {
+    return `Day ${day} of ${total}`;
+  }
+  if (day != null && day > 0) {
+    return `Day ${day}`;
+  }
+  const exam = formatExamDate(timeline?.examDate);
+  if (exam) return `Exam · ${exam}`;
+  return "IELTS Academic prep";
+}
+
 function examCountdown(
   daysRemaining: number | null | undefined,
   examDate: string | null | undefined,
@@ -113,6 +127,7 @@ export function DashboardTopHeader({
     planTimeline?.examDate,
   );
   const examLabel = formatExamDate(planTimeline?.examDate);
+  const nameSubheading = greetingSubheading(planTimeline);
 
   const updateMenuPosition = useCallback(() => {
     const el = triggerRef.current;
@@ -215,64 +230,71 @@ export function DashboardTopHeader({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: DASH_EASE }}
       >
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
-          <div className="min-w-0 shrink-0">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
               {timeGreeting()}
             </p>
             <h1 className="truncate font-display text-lg font-bold tracking-tight text-ink sm:text-xl">
               {firstName}
             </h1>
+            <p className="mt-0.5 truncate text-[12px] text-muted">
+              <span className="sm:hidden">
+                {showTimeline && countdown.value !== "—"
+                  ? `${nameSubheading} · ${countdown.value} ${countdown.unit}`
+                  : nameSubheading}
+              </span>
+              <span className="hidden sm:inline">{nameSubheading}</span>
+            </p>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-          {showTimeline ? (
-            <div
-              className="w-[8.75rem] shrink-0 sm:w-[10rem]"
-              aria-label={
-                examLabel
-                  ? `Exam ${examLabel}. ${countdown.value} ${countdown.unit}`
-                  : countdown.unit
-              }
-            >
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-light">
-                Exam timeline
-              </p>
-              <div className="relative">
-                <div
-                  className="h-1.5 overflow-hidden rounded-full bg-ink/[0.08]"
-                  role="progressbar"
-                  aria-valuenow={timelinePct}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {showTimeline ? (
+              <div
+                className="hidden w-[9.75rem] shrink-0 sm:block lg:w-[10.5rem]"
+                aria-label={
+                  examLabel
+                    ? `Exam ${examLabel}. ${countdown.value} ${countdown.unit}`
+                    : countdown.unit
+                }
+              >
+                <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-light">
+                  Exam timeline
+                </p>
+                <div className="relative">
+                  <div
+                    className="h-1.5 overflow-hidden rounded-full bg-ink/[0.08]"
+                    role="progressbar"
+                    aria-valuenow={timelinePct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <span
+                      className="block h-full rounded-full bg-gradient-to-r from-teal to-cyan"
+                      style={{ width: `${timelinePct}%` }}
+                    />
+                  </div>
                   <span
-                    className="block h-full rounded-full bg-gradient-to-r from-teal to-cyan"
-                    style={{ width: `${timelinePct}%` }}
+                    className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal ring-2 ring-white"
+                    style={{ left: `${markerLeft}%` }}
+                    aria-hidden
                   />
                 </div>
-                <span
-                  className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal ring-2 ring-white"
-                  style={{ left: `${markerLeft}%` }}
-                  aria-hidden
-                />
+                <p className="mt-1 text-[10px] font-semibold text-muted">
+                  <span className="font-mono tabular-nums text-teal">
+                    {countdown.value}
+                  </span>
+                  {countdown.value !== "—" ? " · " : " "}
+                  {countdown.unit}
+                </p>
               </div>
-              <p className="mt-1 text-[10px] font-semibold text-muted">
-                <span className="font-mono tabular-nums text-teal">
-                  {countdown.value}
-                </span>
-                {countdown.value !== "—" ? " · " : " "}
-                {countdown.unit}
-              </p>
-            </div>
-          ) : null}
+            ) : null}
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {showReportButton ? (
               <button
                 type="button"
                 onClick={() => requestOpenDailyReport()}
-                className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-teal/25 bg-white px-2.5 py-1.5 text-[12px] font-semibold text-teal transition-colors hover:border-cyan/40 hover:bg-cyan-soft/60 sm:min-h-10 sm:px-3 sm:text-[12.5px]"
+                className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-teal/25 bg-white px-2.5 py-1.5 text-[12px] font-semibold text-teal transition-colors duration-200 hover:border-cyan/40 hover:bg-cyan-soft/60 sm:min-h-10 sm:px-3 sm:text-[12.5px]"
               >
                 <FileText className="size-3.5" strokeWidth={2.25} aria-hidden />
                 <span className="sm:hidden">Report</span>
@@ -283,7 +305,7 @@ export function DashboardTopHeader({
             <button
               type="button"
               aria-label="Notifications"
-              className="hidden size-9 cursor-pointer items-center justify-center rounded-xl border border-ink/8 bg-white text-muted transition-colors hover:border-cyan/35 hover:text-teal sm:flex sm:size-10"
+              className="hidden size-10 cursor-pointer items-center justify-center rounded-xl border border-ink/8 bg-white text-muted transition-colors duration-200 hover:border-cyan/35 hover:text-teal sm:flex"
             >
               <BellIcon className="size-4 sm:size-5" />
             </button>
@@ -292,7 +314,7 @@ export function DashboardTopHeader({
               ref={triggerRef}
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex max-w-[11rem] cursor-pointer items-center gap-1.5 rounded-xl border border-ink/8 bg-white py-1 pl-1 pr-1.5 transition-colors hover:border-cyan/30 sm:max-w-[13rem] sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-2.5"
+              className="flex max-w-[11rem] cursor-pointer items-center gap-1.5 rounded-xl border border-ink/8 bg-white py-1 pl-1 pr-1.5 transition-colors duration-200 hover:border-cyan/30 sm:max-w-[13rem] sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-2.5"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
             >
@@ -320,7 +342,6 @@ export function DashboardTopHeader({
                 )}
               />
             </button>
-          </div>
           </div>
         </div>
       </motion.div>
