@@ -3,9 +3,9 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowRight,
   ArrowUpRight,
   CalendarDays,
-  Focus,
   Sparkles,
   Target,
   TrendingUp,
@@ -25,6 +25,8 @@ import type {
   LearningStudyTask,
   SkillHubProgress,
 } from "@/lib/learning-types";
+import { cachePlanDayTasks } from "@/lib/plan-day-tasks";
+import type { DashboardStartNow } from "@/lib/plan-start-task";
 import { localPlanDateKey } from "@/lib/plan-step-completion";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +51,8 @@ type Props = {
   hubProgress?: Record<string, SkillHubProgress>;
   currentBand?: number | null;
   overallPlanPct?: number;
+  startNow?: DashboardStartNow | null;
+  startNowCacheTasks?: LearningStudyTask[];
 };
 
 const SKILL_ORDER = ["listening", "reading", "writing", "speaking"] as const;
@@ -245,6 +249,8 @@ export function DashboardWelcomeSection({
   hubProgress = {},
   currentBand = null,
   overallPlanPct = 0,
+  startNow = null,
+  startNowCacheTasks = [],
 }: Props) {
   const reduceMotion = useReducedMotion();
   const rootRef = useRef<HTMLElement>(null);
@@ -442,101 +448,142 @@ export function DashboardWelcomeSection({
       />
 
       <div className="relative border-b border-ink/[0.06] bg-[linear-gradient(160deg,rgba(224,247,250,0.88),rgba(255,255,255,0.92)_65%)] px-4 py-4 sm:px-6 sm:py-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-light">
-              Your band gap
-            </p>
-            <div className="mt-2.5 flex flex-wrap items-end gap-4 sm:gap-5">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-light">
-                  Now
-                </p>
-                <p
-                  ref={nowRef}
-                  className="mt-0.5 font-mono text-[2.1rem] leading-none font-medium tracking-tight text-ink sm:text-[2.35rem]"
-                >
-                  {bandGapCurrent != null ? bandGapCurrent.toFixed(1) : "—"}
-                </p>
+        <div
+          className={cn(
+            "grid gap-5",
+            startNow
+              ? "lg:grid-cols-[minmax(0,1fr)_minmax(240px,22rem)] lg:items-stretch lg:gap-6 xl:gap-8"
+              : "lg:grid-cols-[minmax(0,1fr)_minmax(200px,18rem)] lg:items-end lg:gap-10",
+          )}
+        >
+          <div className="flex min-w-0 flex-col justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-light">
+                Your band gap
+              </p>
+              <div className="mt-2.5 flex flex-wrap items-end gap-4 sm:gap-5">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-light">
+                    Now
+                  </p>
+                  <p
+                    ref={nowRef}
+                    className="mt-0.5 font-mono text-[2.1rem] leading-none font-medium tracking-tight text-ink sm:text-[2.35rem]"
+                  >
+                    {bandGapCurrent != null ? bandGapCurrent.toFixed(1) : "—"}
+                  </p>
+                </div>
+                <ArrowUpRight
+                  className="mb-1.5 size-5 shrink-0 text-muted-light"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-light">
+                    Target
+                  </p>
+                  <p
+                    ref={targetRef}
+                    className="mt-0.5 font-mono text-[2.1rem] leading-none font-medium tracking-tight text-teal sm:text-[2.35rem]"
+                  >
+                    {resolvedTargetBand.toFixed(1)}
+                  </p>
+                </div>
               </div>
-              <ArrowUpRight
-                className="mb-1.5 size-5 shrink-0 text-muted-light"
-                strokeWidth={2}
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {bandGapDelta > 0 && bandGapCurrent != null ? (
+                  <span
+                    data-band-gap-chip
+                    className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-200/70"
+                  >
+                    <TrendingUp className="size-3.5" strokeWidth={2.5} aria-hidden />
+                    +{bandGapDelta.toFixed(1)} band overall to close
+                  </span>
+                ) : bandGapCurrent != null ? (
+                  <span
+                    data-band-gap-chip
+                    className="inline-flex items-center gap-1.5 rounded-full bg-cyan-soft px-2.5 py-1 text-[12px] font-semibold text-teal ring-1 ring-cyan/25"
+                  >
+                    <Sparkles className="size-3.5" strokeWidth={2.5} aria-hidden />
+                    On target
+                  </span>
+                ) : (
+                  <span
+                    data-band-gap-chip
+                    className="inline-flex items-center rounded-full bg-white/80 px-2.5 py-1 text-[12px] font-semibold text-muted ring-1 ring-ink/8"
+                  >
+                    Complete a skill check to see your gap
+                  </span>
+                )}
+                {bandGapIsPartial ? (
+                  <p data-band-gap-chip className="text-[12px] text-muted">
+                    Based on {bandGapScoredCount} of 4 skills — pending excluded
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="w-full min-w-0">
+              <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted">
+                <span>Progress to target</span>
+                <span
+                  ref={pctRef}
+                  className="font-mono font-semibold tabular-nums text-ink"
+                >
+                  {bandGapCurrent != null ? `${bandPct}%` : "—"}
+                </span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-white/85 ring-1 ring-ink/5">
+                <div
+                  ref={bandFillRef}
+                  className={cn(
+                    "h-full rounded-full will-change-[width]",
+                    bandGapCurrent != null
+                      ? "bg-gradient-to-r from-teal to-cyan"
+                      : "bg-ink/10",
+                  )}
+                  style={
+                    reduceMotion
+                      ? { width: `${bandGapCurrent != null ? bandPct : 0}%` }
+                      : { width: "0%" }
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {startNow ? (
+            <div className="relative flex h-full min-w-0 flex-col justify-between gap-4 overflow-hidden rounded-2xl bg-navy p-4 text-white sm:p-5">
+              <div
+                className="pointer-events-none absolute -top-10 -right-10 size-36 rounded-full bg-cyan/20 blur-3xl"
                 aria-hidden
               />
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-light">
-                  Target
+              <div className="relative min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan">
+                  Start now · test first
                 </p>
-                <p
-                  ref={targetRef}
-                  className="mt-0.5 font-mono text-[2.1rem] leading-none font-medium tracking-tight text-teal sm:text-[2.35rem]"
-                >
-                  {resolvedTargetBand.toFixed(1)}
+                <p className="mt-1.5 font-display text-[1.05rem] font-bold tracking-tight sm:text-lg">
+                  {startNow.title}
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-white/70">
+                  {startNow.meta}
                 </p>
               </div>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {bandGapDelta > 0 && bandGapCurrent != null ? (
-                <span
-                  data-band-gap-chip
-                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-200/70"
-                >
-                  <TrendingUp className="size-3.5" strokeWidth={2.5} aria-hidden />
-                  +{bandGapDelta.toFixed(1)} band overall to close
-                </span>
-              ) : bandGapCurrent != null ? (
-                <span
-                  data-band-gap-chip
-                  className="inline-flex items-center gap-1.5 rounded-full bg-cyan-soft px-2.5 py-1 text-[12px] font-semibold text-teal ring-1 ring-cyan/25"
-                >
-                  <Sparkles className="size-3.5" strokeWidth={2.5} aria-hidden />
-                  On target
-                </span>
-              ) : (
-                <span
-                  data-band-gap-chip
-                  className="inline-flex items-center rounded-full bg-white/80 px-2.5 py-1 text-[12px] font-semibold text-muted ring-1 ring-ink/8"
-                >
-                  Complete a skill check to see your gap
-                </span>
-              )}
-              {bandGapIsPartial ? (
-                <p data-band-gap-chip className="text-[12px] text-muted">
-                  Based on {bandGapScoredCount} of 4 skills — pending excluded
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="w-full min-w-0 lg:max-w-xs">
-            <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted">
-              <span>Progress to target</span>
-              <span
-                ref={pctRef}
-                className="font-mono font-semibold tabular-nums text-ink"
+              <Link
+                href={startNow.href}
+                onClick={() => {
+                  if (startNowCacheTasks.length > 0) {
+                    cachePlanDayTasks(startNowCacheTasks);
+                  }
+                }}
+                className="relative inline-flex min-h-11 w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan px-5 py-2.5 text-[14px] font-bold text-navy shadow-[0_0_24px_rgba(0,188,212,0.35)] transition-colors hover:bg-brand-sky-hover sm:min-h-12 sm:text-[15px]"
               >
-                {bandGapCurrent != null ? `${bandPct}%` : "—"}
-              </span>
+                {startNow.ctaLabel}
+                <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden />
+              </Link>
             </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-white/85 ring-1 ring-ink/5">
-              <div
-                ref={bandFillRef}
-                className={cn(
-                  "h-full rounded-full will-change-[width]",
-                  bandGapCurrent != null
-                    ? "bg-gradient-to-r from-teal to-cyan"
-                    : "bg-ink/10",
-                )}
-                style={
-                  reduceMotion
-                    ? { width: `${bandGapCurrent != null ? bandPct : 0}%` }
-                    : { width: "0%" }
-                }
-              />
-            </div>
-          </div>
+          ) : null}
         </div>
       </div>
 
@@ -550,46 +597,41 @@ export function DashboardWelcomeSection({
               viewport={{ once: true }}
               transition={{ duration: 0.4, ease: DASH_EASE }}
             >
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal text-white">
-                  <Focus className="size-4" strokeWidth={2.25} aria-hidden />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
-                    This week&apos;s focus
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
+                  This week&apos;s focus
+                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <p className="font-display text-xl font-bold tracking-tight text-ink sm:text-[1.35rem] sm:leading-snug">
+                    {focus.headline}
                   </p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    <p className="font-display text-xl font-bold tracking-tight text-ink sm:text-[1.35rem] sm:leading-snug">
-                      {focus.headline}
-                    </p>
-                    {focus.skillKeys.map((key) => {
-                      const tag = skillDifficulty?.[key];
-                      if (tag !== "hard" && tag !== "easy") return null;
-                      const hard = tag === "hard";
-                      return (
-                        <span
-                          key={key}
-                          className={cn(
-                            "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold",
-                            hard
-                              ? "bg-amber-50 text-amber-900 ring-1 ring-amber-200/80"
-                              : "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80",
-                          )}
-                        >
-                          {focus.skillKeys.length > 1
-                            ? `${SKILL_LABEL[key]} · `
-                            : null}
-                          {hard ? "Hard" : "Easy"}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  {focus.support ? (
-                    <p className="mt-2 max-w-md text-[13px] leading-relaxed text-muted">
-                      {focus.support}
-                    </p>
-                  ) : null}
+                  {focus.skillKeys.map((key) => {
+                    const tag = skillDifficulty?.[key];
+                    if (tag !== "hard" && tag !== "easy") return null;
+                    const hard = tag === "hard";
+                    return (
+                      <span
+                        key={key}
+                        className={cn(
+                          "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold",
+                          hard
+                            ? "bg-amber-50 text-amber-900 ring-1 ring-amber-200/80"
+                            : "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80",
+                        )}
+                      >
+                        {focus.skillKeys.length > 1
+                          ? `${SKILL_LABEL[key]} · `
+                          : null}
+                        {hard ? "Hard" : "Easy"}
+                      </span>
+                    );
+                  })}
                 </div>
+                {focus.support ? (
+                  <p className="mt-2 max-w-md text-[13px] leading-relaxed text-muted">
+                    {focus.support}
+                  </p>
+                ) : null}
               </div>
 
               <div className="mt-4 flex flex-1 flex-col justify-end border-t border-cyan/15 pt-3.5">
@@ -615,7 +657,7 @@ export function DashboardWelcomeSection({
                 </div>
 
                 <div
-                  className="flex h-[72px] items-end gap-1.5 sm:h-[80px] sm:gap-2"
+                  className="grid grid-cols-7 gap-1.5 sm:gap-2"
                   role="list"
                   aria-label={
                     weekProgress.total > 0
@@ -624,10 +666,6 @@ export function DashboardWelcomeSection({
                   }
                 >
                   {weekProgress.bars.map((bar) => {
-                    const height =
-                      bar.total === 0
-                        ? 6
-                        : Math.max(8, Math.round((bar.pct / 100) * 64));
                     const openReport = () => {
                       if (!bar.canOpenReport) return;
                       setReportDay({
@@ -636,15 +674,12 @@ export function DashboardWelcomeSection({
                       });
                     };
                     return (
-                      <div
-                        key={bar.date}
-                        role="listitem"
-                        className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
-                      >
-                        <motion.button
+                      <div key={bar.date} role="listitem" className="min-w-0">
+                        <button
                           type="button"
                           disabled={!bar.canOpenReport}
                           onClick={openReport}
+                          aria-current={bar.isToday ? "date" : undefined}
                           aria-label={
                             bar.canOpenReport
                               ? `Open growth report for ${bar.date}`
@@ -652,39 +687,6 @@ export function DashboardWelcomeSection({
                                 ? `${bar.date} upcoming`
                                 : `${bar.date} has no plan tasks`
                           }
-                          className={cn(
-                            "w-full max-w-[28px] rounded-md transition-[transform,box-shadow] duration-150",
-                            bar.canOpenReport
-                              ? "cursor-pointer hover:scale-105 hover:shadow-[0_4px_12px_rgba(8,145,178,0.25)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
-                              : "cursor-default opacity-80",
-                            bar.isFuture && bar.total === 0
-                              ? "bg-ink/[0.06]"
-                              : bar.pct >= 100
-                                ? "bg-teal"
-                                : bar.pct > 0
-                                  ? "bg-gradient-to-t from-teal to-cyan"
-                                  : bar.isToday
-                                    ? "bg-cyan/35"
-                                    : "bg-ink/[0.08]",
-                            bar.isToday && "ring-2 ring-cyan/40 ring-offset-1",
-                          )}
-                          initial={
-                            reduceMotion
-                              ? false
-                              : { height: 6, opacity: 0.5 }
-                          }
-                          whileInView={
-                            reduceMotion
-                              ? undefined
-                              : { height, opacity: 1 }
-                          }
-                          viewport={{ once: true }}
-                          transition={{
-                            duration: 0.45,
-                            delay: 0.08,
-                            ease: DASH_EASE,
-                          }}
-                          style={reduceMotion ? { height } : undefined}
                           title={
                             bar.canOpenReport
                               ? `${bar.done}/${bar.total || bar.reportTasks.length} · Open report`
@@ -692,17 +694,21 @@ export function DashboardWelcomeSection({
                                 ? "Upcoming"
                                 : "No plan tasks"
                           }
-                        />
-                        <button
-                          type="button"
-                          disabled={!bar.canOpenReport}
-                          onClick={openReport}
                           className={cn(
-                            "text-[10px] font-semibold",
+                            "flex h-9 w-full items-center justify-center rounded-full text-[12px] font-semibold transition-colors",
                             bar.canOpenReport
-                              ? "cursor-pointer hover:text-teal"
+                              ? "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
                               : "cursor-default",
-                            bar.isToday ? "text-teal" : "text-muted-light",
+                            bar.isToday
+                              ? "bg-teal text-white"
+                              : bar.pct >= 100
+                                ? "bg-teal/90 text-white"
+                                : bar.pct > 0
+                                  ? "bg-cyan/20 text-teal ring-1 ring-cyan/25"
+                                  : "bg-ink/[0.06] text-muted-light",
+                            bar.canOpenReport &&
+                              !bar.isToday &&
+                              "hover:bg-cyan-soft hover:text-teal",
                           )}
                         >
                           {bar.letter}

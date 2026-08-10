@@ -14,6 +14,7 @@ import {
   overallPlanPercent,
 } from "@/lib/dashboard-plan-math";
 import type { LearningProfile } from "@/lib/learning-types";
+import { buildDashboardStartNow } from "@/lib/plan-start-task";
 
 type UserProps = {
   firstName: string;
@@ -77,6 +78,9 @@ export async function DashboardPersonalizedSection({
   const todayPlanComplete =
     actionableToday.length > 0 &&
     actionableToday.every((t) => t.status === "done");
+  const startNow = todayPlanComplete
+    ? null
+    : buildDashboardStartNow(learning.todays_tasks);
 
   const todayPlanBlock = (
     <Suspense fallback={<PlanSkeleton />}>
@@ -118,6 +122,8 @@ export async function DashboardPersonalizedSection({
       hubProgress={learning.hub_progress}
       currentBand={learning.current_band}
       overallPlanPct={planPct}
+      startNow={startNow}
+      startNowCacheTasks={learning.todays_tasks}
     />
   );
 

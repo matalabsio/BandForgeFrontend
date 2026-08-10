@@ -123,6 +123,7 @@ export function appendSkillContext(href: string, skill: PracticeSkill): string {
 export type VideoEmbed =
   | { kind: "youtube"; embedUrl: string }
   | { kind: "vimeo"; embedUrl: string }
+  | { kind: "stream"; embedUrl: string }
   | { kind: "direct"; embedUrl: string }
   | { kind: "none" };
 
@@ -145,6 +146,16 @@ export function parseVideoEmbed(url: string): VideoEmbed {
     return {
       kind: "vimeo",
       embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+    };
+  }
+
+  const streamMatch = trimmed.match(
+    /(?:https?:\/\/)?(customer-[a-z0-9]+)\.cloudflarestream\.com\/([a-zA-Z0-9]+)(?:\/(?:iframe|watch|manifest\/video\.m3u8))?/i,
+  );
+  if (streamMatch?.[1] && streamMatch[2]) {
+    return {
+      kind: "stream",
+      embedUrl: `https://${streamMatch[1]}.cloudflarestream.com/${streamMatch[2]}/iframe`,
     };
   }
 
