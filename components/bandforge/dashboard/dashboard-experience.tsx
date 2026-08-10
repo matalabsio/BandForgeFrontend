@@ -43,7 +43,6 @@ export function DashboardExperience({
   profileTargetBand = null,
   initialMockProgressById = {},
 }: Props) {
-  const streak = summary.stats.current_streak ?? 0;
   const hasAttempts = summary.recent.length > 0;
   const overallBand = dashboardOverallBand(summary);
   const testsCompleted = summary.completed_mock_count ?? 0;
@@ -57,7 +56,6 @@ export function DashboardExperience({
         displayName={displayName}
         email={email}
         avatarUrl={avatarUrl}
-        streakDays={streak}
         showReportButton={false}
       />
 

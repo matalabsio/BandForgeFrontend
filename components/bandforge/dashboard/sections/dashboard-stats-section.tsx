@@ -28,7 +28,6 @@ export async function DashboardStatsSection({ cookieHeader, user }: Props) {
     fetchDashboardSummary(cookieHeader),
     fetchLearningProfile(cookieHeader),
   ]);
-  const streak = summary.stats.current_streak ?? 0;
   const hasAttempts = summary.recent.length > 0;
   const overallBand = dashboardOverallBand(summary);
   const testsCompleted = summary.completed_mock_count ?? 0;
@@ -43,7 +42,6 @@ export async function DashboardStatsSection({ cookieHeader, user }: Props) {
         displayName={user.displayName}
         email={user.email}
         avatarUrl={user.avatarUrl}
-        streakDays={streak}
         showReportButton={false}
       />
       {hasAttempts ? (

@@ -15,7 +15,6 @@ import { M01_MOCK_TEST_ID, M02_MOCK_TEST_ID } from "@/lib/mock-ids";
 import { fetchMockCatalogServer, fetchMockSessionServer } from "@/lib/mock-server";
 import { perfLog } from "@/lib/performance";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
-import { MockLayout } from "@/modules/mock/components/mock-layout";
 import { MockTestsUnified } from "@/modules/mock/components/mock-tests-unified";
 
 export const metadata: Metadata = {
@@ -66,7 +65,6 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
       ? (KNOWN_MOCK_ID_BY_NUMBER[requestedNumber] ?? null)
       : null;
 
-  // Overlap auth with catalog (+ session for Test 1/2) — largest SSR win when switching tests.
   t0 = performance.now();
   const userPromise = getCachedServerSession(cookieHeader);
   const dataPromise = Promise.all([
@@ -111,7 +109,6 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
 
   t0 = performance.now();
   let initialProgress = parallelSession;
-  // Test 3+ (or unknown): resolve UUID from catalog, then one session fetch.
   if (slot.available && slot.id && (!knownId || knownId !== slot.id)) {
     initialProgress = await fetchMockSessionServer(cookieHeader, slot.id);
   } else if (!slot.available || !slot.id) {
@@ -133,13 +130,11 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
   });
 
   return (
-    <MockLayout>
-      <MockTestsUnified
-        catalogSlots={panel}
-        activeNumber={number}
-        selectedSlot={slot}
-        initialProgress={initialProgress}
-      />
-    </MockLayout>
+    <MockTestsUnified
+      catalogSlots={panel}
+      activeNumber={number}
+      selectedSlot={slot}
+      initialProgress={initialProgress}
+    />
   );
 }

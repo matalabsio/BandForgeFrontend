@@ -2,21 +2,22 @@ import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 
 const PULSE = "animate-pulse bg-ink/[0.06]";
 
-/** Mirrors DashboardTopHeader (greeting card + streak / report / account). */
+/** Mirrors DashboardTopHeader (greeting card + report / account). */
 function DashboardTopHeaderSkeleton() {
   return (
-    <div className="rounded-[22px] border border-ink/[0.06] bg-white/80 p-4 sm:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 space-y-2">
-          <div className={`h-3 w-20 rounded ${PULSE}`} />
-          <div className={`h-8 w-40 max-w-full rounded-lg sm:h-9 sm:w-48 ${PULSE}`} />
-          <div className={`h-4 w-52 max-w-[90%] rounded ${PULSE}`} />
+    <div className="rounded-2xl border border-ink/[0.06] bg-white/80 px-3 py-2.5 sm:px-4">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
+        <div className="min-w-0 shrink-0 space-y-1">
+          <div className={`h-2.5 w-16 rounded ${PULSE}`} />
+          <div className={`h-6 w-28 rounded-md sm:w-36 ${PULSE}`} />
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <div className={`h-10 w-[5.5rem] rounded-xl ${PULSE}`} />
-          <div className={`h-10 w-[7rem] rounded-xl ${PULSE}`} />
-          <div className={`size-10 rounded-xl ${PULSE}`} />
-          <div className={`h-10 w-10 rounded-xl sm:w-32 ${PULSE}`} />
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className={`h-10 w-[8.75rem] shrink-0 rounded-xl sm:w-[10rem] ${PULSE}`} />
+          <div className="flex shrink-0 items-center gap-2">
+            <div className={`h-9 w-[4.25rem] rounded-xl sm:h-10 sm:w-[7rem] ${PULSE}`} />
+            <div className={`hidden size-10 rounded-xl sm:block ${PULSE}`} />
+            <div className={`h-9 w-9 rounded-xl sm:h-10 sm:w-28 ${PULSE}`} />
+          </div>
         </div>
       </div>
     </div>
@@ -31,10 +32,10 @@ function DashboardShellMainSkeleton() {
   return (
     <div className="space-y-6">
       <DashboardTopHeaderSkeleton />
-      <div className={`h-52 rounded-[22px] sm:h-56 ${PULSE}`} />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className={`h-36 rounded-2xl ${PULSE}`} />
-        <div className={`h-36 rounded-2xl ${PULSE}`} />
+      <div className={`h-52 rounded-[24px] sm:h-56 ${PULSE}`} />
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className={`h-52 rounded-[24px] ${PULSE}`} />
+        <div className={`h-52 rounded-[24px] ${PULSE}`} />
       </div>
       <div className={`h-40 rounded-[20px] ${PULSE}`} />
     </div>
@@ -49,7 +50,7 @@ function DashboardShellMainSkeleton() {
 export function DashboardAppShellSkeleton() {
   return (
     <div
-      className="bf-dashboard relative min-h-dvh bg-surface text-ink"
+      className="bf-dashboard relative min-h-dvh text-ink"
       aria-busy="true"
     >
       <span className="sr-only">Loading BandForge…</span>
@@ -91,10 +92,10 @@ export function DashboardContentSkeleton() {
   return (
     <div className="bf-dash-enter space-y-6">
       <DashboardTopHeaderSkeleton />
-      <div className={`h-52 rounded-[22px] sm:h-56 ${PULSE}`} />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className={`h-36 rounded-2xl ${PULSE}`} />
-        <div className={`h-36 rounded-2xl ${PULSE}`} />
+      <div className={`h-52 rounded-[24px] sm:h-56 ${PULSE}`} />
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className={`h-52 rounded-[24px] ${PULSE}`} />
+        <div className={`h-52 rounded-[24px] ${PULSE}`} />
       </div>
       <div className={`h-40 rounded-[20px] ${PULSE}`} />
     </div>

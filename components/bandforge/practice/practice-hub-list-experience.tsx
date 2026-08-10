@@ -24,7 +24,7 @@ import {
 } from "@/components/bandforge/dashboard/icons";
 import { DASH_EASE } from "@/components/bandforge/dashboard/motion";
 import type { MockUnlock, PracticeHub, PracticeSkill } from "@/lib/practice-types";
-import { practiceSkillLabel } from "@/lib/practice-types";
+import { PRACTICE_SKILLS, practiceSkillLabel } from "@/lib/practice-types";
 import { skillMockPath } from "@/lib/practice-submit";
 import { cn } from "@/lib/utils";
 import { PrefetchHrefs } from "@/components/bandforge/prefetch-hrefs";
@@ -130,6 +130,28 @@ export function PracticeHubListExperience({
   return (
     <div className="relative space-y-6 pb-2 sm:space-y-8">
       <PrefetchHrefs hrefs={prefetchHrefs} />
+      <nav
+        className="flex gap-1 overflow-x-auto rounded-xl border border-border-soft bg-white p-1"
+        aria-label="Practice skills"
+      >
+        {PRACTICE_SKILLS.map((key) => {
+          const active = key === skill;
+          return (
+            <Link
+              key={key}
+              href={`/practice/${key}`}
+              className={cn(
+                "min-w-0 flex-1 rounded-lg px-3 py-2.5 text-center text-[13px] font-semibold whitespace-nowrap transition-colors",
+                active
+                  ? "bg-cyan text-white"
+                  : "text-muted hover:bg-ink/5 hover:text-navy",
+              )}
+            >
+              {practiceSkillLabel(key)}
+            </Link>
+          );
+        })}
+      </nav>
       <div
         className="pointer-events-none absolute -inset-x-4 -top-6 -z-10 h-72 overflow-hidden sm:-inset-x-8"
         aria-hidden

@@ -2,7 +2,6 @@ import type { ComponentType, SVGProps } from "react";
 import {
   BarChartIcon,
   FileTextIcon,
-  FlameIcon,
   HeadphonesIcon,
   HomeIcon,
 } from "@/components/bandforge/dashboard/icons";
@@ -29,10 +28,9 @@ export const DASHBOARD_NAV: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", Icon: HomeIcon },
       { label: "Study Plan", href: "/study-plan", Icon: FileTextIcon },
-      { label: "Practice", href: "/practice/listening", Icon: HeadphonesIcon },
+      { label: "Practice", href: "/practice", Icon: HeadphonesIcon },
       { label: "Mock tests", href: "/test", Icon: FileTextIcon },
       { label: "Progress", href: "/scores", Icon: BarChartIcon },
-      { label: "Streak", href: "/streak", Icon: FlameIcon },
     ],
   },
 ];
@@ -40,7 +38,7 @@ export const DASHBOARD_NAV: NavGroup[] = [
 export const MOBILE_BOTTOM_NAV: NavLink[] = [
   { label: "Home", href: "/dashboard", Icon: HomeIcon },
   { label: "Plan", href: "/study-plan", Icon: FileTextIcon },
-  { label: "Practice", href: "/practice/listening", Icon: HeadphonesIcon },
+  { label: "Practice", href: "/practice", Icon: HeadphonesIcon },
   { label: "Mocks", href: "/test", Icon: FileTextIcon },
   { label: "Progress", href: "/scores", Icon: BarChartIcon },
 ];
@@ -51,7 +49,7 @@ export function isNavItemActive(pathname: string, href: string): boolean {
   if (href === "/study-plan") {
     return pathname === "/study-plan" || pathname.startsWith("/study-plan/");
   }
-  if (href.startsWith("/practice/")) {
+  if (href === "/practice" || href.startsWith("/practice/")) {
     return pathname === "/practice" || pathname.startsWith("/practice/");
   }
   if (href === "/test") {
