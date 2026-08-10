@@ -265,7 +265,7 @@ export function DashboardShell({
       </div>
 
       <nav
-        className="fixed right-0 bottom-0 left-0 z-20 grid grid-cols-5 border-t border-border-soft bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
+        className="fixed right-0 bottom-0 left-0 z-20 grid grid-cols-4 border-t border-border-soft bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
         aria-label="Mobile navigation"
       >
         {MOBILE_BOTTOM_NAV.map((item) => {

@@ -6,18 +6,17 @@ const PULSE = "animate-pulse bg-ink/[0.06]";
 function DashboardTopHeaderSkeleton() {
   return (
     <div className="rounded-2xl border border-ink/[0.06] bg-white/80 px-3 py-2.5 sm:px-4">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
-        <div className="min-w-0 shrink-0 space-y-1">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className={`h-2.5 w-16 rounded ${PULSE}`} />
           <div className={`h-6 w-28 rounded-md sm:w-36 ${PULSE}`} />
+          <div className={`h-3 w-24 rounded sm:w-28 ${PULSE}`} />
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className={`h-10 w-[8.75rem] shrink-0 rounded-xl sm:w-[10rem] ${PULSE}`} />
-          <div className="flex shrink-0 items-center gap-2">
-            <div className={`h-9 w-[4.25rem] rounded-xl sm:h-10 sm:w-[7rem] ${PULSE}`} />
-            <div className={`hidden size-10 rounded-xl sm:block ${PULSE}`} />
-            <div className={`h-9 w-9 rounded-xl sm:h-10 sm:w-28 ${PULSE}`} />
-          </div>
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className={`hidden h-10 w-[9.75rem] rounded-xl sm:block lg:w-[10.5rem] ${PULSE}`} />
+          <div className={`h-9 w-[4.25rem] rounded-xl sm:h-10 sm:w-[7rem] ${PULSE}`} />
+          <div className={`hidden size-10 rounded-xl sm:block ${PULSE}`} />
+          <div className={`h-9 w-9 rounded-xl sm:h-10 sm:w-28 ${PULSE}`} />
         </div>
       </div>
     </div>
@@ -30,14 +29,16 @@ function DashboardTopHeaderSkeleton() {
  */
 function DashboardShellMainSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <DashboardTopHeaderSkeleton />
-      <div className={`h-52 rounded-[24px] sm:h-56 ${PULSE}`} />
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 sm:gap-6 md:grid-cols-2">
+        <div className={`h-52 rounded-[24px] sm:h-56 ${PULSE}`} />
+        <div className={`h-52 rounded-[24px] sm:h-56 ${PULSE}`} />
+      </div>
+      <div className="grid gap-5 sm:gap-6 md:grid-cols-2">
         <div className={`h-52 rounded-[24px] ${PULSE}`} />
         <div className={`h-52 rounded-[24px] ${PULSE}`} />
       </div>
-      <div className={`h-40 rounded-[20px] ${PULSE}`} />
     </div>
   );
 }
@@ -70,10 +71,10 @@ export function DashboardAppShellSkeleton() {
       </div>
 
       <nav
-        className="fixed right-0 bottom-0 left-0 z-20 grid grid-cols-5 border-t border-border-soft bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
+        className="fixed right-0 bottom-0 left-0 z-20 grid grid-cols-4 border-t border-border-soft bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
         aria-hidden
       >
-        {Array.from({ length: 5 }, (_, i) => (
+        {Array.from({ length: 4 }, (_, i) => (
           <div
             key={i}
             className="flex min-h-[44px] flex-col items-center justify-center gap-1.5"
@@ -90,14 +91,16 @@ export function DashboardAppShellSkeleton() {
 /** Loading placeholder for dashboard and profile RSC routes (inside DashboardShell). */
 export function DashboardContentSkeleton() {
   return (
-    <div className="bf-dash-enter space-y-6">
+    <div className="bf-dash-enter space-y-5 sm:space-y-6">
       <DashboardTopHeaderSkeleton />
-      <div className={`h-52 rounded-[24px] sm:h-56 ${PULSE}`} />
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 sm:gap-6 md:grid-cols-2">
+        <div className={`h-52 rounded-[24px] sm:h-56 ${PULSE}`} />
+        <div className={`h-52 rounded-[24px] sm:h-56 ${PULSE}`} />
+      </div>
+      <div className="grid gap-5 sm:gap-6 md:grid-cols-2">
         <div className={`h-52 rounded-[24px] ${PULSE}`} />
         <div className={`h-52 rounded-[24px] ${PULSE}`} />
       </div>
-      <div className={`h-40 rounded-[20px] ${PULSE}`} />
     </div>
   );
 }

@@ -1,4 +1,8 @@
-import type { LearningStudyPlan, LearningProfile } from "@/lib/learning-types";
+import type {
+  LearningStudyPlan,
+  LearningProfile,
+  SkillHubProgress,
+} from "@/lib/learning-types";
 import {
   bandGapSummary,
   type SkillBands,
@@ -63,9 +67,43 @@ export function resolveExamTimeline(
   return { examDate, daysRemaining, currentDay, totalDays };
 }
 
+const SKILL_MODULES = ["listening", "reading", "writing", "speaking"] as const;
+
+/** Full mock tests unlock only after every skill's practice plan is done. */
+export function isFullPracticePlanComplete(
+  hubProgress?: Record<string, SkillHubProgress> | null,
+  plan?: LearningStudyPlan | null,
+): boolean {
+  const hasHubRows = SKILL_MODULES.some((skill) => hubProgress?.[skill]);
+  if (hasHubRows) {
+    return SKILL_MODULES.every((skill) => {
+      const row = hubProgress?.[skill];
+      if (!row) return false;
+      if (row.mock_unlocked) return true;
+      const required = row.required_for_mock || row.total_count;
+      return required > 0 && row.completed_count >= required;
+    });
+  }
+
+  let total = 0;
+  let done = 0;
+  for (const week of plan?.weeks ?? []) {
+    for (const day of week.days) {
+      for (const task of day.tasks) {
+        if (!SKILL_MODULES.includes(task.module as (typeof SKILL_MODULES)[number])) {
+          continue;
+        }
+        if (task.status === "skipped") continue;
+        total += 1;
+        if (task.status === "done") done += 1;
+      }
+    }
+  }
+  return total > 0 && done >= total;
+}
+
 /** Overall skill-task completion % through today (shared by dashboard + hubs). */
 export function overallPlanPercent(plan: LearningStudyPlan): number {
-  const skillModules = ["listening", "reading", "writing", "speaking"];
   const today = new Date().toISOString().slice(0, 10);
   let done = 0;
   let total = 0;
@@ -73,7 +111,7 @@ export function overallPlanPercent(plan: LearningStudyPlan): number {
     for (const day of week.days) {
       if (day.date > today) continue;
       for (const task of day.tasks) {
-        if (!skillModules.includes(task.module)) continue;
+        if (!SKILL_MODULES.includes(task.module as (typeof SKILL_MODULES)[number])) continue;
         total += 1;
         if (task.status === "done") done += 1;
       }

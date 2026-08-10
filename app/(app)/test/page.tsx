@@ -15,6 +15,12 @@ import { M01_MOCK_TEST_ID, M02_MOCK_TEST_ID } from "@/lib/mock-ids";
 import { fetchMockCatalogServer, fetchMockSessionServer } from "@/lib/mock-server";
 import { perfLog } from "@/lib/performance";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
+import { MockPlanLocked } from "@/components/bandforge/mock/mock-plan-locked";
+import { isFullPracticePlanComplete } from "@/lib/dashboard-plan-math";
+import {
+  emptyLearningProfile,
+  fetchLearningProfile,
+} from "@/lib/learning-server";
 import { MockTestsUnified } from "@/modules/mock/components/mock-tests-unified";
 
 export const metadata: Metadata = {
@@ -72,6 +78,7 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
     knownId
       ? fetchMockSessionServer(cookieHeader, knownId)
       : Promise.resolve(null),
+    fetchLearningProfile(cookieHeader),
   ]);
 
   const user = await userPromise;
@@ -83,7 +90,11 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
 
   redirectIfUnauthenticated(user, mockTestsIndexPath(), cookieHeader);
 
-  const [catalog, parallelSession] = await dataPromise;
+  const [catalog, parallelSession, learning] = await dataPromise;
+  const profile = learning ?? emptyLearningProfile(user!.id);
+  if (!isFullPracticePlanComplete(profile.hub_progress, profile.study_plan)) {
+    return <MockPlanLocked />;
+  }
   const catalogFetchMs = Math.round(performance.now() - t0);
   perfLog("test-page-ssr", {
     step: "catalog-session-fetch",

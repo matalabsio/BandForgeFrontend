@@ -55,8 +55,8 @@ export default async function PracticeIndexPage() {
             Practice
           </h1>
           <p className="mt-1.5 max-w-xl text-[14px] leading-relaxed text-muted">
-            Pick a skill to open its hubs. Finish sets in order to unlock that
-            skill&apos;s mock.
+            Pick a skill and finish its hubs. Full mock tests unlock after you
+            complete the whole practice plan.
           </p>
         </header>
 

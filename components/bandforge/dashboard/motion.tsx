@@ -125,7 +125,7 @@ export function DashPageMotion({ children, className }: DashPageProps) {
 
   return (
     <motion.div
-      className={cn("relative space-y-5 sm:space-y-7", className)}
+      className={cn("relative space-y-5 sm:space-y-6", className)}
       initial={reduce ? false : "hidden"}
       animate={reduce ? undefined : "show"}
       variants={

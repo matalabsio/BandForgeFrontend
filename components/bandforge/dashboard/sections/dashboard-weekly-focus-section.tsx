@@ -73,17 +73,17 @@ function presentWeeklyFocus(
 
   let support: string | null = null;
   if (hardFocus.length === 1 && skillKeys.length === 1) {
-    support = "Highest priority for closing your band gap this week.";
+    support = "Highest priority this week.";
   } else if (hardFocus.length > 0) {
-    support = `${hardFocus.map((k) => SKILL_LABEL[k]).join(" & ")} marked hard — extra reps here pay off fastest.`;
+    support = `${hardFocus.map((k) => SKILL_LABEL[k]).join(" & ")} marked hard.`;
   } else if (easyFocus.length > 0 && skillKeys.length > 0) {
-    support = "Build confidence here while you protect harder skills.";
+    support = "Build confidence here this week.";
   } else if (skillKeys.length === 1) {
     support = afterDash
       ? afterDash.charAt(0).toUpperCase() + afterDash.slice(1)
       : "Primary focus this week.";
   } else if (skillKeys.length > 0) {
-    support = "Your plan stacks today's work around this focus.";
+    support = "Today’s work is built around this focus.";
   }
 
   return { headline, skillKeys, support };
@@ -195,20 +195,12 @@ function formatExamDate(examDate: string | null | undefined): string | null {
   if (!examDate) return null;
   const parsed = new Date(`${examDate.slice(0, 10)}T12:00:00`);
   if (Number.isNaN(parsed.getTime())) return null;
+  const sameYear = parsed.getFullYear() === new Date().getFullYear();
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "short",
-    year: "numeric",
+    year: sameYear ? undefined : "numeric",
   }).format(parsed);
-}
-
-function todayStatusLabel(bar: WeekDayBar | undefined, currentDay: number | null): string {
-  const dayPrefix =
-    currentDay != null && currentDay > 0 ? `Day ${currentDay}` : "Today";
-  if (!bar || bar.total === 0) return `${dayPrefix} · Rest day`;
-  if (bar.pct >= 100) return `${dayPrefix} · Complete`;
-  if (bar.done > 0) return `${dayPrefix} · In progress · ${bar.done}/${bar.total}`;
-  return `${dayPrefix} · Active · ${bar.done}/${bar.total}`;
 }
 
 export function DashboardWeeklyFocusSection({
@@ -241,45 +233,33 @@ export function DashboardWeeklyFocusSection({
   const targetLabel =
     targetBand != null && targetBand > 0 ? targetBand.toFixed(1) : "—";
   const examLabel = formatExamDate(examDate);
-  const todayBar = weekProgress.bars.find((bar) => bar.isToday);
-  const activeStatus = todayStatusLabel(todayBar, currentDay);
 
   return (
     <motion.section
-      className="flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white p-4 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-5"
+      className="flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white p-5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-6"
       aria-labelledby="weekly-focus-heading"
       initial={reduceMotion ? false : { opacity: 0, y: 14 }}
       whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.12 }}
       transition={{ duration: 0.45, ease: DASH_EASE }}
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2
-            id="weekly-focus-heading"
-            className="font-display text-lg font-bold tracking-tight text-ink sm:text-xl"
-          >
-            This week&apos;s focus
-          </h2>
-          <p className="mt-0.5 text-[13px] text-muted">
-            Tap a day for its report card
-          </p>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="text-[11px] font-semibold tabular-nums text-teal">
-            {examLabel ? `Exam · ${examLabel}` : "Exam date unset"}
-          </p>
-          <p className="mt-0.5 text-[11px] font-semibold text-ink">
-            {activeStatus}
-          </p>
-        </div>
+      <div className="flex items-start justify-between gap-3">
+        <h2
+          id="weekly-focus-heading"
+          className="font-display text-lg font-bold tracking-tight text-ink sm:text-xl"
+        >
+          This week&apos;s focus
+        </h2>
+        <p className="shrink-0 pt-1 text-[12px] font-semibold tabular-nums text-muted">
+          {examLabel ? `Exam ${examLabel}` : "Exam unset"}
+        </p>
       </div>
 
       {focus ? (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="mt-4 flex min-h-0 flex-1 flex-col gap-5">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="font-display text-[1.65rem] font-bold tracking-tight text-ink sm:text-[1.85rem] sm:leading-none">
+              <p className="font-display text-xl font-bold tracking-tight text-ink sm:text-2xl sm:leading-none">
                 {focus.headline}
               </p>
               {focus.skillKeys.map((key) => {
@@ -305,39 +285,19 @@ export function DashboardWeeklyFocusSection({
               })}
             </div>
             {focus.support ? (
-              <p className="mt-2 text-[13px] leading-relaxed text-muted">
+              <p className="mt-1.5 text-[13px] leading-snug text-muted">
                 {focus.support}
               </p>
             ) : null}
           </div>
 
-          <div className="mt-auto pt-6">
-            <div className="mb-2 flex items-baseline justify-between gap-3">
-              <p className="text-[12px] font-semibold text-ink">Week progress</p>
-              <p className="font-mono text-[12px] font-semibold tabular-nums text-muted">
-                {weekProgress.total > 0
-                  ? `${weekProgress.done}/${weekProgress.total} · ${weekProgress.pct}%`
-                  : "No tasks yet"}
-              </p>
-            </div>
+          <div className="mt-auto">
             <div
-              className="mb-4 h-1.5 overflow-hidden rounded-full bg-ink/[0.06]"
-              aria-hidden
-            >
-              <div
-                className="h-full rounded-full bg-teal transition-[width] duration-500"
-                style={{
-                  width: `${weekProgress.total > 0 ? weekProgress.pct : 0}%`,
-                }}
-              />
-            </div>
-
-            <div
-              className="grid grid-cols-7 gap-1.5 sm:gap-2"
+              className="grid grid-cols-7 gap-2"
               role="list"
               aria-label={
                 weekProgress.total > 0
-                  ? `This week ${weekProgress.pct}% complete. Tap a day to open its growth report.`
+                  ? `This week ${weekProgress.done} of ${weekProgress.total} focus tasks done. Tap a day to open its growth report.`
                   : "No focus tasks scheduled this week yet"
               }
             >
@@ -371,7 +331,7 @@ export function DashboardWeeklyFocusSection({
                             : "No plan tasks"
                       }
                       className={cn(
-                        "flex h-9 w-full items-center justify-center rounded-full text-[12px] font-semibold transition-colors",
+                        "flex h-9 w-full items-center justify-center rounded-xl text-[12px] font-semibold transition-colors duration-200 sm:h-10",
                         bar.canOpenReport
                           ? "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
                           : "cursor-default",
@@ -393,10 +353,16 @@ export function DashboardWeeklyFocusSection({
                 );
               })}
             </div>
+            <p className="mt-2 text-[12px] text-muted">
+              {weekProgress.total > 0
+                ? `${weekProgress.done}/${weekProgress.total} this week`
+                : "No focus tasks yet"}
+              {currentDay != null && currentDay > 0 ? ` · Day ${currentDay}` : ""}
+            </p>
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col justify-center">
+        <div className="mt-4 flex flex-1 flex-col justify-center">
           <p className="font-display text-xl font-bold tracking-tight text-ink">
             Stay consistent toward band {targetLabel}
           </p>

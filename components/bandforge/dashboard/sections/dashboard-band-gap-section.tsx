@@ -26,14 +26,14 @@ export function DashboardBandGapSection({
   return (
     <motion.section
       ref={rootRef}
-      className="relative flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white p-4 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-5"
+      className="relative flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white p-5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-6"
       aria-labelledby="band-performance-heading"
       initial={reduceMotion ? false : { opacity: 0, y: 14 }}
       whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.12 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="mb-1 flex items-start justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="min-w-0">
           <h2
             id="band-performance-heading"
