@@ -28,8 +28,16 @@ export type PracticeHub = {
   locked_reason?: string | null;
 };
 
+export type PracticeHubVideo = {
+  title: string;
+  url: string;
+  duration_min: number;
+  tag?: string | null;
+  stream_uid?: string | null;
+};
+
 export type PracticeHubDetail = PracticeHub & {
-  videos: { title: string; url: string; duration_min: number }[];
+  videos: PracticeHubVideo[];
   practice_prompt: string;
   submit_config: Record<string, unknown>;
 };

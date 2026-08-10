@@ -42,6 +42,11 @@ import type {
 } from "@/lib/learning-types";
 import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
 import {
+  findNextStartTask,
+  isPlanTaskUnavailable,
+  planTaskOpenHref,
+} from "@/lib/plan-start-task";
+import {
   cachePlanDayTasks,
   mergePlanDayStatusesIntoTasks,
   planTaskStatusesDiffer,
@@ -148,34 +153,11 @@ function progressPercent(done: number, total: number): number {
 }
 
 function isUnavailable(task: LearningStudyTask): boolean {
-  return (
-    !task.hub_id ||
-    (typeof task.href === "string" && task.href.includes("unavailable=1"))
-  );
+  return isPlanTaskUnavailable(task);
 }
 
 function taskOpenHref(task: LearningStudyTask): string {
-  return resolveTodayTaskHref({
-    skill: task.module,
-    hubId: task.hub_id,
-    taskType: task.task_type,
-    taskId: task.id,
-    fallbackHref: task.href,
-  });
-}
-
-/** Prefer practice/submit over watch so users jump into a test, not content. */
-function findNextStartTask(tasks: LearningStudyTask[]): LearningStudyTask | null {
-  const pending = tasks.filter(
-    (t) => t.status !== "skipped" && t.status !== "done" && !isUnavailable(t),
-  );
-  if (pending.length === 0) return null;
-  const ranked = [...pending].sort((a, b) => {
-    const rank = (t: LearningStudyTask) =>
-      t.task_type === "practice" ? 0 : t.task_type === "submit" ? 1 : 2;
-    return rank(a) - rank(b);
-  });
-  return ranked[0] ?? null;
+  return planTaskOpenHref(task);
 }
 
 function nextPracticeSkillHref(
@@ -908,7 +890,7 @@ export function TodaysPlanPanel({
         onCatchUp={markCatchUpOffered}
       />
 
-      {!allDone && nextStart ? (
+      {!embedded && !allDone && nextStart ? (
         <DashReveal className="relative overflow-hidden rounded-[24px] border border-navy/15 bg-navy p-4 text-white sm:p-5">
           <div
             className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-cyan/20 blur-3xl"
