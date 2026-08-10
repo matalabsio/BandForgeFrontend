@@ -140,6 +140,8 @@ export type DashboardStreak = {
   longest_streak: number;
   activity_days?: Array<{ date: string; count: number }>;
   week_active_days?: number;
+  prep_start?: string | null;
+  exam_date?: string | null;
 };
 
 const EMPTY_STREAK: DashboardStreak = {
@@ -147,6 +149,8 @@ const EMPTY_STREAK: DashboardStreak = {
   longest_streak: 0,
   activity_days: [],
   week_active_days: 0,
+  prep_start: null,
+  exam_date: null,
 };
 
 const STREAK_FETCH_MS = 4_000;
@@ -182,6 +186,8 @@ export async function fetchDashboardStreak(
           ? data.activity_days
           : [],
         week_active_days: Number(data?.week_active_days) || 0,
+        prep_start: data?.prep_start?.slice(0, 10) ?? null,
+        exam_date: data?.exam_date?.slice(0, 10) ?? null,
       };
       setMemCached(key, value, 30_000);
       return value;

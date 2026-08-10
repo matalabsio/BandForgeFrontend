@@ -53,7 +53,12 @@ export async function DashboardPersonalizedSection({
     actionableToday.every((t) => t.status === "done");
   const startNow = todayPlanComplete
     ? null
-    : buildDashboardStartNow(learning.todays_tasks);
+    : buildDashboardStartNow(learning.todays_tasks) ?? {
+        href: "/study-plan/today",
+        title: "Jump into today’s practice",
+        meta: "Open today’s plan and start the next test",
+        ctaLabel: "Begin Practice",
+      };
 
   const welcomeBlock = (
     <DashboardWelcomeSection
@@ -88,7 +93,7 @@ export async function DashboardPersonalizedSection({
 
       <DashPageItem>
         <Suspense fallback={<SkillsSkeleton />}>
-          <div className="grid gap-5 sm:gap-6 md:grid-cols-2 md:items-stretch">
+          <div className="grid gap-5 sm:gap-6 md:grid-cols-2 md:items-start">
             <DashboardWeeklyFocusSection
               weeklyFocus={studyPlan.weekly_focus}
               skillDifficulty={

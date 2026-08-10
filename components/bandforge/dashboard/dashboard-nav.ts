@@ -36,12 +36,13 @@ export const DASHBOARD_NAV: NavGroup[] = [
   },
 ];
 
-/** Mobile tab bar — daily shortcuts. Full list is in the sidebar drawer. */
+/** Mobile / tablet tab bar — full primary set (no sidebar drawer below lg). */
 export const MOBILE_BOTTOM_NAV: NavLink[] = [
   { label: "Today", href: "/dashboard", Icon: HomeIcon },
   { label: "Streak", href: "/streak", Icon: FlameIcon },
   { label: "Plan", href: "/study-plan", Icon: CalendarIcon },
   { label: "Practice", href: "/practice", Icon: HeadphonesIcon },
+  { label: "Library", href: "/content-library", Icon: BookIcon },
 ];
 
 export function isNavItemActive(pathname: string, href: string): boolean {

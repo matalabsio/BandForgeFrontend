@@ -26,7 +26,7 @@ export function DashboardBandGapSection({
   return (
     <motion.section
       ref={rootRef}
-      className="relative flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white p-5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-6"
+      className="relative flex min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white p-5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-6"
       aria-labelledby="band-performance-heading"
       initial={reduceMotion ? false : { opacity: 0, y: 14 }}
       whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
@@ -53,7 +53,7 @@ export function DashboardBandGapSection({
         </p>
       </div>
 
-      <LazyMount className="min-h-[120px] flex-1">
+      <LazyMount className="min-h-[120px]">
         <BandGapTable bands={bands} targetBand={targetBand} animate embedded />
       </LazyMount>
     </motion.section>

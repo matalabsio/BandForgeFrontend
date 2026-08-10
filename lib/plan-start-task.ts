@@ -59,14 +59,14 @@ export function buildDashboardStartNow(
     task.duration_min != null ? ` · ~${task.duration_min} min` : "";
 
   return {
-    href: "/study-plan/today",
+    href: planTaskOpenHref(task),
     title:
       task.task_type === "practice"
         ? "Jump into today’s practice"
         : task.task_type === "submit"
           ? "Finish today’s submit task"
           : task.title,
-    meta: `${skill}${mins} · Open today’s plan to start`,
+    meta: `${skill}${mins} · Starts the test now`,
     ctaLabel: "Begin Practice",
   };
 }

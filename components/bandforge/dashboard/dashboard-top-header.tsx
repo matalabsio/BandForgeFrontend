@@ -1,17 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { FileText } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import {
-  BellIcon,
-  ChevronDownIcon,
-} from "@/components/bandforge/dashboard/icons";
 import { DASH_EASE } from "@/components/bandforge/dashboard/motion";
 import { timeGreeting } from "@/components/bandforge/dashboard/utils";
-import { cn } from "@/lib/utils";
 
 /** Fired by the header so TodaysPlanPanel can open the growth report modal. */
 export const OPEN_DAILY_REPORT_EVENT = "bf:open-daily-report";
@@ -30,7 +22,7 @@ export type HeaderPlanTimeline = {
 
 type Props = {
   firstName: string;
-  displayName: string;
+  displayName?: string;
   email?: string | null;
   avatarUrl?: string | null;
   /** Show the daily growth report shortcut (dashboard with plan). */
@@ -100,21 +92,10 @@ function examCountdown(
 
 export function DashboardTopHeader({
   firstName,
-  displayName,
-  email = null,
-  avatarUrl = null,
   showReportButton = true,
   planTimeline = null,
 }: Props) {
   const reduce = useReducedMotion();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const initial = displayName.trim().charAt(0).toUpperCase() || "B";
-  const triggerLabel =
-    firstName.trim() || displayName.split("@")[0] || "Account";
-  const emailLine =
-    email?.trim() || (displayName.includes("@") ? displayName : null);
   const timelineDay = planTimeline?.currentDay ?? null;
   const timelineTotal = planTimeline?.totalDays ?? null;
   const showTimeline = planTimeline != null;
@@ -128,98 +109,6 @@ export function DashboardTopHeader({
   );
   const examLabel = formatExamDate(planTimeline?.examDate);
   const nameSubheading = greetingSubheading(planTimeline);
-
-  const updateMenuPosition = useCallback(() => {
-    const el = triggerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setMenuPos({
-      top: rect.bottom + 8,
-      right: Math.max(8, window.innerWidth - rect.right),
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    updateMenuPosition();
-    const onResize = () => updateMenuPosition();
-    window.addEventListener("resize", onResize);
-    window.addEventListener("scroll", onResize, true);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("scroll", onResize, true);
-    };
-  }, [menuOpen, updateMenuPosition]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [menuOpen]);
-
-  const menu =
-    menuOpen && typeof document !== "undefined"
-      ? createPortal(
-          <>
-            <button
-              type="button"
-              className="fixed inset-0 z-[200] cursor-default bg-transparent"
-              aria-label="Close menu"
-              onClick={() => setMenuOpen(false)}
-            />
-            <motion.div
-              role="menu"
-              initial={reduce ? false : { opacity: 0, y: -6, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.2, ease: DASH_EASE }}
-              className="fixed z-[210] min-w-[220px] max-w-[min(280px,calc(100vw-16px))] overflow-hidden rounded-2xl border border-ink/10 bg-white py-1 shadow-[0_16px_48px_rgba(15,23,42,0.16)]"
-              style={{ top: menuPos.top, right: menuPos.right }}
-            >
-              <div className="border-b border-ink/[0.06] px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 shrink-0 overflow-hidden rounded-full bg-navy text-xs font-bold text-white">
-                    {avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={avatarUrl}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center">
-                        {initial}
-                      </span>
-                    )}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-bold text-ink">
-                      {triggerLabel}
-                    </p>
-                    {emailLine ? (
-                      <p className="mt-0.5 truncate text-[11px] text-muted">
-                        {emailLine}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-              <Link
-                href="/profile"
-                role="menuitem"
-                className="block cursor-pointer px-4 py-2.5 text-[13px] font-medium text-ink transition-colors hover:bg-cyan-soft/50 hover:text-teal"
-                onClick={() => setMenuOpen(false)}
-              >
-                Profile
-              </Link>
-            </motion.div>
-          </>,
-          document.body,
-        )
-      : null;
-
   const markerLeft = Math.min(100, Math.max(0, timelinePct));
 
   return (
@@ -301,52 +190,9 @@ export function DashboardTopHeader({
                 <span className="hidden sm:inline">Report card</span>
               </button>
             ) : null}
-
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="hidden size-10 cursor-pointer items-center justify-center rounded-xl border border-ink/8 bg-white text-muted transition-colors duration-200 hover:border-cyan/35 hover:text-teal sm:flex"
-            >
-              <BellIcon className="size-4 sm:size-5" />
-            </button>
-
-            <button
-              ref={triggerRef}
-              type="button"
-              onClick={() => setMenuOpen((v) => !v)}
-              className="flex max-w-[11rem] cursor-pointer items-center gap-1.5 rounded-xl border border-ink/8 bg-white py-1 pl-1 pr-1.5 transition-colors duration-200 hover:border-cyan/30 sm:max-w-[13rem] sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-2.5"
-              aria-expanded={menuOpen}
-              aria-haspopup="menu"
-            >
-              <span className="flex size-7 shrink-0 overflow-hidden rounded-full bg-navy text-[11px] font-bold text-white sm:size-8 sm:text-xs">
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center">
-                    {initial}
-                  </span>
-                )}
-              </span>
-              <span className="hidden min-w-0 truncate text-[12px] font-semibold text-ink sm:block sm:text-[13px]">
-                {triggerLabel}
-              </span>
-              <ChevronDownIcon
-                className={cn(
-                  "hidden size-4 shrink-0 text-ink/35 transition-transform duration-200 sm:block",
-                  menuOpen && "rotate-180",
-                )}
-              />
-            </button>
           </div>
         </div>
       </motion.div>
-
-      {menu}
     </header>
   );
 }
