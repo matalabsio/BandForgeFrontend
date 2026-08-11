@@ -97,9 +97,7 @@ export function DashboardSidebarNav({
             <p className="text-[11px] text-ink/45">Edit profile</p>
           </div>
         </Link>
-        <div className="lg:hidden">
-          <SignOutButton />
-        </div>
+        <SignOutButton />
       </div>
     </>
   );

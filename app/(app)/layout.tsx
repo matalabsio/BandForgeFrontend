@@ -41,10 +41,8 @@ export default async function BandforgeAppLayout({
 
   const quietChrome = bandforgeQuietCheckoutChrome(pathname);
   const hideHeader = bandforgeHideShellHeader(pathname) || quietChrome;
-  const shellDisplayName = hideHeader
-    ? "Account"
-    : formatUserDisplayName(user);
-  const shellAvatarUrl = hideHeader ? null : (user.avatar_display_url ?? null);
+  const shellDisplayName = formatUserDisplayName(user);
+  const shellAvatarUrl = user.avatar_display_url ?? null;
   const showPremiumCta =
     subResult.known && !hasFullSkillProgram(subResult.subscription);
 

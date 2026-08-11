@@ -26,6 +26,14 @@ export type PlanResultContext = {
 
 const STORAGE_KEY = "bf-plan-day-tasks";
 
+/** Fired after sessionStorage plan-day task cache writes (client only). */
+export const PLAN_DAY_TASKS_UPDATED_EVENT = "bf:plan-day-tasks-updated";
+
+function notifyPlanDayTasksUpdated(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(PLAN_DAY_TASKS_UPDATED_EVENT));
+}
+
 type DayBucket = {
   date: string;
   tasks: PlanDayTaskCacheRow[];
@@ -79,6 +87,7 @@ function writeBucket(bucket: DayBucket): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(bucket));
+    notifyPlanDayTasksUpdated();
   } catch {
     /* ignore quota */
   }

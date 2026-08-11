@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useReducedMotion } from "motion/react";
+import { ArrowRight } from "lucide-react";
 
 import { FlameIcon } from "@/components/bandforge/dashboard/icons";
-import { BfSectionEyebrow, BfSectionHeading } from "@/components/bandforge/ui";
-import { getApiUrl } from "@/lib/api";
+import { StreakContributionCalendar } from "@/components/bandforge/streak/streak-contribution-calendar";
+import { examApiCall } from "@/lib/exam-api-call";
 import { cn } from "@/lib/utils";
 
 type ActivityDay = { date: string; count: number };
@@ -15,50 +17,46 @@ type StreakPayload = {
   longest_streak: number;
   activity_days: ActivityDay[];
   week_active_days: number;
+  prep_start: string | null;
+  exam_date: string | null;
 };
 
 const MILESTONES = [3, 7, 14, 30, 60, 100];
 
-function weekdayLabel(iso: string): string {
-  const d = new Date(`${iso}T12:00:00`);
-  return d.toLocaleDateString(undefined, { weekday: "narrow" });
+function toPayload(
+  data: Partial<StreakPayload> | null | undefined,
+): StreakPayload {
+  return {
+    current_streak: Number(data?.current_streak) || 0,
+    longest_streak: Number(data?.longest_streak) || 0,
+    activity_days: Array.isArray(data?.activity_days) ? data.activity_days : [],
+    week_active_days: Number(data?.week_active_days) || 0,
+    prep_start: data?.prep_start?.slice(0, 10) || null,
+    exam_date: data?.exam_date?.slice(0, 10) || null,
+  };
 }
 
-function todayIsoLocal(): string {
-  const n = new Date();
-  const y = n.getFullYear();
-  const m = String(n.getMonth() + 1).padStart(2, "0");
-  const day = String(n.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+type Props = {
+  initial?: Partial<StreakPayload> | null;
+};
 
-export function StreakTrackerExperience() {
-  const [data, setData] = useState<StreakPayload | null>(null);
+export function StreakTrackerExperience({ initial = null }: Props) {
+  const reduceMotion = useReducedMotion();
+  const [data, setData] = useState<StreakPayload>(() => toPayload(initial));
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initial);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${getApiUrl()}/api/dashboard/streak`, {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = (await res.json()) as StreakPayload;
+        const json = await examApiCall<StreakPayload>("/api/dashboard/streak");
         if (!cancelled) {
-          setData({
-            current_streak: Number(json.current_streak) || 0,
-            longest_streak: Number(json.longest_streak) || 0,
-            activity_days: Array.isArray(json.activity_days)
-              ? json.activity_days
-              : [],
-            week_active_days: Number(json.week_active_days) || 0,
-          });
+          setData(toPayload(json));
+          setError(null);
         }
       } catch (e) {
-        if (!cancelled) {
+        if (!cancelled && !initial) {
           setError(e instanceof Error ? e.message : "Failed to load streak");
         }
       } finally {
@@ -68,136 +66,171 @@ export function StreakTrackerExperience() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initial]);
 
-  const today = todayIsoLocal();
-  const weekStrip = useMemo(() => {
-    const days = data?.activity_days ?? [];
-    const last7 = days.slice(-7);
-    if (last7.length >= 7) return last7;
-    // pad if API returned fewer
-    return last7;
-  }, [data]);
-
-  const current = data?.current_streak ?? 0;
-  const longest = data?.longest_streak ?? 0;
+  const current = data.current_streak;
+  const longest = data.longest_streak;
   const nextMilestone =
     MILESTONES.find((m) => m > current) ?? MILESTONES[MILESTONES.length - 1];
+  const toMilestone = Math.max(0, nextMilestone - current);
   const progress = Math.min(100, Math.round((current / nextMilestone) * 100));
 
   const insight =
     current <= 0
-      ? "Complete today’s study plan or a practice hub to start your streak — mocks and plan days both count."
+      ? "Complete today’s plan or a practice hub to light up today on the calendar."
       : current >= longest && current > 1
-        ? `You’re on your best run — ${current} days. Keep today’s plan moving.`
-        : `Nice consistency. ${week_active_days_label(data?.week_active_days)} this week. Longest ever: ${longest}.`;
+        ? `Best run yet — ${current} days. Practice today to keep the grid going.`
+        : `${data.week_active_days} active day${data.week_active_days === 1 ? "" : "s"} this week. Best ever: ${longest}.`;
+
+  if (loading) {
+    return (
+      <div className="mx-auto w-full max-w-4xl space-y-5 sm:space-y-6" aria-busy>
+        <div className="h-8 w-28 animate-pulse rounded-lg bg-ink/[0.06]" />
+        <div className="h-40 animate-pulse rounded-[24px] bg-ink/[0.06]" />
+        <div className="h-44 animate-pulse rounded-[24px] bg-ink/[0.06]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-4xl">
+        <p className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4 text-[14px] text-red-800">
+          {error}
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      <header>
-        <BfSectionEyebrow>Habits</BfSectionEyebrow>
-        <BfSectionHeading className="mt-2">Streak tracker</BfSectionHeading>
-        <p className="mt-2 text-sm text-muted">
-          Active days include full mocks and study-plan / practice hub completions.
+    <div className="mx-auto w-full max-w-4xl space-y-5 sm:space-y-6">
+      <header className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
+          Habits
+        </p>
+        <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-ink sm:text-[1.75rem]">
+          Streak
+        </h1>
+        <p className="mt-1.5 max-w-xl text-[14px] leading-relaxed text-muted">
+          Practice from prep start through your exam date. Darker means more
+          that day.
         </p>
       </header>
 
-      {loading ? (
-        <p className="text-sm text-muted-light">Loading streak…</p>
-      ) : error ? (
-        <p className="text-sm text-red-600">{error}</p>
-      ) : (
-        <>
-          <section className="overflow-hidden rounded-2xl border border-[#f5d9a8] bg-gradient-to-br from-[#fff8eb] via-white to-[#fff3db] p-8 text-center shadow-sm">
-            <FlameIcon className="mx-auto size-14 text-[#e8a317]" />
-            <p className="font-display mt-4 bg-gradient-to-r from-[#e8a317] to-[#f06b1d] bg-clip-text text-6xl font-extrabold text-transparent">
-              {current}
-            </p>
-            <p className="mt-1 text-sm font-medium text-navy">
-              day streak — keep it going!
-            </p>
-            <p className="mt-2 font-mono text-xs text-muted-light">
-              Longest: {longest} days
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-display text-sm font-bold text-navy">This week</h2>
-            <div className="mt-4 flex justify-between gap-2">
-              {weekStrip.map((d) => {
-                const active = (d.count || 0) > 0;
-                const isToday = d.date === today;
-                return (
-                  <div key={d.date} className="flex flex-1 flex-col items-center gap-2">
-                    <div
-                      className={cn(
-                        "flex size-10 items-center justify-center rounded-full text-sm font-semibold",
-                        active
-                          ? "bg-cyan text-white"
-                          : isToday
-                            ? "animate-pulse border-2 border-cyan bg-white text-cyan"
-                            : "bg-border-soft text-muted-light",
-                      )}
-                      title={`${d.date}: ${d.count} activities`}
-                    >
-                      {weekdayLabel(d.date)}
-                    </div>
-                  </div>
-                );
-              })}
+      <section className="overflow-hidden rounded-[24px] border border-ink/8 bg-white p-5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-6">
+        <div className="grid gap-5 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] sm:items-stretch sm:gap-6">
+          <div className="flex min-w-0 flex-col justify-between gap-4 rounded-2xl bg-navy p-5 text-white sm:p-6">
+            <div className="flex items-center gap-2 text-cyan">
+              <FlameIcon className="size-5" aria-hidden />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">
+                Current streak
+              </p>
             </div>
-            <dl className="mt-6 grid grid-cols-2 gap-4 rounded-xl border border-border-soft bg-white p-4 text-center">
-              <div>
-                <dt className="font-mono text-lg text-cyan">
-                  {data?.week_active_days ?? 0}
-                </dt>
-                <dd className="text-xs text-muted-light">Active days</dd>
-              </div>
-              <div>
-                <dt className="font-mono text-lg text-cyan">{longest}</dt>
-                <dd className="text-xs text-muted-light">Best streak</dd>
-              </div>
-            </dl>
-          </section>
-
-          <section className="rounded-2xl border border-border-soft bg-white p-6">
-            <h2 className="font-display text-sm font-bold text-navy">Next milestone</h2>
-            <div className="mt-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-navy">{nextMilestone}-day streak</span>
-                <span className="font-mono text-xs text-muted-light">
-                  {nextMilestone} days
-                </span>
-              </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-border-soft">
-                <div
-                  className="h-full rounded-full bg-cyan"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="mt-1 flex justify-between font-mono text-[0.625rem] text-muted-light">
-                <span>{current}</span>
-                <span>{nextMilestone}</span>
-              </div>
+            <div>
+              <p className="font-mono text-[3rem] leading-none font-medium tracking-tight sm:text-[3.25rem]">
+                {current}
+              </p>
+              <p className="mt-1.5 text-[14px] text-white/70">
+                {current === 1 ? "day in a row" : "days in a row"}
+              </p>
             </div>
-          </section>
+          </div>
 
-          <section className="rounded-2xl border border-cyan/20 bg-cyan-soft/40 p-5">
-            <p className="text-sm leading-relaxed text-muted">{insight}</p>
-            <Link
-              href="/study-plan/today"
-              className="mt-3 inline-block text-sm font-semibold text-teal hover:underline"
+          <dl className="grid grid-cols-3 gap-2 sm:grid-cols-1 sm:gap-3">
+            <StatTile label="Best" value={longest} unit="days" />
+            <StatTile
+              label="This week"
+              value={data.week_active_days}
+              unit="active"
+            />
+            <StatTile
+              label="Next goal"
+              value={toMilestone}
+              unit={toMilestone === 1 ? "day left" : "days left"}
+            />
+          </dl>
+        </div>
+      </section>
+
+      <section
+        className="rounded-[24px] border border-ink/8 bg-white p-4 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-6"
+        aria-labelledby="streak-calendar-heading"
+      >
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2
+              id="streak-calendar-heading"
+              className="font-display text-lg font-bold tracking-tight text-ink sm:text-xl"
             >
-              Open today’s plan →
-            </Link>
-          </section>
-        </>
-      )}
+              Activity
+            </h2>
+            <p className="mt-0.5 text-[13px] text-muted">
+              {data.exam_date
+                ? `Until exam · ${new Date(`${data.exam_date}T12:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`
+                : "Your prep window"}
+              {" · tap a day"}
+            </p>
+          </div>
+        </div>
+        <StreakContributionCalendar
+          days={data.activity_days}
+          currentStreak={current}
+          prepStart={data.prep_start}
+          examDate={data.exam_date}
+        />
+      </section>
+
+      <section className="rounded-[24px] border border-ink/8 bg-white p-5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-6">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-display text-lg font-bold tracking-tight text-ink sm:text-xl">
+            Next milestone
+          </h2>
+          <p className="font-mono text-[12px] font-semibold tabular-nums text-muted">
+            {current}/{nextMilestone}
+          </p>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-ink/[0.06]">
+          <div
+            className={cn(
+              "h-full rounded-full bg-gradient-to-r from-teal to-cyan",
+              !reduceMotion && "transition-[width] duration-300 ease-out",
+            )}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="mt-2 text-[13px] text-muted">{insight}</p>
+        <Link
+          href="/study-plan/today"
+          className="mt-4 inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan px-5 text-[14px] font-bold text-navy transition-colors duration-200 hover:bg-brand-sky-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan sm:w-auto sm:min-w-[200px]"
+        >
+          Open today’s plan
+          <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden />
+        </Link>
+      </section>
     </div>
   );
 }
 
-function week_active_days_label(n: number | undefined): string {
-  const v = n ?? 0;
-  return `${v} active day${v === 1 ? "" : "s"}`;
+function StatTile({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: number;
+  unit: string;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col justify-center rounded-2xl bg-ink/[0.04] px-2.5 py-3 text-center sm:px-4 sm:py-3.5 sm:text-left">
+      <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-light">
+        {label}
+      </dt>
+      <dd className="mt-1 flex flex-col items-center gap-0.5 sm:flex-row sm:items-baseline sm:gap-1.5">
+        <span className="font-mono text-lg font-semibold tabular-nums text-ink sm:text-xl">
+          {value}
+        </span>
+        <span className="text-[11px] text-muted sm:text-[12px]">{unit}</span>
+      </dd>
+    </div>
+  );
 }

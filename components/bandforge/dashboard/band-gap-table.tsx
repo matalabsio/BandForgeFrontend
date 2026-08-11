@@ -24,6 +24,7 @@ import {
   type SkillKey,
   type SkillStatus,
 } from "@/lib/diagnostic-performance";
+import { BF_PRIMARY_FILL } from "@/components/bandforge/bf-primary-cta-styles";
 import { cn } from "@/lib/utils";
 
 const SKILL_ORDER: SkillKey[] = ["listening", "reading", "writing", "speaking"];
@@ -54,7 +55,7 @@ const TONES: Record<SkillStatus, Tone> = {
   },
   strongest: {
     score: "text-teal",
-    iconWrap: "bg-teal text-white",
+    iconWrap: cn(BF_PRIMARY_FILL, "shadow-[0_4px_12px_rgb(0_151_167/0.25)]"),
     badge: "bg-teal/10 text-teal ring-teal/20",
     border: "border-cyan/25",
   },
@@ -237,8 +238,8 @@ function SkillAccordionRow({
         onClick={onToggle}
         aria-expanded={open}
         className={cn(
-          "flex w-full cursor-pointer items-center gap-2.5 text-left transition-colors duration-200 hover:bg-cyan-soft/25 sm:gap-3",
-          embedded ? "px-1 py-2.5" : "px-3.5 py-2.5 sm:px-4 sm:py-3",
+          "flex w-full cursor-pointer items-center gap-3 text-left transition-colors duration-200 hover:bg-cyan-soft/25 sm:gap-3",
+          embedded ? "px-0.5 py-3.5 sm:px-1 sm:py-3" : "px-3.5 py-3 sm:px-4 sm:py-3",
         )}
       >
         <span
