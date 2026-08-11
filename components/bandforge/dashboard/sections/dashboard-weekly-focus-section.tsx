@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { DASH_EASE } from "@/components/bandforge/dashboard/motion";
+import { BF_PRIMARY_FILL } from "@/components/bandforge/bf-primary-cta-styles";
 import { DailyGrowthReportModal } from "@/components/bandforge/plan/daily-growth-report-modal";
 import type {
   LearningStudyDay,
@@ -236,7 +237,7 @@ export function DashboardWeeklyFocusSection({
 
   return (
     <motion.section
-      className="flex min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white p-5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-6"
+      className="flex min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white px-5 py-6 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-7"
       aria-labelledby="weekly-focus-heading"
       initial={reduceMotion ? false : { opacity: 0, y: 14 }}
       whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
@@ -256,7 +257,7 @@ export function DashboardWeeklyFocusSection({
       </div>
 
       {focus ? (
-        <div className="mt-4 flex flex-col gap-5">
+        <div className="mt-5 flex flex-col gap-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-display text-xl font-bold tracking-tight text-ink sm:text-2xl sm:leading-none">
@@ -293,7 +294,7 @@ export function DashboardWeeklyFocusSection({
 
           <div>
             <div
-              className="grid grid-cols-7 gap-2"
+              className="grid grid-cols-7 gap-2.5 sm:gap-2"
               role="list"
               aria-label={
                 weekProgress.total > 0
@@ -336,15 +337,19 @@ export function DashboardWeeklyFocusSection({
                           ? "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
                           : "cursor-default",
                         bar.isToday
-                          ? "bg-teal text-white"
+                          ? cn(BF_PRIMARY_FILL, "shadow-[0_6px_16px_rgb(0_151_167/0.28)]")
                           : bar.pct >= 100
-                            ? "bg-teal/90 text-white"
+                            ? cn(BF_PRIMARY_FILL, "opacity-90")
                             : bar.pct > 0
                               ? "bg-cyan/20 text-teal ring-1 ring-cyan/25"
                               : "bg-ink/[0.06] text-muted-light",
                         bar.canOpenReport &&
                           !bar.isToday &&
+                          bar.pct < 100 &&
                           "hover:bg-cyan-soft hover:text-teal",
+                        bar.canOpenReport &&
+                          (bar.isToday || bar.pct >= 100) &&
+                          "hover:brightness-[1.04]",
                       )}
                     >
                       {bar.letter}

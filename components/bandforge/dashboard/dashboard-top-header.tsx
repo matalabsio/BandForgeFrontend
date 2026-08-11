@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { DASH_EASE } from "@/components/bandforge/dashboard/motion";
 import { timeGreeting } from "@/components/bandforge/dashboard/utils";
+import type { LearningStudyTask } from "@/lib/learning-types";
+import {
+  mergePlanDayStatusesIntoTasks,
+  PLAN_DAY_TASKS_UPDATED_EVENT,
+} from "@/lib/plan-day-tasks";
+import { isTodayPlanComplete } from "@/lib/plan-start-task";
 
-/** Fired by the header so TodaysPlanPanel can open the growth report modal. */
+/** Fired by the header so TodaysPlanPanel / welcome can open the growth report. */
 export const OPEN_DAILY_REPORT_EVENT = "bf:open-daily-report";
 
 export function requestOpenDailyReport(): void {
@@ -25,9 +32,13 @@ type Props = {
   displayName?: string;
   email?: string | null;
   avatarUrl?: string | null;
-  /** Show the daily growth report shortcut (dashboard with plan). */
+  /**
+   * Static override when `todayTasks` is not provided.
+   * Defaults to hidden — Report unlocks from completed today tasks.
+   */
   showReportButton?: boolean;
-  /** Compact plan day + progress + time-left strip under the greeting. */
+  /** Today’s plan tasks — Report shows only when all actionable tasks are done. */
+  todayTasks?: LearningStudyTask[] | null;
   planTimeline?: HeaderPlanTimeline | null;
 };
 
@@ -90,12 +101,45 @@ function examCountdown(
   return { value: "—", unit: "Set exam date" };
 }
 
+function resolveReportUnlocked(
+  todayTasks: LearningStudyTask[] | null | undefined,
+  fallback: boolean,
+): boolean {
+  if (todayTasks != null) {
+    return isTodayPlanComplete(mergePlanDayStatusesIntoTasks(todayTasks));
+  }
+  return fallback;
+}
+
 export function DashboardTopHeader({
   firstName,
-  showReportButton = true,
+  showReportButton = false,
+  todayTasks = null,
   planTimeline = null,
 }: Props) {
   const reduce = useReducedMotion();
+  const [reportUnlocked, setReportUnlocked] = useState(showReportButton);
+
+  useEffect(() => {
+    const recompute = () => {
+      setReportUnlocked(resolveReportUnlocked(todayTasks, showReportButton));
+    };
+    recompute();
+
+    window.addEventListener(PLAN_DAY_TASKS_UPDATED_EVENT, recompute);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") recompute();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", recompute);
+
+    return () => {
+      window.removeEventListener(PLAN_DAY_TASKS_UPDATED_EVENT, recompute);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", recompute);
+    };
+  }, [todayTasks, showReportButton]);
+
   const timelineDay = planTimeline?.currentDay ?? null;
   const timelineTotal = planTimeline?.totalDays ?? null;
   const showTimeline = planTimeline != null;
@@ -179,16 +223,20 @@ export function DashboardTopHeader({
               </div>
             ) : null}
 
-            {showReportButton ? (
-              <button
+            {reportUnlocked ? (
+              <motion.button
                 type="button"
                 onClick={() => requestOpenDailyReport()}
+                initial={reduce ? false : { opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.28, ease: DASH_EASE }}
                 className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-teal/25 bg-white px-2.5 py-1.5 text-[12px] font-semibold text-teal transition-colors duration-200 hover:border-cyan/40 hover:bg-cyan-soft/60 sm:min-h-10 sm:px-3 sm:text-[12.5px]"
+                aria-label="Open today’s growth report card"
               >
                 <FileText className="size-3.5" strokeWidth={2.25} aria-hidden />
                 <span className="sm:hidden">Report</span>
                 <span className="hidden sm:inline">Report card</span>
-              </button>
+              </motion.button>
             ) : null}
           </div>
         </div>

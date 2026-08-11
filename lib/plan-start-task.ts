@@ -22,6 +22,17 @@ export function isPlanTaskUnavailable(task: LearningStudyTask): boolean {
   );
 }
 
+/** True when every non-skipped today task is done (and at least one exists). */
+export function isTodayPlanComplete(
+  tasks: Array<{ status: string }> | null | undefined,
+): boolean {
+  if (!tasks?.length) return false;
+  const actionable = tasks.filter((t) => t.status !== "skipped");
+  return (
+    actionable.length > 0 && actionable.every((t) => t.status === "done")
+  );
+}
+
 export function planTaskOpenHref(task: LearningStudyTask): string {
   return resolveTodayTaskHref({
     skill: task.module,

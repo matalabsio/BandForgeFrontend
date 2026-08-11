@@ -13,12 +13,13 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { OPEN_DAILY_REPORT_EVENT } from "@/components/bandforge/dashboard/dashboard-top-header";
+import { bfPrimaryButtonOnNavyClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { DailyGrowthReportModal } from "@/components/bandforge/plan/daily-growth-report-modal";
 import type {
   LearningStudyTask,
   SkillHubProgress,
 } from "@/lib/learning-types";
-import { cachePlanDayTasks } from "@/lib/plan-day-tasks";
+import { cachePlanDayTasks, mergePlanDayStatusesIntoTasks } from "@/lib/plan-day-tasks";
 import type { DashboardStartNow } from "@/lib/plan-start-task";
 import { localPlanDateKey } from "@/lib/plan-step-completion";
 import { cn } from "@/lib/utils";
@@ -69,7 +70,7 @@ export function DashboardWelcomeSection({
     const onOpenTodayReport = () => {
       setReportDay({
         date: localPlanDateKey(),
-        tasks: startNowCacheTasks,
+        tasks: mergePlanDayStatusesIntoTasks(startNowCacheTasks),
       });
     };
     window.addEventListener(OPEN_DAILY_REPORT_EVENT, onOpenTodayReport);
@@ -203,11 +204,13 @@ export function DashboardWelcomeSection({
         )}
       >
         {startNow ? (
-          <div className="relative flex h-full min-w-0 flex-col justify-between gap-5 overflow-hidden rounded-[24px] bg-navy p-5 text-white sm:p-6">
+          <div className="relative flex h-full min-w-0 flex-col justify-between gap-5 overflow-visible rounded-[24px] bg-navy p-5 text-white sm:p-6">
             <div
-              className="pointer-events-none absolute -top-10 -right-10 size-36 rounded-full bg-cyan/20 blur-3xl"
+              className="pointer-events-none absolute inset-0 overflow-hidden rounded-[24px]"
               aria-hidden
-            />
+            >
+              <div className="absolute -top-10 -right-10 size-36 rounded-full bg-cyan/20 blur-3xl" />
+            </div>
             <div className="relative min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan">
                 Start now · practice first
@@ -226,10 +229,14 @@ export function DashboardWelcomeSection({
                   cachePlanDayTasks(startNowCacheTasks);
                 }
               }}
-              className="relative inline-flex min-h-11 w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan px-5 py-2.5 text-[14px] font-bold text-navy transition-colors duration-200 hover:bg-brand-sky-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan sm:min-h-12 sm:text-[15px]"
+              className={cn(bfPrimaryButtonOnNavyClass, "relative z-10")}
             >
-              {startNow.ctaLabel}
-              <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden />
+              <span className="relative z-[1]">{startNow.ctaLabel}</span>
+              <ArrowRight
+                className="relative z-[1] size-[1.125rem] shrink-0 transition-[transform,color] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1"
+                strokeWidth={2.25}
+                aria-hidden
+              />
             </Link>
           </div>
         ) : null}

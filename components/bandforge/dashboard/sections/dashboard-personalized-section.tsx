@@ -13,7 +13,7 @@ import {
   resolveExamTimeline,
 } from "@/lib/dashboard-plan-math";
 import type { LearningProfile } from "@/lib/learning-types";
-import { buildDashboardStartNow } from "@/lib/plan-start-task";
+import { buildDashboardStartNow, isTodayPlanComplete } from "@/lib/plan-start-task";
 
 type UserProps = {
   firstName: string;
@@ -45,20 +45,15 @@ export async function DashboardPersonalizedSection({
   const examTimeline = resolveExamTimeline(learning);
   const planPct = overallPlanPercent(studyPlan);
   const bandGap = computeBandGapFromLearning(learning);
-  const actionableToday = learning.todays_tasks.filter(
-    (t) => t.status !== "skipped",
-  );
-  const todayPlanComplete =
-    actionableToday.length > 0 &&
-    actionableToday.every((t) => t.status === "done");
+  const todayPlanComplete = isTodayPlanComplete(learning.todays_tasks);
   const startNow = todayPlanComplete
     ? null
-    : buildDashboardStartNow(learning.todays_tasks) ?? {
+    : (buildDashboardStartNow(learning.todays_tasks) ?? {
         href: "/study-plan/today",
         title: "Jump into today’s practice",
         meta: "Open today’s plan and start the next test",
         ctaLabel: "Begin Practice",
-      };
+      });
 
   const welcomeBlock = (
     <DashboardWelcomeSection
@@ -86,6 +81,8 @@ export async function DashboardPersonalizedSection({
           email={user.email}
           avatarUrl={user.avatarUrl}
           planTimeline={examTimeline}
+          todayTasks={learning.todays_tasks}
+          showReportButton={todayPlanComplete}
         />
       </DashPageItem>
 
@@ -93,7 +90,7 @@ export async function DashboardPersonalizedSection({
 
       <DashPageItem>
         <Suspense fallback={<SkillsSkeleton />}>
-          <div className="grid gap-5 sm:gap-6 md:grid-cols-2 md:items-start">
+          <div className="grid gap-6 sm:gap-6 md:grid-cols-2 md:items-start">
             <DashboardWeeklyFocusSection
               weeklyFocus={studyPlan.weekly_focus}
               skillDifficulty={

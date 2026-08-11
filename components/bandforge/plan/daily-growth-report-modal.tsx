@@ -5,6 +5,10 @@ import { Download, FileText, Share2, X } from "lucide-react";
 import { FaTelegram, FaWhatsapp } from "react-icons/fa";
 import { DailyGrowthReportCard } from "@/components/bandforge/plan/daily-growth-report-card";
 import { DASH_EASE } from "@/components/bandforge/dashboard/motion";
+import {
+  BF_PRIMARY_CTA_GRADIENT,
+  BF_PRIMARY_CTA_HOVER,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import type { LearningStudyTask, SkillHubProgress } from "@/lib/learning-types";
 import {
   buildDailyReportPngFile,
@@ -12,6 +16,7 @@ import {
   downloadDailyReportPng,
 } from "@/lib/daily-report-export";
 import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -207,10 +212,16 @@ export function DailyGrowthReportModal({
             type="button"
             onClick={exportPng}
             disabled={busy !== null}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-teal/90 disabled:cursor-not-allowed disabled:opacity-60"
+            className={cn(
+              "group inline-flex min-h-11 items-center justify-center gap-2 overflow-hidden rounded-full border border-transparent px-3 py-2 text-[13px] font-semibold text-white shadow-[0_8px_22px_rgb(0_151_167/0.28)] disabled:cursor-not-allowed disabled:opacity-60",
+              BF_PRIMARY_CTA_GRADIENT,
+              BF_PRIMARY_CTA_HOVER,
+            )}
           >
-            <Download className="size-4 shrink-0" />
-            {busy === "png" ? "Exporting…" : "PNG"}
+            <Download className="relative z-[1] size-4 shrink-0" />
+            <span className="relative z-[1]">
+              {busy === "png" ? "Exporting…" : "PNG"}
+            </span>
           </button>
           <button
             type="button"
