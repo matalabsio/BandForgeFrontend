@@ -27,6 +27,14 @@ function asSectionId(id: string): QuestionSectionId {
   ) {
     return id;
   }
+  if (
+    id === "matching_information" ||
+    id === "matching_features" ||
+    id === "matching_sentence_endings" ||
+    id === "matching"
+  ) {
+    return "matching_headings";
+  }
   return "sentence_completion";
 }
 

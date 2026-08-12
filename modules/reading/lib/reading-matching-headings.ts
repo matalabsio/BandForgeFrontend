@@ -3,6 +3,24 @@ import type { QuestionGroup } from "@/modules/reading/lib/question-groups";
 
 export type HeadingOption = { label: string; text: string };
 
+const MATCHING_TYPES = new Set([
+  "matching_headings",
+  "matching_information",
+  "matching_features",
+  "matching_sentence_endings",
+  "matching",
+]);
+
+export function isReadingMatchingType(type: string): boolean {
+  return MATCHING_TYPES.has(type.trim().toLowerCase());
+}
+
+export function matchingLabelFormat(
+  type: string,
+): "roman" | "letter" {
+  return type.trim().toLowerCase() === "matching_headings" ? "roman" : "letter";
+}
+
 export const ROMAN_ORDER = [
   "i",
   "ii",
@@ -46,6 +64,27 @@ export function extractHeadingOptions(group: QuestionGroup): HeadingOption[] {
       text: o.text,
     })),
   );
+}
+
+export function normalizeReadingLetter(raw: string): string {
+  return raw.trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
+}
+
+export function extractLetterMatchingOptions(
+  group: QuestionGroup,
+): HeadingOption[] {
+  const raw =
+    group.questions.find((q) => q.options && q.options.length > 0)?.options ??
+    [];
+  return raw
+    .map((o) => {
+      const label = normalizeReadingLetter(o.label || "");
+      return {
+        label: label || (o.label || "").trim(),
+        text: (o.text || "").trim() || o.label,
+      };
+    })
+    .toSorted((a, b) => a.label.localeCompare(b.label));
 }
 
 export function usedHeadingLabels(

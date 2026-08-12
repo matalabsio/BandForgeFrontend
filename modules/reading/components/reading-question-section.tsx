@@ -5,7 +5,14 @@ import type { QuestionGroup } from "@/modules/reading/lib/question-groups";
 import { SentenceInlineBlank } from "@/modules/listening/components/listening-inline-answer";
 import { ReadingMatchingHeadingsBlock } from "@/modules/reading/components/reading-matching-headings-block";
 import { ReadingQuestionInput } from "@/modules/reading/components/reading-question-input";
-import { extractHeadingOptions } from "@/modules/reading/lib/reading-matching-headings";
+import {
+  extractHeadingOptions,
+  extractLetterMatchingOptions,
+  isReadingMatchingType,
+  matchingLabelFormat,
+  normalizeReadingLetter,
+  normalizeRoman,
+} from "@/modules/reading/lib/reading-matching-headings";
 import {
   type QuestionSectionId,
 } from "@/modules/reading/lib/reading-exam-flow";
@@ -75,8 +82,12 @@ export function ReadingQuestionSection({
   answers,
   onAnswer,
 }: Props) {
-  if (sectionId === "matching_headings") {
-    const headingOptions = extractHeadingOptions(group);
+  if (isReadingMatchingType(group.id) || sectionId === "matching_headings") {
+    const format = matchingLabelFormat(group.id);
+    const headingOptions =
+      format === "roman"
+        ? extractHeadingOptions(group)
+        : extractLetterMatchingOptions(group);
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-[var(--reading-surface)]">
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
@@ -86,6 +97,12 @@ export function ReadingQuestionSection({
               options={headingOptions}
               answers={answers}
               onAnswer={onAnswer}
+              labelFormat={format}
+              normalize={format === "roman" ? normalizeRoman : normalizeReadingLetter}
+              poolTitle={format === "roman" ? "List of headings" : "Options"}
+              slotPlaceholder={
+                format === "roman" ? "Drop heading here" : "Drop option here"
+              }
             />
           </div>
         </div>

@@ -16,6 +16,10 @@ type Props = {
   options: HeadingOption[];
   answers: Record<string, string>;
   onAnswer: (id: string, value: string) => void;
+  labelFormat?: "roman" | "letter";
+  normalize?: (raw: string) => string;
+  poolTitle?: string;
+  slotPlaceholder?: string;
 };
 
 function ReadingMatchingHeadingsBlockBase({
@@ -23,6 +27,10 @@ function ReadingMatchingHeadingsBlockBase({
   options,
   answers,
   onAnswer,
+  labelFormat = "roman",
+  normalize = normalizeRoman,
+  poolTitle = "List of headings",
+  slotPlaceholder = "Drop heading here",
 }: Props) {
   const questions = useMemo(
     () =>
@@ -35,14 +43,16 @@ function ReadingMatchingHeadingsBlockBase({
   );
 
   const sortedOptions = useMemo(
-    () => sortHeadingOptions(options),
-    [options],
+    () => (labelFormat === "roman" ? sortHeadingOptions(options) : options),
+    [options, labelFormat],
   );
 
   return (
     <article className="rounded-lg border border-[var(--reading-border)] bg-white px-4 py-4 sm:px-5">
       <h2 className="font-display text-[15px] font-bold leading-snug text-[var(--reading-ink)]">
-        {matchingHeadingsTitle(group.title)}
+        {labelFormat === "roman"
+          ? matchingHeadingsTitle(group.title)
+          : group.title}
       </h2>
       <p className="mt-2 font-serif text-[13px] italic leading-relaxed text-[var(--reading-ink-muted)]">
         {group.instruction}
@@ -54,11 +64,11 @@ function ReadingMatchingHeadingsBlockBase({
           options={sortedOptions}
           answers={answers}
           onAnswer={onAnswer}
-          labelFormat="roman"
+          labelFormat={labelFormat}
           variant="reading"
-          normalize={normalizeRoman}
-          poolTitle="List of headings"
-          slotPlaceholder="Drop heading here"
+          normalize={normalize}
+          poolTitle={poolTitle}
+          slotPlaceholder={slotPlaceholder}
           pendingHint="Tap a heading, then tap an empty paragraph row to assign."
           poolSticky={false}
         />
