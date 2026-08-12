@@ -71,7 +71,7 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -99,7 +99,7 @@ html {
     font-size: var(--text-body);
     line-height: 1.5;
     font-family: var(--font-sans);
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   h1,

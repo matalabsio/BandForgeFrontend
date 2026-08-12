@@ -118,7 +118,7 @@ export function DashboardShell({
           "flex flex-col transition-[padding] duration-200 ease-out",
           isDashboard
             ? "min-h-dvh lg:h-dvh lg:overflow-hidden"
-            : "min-h-dvh",
+            : "min-h-dvh overflow-visible",
           sidebarOpen ? "lg:pl-[260px]" : "lg:pl-0",
         )}
       >
@@ -151,7 +151,12 @@ export function DashboardShell({
 
         <main
           className={cn(
-            "mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col px-4 sm:px-6 lg:px-8",
+            "mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 sm:px-6 lg:px-8",
+            // Dashboard pins to the viewport and scrolls inside cards.
+            // Study plan / practice pages must grow with content so the
+            // document can scroll — min-h-0 here clips overflow and
+            // overflow-x:hidden on html then blocks page scroll.
+            isDashboard ? "min-h-0" : "min-h-min",
             hideHeader
               ? isDashboard
                 ? "pt-[var(--bf-dash-gutter)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-[var(--bf-dash-gutter)]"
