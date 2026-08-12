@@ -319,7 +319,11 @@ export function resolveTodayTaskHref(opts: {
       ? opts.taskType
       : null;
   if (!hubId || !skill || !task) {
-    return opts.fallbackHref || "/study-plan";
+    const fb = opts.fallbackHref;
+    if (fb && !fb.includes("/content-library")) {
+      return fb;
+    }
+    return "/study-plan/today";
   }
   if (
     skill !== "listening" &&
@@ -327,7 +331,11 @@ export function resolveTodayTaskHref(opts: {
     skill !== "writing" &&
     skill !== "speaking"
   ) {
-    return opts.fallbackHref || "/study-plan";
+    const fb = opts.fallbackHref;
+    if (fb && !fb.includes("/content-library")) {
+      return fb;
+    }
+    return "/study-plan/today";
   }
   if (task === "watch") {
     return planHubHref({

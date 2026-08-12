@@ -158,7 +158,7 @@ export function DashboardTopHeader({
   return (
     <header className="relative z-40">
       <motion.div
-        className="rounded-2xl border border-ink/[0.06] bg-white/90 px-3 py-2.5 sm:px-4"
+        className="rounded-[2.5rem] border border-ink/[0.06] bg-white/90 px-4 py-3.5 sm:px-5"
         initial={reduce ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: DASH_EASE }}

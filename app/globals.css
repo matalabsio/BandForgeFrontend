@@ -780,6 +780,7 @@ html {
 }
 
 .bf-dashboard {
+  --bf-dash-gutter: 1.5rem;
   background-color: #f4f7f9;
   background-image:
     radial-gradient(ellipse at 18% 0%, rgba(0, 188, 212, 0.06), transparent 55%),

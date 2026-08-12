@@ -4,6 +4,8 @@ import {
   readingMatchingHeadingsIntro,
   readingTfngIntro,
 } from "@/modules/reading/lib/question-groups";
+import { bfPrimaryCtaExamFooterClass } from "@/components/bandforge/bf-primary-cta-styles";
+import { cn } from "@/lib/utils";
 
 type Props = {
   passageTitle: string;
@@ -74,7 +76,7 @@ export function ReadingIntroOverlay({
           type="button"
           disabled={busy || !agreed}
           onClick={onStart}
-          className="mt-8 w-full cursor-pointer rounded-lg bg-[var(--reading-accent)] px-5 py-3.5 text-[14px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60"
+          className={cn(bfPrimaryCtaExamFooterClass, "mt-8")}
         >
           {busy ? "Starting…" : "Start reading section"}
         </button>

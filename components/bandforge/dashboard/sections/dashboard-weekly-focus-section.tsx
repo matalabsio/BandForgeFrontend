@@ -237,7 +237,7 @@ export function DashboardWeeklyFocusSection({
 
   return (
     <motion.section
-      className="flex min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white px-5 py-6 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-7"
+      className="flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] border border-ink/8 bg-white px-5 py-6 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:p-7"
       aria-labelledby="weekly-focus-heading"
       initial={reduceMotion ? false : { opacity: 0, y: 14 }}
       whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
@@ -257,7 +257,7 @@ export function DashboardWeeklyFocusSection({
       </div>
 
       {focus ? (
-        <div className="mt-5 flex flex-col gap-6">
+        <div className="mt-5 flex flex-1 flex-col gap-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-display text-xl font-bold tracking-tight text-ink sm:text-2xl sm:leading-none">

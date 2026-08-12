@@ -166,6 +166,9 @@ export function WritingResultsClient({
             ? () => router.push(planNav.todayHref)
             : undefined
         }
+        titleOverride={
+          planNav ? `Writing Task ${review.part} practice` : null
+        }
       />
     </div>
   );

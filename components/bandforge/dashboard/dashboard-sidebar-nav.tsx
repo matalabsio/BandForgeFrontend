@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
-import { DASHBOARD_NAV, isNavItemActive } from "@/components/bandforge/dashboard/dashboard-nav";
+import {
+  getDashboardNav,
+  isNavItemActive,
+} from "@/components/bandforge/dashboard/dashboard-nav";
 import { PremiumCta } from "@/components/bandforge/dashboard/premium-cta";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +13,7 @@ type Props = {
   displayName: string;
   avatarUrl?: string | null;
   showPremiumCta?: boolean;
+  mockUnlocked?: boolean;
 };
 
 export function DashboardSidebarNav({
@@ -17,6 +21,7 @@ export function DashboardSidebarNav({
   displayName,
   avatarUrl = null,
   showPremiumCta = true,
+  mockUnlocked = false,
 }: Props) {
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
 
@@ -27,7 +32,7 @@ export function DashboardSidebarNav({
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto" aria-label="Main">
-        {DASHBOARD_NAV.map((group, groupIndex) => (
+        {getDashboardNav({ mockUnlocked }).map((group, groupIndex) => (
           <div key={group.title || `untitled-${groupIndex}`}>
             {group.title ? (
               <p className="mb-2 px-3 font-roboto-condensed text-[10px] font-bold uppercase tracking-[0.14em] text-ink/35">
@@ -60,7 +65,9 @@ export function DashboardSidebarNav({
                 return (
                   <li key={item.label}>
                     {item.disabled ? (
-                      <span className={className}>{inner}</span>
+                      <span className={className} title={item.disabledHint}>
+                        {inner}
+                      </span>
                     ) : (
                       <Link
                         href={item.href}
@@ -80,6 +87,36 @@ export function DashboardSidebarNav({
 
       <div className="mt-6 space-y-4 border-t border-ink/8 pt-5">
         {showPremiumCta ? <PremiumCta /> : null}
+        {process.env.NODE_ENV === "development" ? (
+          <div className="rounded-xl border border-cyan/25 bg-navy px-3 py-3 text-white">
+            <p className="px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan">
+              Dev · Mock tests
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Link
+                href="/test/1/listening"
+                prefetch
+                className="inline-flex min-h-8 items-center rounded-full border border-white/15 bg-white/5 px-2.5 text-[11px] font-semibold text-white/90 hover:border-cyan/50 hover:bg-cyan/15"
+              >
+                MT1
+              </Link>
+              <Link
+                href="/test/2/listening"
+                prefetch
+                className="inline-flex min-h-8 items-center rounded-full border border-white/15 bg-white/5 px-2.5 text-[11px] font-semibold text-white/90 hover:border-cyan/50 hover:bg-cyan/15"
+              >
+                MT2
+              </Link>
+              <Link
+                href="/diagnostic"
+                prefetch
+                className="inline-flex min-h-8 items-center rounded-full border border-white/15 bg-white/5 px-2.5 text-[11px] font-semibold text-white/90 hover:border-cyan/50 hover:bg-cyan/15"
+              >
+                Diagnostic
+              </Link>
+            </div>
+          </div>
+        ) : null}
         <Link
           href="/profile"
           className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-ink/5"

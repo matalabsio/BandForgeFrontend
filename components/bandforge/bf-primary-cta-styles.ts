@@ -37,6 +37,45 @@ export const bfPrimaryCtaDiagClass = cn(
   BF_PRIMARY_CTA_GRADIENT,
 );
 
+/** In-exam sticky footer Continue / Submit — same gradient + hover as hero. */
+export const bfPrimaryCtaExamFooterClass = cn(
+  BF_PRIMARY_CTA_BASE,
+  BF_PRIMARY_CTA_GRADIENT,
+  BF_PRIMARY_CTA_HOVER,
+  "min-h-[44px] w-full px-6 text-[14px] font-bold disabled:pointer-events-none disabled:opacity-60 sm:w-auto sm:min-w-[10rem]",
+);
+
+/** In-exam compact actions (toolbar submit, section continue). */
+export const bfPrimaryCtaExamCompactClass = cn(
+  BF_PRIMARY_CTA_BASE,
+  BF_PRIMARY_CTA_GRADIENT,
+  BF_PRIMARY_CTA_HOVER,
+  "min-h-9 shrink-0 px-3.5 py-1.5 text-[11px] font-bold disabled:pointer-events-none disabled:opacity-60 sm:px-4 sm:text-[12px]",
+);
+
+/** Shared base for exam answer-sheet question browse chips (L/R). */
+export const BF_EXAM_Q_BROWSE_BASE =
+  "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border text-[12px] font-bold tabular-nums transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-1";
+
+/** Current question in the browse strip — same teal fill language as CTA. */
+export const bfExamQBrowseCurrentClass = cn(
+  BF_EXAM_Q_BROWSE_BASE,
+  "border-transparent",
+  BF_PRIMARY_FILL,
+);
+
+/** Answered (not current) browse chip. */
+export const bfExamQBrowseAnsweredClass = cn(
+  BF_EXAM_Q_BROWSE_BASE,
+  "border-[var(--exam-accent)]/45 bg-[var(--exam-accent-soft)] text-[var(--exam-accent)]",
+);
+
+/** Unanswered browse chip. */
+export const bfExamQBrowseIdleClass = cn(
+  BF_EXAM_Q_BROWSE_BASE,
+  "border-[var(--exam-border)] bg-white text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)]",
+);
+
 /**
  * Dashboard Start now / Begin Practice — same fill + hover as hero Diagnostic
  * (`BF_PRIMARY_CTA_GRADIENT` + `BF_PRIMARY_CTA_HOVER`). Size only differs.

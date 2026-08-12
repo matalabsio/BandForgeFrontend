@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  markCachedPlanHubTasksDone,
   markCachedPlanTaskDone,
   resolvePlanContinueHref,
 } from "@/lib/plan-day-tasks";
@@ -88,6 +89,10 @@ export function markPlanStepDone(input: MarkPlanStepInput): void {
   if (input.currentTaskId) {
     markCachedPlanTaskDone(input.currentTaskId);
     void patchLearningTask(input.currentTaskId, "done").catch(() => {});
+  }
+  if (input.hubId) {
+    // Avoid Continue re-opening the same hub under a sibling task id.
+    markCachedPlanHubTasksDone(input.hubId);
   }
   if (input.completeHub && input.hubId) {
     void completePracticeHub(input.hubId).catch(() => {});

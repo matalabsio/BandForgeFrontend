@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { bfPrimaryCtaExamFooterClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { cn } from "@/lib/utils";
 
 export type ExamPartFooterVariant = "listening" | "reading" | "writing";
@@ -11,12 +12,6 @@ type Props = {
   busy?: boolean;
   disabled?: boolean;
   onAction: () => void;
-};
-
-const accentClass: Record<ExamPartFooterVariant, string> = {
-  listening: "bg-[var(--exam-accent)] hover:bg-cyan",
-  reading: "bg-[var(--reading-accent)] hover:bg-cyan",
-  writing: "bg-cyan hover:bg-cyan",
 };
 
 const borderClass: Record<ExamPartFooterVariant, string> = {
@@ -45,12 +40,7 @@ function ExamPartFooterBase({
           type="button"
           disabled={disabled || busy}
           onClick={onAction}
-          className={cn(
-            "flex min-h-[44px] w-full cursor-pointer items-center justify-center rounded-xl px-6",
-            "text-[14px] font-bold text-white shadow-sm transition-colors sm:w-auto sm:min-w-[10rem]",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            accentClass[variant],
-          )}
+          className={bfPrimaryCtaExamFooterClass}
         >
           {busy ? "Submitting…" : label}
         </button>

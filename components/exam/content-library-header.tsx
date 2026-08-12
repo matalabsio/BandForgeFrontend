@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 
-/** Hub header — back, centered logo, search. Back goes to /test from test hubs. */
+/** Hub header — back + centered logo (no search). Back goes to /test from test hubs. */
 export function ContentLibraryHeader() {
   const pathname = usePathname();
   const isCatalog = pathname === "/test" || pathname === "/test/";
@@ -27,13 +27,8 @@ export function ContentLibraryHeader() {
           <BandForgeLogoLink size="nav" />
         </div>
 
-        <Link
-          href="/dashboard"
-          aria-label="Go to dashboard"
-          className="inline-flex size-10 items-center justify-center rounded-full border border-[var(--exam-border)] bg-white text-[var(--exam-ink)] transition-colors hover:bg-[var(--exam-surface)]"
-        >
-          <Search className="size-[1.125rem]" aria-hidden />
-        </Link>
+        {/* Spacer keeps logo centered (matches back button width). */}
+        <span className="size-10" aria-hidden />
       </div>
     </header>
   );

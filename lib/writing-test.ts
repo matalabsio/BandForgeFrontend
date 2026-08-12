@@ -59,6 +59,9 @@ export function writingMockHubPath(_mockAttemptId?: string): string {
   return test1HubPath();
 }
 
+/** Sent when the writing timer expires with a blank box so submit is not 400. */
+export const WRITING_EMPTY_EXPIRY_PLACEHOLDER = "[No response]";
+
 /** IELTS minimum word counts per task (mirrors backend WRITING_MIN_WORDS). */
 export const WRITING_MIN_WORDS: Record<number, number> = { 1: 150, 2: 250 };
 

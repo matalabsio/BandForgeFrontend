@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { RestoreMockAttemptOnResults } from "@/components/exam/restore-mock-attempt-on-results";
 import { getServerUser, resolveAuthRedirectPath } from "@/lib/auth";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-live";
 import { resolveCatalogSlotServer } from "@/lib/mock-server";
@@ -75,6 +76,25 @@ export default async function ListeningResultsPage({ params, searchParams }: Pag
           writingTaskCount={resolved.mockMeta.writingTaskCount}
           speakingMinutes={resolved.mockMeta.speakingMinutes}
         />
+      </MockLayout>
+    );
+  }
+
+  // attempt without mock_attempt → try restore from session (stripped URL / refresh).
+  if (attemptId) {
+    return (
+      <MockLayout>
+        <RestoreMockAttemptOnResults
+          testNumber={testNumber}
+          mockTestId={resolved.mockTestId}
+        >
+          <ModuleScoreResultsClient
+            testNumber={testNumber}
+            module="listening"
+            targetBand={user.target_band ?? null}
+            plan={plan}
+          />
+        </RestoreMockAttemptOnResults>
       </MockLayout>
     );
   }

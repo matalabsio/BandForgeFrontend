@@ -35,7 +35,7 @@ export function ProductionAuthConfigError() {
           <ul className="mt-2 list-inside list-disc space-y-1 font-mono text-xs">
             <li>NEXT_PUBLIC_AUTH_ENABLED=true</li>
             <li>
-              NEXT_PUBLIC_API_URL=https://adequate-surprise-production-96bc.up.railway.app
+              NEXT_PUBLIC_API_URL=https://backend-production-a813.up.railway.app
             </li>
             <li>NEXT_PUBLIC_OAUTH_SITE_URL=https://bandforge-web.vercel.app</li>
             <li>NEXT_PUBLIC_PHONE_OTP_ENABLED=false</li>

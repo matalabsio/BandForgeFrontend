@@ -1,6 +1,11 @@
 "use client";
 
 import { memo, useMemo } from "react";
+import {
+  bfExamQBrowseAnsweredClass,
+  bfExamQBrowseCurrentClass,
+  bfExamQBrowseIdleClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { FormCompletionPart } from "@/modules/listening/components/form-completion-part";
 import { ListeningChooseTwoBlock } from "@/modules/listening/components/listening-choose-two-block";
 import { ListeningMatchingBlock } from "@/modules/listening/components/listening-matching-block";
@@ -106,7 +111,11 @@ function ListeningQuestionsPanelBase({
               1-{sorted.length}
             </p>
           </div>
-          <div className="mt-2.5 flex flex-wrap gap-1" role="tablist" aria-label="Question navigation">
+          <div
+            className="mt-2.5 grid grid-cols-5 gap-1.5 sm:grid-cols-10"
+            role="tablist"
+            aria-label="Question navigation"
+          >
             {sorted.map((q) => {
               const answered = Boolean((answers[q.id] ?? "").trim());
               const isCurrent = currentQuestionId === q.id;
@@ -117,18 +126,18 @@ function ListeningQuestionsPanelBase({
                   role="tab"
                   onClick={() => onFocus(q.id)}
                   className={cn(
-                    "flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-md border text-[12px] font-bold transition-colors duration-150",
+                    "justify-self-center",
                     isCurrent
                       ? isDiagnostic
-                        ? "border-cyan bg-cyan text-white"
-                        : "border-[var(--exam-accent)] bg-[var(--exam-accent)] text-white"
+                        ? "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent bg-cyan text-[12px] font-bold text-white tabular-nums"
+                        : bfExamQBrowseCurrentClass
                       : answered
                         ? isDiagnostic
-                          ? "border-cyan/50 bg-cyan/10 text-cyan"
-                          : "border-[var(--exam-accent)]/50 bg-[var(--exam-accent-soft)] text-[var(--exam-accent)]"
+                          ? "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-cyan/50 bg-cyan/10 text-[12px] font-bold text-cyan tabular-nums"
+                          : bfExamQBrowseAnsweredClass
                         : isDiagnostic
-                          ? "border-navy/14 bg-white text-[#5A6B82] hover:border-navy/30"
-                          : "border-[var(--exam-border)] bg-white text-[var(--exam-ink-muted)] hover:border-[var(--exam-ink-muted)]",
+                          ? "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-navy/14 bg-white text-[12px] font-bold text-[#5A6B82] tabular-nums hover:border-navy/30"
+                          : bfExamQBrowseIdleClass,
                   )}
                   aria-label={`Question ${qDisplay(q)}${answered ? ", answered" : ""}`}
                   aria-selected={isCurrent}

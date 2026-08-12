@@ -159,7 +159,7 @@ export function parseVideoEmbed(url: string): VideoEmbed {
     };
   }
 
-  if (/^https?:\/\//i.test(trimmed)) {
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("/api/")) {
     return {
       kind: "direct",
       embedUrl: trimmed,

@@ -1,5 +1,5 @@
-import { DashboardContentSkeleton } from "@/components/bandforge/dashboard/dashboard-shell-skeleton";
+import { ProfileContentSkeleton } from "@/components/bandforge/dashboard/app-route-skeletons";
 
 export default function ProfileLoading() {
-  return <DashboardContentSkeleton />;
+  return <ProfileContentSkeleton />;
 }

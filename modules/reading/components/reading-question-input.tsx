@@ -2,6 +2,7 @@
 
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { examTextInputProps } from "@/lib/exam-input-props";
+import { BF_PRIMARY_FILL } from "@/components/bandforge/bf-primary-cta-styles";
 import { cn } from "@/lib/utils";
 
 const TFNG_DEFAULT = ["TRUE", "FALSE", "NOT GIVEN"] as const;
@@ -33,9 +34,12 @@ export function ReadingQuestionInput({ q, value, onChange }: Props) {
             type="button"
             onClick={() => onChange(t)}
             className={cn(
-              "cursor-pointer rounded-md border px-4 py-2 text-[12px] font-bold tracking-wide transition-colors",
+              "cursor-pointer rounded-full border px-4 py-2 text-[12px] font-bold tracking-wide transition-colors",
               value === t
-                ? "border-[var(--reading-accent)] bg-[var(--reading-accent)] text-white"
+                ? cn(
+                    BF_PRIMARY_FILL,
+                    "border-transparent shadow-[0_4px_12px_rgb(0_151_167/0.28)]",
+                  )
                 : "border-[var(--reading-border)] bg-white text-[var(--reading-ink)] hover:border-[var(--reading-accent)]",
             )}
           >

@@ -1,12 +1,11 @@
 import { Suspense } from "react";
 import { DashboardTopHeader } from "@/components/bandforge/dashboard/dashboard-top-header";
+import { DashboardMagicBentoClient } from "@/components/bandforge/dashboard/dashboard-magic-bento-client";
 import {
   DashPageItem,
   DashPageMotion,
 } from "@/components/bandforge/dashboard/motion";
-import { DashboardBandGapSection } from "@/components/bandforge/dashboard/sections/dashboard-band-gap-section";
-import { DashboardWeeklyFocusSection } from "@/components/bandforge/dashboard/sections/dashboard-weekly-focus-section";
-import { DashboardWelcomeSection } from "@/components/bandforge/dashboard/sections/dashboard-welcome-section";
+import { buildDashboardBentoCards } from "@/lib/build-dashboard-bento-cards";
 import {
   computeBandGapFromLearning,
   overallPlanPercent,
@@ -28,11 +27,24 @@ type Props = {
   userId?: string;
 };
 
-function SkillsSkeleton() {
+function BentoSkeleton() {
   return (
-    <div className="grid gap-5 sm:gap-6 md:grid-cols-2" aria-hidden>
-      <div className="h-64 animate-pulse rounded-[24px] bg-ink/[0.06]" />
-      <div className="h-64 animate-pulse rounded-[24px] bg-ink/[0.06]" />
+    <div
+      className="grid min-h-[28rem] flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2 lg:min-h-0"
+      aria-hidden
+    >
+      {Array.from({ length: 6 }, (_, i) => (
+        <div
+          key={i}
+          className={[
+            "min-h-[200px] animate-pulse rounded-[24px] bg-ink/[0.06] lg:min-h-0",
+            i === 2 ? "md:col-span-2 lg:col-span-2" : "",
+            i === 3 ? "md:col-span-2 lg:col-span-2" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        />
+      ))}
     </div>
   );
 }
@@ -55,26 +67,17 @@ export async function DashboardPersonalizedSection({
         ctaLabel: "Begin Practice",
       });
 
-  const welcomeBlock = (
-    <DashboardWelcomeSection
-      targetBand={learning.target_band}
-      bandGapCurrent={bandGap.currentBand}
-      bandGapDelta={bandGap.gap}
-      bandGapScoredCount={bandGap.scoredCount}
-      bandGapIsPartial={bandGap.isPartial}
-      resolvedTargetBand={bandGap.targetBand}
-      studentName={user.displayName}
-      hubProgress={learning.hub_progress}
-      currentBand={learning.current_band}
-      overallPlanPct={planPct}
-      startNow={startNow}
-      startNowCacheTasks={learning.todays_tasks}
-    />
-  );
+  const cards = buildDashboardBentoCards({
+    learning,
+    startNow,
+    bandGap,
+    examTimeline,
+    overallPlanPct: planPct,
+  });
 
   return (
-    <DashPageMotion>
-      <DashPageItem>
+    <DashPageMotion className="flex min-h-0 flex-1 flex-col gap-[var(--bf-dash-gutter)]">
+      <DashPageItem className="shrink-0">
         <DashboardTopHeader
           firstName={user.firstName}
           displayName={user.displayName}
@@ -86,32 +89,9 @@ export async function DashboardPersonalizedSection({
         />
       </DashPageItem>
 
-      <DashPageItem>{welcomeBlock}</DashPageItem>
-
-      <DashPageItem>
-        <Suspense fallback={<SkillsSkeleton />}>
-          <div className="grid gap-6 sm:gap-6 md:grid-cols-2 md:items-start">
-            <DashboardWeeklyFocusSection
-              weeklyFocus={studyPlan.weekly_focus}
-              skillDifficulty={
-                learning.skill_difficulty ?? studyPlan.skill_difficulty ?? null
-              }
-              studyPlan={studyPlan}
-              examDate={examTimeline.examDate}
-              currentDay={examTimeline.currentDay}
-              targetBand={learning.target_band}
-              studentName={user.displayName}
-              hubProgress={learning.hub_progress}
-              currentBand={learning.current_band}
-              overallPlanPct={planPct}
-            />
-            <DashboardBandGapSection
-              bands={bandGap.bands}
-              targetBand={bandGap.targetBand}
-              isPartial={bandGap.isPartial}
-              scoredCount={bandGap.scoredCount}
-            />
-          </div>
+      <DashPageItem className="flex min-h-0 flex-1 flex-col">
+        <Suspense fallback={<BentoSkeleton />}>
+          <DashboardMagicBentoClient cards={cards} />
         </Suspense>
       </DashPageItem>
     </DashPageMotion>

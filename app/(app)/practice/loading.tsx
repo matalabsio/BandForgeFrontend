@@ -1,6 +1,5 @@
-import { PlanOpeningSkeleton } from "@/components/bandforge/plan/plan-skeletons";
+import { PracticeHubSkeleton } from "@/components/bandforge/dashboard/app-route-skeletons";
 
-/** Lightweight practice-route loading — no heavy video block. */
 export default function PracticeLoading() {
-  return <PlanOpeningSkeleton label="Loading practice…" />;
+  return <PracticeHubSkeleton />;
 }

@@ -80,12 +80,16 @@ export const writingApi = {
   submit(
     attemptId: string,
     answers: { question_id: string; user_answer: string }[],
+    options?: { onExpiry?: boolean },
   ): Promise<SubmitWritingPayload> {
     return examApiCall<SubmitWritingPayload>(
       `/api/writing/attempts/${encodeURIComponent(attemptId)}/submit`,
       {
         method: "POST",
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({
+          answers,
+          on_expiry: options?.onExpiry === true,
+        }),
       },
     );
   },

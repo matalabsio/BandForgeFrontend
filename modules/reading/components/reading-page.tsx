@@ -43,16 +43,19 @@ import {
   markPlanStepDone,
   shouldCompleteHubForPlanTask,
 } from "@/lib/plan-step-completion";
-import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
+import { useEnsureFullMockAttempt } from "@/modules/mock/hooks/use-ensure-full-mock-attempt";
 import { readingApi } from "@/modules/reading/services/reading-api";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
 import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
+import { useExamForceSubmit } from "@/modules/shared/hooks/use-exam-force-submit";
+import { useExamTimeWarning } from "@/modules/shared/hooks/use-exam-time-warning";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
 import {
   formatExamSubmitError,
   submitWithExamSession,
 } from "@/modules/shared/lib/submit-with-exam-session";
+import { ExamTimeWarningDialog } from "@/components/exam/exam-time-warning-dialog";
 import { ReadingExamToolbar } from "@/modules/reading/components/reading-exam-toolbar";
 import { ReadingIntroOverlay } from "@/modules/reading/components/reading-intro-overlay";
 import { ReadingPassagePanel } from "@/modules/reading/components/reading-passage-panel";
@@ -60,6 +63,7 @@ import { ReadingQuestionSection } from "@/modules/reading/components/reading-que
 import { ReadingSectionStepper } from "@/modules/reading/components/reading-section-stepper";
 import { ReadingExamSkeleton } from "@/modules/reading/components/reading-exam-skeleton";
 import { ExamPartFooter } from "@/components/exam/exam-part-footer";
+import { bfPrimaryCtaExamCompactClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { ExamBusyOverlay } from "@/modules/shared/components/exam-section-loader";
 import {
   clearFlowSnapshot,
@@ -150,7 +154,15 @@ export function ReadingPage({
 }: Props) {
   const isDiagnostic = isDiagnosticFlow(flow, testId);
   const { replace, push } = useRouter();
-  const mockAttemptId = useResolvedMockAttemptId(testId);
+  const needsFullMock = !isDiagnostic && !fromPlan;
+  const {
+    mockAttemptId,
+    ensuring: ensuringMockAttempt,
+    error: mockAttemptError,
+  } = useEnsureFullMockAttempt({
+    enabled: needsFullMock,
+    mockTestId: testId,
+  });
   const resolvedTestNumber = isDiagnostic
     ? DIAGNOSTIC_NAV_TEST_NUMBER
     : (testNumberProp ?? testNumberForMockId(testId));
@@ -485,8 +497,8 @@ export function ReadingPage({
     [clearAutosaveTimers],
   );
 
-  const submitAll = useCallback(async () => {
-    if (!attemptId || questions.length === 0 || busy) return;
+  const submitAll = useCallback(async (): Promise<boolean> => {
+    if (!attemptId || questions.length === 0 || busy) return false;
     setBusy(true);
     setError(null);
     try {
@@ -537,16 +549,16 @@ export function ReadingPage({
           total_questions: result.total_questions,
         })
       )
-        return;
+        return true;
       if (mockAttemptId && !isDiagnostic) {
         goToMockSectionResults(result.attempt_id, passage);
-        return;
+        return true;
       }
       goToResults(result.attempt_id, {
         ...result,
         mock_reading_complete: readingComplete,
       });
-      return;
+      return true;
     } catch (e) {
       if (e instanceof ApiError && e.status === 409 && mockAttemptId) {
         try {
@@ -564,12 +576,13 @@ export function ReadingPage({
               { testNumber: resolvedTestNumber },
             ),
           );
-          return;
+          return true;
         } catch {
           /* fall through */
         }
       }
       setError(formatExamSubmitError(e));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -591,24 +604,17 @@ export function ReadingPage({
     replace,
   ]);
 
-  const expiryFiredRef = useRef(false);
-
-  useEffect(() => {
-    expiryFiredRef.current = false;
-  }, [startedAtIso]);
-
-  const canSubmitOnExpiry =
+  const canForceSubmit =
     loadStatus === "ready" &&
     Boolean(attemptId) &&
     questions.length > 0 &&
     !busy;
 
-  const onTimerExpire = useCallback(() => {
-    if (expiryFiredRef.current) return;
-    if (!canSubmitOnExpiry) return;
-    expiryFiredRef.current = true;
-    void submitAll();
-  }, [canSubmitOnExpiry, submitAll]);
+  const { onExpire: onTimerExpire } = useExamForceSubmit({
+    canSubmit: canForceSubmit,
+    submit: submitAll,
+    resetKey: startedAtIso,
+  });
 
   const timerActive =
     loadStatus === "ready" &&
@@ -623,13 +629,20 @@ export function ReadingPage({
     startedAtIso,
     serverTimeIso,
     durationSeconds,
-    active: timerActive,
+    active: timerActive || Boolean(attemptId),
     onExpire: onTimerExpire,
+  });
+
+  const timeWarning = useExamTimeWarning({
+    remaining,
+    durationSeconds,
+    resetKey: startedAtIso,
+    active: Boolean(attemptId) && remaining > 0,
   });
 
   useExamExpiryCatchUp({
     remaining,
-    canSubmit: canSubmitOnExpiry,
+    canSubmit: canForceSubmit,
     onExpire: onTimerExpire,
     resetKey: startedAtIso,
   });
@@ -905,6 +918,13 @@ export function ReadingPage({
     const bootGen = ++bootGenerationRef.current;
     initialBootConsumedRef.current = false;
 
+    if (needsFullMock && !mockAttemptId) {
+      setLoadStatus("booting");
+      return () => {
+        cancelled = true;
+      };
+    }
+
     setLoadStatus("booting");
     setError(null);
 
@@ -964,7 +984,15 @@ export function ReadingPage({
     return () => {
       cancelled = true;
     };
-  }, [testId, passage, mockAttemptId, sectionStart, beginSession, finishBoot]);
+  }, [
+    testId,
+    passage,
+    mockAttemptId,
+    needsFullMock,
+    sectionStart,
+    beginSession,
+    finishBoot,
+  ]);
 
   const handleIntroStart = useCallback(async () => {
     if (!introAgreed) return;
@@ -1036,6 +1064,32 @@ export function ReadingPage({
     questions.length > 0 &&
     passageText.trim().length > 0;
 
+  if (needsFullMock && (ensuringMockAttempt || (!mockAttemptId && !mockAttemptError))) {
+    return (
+      <ReadingExamSkeleton
+        title="Starting full mock…"
+        subtitle="Opening Mock Test so all sections stay linked."
+      />
+    );
+  }
+
+  if (needsFullMock && mockAttemptError) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="max-w-md text-[14px] text-red-700" role="alert">
+          {mockAttemptError}
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className={bfPrimaryCtaExamCompactClass}
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
   if (loadStatus === "booting" || (loadStatus === "ready" && !contentReady && examPhase !== "intro")) {
     return (
       <ReadingExamSkeleton
@@ -1062,7 +1116,7 @@ export function ReadingPage({
             setLoadStatus("booting");
             void beginSession(sectionStart).then(() => setLoadStatus("ready"));
           }}
-          className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-5 py-2.5 text-[13px] font-bold text-white"
+          className={bfPrimaryCtaExamCompactClass}
         >
           Try again
         </button>
@@ -1089,7 +1143,7 @@ export function ReadingPage({
         : `Saving your answers and loading Passage ${passage + 1}.`;
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
       {busy ||
       (remaining <= 0 &&
         loadStatus === "ready" &&
@@ -1101,6 +1155,11 @@ export function ReadingPage({
           subtitle={submitOverlaySubtitle}
         />
       ) : null}
+      <ExamTimeWarningDialog
+        open={timeWarning.open}
+        remainingSeconds={remaining}
+        onDismiss={timeWarning.dismiss}
+      />
       {examPhase === "intro" && shouldShowIntro && remaining > 0 ? (
         <ReadingIntroOverlay
           passageTitle={displayTitle}
@@ -1173,10 +1232,10 @@ export function ReadingPage({
 
           {examPhase === "questions" ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-              <div className="min-h-[38vh] max-h-[46vh] overflow-hidden border-b border-[var(--reading-border)] sm:min-h-[40vh] lg:max-h-none lg:min-h-0 lg:w-[56%] lg:flex-1 lg:border-b-0 lg:border-r">
+              <div className="flex min-h-[38vh] max-h-[46vh] min-w-0 flex-col overflow-hidden border-b border-[var(--reading-border)] sm:min-h-[40vh] lg:max-h-[calc(100dvh-3rem)] lg:min-h-0 lg:w-[56%] lg:flex-1 lg:border-b-0 lg:border-r">
                 <ReadingPassagePanel passageText={passageText} />
               </div>
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:w-[min(44%,560px)] lg:max-w-[560px] lg:shrink-0 lg:max-h-[calc(100dvh-3rem)]">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:w-[min(44%,560px)] lg:max-w-[560px] lg:shrink-0 lg:max-h-[calc(100dvh-3rem)]">
                 <ReadingSectionStepper
                   current={activeQuestionSection}
                   onSelect={handleStepperSelect}

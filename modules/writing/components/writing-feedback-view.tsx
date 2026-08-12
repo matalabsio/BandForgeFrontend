@@ -41,6 +41,8 @@ type Props = {
   onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
+  /** Override H1 (e.g. plan practice — avoid catalog mock exam title). */
+  titleOverride?: string | null;
 };
 
 export function WritingFeedbackView({
@@ -58,6 +60,7 @@ export function WritingFeedbackView({
   onPrimaryAction,
   secondaryActionLabel,
   onSecondaryAction,
+  titleOverride = null,
 }: Props) {
   const router = useRouter();
   const isDiagnostic = mode === "diagnostic";
@@ -67,6 +70,7 @@ export function WritingFeedbackView({
   const [tutorSelection, setTutorSelection] = useState<string | null>(null);
 
   const taskTitle =
+    titleOverride?.trim() ||
     review.test_title?.trim() ||
     (isDiagnostic
       ? `Writing Task ${review.part} — Free Diagnostic`

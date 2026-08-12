@@ -2,16 +2,17 @@
 
 import { useState, type ReactNode } from "react";
 import {
-  CheckCircle2,
   Clock,
   Cloud,
   CloudOff,
   FileText,
   PencilLine,
 } from "lucide-react";
-import { TestTimer } from "@/modules/shared";
+import { TestTimer, useExamTimeWarning } from "@/modules/shared";
 import { examTextInputProps } from "@/lib/exam-input-props";
 import { ExamPartFooter } from "@/components/exam/exam-part-footer";
+import { ExamTimeWarningDialog } from "@/components/exam/exam-time-warning-dialog";
+import { EXAM_TIME_WARNING_SECONDS } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 
 type MobilePanel = "prompt" | "write";
@@ -21,6 +22,7 @@ type Props = {
   isMock: boolean;
   displayLabel?: string;
   remainingSeconds: number;
+  durationSeconds: number;
   wordCount: number;
   minWords: number;
   estimatedBand: number;
@@ -36,19 +38,14 @@ type Props = {
   plainHeader?: boolean;
 };
 
-function wordProgress(count: number, min: number): number {
-  if (min <= 0) return count > 0 ? 100 : 0;
-  return Math.min(100, Math.round((count / min) * 100));
-}
-
 export function WritingExamWorkspace({
   activePart,
   isMock,
   displayLabel,
   remainingSeconds,
+  durationSeconds,
   wordCount,
   minWords,
-  estimatedBand,
   saved,
   busy,
   submitLabel,
@@ -60,13 +57,25 @@ export function WritingExamWorkspace({
   plainHeader = false,
 }: Props) {
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("write");
-  const progress = wordProgress(wordCount, minWords);
-  const metMin = minWords > 0 && wordCount >= minWords;
+  const timeUp = remainingSeconds <= 0;
+  const timerCritical = remainingSeconds <= EXAM_TIME_WARNING_SECONDS;
+  const timeWarning = useExamTimeWarning({
+    remaining: remainingSeconds,
+    durationSeconds,
+    resetKey: `${activePart}-${durationSeconds}`,
+    active: !busy && !timeUp,
+  });
+  const wordCountTone =
+    minWords > 0 && wordCount >= minWords
+      ? "green"
+      : minWords > 0 && wordCount >= minWords * 0.5
+        ? "yellow"
+        : "red";
 
   return (
-    <div className="flex min-h-dvh flex-col bg-surface text-ink">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-surface text-ink">
       {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-sm">
+      <header className="z-30 shrink-0 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-sm">
         <div className="flex h-14 items-center justify-between gap-3 px-4 md:h-[3.75rem] md:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#ECFEFF] text-teal">
@@ -103,10 +112,21 @@ export function WritingExamWorkspace({
             </span>
 
             <div
-              className="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-surface px-3 py-1.5"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5",
+                timerCritical
+                  ? "border-red-300 bg-red-50"
+                  : "border-[#E2E8F0] bg-surface",
+              )}
               aria-label="Time remaining"
             >
-              <Clock className="size-4 text-[#64748B]" aria-hidden />
+              <Clock
+                className={cn(
+                  "size-4",
+                  timerCritical ? "text-[#DC2626]" : "text-[#64748B]",
+                )}
+                aria-hidden
+              />
               <TestTimer
                 remainingSeconds={remainingSeconds}
                 className="text-[15px] font-bold"
@@ -115,84 +135,42 @@ export function WritingExamWorkspace({
           </div>
         </div>
 
-        {/* Stats + mobile tabs */}
-        <div className="border-t border-[#E2E8F0] bg-white px-4 py-2.5 md:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="min-w-[120px] flex-1 max-w-xs">
-                <div className="flex items-center justify-between text-[11px] font-medium text-[#64748B]">
-                  <span>{wordCount} words</span>
-                  <span>min {minWords}</span>
-                </div>
-                <div
-                  className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#E2E8F0]"
-                  role="progressbar"
-                  aria-valuenow={wordCount}
-                  aria-valuemin={0}
-                  aria-valuemax={minWords}
-                  aria-label="Word count progress"
-                >
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-[width] duration-300",
-                      metMin ? "bg-[#22C55E]" : "bg-cyan",
-                    )}
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums",
-                  metMin
-                    ? "bg-[#ECFDF5] text-[#059669]"
-                    : "bg-surface text-[#64748B]",
-                )}
-              >
-                {metMin ? (
-                  <CheckCircle2 className="size-3.5" aria-hidden />
-                ) : null}
-                Est. {estimatedBand > 0 ? estimatedBand.toFixed(1) : "—"}
-              </span>
-            </div>
-
-            <div
-              className="flex rounded-xl border border-[#E2E8F0] bg-surface p-0.5 lg:hidden"
-              role="tablist"
-              aria-label="Writing panels"
+        <div
+          className="flex border-t border-[#E2E8F0] bg-white px-4 py-2 lg:hidden md:px-6"
+          role="tablist"
+          aria-label="Writing panels"
+        >
+          <div className="flex rounded-xl border border-[#E2E8F0] bg-surface p-0.5">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobilePanel === "prompt"}
+              onClick={() => setMobilePanel("prompt")}
+              className={cn(
+                "inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold transition-colors",
+                mobilePanel === "prompt"
+                  ? "bg-white text-ink shadow-sm"
+                  : "text-[#64748B]",
+              )}
             >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mobilePanel === "prompt"}
-                onClick={() => setMobilePanel("prompt")}
-                className={cn(
-                  "inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold transition-colors",
-                  mobilePanel === "prompt"
-                    ? "bg-white text-ink shadow-sm"
-                    : "text-[#64748B]",
-                )}
-              >
-                <FileText className="size-3.5" aria-hidden />
-                Prompt
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mobilePanel === "write"}
-                onClick={() => setMobilePanel("write")}
-                className={cn(
-                  "inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold transition-colors",
-                  mobilePanel === "write"
-                    ? "bg-white text-ink shadow-sm"
-                    : "text-[#64748B]",
-                )}
-              >
-                <PencilLine className="size-3.5" aria-hidden />
-                Write
-              </button>
-            </div>
+              <FileText className="size-3.5" aria-hidden />
+              Prompt
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobilePanel === "write"}
+              onClick={() => setMobilePanel("write")}
+              className={cn(
+                "inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold transition-colors",
+                mobilePanel === "write"
+                  ? "bg-white text-ink shadow-sm"
+                  : "text-[#64748B]",
+              )}
+            >
+              <PencilLine className="size-3.5" aria-hidden />
+              Write
+            </button>
           </div>
         </div>
       </header>
@@ -215,7 +193,7 @@ export function WritingExamWorkspace({
 
         <section
           className={cn(
-            "flex min-h-0 flex-1 flex-col",
+            "flex min-h-0 flex-1 flex-col overflow-hidden",
             mobilePanel === "write" ? "flex" : "hidden lg:flex",
           )}
           aria-label="Your response"
@@ -239,15 +217,27 @@ export function WritingExamWorkspace({
                   value={essay}
                   onChange={(e) => onEssayChange(e.target.value)}
                   placeholder="Type your response here. Organise your ideas into clear paragraphs…"
+                  readOnly={timeUp || busy}
                   {...examTextInputProps}
-                  className="answer-input h-full min-h-[min(52vh,520px)] w-full resize-none border-0 bg-transparent px-4 py-4 text-[16px] leading-[1.75] text-[#334155] placeholder:text-[#94A3B8] focus:outline-none focus:ring-0 md:min-h-[min(60vh,640px)] md:px-5 md:py-5 lg:min-h-0"
+                  className="answer-input h-full min-h-0 w-full resize-none overflow-y-auto border-0 bg-transparent px-4 py-4 pb-12 text-[16px] leading-[1.75] text-[#334155] placeholder:text-[#94A3B8] focus:outline-none focus:ring-0 disabled:cursor-not-allowed md:px-5 md:py-5 md:pb-12"
                 />
+                <p
+                  className={cn(
+                    "pointer-events-none absolute bottom-3 right-3 z-10 text-[12px] font-semibold tabular-nums",
+                    wordCountTone === "green" && "text-[#059669]",
+                    wordCountTone === "yellow" && "text-[#D97706]",
+                    wordCountTone === "red" && "text-[#DC2626]",
+                  )}
+                  aria-live="polite"
+                >
+                  {wordCount} {wordCount === 1 ? "word" : "words"}
+                </p>
               </div>
             </div>
 
             {error ? (
               <p
-                className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700"
+                className="mt-3 shrink-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700"
                 role="alert"
               >
                 {error}
@@ -259,10 +249,16 @@ export function WritingExamWorkspace({
             variant="writing"
             label={submitLabel}
             busy={busy}
+            disabled={timeUp}
             onAction={onSubmit}
           />
         </section>
       </main>
+      <ExamTimeWarningDialog
+        open={timeWarning.open}
+        remainingSeconds={remainingSeconds}
+        onDismiss={timeWarning.dismiss}
+      />
     </div>
   );
 }

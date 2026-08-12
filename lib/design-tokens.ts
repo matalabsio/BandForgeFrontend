@@ -28,8 +28,8 @@ export const radius = {
   lg: 16,
 } as const;
 
-const timerWarningSeconds = 5 * 60;
-const timerCriticalSeconds = 60;
+/** Exam low-time threshold: popup + red timer from 2:00 until 0:00. */
+export const EXAM_TIME_WARNING_SECONDS = 2 * 60;
 
 export const writingTargets = {
   task1Min: 150,
@@ -40,8 +40,7 @@ export const writingTargets = {
 export type TimerVariant = "default" | "warning" | "critical";
 
 export function getTimerVariant(remainingSeconds: number): TimerVariant {
-  if (remainingSeconds < timerCriticalSeconds) return "critical";
-  if (remainingSeconds < timerWarningSeconds) return "warning";
+  if (remainingSeconds <= EXAM_TIME_WARNING_SECONDS) return "critical";
   return "default";
 }
 

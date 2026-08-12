@@ -124,10 +124,8 @@ export function ModuleScoreResultsClient({
     );
   }
 
-  const title =
-    report.test_title?.trim() ||
-    (module === "listening" ? "Listening" : "Reading");
-  const subtitle = `${report.total_questions} questions · ${moduleLabel} practice`;
+  const title = `${moduleLabel} practice`;
+  const subtitle = `${report.total_questions} questions · ${moduleLabel}`;
 
   return (
     <PracticeSectionResultsClient

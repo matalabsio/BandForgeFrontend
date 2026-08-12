@@ -5,6 +5,10 @@ import {
   prevSection,
   type QuestionSectionId,
 } from "@/modules/reading/lib/reading-exam-flow";
+import {
+  BF_PRIMARY_FILL,
+  bfPrimaryCtaExamCompactClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { cn } from "@/lib/utils";
 
 const STEP_LABELS: Record<QuestionSectionId, string> = {
@@ -58,9 +62,9 @@ export function ReadingSectionStepper({
               className={cn(
                 "shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition-colors sm:px-3",
                 isCurrent
-                  ? "bg-[var(--reading-accent)] text-white"
+                  ? cn(BF_PRIMARY_FILL, "shadow-[0_4px_12px_rgb(0_151_167/0.28)]")
                   : isPast
-                    ? "cursor-pointer bg-[var(--reading-accent-soft)] text-[var(--reading-accent)] hover:bg-[var(--reading-accent)]/20"
+                    ? "cursor-pointer bg-[var(--reading-accent-soft)] text-[var(--reading-accent)] hover:bg-[var(--reading-accent)]/15"
                     : "cursor-not-allowed bg-[var(--reading-surface)] text-[var(--reading-ink-muted)]/50",
               )}
               aria-current={isCurrent ? "step" : undefined}
@@ -76,7 +80,7 @@ export function ReadingSectionStepper({
           type="button"
           disabled={!hasPrev}
           onClick={onBack}
-          className="cursor-pointer rounded-md border border-[var(--reading-border)] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[var(--reading-ink)] transition-colors hover:border-[var(--reading-accent)] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
+          className="cursor-pointer rounded-full border border-[var(--reading-border)] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[var(--reading-ink)] transition-colors hover:border-[var(--reading-accent)] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
         >
           <span className="sm:hidden">← Prev</span>
           <span className="hidden sm:inline">← Previous section</span>
@@ -86,7 +90,7 @@ export function ReadingSectionStepper({
             type="button"
             disabled={busy}
             onClick={onSubmit}
-            className="cursor-pointer rounded-md bg-[var(--reading-accent)] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60 sm:px-4"
+            className={bfPrimaryCtaExamCompactClass}
           >
             {busy ? "Submitting…" : (continueLabel ?? "Submit passage")}
           </button>
@@ -94,10 +98,10 @@ export function ReadingSectionStepper({
           <button
             type="button"
             onClick={onContinue}
-            className="min-w-0 flex-1 truncate cursor-pointer rounded-md bg-[var(--reading-accent)] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-cyan sm:flex-none sm:px-4"
+            className={cn(bfPrimaryCtaExamCompactClass, "min-w-0 flex-1 sm:flex-none")}
           >
-            <span className="sm:hidden">Continue</span>
-            <span className="hidden sm:inline">
+            <span className="truncate sm:hidden">Continue</span>
+            <span className="hidden truncate sm:inline">
               {continueLabel ?? "Continue"}
             </span>
           </button>

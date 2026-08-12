@@ -30,6 +30,7 @@ function goToPlanHref(
 
 export function usePlanResultsNav(plan: PlanResultContext | null) {
   const taskId = plan?.taskId ?? null;
+  const hubId = plan?.hubId ?? null;
   const fromPlan = Boolean(plan);
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
@@ -47,10 +48,10 @@ export function usePlanResultsNav(plan: PlanResultContext | null) {
     setReady(false);
     setContinueLabel("Finding next step…");
     void (async () => {
-      await ensurePlanDayTasksCached(taskId, { force: true });
+      await ensurePlanDayTasksCached(taskId, { force: true, hubId });
       if (cancelled) return;
 
-      const next = nextPendingPlanDayTask(taskId);
+      const next = nextPendingPlanDayTask(taskId, { skipHubId: hubId });
       const prev = adjacentPlanDayTask(taskId, "prev");
       const href = next
         ? resolveTodayTaskHrefFromCache(next)
@@ -69,7 +70,7 @@ export function usePlanResultsNav(plan: PlanResultContext | null) {
     return () => {
       cancelled = true;
     };
-  }, [fromPlan, taskId]);
+  }, [fromPlan, taskId, hubId]);
 
   return useMemo(() => {
     if (!fromPlan) return null;
