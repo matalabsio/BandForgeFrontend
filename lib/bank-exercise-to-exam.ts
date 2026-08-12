@@ -52,10 +52,10 @@ function optionsKey(options: ListeningOption[] | null): string {
 }
 
 function looksLikeChooseTwo(
-  a: { question_type: string; prompt: string; options: ListeningOption[] | null },
-  b: { question_type: string; prompt: string; options: ListeningOption[] | null },
+  a: { slug: string; prompt: string; options: ListeningOption[] | null },
+  b: { slug: string; prompt: string; options: ListeningOption[] | null },
 ): boolean {
-  if (a.question_type !== "mcq" || b.question_type !== "mcq") return false;
+  if (a.slug !== "mcq" || b.slug !== "mcq") return false;
   if (a.prompt.trim() !== b.prompt.trim()) return false;
   return optionsKey(a.options) === optionsKey(b.options) && Boolean(a.options?.length);
 }
