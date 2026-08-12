@@ -96,17 +96,20 @@ export function PracticeReadingExam({
           <ReadingPassagePanel passageText={passage} />
         </div>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 py-5 lg:w-[min(44%,560px)] lg:max-w-[560px] lg:shrink-0">
+          <div className="space-y-8">
           {groups.map((group) => (
             <ReadingQuestionSection
               key={group.id}
               group={group}
               sectionId={asSectionId(group.id)}
+              layout="stack"
               answers={answers}
               onAnswer={(id, value) =>
                 setAnswers((prev) => ({ ...prev, [id]: value }))
               }
             />
           ))}
+          </div>
           {groups.length === 0 ? (
             <p className="text-sm text-[var(--reading-ink-muted)]">
               No questions in this set.
