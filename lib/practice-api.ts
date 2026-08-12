@@ -52,6 +52,7 @@ export type BankExerciseStart = {
     title: string | null;
     instructions: string | null;
     audio_key: string | null;
+    audio_url?: string | null;
     passage_text: string | null;
     image_url: string | null;
     questions: Array<{
@@ -60,6 +61,8 @@ export type BankExerciseStart = {
       question_type: string;
       prompt: string;
       options: unknown;
+      instructions?: string | null;
+      audio_url?: string | null;
     }>;
   };
 };

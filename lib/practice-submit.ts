@@ -23,10 +23,23 @@ function partNumber(config: SubmitConfig, fallback = 1): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-/** True when hub should open mock module UI instead of thin bank exercise. */
+/** Custom Question Bank hubs — stay on /practice/.../exercise. */
+export function isBankSubmitTarget(
+  submitConfig: SubmitConfig | Record<string, unknown> | null | undefined,
+): boolean {
+  const config = (submitConfig ?? {}) as SubmitConfig;
+  if (config.type === "bank") return true;
+  if (typeof config.href === "string" && config.href.includes("/practice/")) {
+    return true;
+  }
+  return false;
+}
+
+/** True when hub should open mock module UI instead of bank exercise. */
 export function isModuleSubmitTarget(
   submitConfig: SubmitConfig | Record<string, unknown> | null | undefined,
 ): boolean {
+  if (isBankSubmitTarget(submitConfig)) return false;
   const config = (submitConfig ?? {}) as SubmitConfig;
   if (config.type === "module") return true;
   if (typeof config.href === "string" && config.href.includes("/test/")) {

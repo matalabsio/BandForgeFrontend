@@ -9,6 +9,7 @@ import {
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
 import {
+  isBankSubmitTarget,
   isModuleSubmitTarget,
   moduleHrefFromSubmitConfig,
 } from "@/lib/practice-submit";
@@ -77,8 +78,8 @@ export default async function PracticeExercisePage({
     href?: string;
   };
 
-  // Phase 2: module-targeted hubs open mock L/R/W/S UIs — thin form is fallback only.
-  if (isModuleSubmitTarget(submitConfig)) {
+  // Mock-targeted hubs open /test/... ; bank hubs stay on this exercise page.
+  if (!isBankSubmitTarget(submitConfig) && isModuleSubmitTarget(submitConfig)) {
     if (fromPlan) {
       redirect(
         planStepOpenHref({
@@ -95,25 +96,6 @@ export default async function PracticeExercisePage({
     }
     const moduleHref = moduleHrefFromSubmitConfig(submitConfig, skill);
     if (moduleHref) redirect(moduleHref);
-  }
-
-  // Legacy: plan entry without hub config still routes L/R/W/S to mock UI.
-  if (
-    fromPlan &&
-    (skill === "listening" ||
-      skill === "reading" ||
-      skill === "writing" ||
-      skill === "speaking")
-  ) {
-    redirect(
-      planStepOpenHref({
-        skill,
-        hubId,
-        task: planTask,
-        taskId: planTaskId,
-        bankNumber: hub?.bank_number ?? 1,
-      }),
-    );
   }
 
   const { profile, subscription } = await fetchEntitlementGate(

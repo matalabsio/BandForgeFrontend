@@ -205,8 +205,17 @@ export function planSpeakingModuleHref(opts: {
   return `/test/${catalog}/speaking?${q.toString()}`;
 }
 
+function isBankSubmitConfig(
+  cfg: ModuleTargetConfig | null | undefined,
+): boolean {
+  if (!cfg) return false;
+  if (cfg.type === "bank") return true;
+  return typeof cfg.href === "string" && cfg.href.includes("/practice/");
+}
+
 /**
  * Prefer hub submit_config.href (module UI) when present; else skill builders.
+ * Bank hubs stay on /practice/{skill}/{hubId}/exercise — never mock /test.
  */
 export function planStepOpenHref(opts: {
   skill: PracticeSkill;
@@ -219,6 +228,14 @@ export function planStepOpenHref(opts: {
   submitConfig?: ModuleTargetConfig | null;
 }): string {
   const cfg = opts.submitConfig;
+  if (isBankSubmitConfig(cfg)) {
+    return planExerciseHref({
+      skill: opts.skill,
+      hubId: opts.hubId,
+      task: opts.task,
+      taskId: opts.taskId,
+    });
+  }
   if (cfg?.href && typeof cfg.href === "string" && cfg.href.includes("/test/")) {
     const url = new URL(cfg.href, "http://localhost");
     url.searchParams.set("from", "plan");
@@ -342,6 +359,14 @@ export function resolveTodayTaskHref(opts: {
       skill,
       hubId,
       task: "watch",
+      taskId: opts.taskId,
+    });
+  }
+  if (isBankSubmitConfig(opts.submitConfig)) {
+    return planExerciseHref({
+      skill,
+      hubId,
+      task,
       taskId: opts.taskId,
     });
   }
