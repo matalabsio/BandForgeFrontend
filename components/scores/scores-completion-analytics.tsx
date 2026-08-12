@@ -79,9 +79,7 @@ export function ScoresCompletionAnalytics({ learning, streakDays }: Props) {
           Streak
         </p>
         <p className="font-display mt-1 text-2xl font-bold text-navy">{streakDays}</p>
-        <Link href="/streak" className="mt-0.5 text-xs font-semibold text-teal hover:underline">
-          View streak →
-        </Link>
+        <p className="mt-0.5 text-xs text-muted">Days in a row</p>
       </div>
       <div className="rounded-2xl border border-border-soft bg-white p-4">
         <p className="font-mono text-[0.65rem] tracking-wider text-muted-light uppercase">

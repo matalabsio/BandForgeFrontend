@@ -65,17 +65,17 @@ export async function DashboardMocksActivitySection({ cookieHeader }: Props) {
       {hasAttempts ? (
         <>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-stretch">
-            <div className="min-w-0">
+            <div className="flex min-h-0 min-w-0 flex-col [&_>_*]:h-full [&_>_*]:min-h-0">
               <PerformanceChartLazy
                 attempts={summary.recent}
                 averageBand={summary.stats.average_band}
                 targetBand={targetBand}
               />
             </div>
-            <div className="min-w-0">
+            <div className="flex min-h-0 min-w-0 flex-col [&_>_*]:h-full [&_>_*]:min-h-0">
               <StudyActivityCard days={summary.activity_days ?? []} />
             </div>
-            <div className="min-w-0">
+            <div className="flex min-h-0 min-w-0 flex-col [&_>_*]:h-full [&_>_*]:min-h-0">
               <AiCoachCard coachHref={coachHref} teaserLines={teaserLines} />
             </div>
           </div>

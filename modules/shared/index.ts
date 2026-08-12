@@ -15,3 +15,5 @@ export {
   useListeningTimer,
 } from "@/modules/shared/hooks/use-exam-timer";
 export { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
+export { useExamForceSubmit } from "@/modules/shared/hooks/use-exam-force-submit";
+export { useExamTimeWarning } from "@/modules/shared/hooks/use-exam-time-warning";

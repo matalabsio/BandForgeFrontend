@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
+import { DevMockTestFooter } from "@/components/bandforge/dev-mock-test-footer";
 import { PanelIcon } from "@/components/bandforge/dashboard/icons";
 import {
-  MOBILE_BOTTOM_NAV,
+  getMobileBottomNav,
   isNavItemActive,
 } from "@/components/bandforge/dashboard/dashboard-nav";
 import { cn } from "@/lib/utils";
+
+const SHOW_DEV_MOCK_FOOTER = process.env.NODE_ENV === "development";
 
 const SIDEBAR_KEY = "bf-dashboard-sidebar";
 
@@ -23,6 +26,8 @@ type Props = {
   hideHeader?: boolean;
   /** Checkout success: no sidebar, header, or mobile nav */
   hideChrome?: boolean;
+  /** Full mocks unlocked after the personalized practice plan. */
+  mockUnlocked?: boolean;
 };
 
 export function DashboardShell({
@@ -33,6 +38,7 @@ export function DashboardShell({
   children,
   hideHeader = false,
   hideChrome = false,
+  mockUnlocked = false,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -58,10 +64,13 @@ export function DashboardShell({
   }, []);
 
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
+  const isDashboard = pathname === "/dashboard";
+  const showDevMockFooter = SHOW_DEV_MOCK_FOOTER && !isDashboard;
+  const mobileNav = getMobileBottomNav({ mockUnlocked });
   const bottomNavCols =
-    MOBILE_BOTTOM_NAV.length >= 5
+    mobileNav.length >= 5
       ? "grid-cols-5"
-      : MOBILE_BOTTOM_NAV.length === 4
+      : mobileNav.length === 4
         ? "grid-cols-4"
         : "grid-cols-3";
 
@@ -106,7 +115,10 @@ export function DashboardShell({
 
       <div
         className={cn(
-          "flex min-h-dvh flex-col transition-[padding] duration-200 ease-out",
+          "flex flex-col transition-[padding] duration-200 ease-out",
+          isDashboard
+            ? "min-h-dvh lg:h-dvh lg:overflow-hidden"
+            : "min-h-dvh",
           sidebarOpen ? "lg:pl-[260px]" : "lg:pl-0",
         )}
       >
@@ -139,15 +151,21 @@ export function DashboardShell({
 
         <main
           className={cn(
-            "mx-auto w-full max-w-7xl flex-1 px-4 sm:px-6 lg:px-8",
+            "mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col px-4 sm:px-6 lg:px-8",
             hideHeader
-              ? "py-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:py-8 lg:pb-10"
+              ? isDashboard
+                ? "pt-[var(--bf-dash-gutter)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-[var(--bf-dash-gutter)]"
+                : "pt-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-6"
               : "py-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:py-8 lg:pb-10",
+            showDevMockFooter &&
+              "pb-[calc(7.25rem+env(safe-area-inset-bottom))] lg:pb-16",
           )}
         >
           {children}
         </main>
       </div>
+
+      {showDevMockFooter ? <DevMockTestFooter aboveMobileNav /> : null}
 
       <nav
         className={cn(
@@ -156,26 +174,45 @@ export function DashboardShell({
         )}
         aria-label="Mobile navigation"
       >
-        {MOBILE_BOTTOM_NAV.map((item) => {
+        {mobileNav.map((item) => {
           const active = isNavItemActive(pathname, item.href);
+          const className = cn(
+            "flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[10px] font-semibold tracking-tight transition-colors duration-150 sm:text-[11px]",
+            item.disabled
+              ? "pointer-events-none opacity-45 text-muted-light"
+              : active
+                ? "text-cyan"
+                : "text-muted-light active:text-ink/70",
+          );
+          const inner = (
+            <>
+              <item.Icon
+                className={cn(
+                  "size-5 shrink-0 sm:size-[22px]",
+                  active && !item.disabled && "text-cyan",
+                )}
+                strokeWidth={active ? 2.25 : 2}
+              />
+              <span className="max-w-full truncate">
+                {item.shortLabel ?? item.label}
+              </span>
+            </>
+          );
+          if (item.disabled) {
+            return (
+              <span key={item.href} className={className} title={item.disabledHint}>
+                {inner}
+              </span>
+            );
+          }
           return (
             <Link
               key={item.href}
               href={item.href}
               prefetch
-              className={cn(
-                "flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[10px] font-semibold tracking-tight transition-colors duration-150 sm:text-[11px]",
-                active ? "text-cyan" : "text-muted-light active:text-ink/70",
-              )}
+              className={className}
             >
-              <item.Icon
-                className={cn(
-                  "size-5 shrink-0 sm:size-[22px]",
-                  active && "text-cyan",
-                )}
-                strokeWidth={active ? 2.25 : 2}
-              />
-              <span className="max-w-full truncate">{item.label}</span>
+              {inner}
             </Link>
           );
         })}

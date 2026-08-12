@@ -22,6 +22,7 @@ type Props = {
   onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
+  titleOverride?: string | null;
 };
 
 export function WritingResultsView({
@@ -39,6 +40,7 @@ export function WritingResultsView({
   onPrimaryAction,
   secondaryActionLabel,
   onSecondaryAction,
+  titleOverride = null,
 }: Props) {
   const feedback = buildWritingFeedback(review, { targetBand });
 
@@ -58,6 +60,7 @@ export function WritingResultsView({
       onPrimaryAction={onPrimaryAction}
       secondaryActionLabel={secondaryActionLabel}
       onSecondaryAction={onSecondaryAction}
+      titleOverride={titleOverride}
     />
   );
 }

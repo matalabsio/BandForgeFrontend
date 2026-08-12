@@ -10,12 +10,24 @@ import {
 } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Play } from "lucide-react";
 import { BfHeroActions } from "@/components/bandforge/bf-hero-actions";
 import { BfHeroAntigravity } from "@/components/bandforge/bf-hero-antigravity";
+import { BfHeroStreamAvatar } from "@/components/bandforge/bf-hero-stream-avatar";
 import CircularText from "@/components/bandforge/circular-text";
 
 gsap.registerPlugin(ScrollTrigger);
+
+const HERO_STREAM_UID = (
+  process.env.NEXT_PUBLIC_HERO_STREAM_UID || ""
+).trim();
+const HERO_STREAM_CUSTOMER = (
+  process.env.NEXT_PUBLIC_HERO_STREAM_CUSTOMER ||
+  process.env.NEXT_PUBLIC_STREAM_CUSTOMER_CODE ||
+  ""
+).trim();
+const HERO_STREAM_POSTER = (
+  process.env.NEXT_PUBLIC_HERO_STREAM_POSTER || ""
+).trim();
 
 function usePrefersReducedMotion() {
   const [reduce, setReduce] = useState(false);
@@ -313,36 +325,24 @@ export function BandForgeHero() {
               className="relative mx-auto w-full max-w-[min(96vw,400px)] shrink-0 will-change-transform sm:max-w-[min(82vw,460px)] lg:max-w-[min(48vw,520px)]"
             >
               <div data-hero-video-float className="will-change-transform">
-                <button
-                  type="button"
-                  className="pointer-events-auto group relative block w-full cursor-pointer overflow-hidden rounded-[16px] border border-[#94A3B8]/55 bg-transparent shadow-none backdrop-blur-[2px] transition-[border-color,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-cyan/50 hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:rounded-[18px]"
-                  style={{ aspectRatio: "16 / 10" }}
-                  aria-label="Play avatar demo — 30 second walkthrough"
-                >
-                  {/* Inner frame edge */}
-                  <span
-                    className="pointer-events-none absolute inset-1.5 rounded-[12px] border border-[#64748B]/35 sm:inset-2 sm:rounded-[13px]"
-                    aria-hidden
+                {HERO_STREAM_UID && HERO_STREAM_CUSTOMER ? (
+                  <BfHeroStreamAvatar
+                    streamUid={HERO_STREAM_UID}
+                    customerCode={HERO_STREAM_CUSTOMER}
+                    posterUrl={HERO_STREAM_POSTER || null}
+                    title="Avatar demo"
                   />
-
-                  <span className="relative z-[1] flex h-full flex-col items-center justify-center gap-2 px-4 sm:gap-2.5">
-                    <span className="flex size-11 items-center justify-center rounded-full bg-[linear-gradient(145deg,#26C6DA_0%,#00ACC1_48%,#00838F_100%)] text-white shadow-[0_8px_18px_rgba(0,151,167,0.28)] transition-transform duration-300 group-hover:scale-105 sm:size-12">
-                      <Play
-                        className="ml-0.5 size-4 fill-white text-white sm:size-[1.125rem]"
-                        strokeWidth={0}
-                        aria-hidden
-                      />
+                ) : (
+                  <div
+                    className="relative flex w-full items-center justify-center overflow-hidden rounded-[16px] border border-[#94A3B8]/55 sm:rounded-[18px]"
+                    style={{ aspectRatio: "16 / 10" }}
+                    aria-label="Avatar demo unavailable"
+                  >
+                    <span className="px-4 text-center text-sm text-muted">
+                      Hero video not configured
                     </span>
-                    <span className="text-center">
-                      <span className="block font-display text-[0.875rem] font-semibold tracking-tight text-navy sm:text-[0.9375rem]">
-                        Avatar demo
-                      </span>
-                      <span className="mt-0.5 block text-[0.6875rem] text-muted sm:text-[0.75rem]">
-                        30 sec walkthrough
-                      </span>
-                    </span>
-                  </span>
-                </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

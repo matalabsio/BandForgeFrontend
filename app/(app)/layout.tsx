@@ -10,7 +10,9 @@ import {
   getBandforgePathname,
 } from "@/lib/bandforge-pathname";
 import { authGuardRedirectPath } from "@/lib/auth";
+import { isFullPracticePlanComplete } from "@/lib/dashboard-plan-math";
 import { hasFullSkillProgram } from "@/lib/entitlement";
+import { fetchLearningProfile } from "@/lib/learning-server";
 import { fetchSubscriptionResult } from "@/lib/payments-server";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
 import { formatUserDisplayName } from "@/lib/user-display";
@@ -31,9 +33,10 @@ export default async function BandforgeAppLayout({
     getBandforgePathname(),
   ]);
 
-  const [user, subResult] = await Promise.all([
+  const [user, subResult, learning] = await Promise.all([
     getCachedServerSession(cookieHeader),
     fetchSubscriptionResult(cookieHeader),
+    fetchLearningProfile(cookieHeader),
   ]);
   if (!user) {
     redirect(authGuardRedirectPath(pathname, cookieHeader));
@@ -45,6 +48,10 @@ export default async function BandforgeAppLayout({
   const shellAvatarUrl = user.avatar_display_url ?? null;
   const showPremiumCta =
     subResult.known && !hasFullSkillProgram(subResult.subscription);
+  const mockUnlocked = isFullPracticePlanComplete(
+    learning?.hub_progress,
+    learning?.study_plan,
+  );
 
   return (
     <AppFontsShell>
@@ -55,12 +62,14 @@ export default async function BandforgeAppLayout({
           pathname={pathname}
           hideHeader={hideHeader}
           hideChrome={quietChrome}
+          mockUnlocked={mockUnlocked}
           sidebar={
             <DashboardSidebarNav
               pathname={pathname}
               displayName={formatUserDisplayName(user)}
               avatarUrl={user.avatar_display_url}
               showPremiumCta={showPremiumCta}
+              mockUnlocked={mockUnlocked}
             />
           }
         >

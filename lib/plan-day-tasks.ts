@@ -52,6 +52,14 @@ const TASK_LABEL: Record<string, string> = {
   submit: "Submit",
 };
 
+/** Real practice skills only — grammar/vocab have no question bank. */
+function isContinueEligibleTask(row: PlanDayTaskCacheRow): boolean {
+  if (!isPlanPracticeSkill(row.module)) return false;
+  const href = (row.href ?? "").trim();
+  if (href.includes("/content-library")) return false;
+  return true;
+}
+
 /** Local calendar day — keep inline to avoid import cycles with plan-step-completion. */
 function localDateKey(date: Date = new Date()): string {
   const y = date.getFullYear();
@@ -132,25 +140,69 @@ export function markCachedPlanTaskDone(taskId: string | null | undefined): void 
   if (changed) writeBucket({ ...bucket, tasks });
 }
 
+/** Mark every cached practice/submit row for a hub done (avoids same-hub Continue loops). */
+export function markCachedPlanHubTasksDone(
+  hubId: string | null | undefined,
+): void {
+  if (!hubId) return;
+  const bucket = readBucket();
+  let changed = false;
+  const tasks = bucket.tasks.map((t) => {
+    if (t.hub_id !== hubId || t.status === "done" || t.status === "skipped") {
+      return t;
+    }
+    if (t.task_type !== "practice" && t.task_type !== "submit") return t;
+    changed = true;
+    return { ...t, status: "done" as const };
+  });
+  if (changed) writeBucket({ ...bucket, tasks });
+}
+
 type MergeableTaskStatus = "pending" | "done" | "skipped";
+
+function taskFingerprint(row: {
+  id?: string;
+  module?: string | null;
+  task_type?: string | null;
+  hub_id?: string | null;
+}): string {
+  if (row.hub_id && row.module && row.task_type) {
+    return `${row.module}|${row.task_type}|${row.hub_id}`;
+  }
+  return row.id ?? "";
+}
 
 /**
  * Overlay sessionStorage plan-day statuses onto server tasks.
  * Prefer `done` when either side says done — never downgrade done→pending
  * from a stale RSC payload after fire-and-forget task patches.
+ * Matches by task id first, then module+task_type+hub_id (ID churn resilient).
  */
 export function mergePlanDayStatusesIntoTasks<
-  T extends { id: string; status: MergeableTaskStatus },
+  T extends {
+    id: string;
+    status: MergeableTaskStatus;
+    module?: string | null;
+    task_type?: string | null;
+    hub_id?: string | null;
+  },
 >(tasks: T[]): T[] {
   const cached = readPlanDayTasks();
   if (cached.length === 0 || tasks.length === 0) return tasks;
 
   const byId = new Map(cached.map((row) => [row.id, row.status]));
+  const byFp = new Map<string, MergeableTaskStatus>();
+  for (const row of cached) {
+    if (row.status !== "done") continue;
+    const fp = taskFingerprint(row);
+    if (fp) byFp.set(fp, "done");
+  }
+
   let changed = false;
   const next = tasks.map((task) => {
-    const cachedStatus = byId.get(task.id);
-    if (!cachedStatus) return task;
     if (task.status === "done" || task.status === "skipped") return task;
+    const cachedStatus =
+      byId.get(task.id) ?? byFp.get(taskFingerprint(task));
     if (cachedStatus !== "done") return task;
     changed = true;
     return { ...task, status: "done" as const };
@@ -172,7 +224,9 @@ export function planTaskStatusesDiffer(
 }
 
 function actionableTasks(): PlanDayTaskCacheRow[] {
-  return readPlanDayTasks().filter((t) => t.status !== "skipped");
+  return readPlanDayTasks().filter(
+    (t) => t.status !== "skipped" && isContinueEligibleTask(t),
+  );
 }
 
 export function adjacentPlanDayTask(
@@ -190,14 +244,31 @@ export function adjacentPlanDayTask(
 /** First unfinished task to continue after the current one. */
 export function nextPendingPlanDayTask(
   currentTaskId: string | null | undefined,
-  opts?: { preferExercise?: boolean },
+  opts?: { preferExercise?: boolean; skipHubId?: string | null },
 ): PlanDayTaskCacheRow | null {
   const preferExercise = opts?.preferExercise !== false;
+  const skipHubId = opts?.skipHubId ?? null;
   const tasks = actionableTasks();
   if (tasks.length === 0) return null;
 
-  const isOpen = (row: PlanDayTaskCacheRow) =>
-    row.status !== "done" && row.id !== currentTaskId;
+  const current = currentTaskId
+    ? tasks.find((t) => t.id === currentTaskId)
+    : undefined;
+  const blockedHub = skipHubId || current?.hub_id || null;
+
+  const isOpen = (row: PlanDayTaskCacheRow) => {
+    if (row.status === "done") return false;
+    if (row.id === currentTaskId) return false;
+    // Don't re-open the hub the user just finished under another task id.
+    if (
+      blockedHub &&
+      row.hub_id === blockedHub &&
+      (row.task_type === "practice" || row.task_type === "submit")
+    ) {
+      return false;
+    }
+    return true;
+  };
 
   const idx = currentTaskId
     ? tasks.findIndex((t) => t.id === currentTaskId)
@@ -222,11 +293,12 @@ export function nextPendingPlanDayTask(
 /**
  * Refresh day-task cache from learning today/profile.
  * Always prefer a network refresh on results so Continue sees real pending work.
- * Marks current task done locally so Continue skips it (server patch may lag).
+ * Marks current task (+ same-hub practice siblings) done locally so Continue skips
+ * them even when the server PATCH 404s from task-id churn.
  */
 export async function ensurePlanDayTasksCached(
   currentTaskId?: string | null,
-  opts?: { force?: boolean },
+  opts?: { force?: boolean; hubId?: string | null },
 ): Promise<PlanDayTaskCacheRow[]> {
   if (typeof window === "undefined") return [];
 
@@ -241,7 +313,8 @@ export async function ensurePlanDayTasksCached(
       const profile = await getLearningProfile();
       const incoming = profile.todays_tasks ?? [];
       if (incoming.length > 0) {
-        cachePlanDayTasks(incoming);
+        // Preserve local done marks across id/status churn from profile refresh.
+        cachePlanDayTasks(mergePlanDayStatusesIntoTasks(incoming));
       }
     } catch {
       /* keep existing cache */
@@ -249,6 +322,7 @@ export async function ensurePlanDayTasksCached(
   }
 
   if (currentTaskId) markCachedPlanTaskDone(currentTaskId);
+  if (opts?.hubId) markCachedPlanHubTasksDone(opts.hubId);
   return readPlanDayTasks();
 }
 

@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import {
+  BF_PRIMARY_FILL,
+  bfPrimaryCtaExamCompactClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { formatRemaining } from "@/modules/listening/hooks/use-listening-timer";
+import { EXAM_TIME_WARNING_SECONDS } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -38,8 +43,8 @@ export function IeltsExamToolbar({
   plainHeader = false,
   onSubmit,
 }: Props) {
-  const warning = remainingSeconds <= 300 && timerActive;
-  const critical = remainingSeconds <= 60 && timerActive;
+  const critical =
+    remainingSeconds <= EXAM_TIME_WARNING_SECONDS && timerActive;
   const pct =
     totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
@@ -72,7 +77,10 @@ export function IeltsExamToolbar({
         <span className="text-[10px] font-medium text-white/50">Progress</span>
         <div className="h-1.5 w-16 overflow-hidden rounded-full bg-white/20 lg:w-20">
           <div
-            className="h-full rounded-full bg-[var(--exam-accent)] transition-all duration-300"
+            className={cn(
+              "h-full rounded-full transition-all duration-300",
+              BF_PRIMARY_FILL,
+            )}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -85,11 +93,9 @@ export function IeltsExamToolbar({
           "flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1.5 font-mono text-[12px] font-bold tabular-nums sm:gap-2 sm:px-3 sm:text-[13px]",
           critical
             ? "border-red-400/60 bg-red-950/40 text-red-200"
-            : warning
-              ? "border-amber-400/50 bg-amber-950/30 text-amber-100"
-              : "border-white/20 bg-white/10 text-white",
+            : "border-white/20 bg-white/10 text-white",
         )}
-        aria-live={warning ? "polite" : "off"}
+        aria-live={critical ? "polite" : "off"}
       >
         <span className="hidden text-[9px] font-sans font-semibold uppercase tracking-wider opacity-70 sm:inline">
           Time
@@ -100,9 +106,9 @@ export function IeltsExamToolbar({
         type="button"
         disabled={busy}
         onClick={onSubmit}
-        className="shrink-0 cursor-pointer rounded-md bg-[var(--exam-accent)] px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-[12px]"
+        className={bfPrimaryCtaExamCompactClass}
       >
-        {busy ? "…" : submitLabel}
+        {busy ? "Submitting…" : submitLabel}
       </button>
     </header>
   );

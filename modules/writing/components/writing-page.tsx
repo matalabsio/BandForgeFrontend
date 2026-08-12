@@ -26,7 +26,7 @@ import {
   markPlanStepDone,
   shouldCompleteHubForPlanTask,
 } from "@/lib/plan-step-completion";
-import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
+import { useEnsureFullMockAttempt } from "@/modules/mock/hooks/use-ensure-full-mock-attempt";
 import { cacheMockNavHint, shouldSkipMockGuard } from "@/lib/mock-nav-cache";
 import { redirectIfMockCompleted } from "@/lib/mock-completed-nav";
 import type { WritingBootServer } from "@/lib/mock-boot-types";
@@ -47,6 +47,7 @@ import { writingApi } from "@/modules/writing/services/writing-api";
 import type { WritingTask } from "@/modules/writing/types";
 import {
   estimateWritingBand,
+  WRITING_EMPTY_EXPIRY_PLACEHOLDER,
   writingMinWords,
   writingResultsPath,
 } from "@/lib/writing-test";
@@ -55,6 +56,7 @@ import { WritingTask1Prompt } from "@/modules/writing/components/writing-task1-p
 import { WritingTask2Prompt } from "@/modules/writing/components/writing-task2-prompt";
 import { TestHeader, TestShell, TestTimer } from "@/modules/shared";
 import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
+import { useExamForceSubmit } from "@/modules/shared/hooks/use-exam-force-submit";
 import { useListeningTimer } from "@/modules/shared/hooks/use-exam-timer";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
 import {
@@ -129,7 +131,15 @@ export function WritingPage({
 }: Props) {
   const isDiagnostic = isDiagnosticFlow(flow, mockTestId);
   const router = useRouter();
-  const mockAttemptId = useResolvedMockAttemptId(mockTestId);
+  const needsFullMock = !isDiagnostic && !fromPlan;
+  const {
+    mockAttemptId,
+    ensuring: ensuringMockAttempt,
+    error: mockAttemptError,
+  } = useEnsureFullMockAttempt({
+    enabled: needsFullMock,
+    mockTestId,
+  });
   const resolvedTestNumber = isDiagnostic
     ? DIAGNOSTIC_NAV_TEST_NUMBER
     : (testNumberProp ?? testNumberForMockId(mockTestId));
@@ -157,8 +167,8 @@ export function WritingPage({
   const autosaveBlockedRef = useRef(false);
   const bootedRef = useRef(false);
   const needsConsentGateRef = useRef(false);
-  const expiryFiredRef = useRef(false);
   const submitInFlightRef = useRef(false);
+  const essayRef = useRef("");
   const mockMeta = useMemo(
     () => mockMetaProp ?? getMockMeta(mockSlug),
     [mockMetaProp, mockSlug],
@@ -205,6 +215,7 @@ export function WritingPage({
     setAttemptId(null);
     setTask(null);
     setEssay("");
+    essayRef.current = "";
     setError(null);
     setBusy(false);
     setSaved(true);
@@ -212,10 +223,6 @@ export function WritingPage({
     setServerTimeIso(null);
     setPhase("loading");
   }, [part, mockTestId, mockAttemptId]);
-
-  useEffect(() => {
-    expiryFiredRef.current = false;
-  }, [startedAtIso]);
 
   useExamSessionGuard(Boolean(attemptId));
 
@@ -241,6 +248,7 @@ export function WritingPage({
         (typeof window !== "undefined"
           ? localStorage.getItem(storageKey(res.attempt_id)) ?? ""
           : "");
+      essayRef.current = initial;
       setEssay(initial);
       setSaved(true);
       autosaveBlockedRef.current = false;
@@ -279,6 +287,7 @@ export function WritingPage({
           (typeof window !== "undefined"
             ? localStorage.getItem(storageKey(initialBoot.attempt_id)) ?? ""
             : "");
+        essayRef.current = introEssay;
         setEssay(introEssay);
         setPhase("intro");
         return;
@@ -294,6 +303,7 @@ export function WritingPage({
         (typeof window !== "undefined"
           ? localStorage.getItem(storageKey(initialBoot.attempt_id)) ?? ""
           : "");
+      essayRef.current = initial;
       setEssay(initial);
       setSaved(true);
       autosaveBlockedRef.current = false;
@@ -304,6 +314,10 @@ export function WritingPage({
       setPhase("loading");
       return;
     }
+    if (needsFullMock && !mockAttemptId) {
+      setPhase("loading");
+      return;
+    }
     if (part === 1 && !introPassed) {
       setPhase("intro");
       return;
@@ -311,7 +325,15 @@ export function WritingPage({
     if (bootedRef.current) return;
     bootedRef.current = true;
     void beginSession();
-  }, [autoStart, beginSession, initialBoot, mockAttemptId, part, introPassed]);
+  }, [
+    autoStart,
+    beginSession,
+    initialBoot,
+    mockAttemptId,
+    needsFullMock,
+    part,
+    introPassed,
+  ]);
 
   useEffect(() => {
     if (needsConsentGateRef.current) return;
@@ -370,6 +392,7 @@ export function WritingPage({
   }, []);
 
   const handleChange = (value: string) => {
+    essayRef.current = value;
     setEssay(value);
     setSaved(false);
     if (attemptId) {
@@ -404,19 +427,21 @@ export function WritingPage({
     };
   }, [essay, attemptId, task, phase]);
 
-  const submitTask = useCallback(async (opts?: { onExpiry?: boolean }) => {
-    if (!attemptId || !task || busy || submitInFlightRef.current) return;
+  const submitTask = useCallback(async (opts?: { onExpiry?: boolean }): Promise<boolean> => {
+    if (!attemptId || !task || busy || submitInFlightRef.current) return false;
     if (task.part !== part) {
       setError(null);
       bootedRef.current = false;
       void beginSession();
-      return;
+      return false;
     }
-    const trimmed = essay.trim();
+    const trimmed = essayRef.current.trim();
     if (!trimmed && !opts?.onExpiry) {
       setError("Please write your response before submitting.");
-      return;
+      return false;
     }
+    const userAnswer =
+      trimmed || (opts?.onExpiry ? WRITING_EMPTY_EXPIRY_PLACEHOLDER : "");
     submitInFlightRef.current = true;
     setBusy(true);
     setError(null);
@@ -428,9 +453,11 @@ export function WritingPage({
       }
       const result = await submitWithExamSession({
         submit: () =>
-          writingApi.submit(attemptId, [
-            { question_id: task.id, user_answer: trimmed },
-          ]),
+          writingApi.submit(
+            attemptId,
+            [{ question_id: task.id, user_answer: userAnswer }],
+            { onExpiry: opts?.onExpiry === true },
+          ),
       });
       try {
         localStorage.removeItem(storageKey(attemptId));
@@ -484,7 +511,7 @@ export function WritingPage({
               diagnosticAfterWritingSubmit(),
               "writing",
             );
-            return;
+            return true;
           }
         }
         if (!isDiagnostic) {
@@ -511,7 +538,7 @@ export function WritingPage({
               sectionStart: true,
               testNumber: testNum,
             });
-            return;
+            return true;
           }
 
           // Both tasks done → combined Task 1 / Task 2 results with AI.
@@ -523,14 +550,14 @@ export function WritingPage({
               testNumber: testNum,
             }),
           );
-          return;
+          return true;
         }
         const goPending =
           result.saved_for_review &&
           !(result.next_part === 2 && part === 1 && !isDiagnostic && TEST1_WRITING_TASK_COUNT > 1);
         if (goPending && testNum) {
           router.push(shortModuleWritingPendingPath(testNum, result.attempt_id));
-          return;
+          return true;
         }
         persistModuleResultAttempt(
           resolvedTestNumber,
@@ -554,7 +581,7 @@ export function WritingPage({
             { testNumber: resolvedTestNumber },
           ),
         );
-        return;
+        return true;
       }
 
       if (
@@ -565,7 +592,7 @@ export function WritingPage({
         TEST1_WRITING_TASK_COUNT > 1
       ) {
         router.push(`/test/writing/task/2?auto=1`);
-        return;
+        return true;
       }
 
       const testNum = resolvedTestNumber;
@@ -576,7 +603,7 @@ export function WritingPage({
             planCtx,
           ),
         );
-        return;
+        return true;
       }
 
       persistModuleResultAttempt(
@@ -590,9 +617,11 @@ export function WritingPage({
           planCtx,
         ),
       );
+      return true;
     } catch (e) {
       autosaveBlockedRef.current = false;
       setError(formatExamSubmitError(e));
+      return false;
     } finally {
       submitInFlightRef.current = false;
       setBusy(false);
@@ -602,7 +631,6 @@ export function WritingPage({
     task,
     busy,
     part,
-    essay,
     beginSession,
     mockAttemptId,
     mockSlug,
@@ -617,14 +645,13 @@ export function WritingPage({
   ]);
 
   const timerActive = phase === "ready" && Boolean(attemptId);
-  const expiryHandlerRef = useRef<() => void>(() => {});
 
   const remaining = useListeningTimer({
     startedAtIso,
     serverTimeIso,
     durationSeconds,
-    active: timerActive,
-    onExpire: () => expiryHandlerRef.current(),
+    active: timerActive || Boolean(attemptId),
+    onExpire: () => onTimerExpire(),
   });
 
   const canSubmitOnExpiry =
@@ -633,16 +660,11 @@ export function WritingPage({
     !busy &&
     (phase === "ready" || (phase === "intro" && remaining <= 0));
 
-  const onTimerExpire = useCallback(() => {
-    if (expiryFiredRef.current) return;
-    if (!canSubmitOnExpiry) return;
-    expiryFiredRef.current = true;
-    void submitTask({ onExpiry: true });
-  }, [canSubmitOnExpiry, submitTask]);
-
-  useEffect(() => {
-    expiryHandlerRef.current = onTimerExpire;
-  }, [onTimerExpire]);
+  const { onExpire: onTimerExpire } = useExamForceSubmit({
+    canSubmit: canSubmitOnExpiry,
+    submit: () => submitTask({ onExpiry: true }),
+    resetKey: startedAtIso,
+  });
 
   useExamExpiryCatchUp({
     remaining,
@@ -668,6 +690,30 @@ export function WritingPage({
     bootedRef.current = true;
     void beginSession();
   };
+
+  if (needsFullMock && (ensuringMockAttempt || (!mockAttemptId && !mockAttemptError))) {
+    return (
+      <IeltsExamSkeleton
+        title="Starting full mock…"
+        subtitle="Opening Mock Test so Writing stays linked with Listening and Reading."
+      />
+    );
+  }
+
+  if (needsFullMock && mockAttemptError) {
+    return (
+      <TestShell header={<TestHeader timer={null} />}>
+        <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+          <p className="text-[14px] text-red-600" role="alert">
+            {mockAttemptError}
+          </p>
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </main>
+      </TestShell>
+    );
+  }
 
   if (phase === "loading") {
     return (
@@ -746,7 +792,7 @@ export function WritingPage({
 
   return (
     <>
-      {busy ? (
+      {busy || remaining <= 0 ? (
         <ExamBusyOverlay
           title={
             remaining <= 0
@@ -770,6 +816,7 @@ export function WritingPage({
         displayLabel={fromPlan ? undefined : mockMeta.displayLabel}
         plainHeader={fromPlan}
         remainingSeconds={remaining}
+        durationSeconds={durationSeconds}
         wordCount={wordCount}
         minWords={minWords}
         estimatedBand={estimatedBand}

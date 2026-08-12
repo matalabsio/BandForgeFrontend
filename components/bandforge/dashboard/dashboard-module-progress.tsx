@@ -30,7 +30,7 @@ const moduleIcons: Record<
 
 function StatusPill() {
   return (
-    <span className="mt-1.5 inline-flex items-center gap-1 self-start rounded-full bg-[#e5eef9] px-2 py-0.5 text-[0.625rem] font-semibold text-[#3b6fb0] lg:mt-2 lg:py-1 lg:text-[0.6875rem]">
+    <span className="inline-flex items-center gap-1 self-start rounded-full bg-[#e5eef9] px-2 py-0.5 text-[0.625rem] font-semibold text-[#3b6fb0] lg:py-1 lg:text-[0.6875rem]">
       Under review
     </span>
   );
@@ -106,7 +106,7 @@ export function DashboardModuleProgress({
             testsDone > 0 ? (mod.href ? "View results" : "Continue") : "Start";
           const href = mod.href ?? mockTestNumberPath(1);
           const actionClassName =
-            "mt-auto flex w-full items-center justify-center rounded-full bg-cyan py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-sky-hover min-[520px]:py-2.5 min-[520px]:text-sm lg:py-3 lg:text-sm";
+            "flex w-full items-center justify-center rounded-full bg-cyan py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-sky-hover min-[520px]:py-2.5 min-[520px]:text-sm lg:py-3 lg:text-sm";
 
           return (
             <li key={mod.key} className="flex min-w-0">
@@ -126,7 +126,6 @@ export function DashboardModuleProgress({
                       <p className="mt-0.5 text-[0.6875rem] text-muted-light min-[520px]:text-[0.75rem]">
                         {testsDone} {testsDone === 1 ? "attempt" : "attempts"}
                       </p>
-                      {underReview ? <StatusPill /> : null}
                     </div>
                     <BandScore
                       displayBand={displayBand}
@@ -154,36 +153,35 @@ export function DashboardModuleProgress({
                   <p className="mt-1 text-[0.78125rem] text-muted-light">
                     {testsDone} {testsDone === 1 ? "attempt" : "attempts"}
                   </p>
-                  {underReview ? <StatusPill /> : null}
                 </div>
 
-                <div
-                  className={cn(
-                    "h-1.5 overflow-hidden rounded bg-[#edf1f6] lg:h-[7px]",
-                    underReview ? "mt-2 mb-2 lg:mb-3" : "my-2 lg:my-3",
+                <div className="mt-auto flex flex-col pt-2 lg:pt-3">
+                  <div className="mb-2 flex min-h-[1.375rem] items-start lg:mb-3 lg:min-h-[1.5rem]">
+                    {underReview ? <StatusPill /> : null}
+                  </div>
+                  <div className="mb-2 h-1.5 overflow-hidden rounded bg-[#edf1f6] lg:mb-3 lg:h-[7px]">
+                    <div
+                      className="h-full rounded bg-cyan transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  {mod.href && mod.attemptId && mod.testNumber != null ? (
+                    <DashboardModuleProgressAction
+                      href={href}
+                      testNumber={mod.testNumber}
+                      module={mod.module as ResultModule}
+                      attemptId={mod.attemptId}
+                      mockAttemptId={mod.mockAttemptId}
+                      className={actionClassName}
+                    >
+                      {actionLabel}
+                    </DashboardModuleProgressAction>
+                  ) : (
+                    <Link href={href} className={actionClassName}>
+                      {actionLabel}
+                    </Link>
                   )}
-                >
-                  <div
-                    className="h-full rounded bg-cyan transition-all"
-                    style={{ width: `${progress}%` }}
-                  />
                 </div>
-                {mod.href && mod.attemptId && mod.testNumber != null ? (
-                  <DashboardModuleProgressAction
-                    href={href}
-                    testNumber={mod.testNumber}
-                    module={mod.module as ResultModule}
-                    attemptId={mod.attemptId}
-                    mockAttemptId={mod.mockAttemptId}
-                    className={actionClassName}
-                  >
-                    {actionLabel}
-                  </DashboardModuleProgressAction>
-                ) : (
-                  <Link href={href} className={actionClassName}>
-                    {actionLabel}
-                  </Link>
-                )}
               </article>
             </li>
           );

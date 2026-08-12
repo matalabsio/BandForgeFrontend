@@ -113,7 +113,7 @@ export function ReadingQuestionsPanel({
             {activeNum} of {total}
           </p>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-2 grid grid-cols-5 gap-1.5 sm:grid-cols-10">
           {sorted.map((q) => {
             const answered = Boolean((answers[q.id] ?? "").trim());
             const active = qDisplay(q) === activeNum;
@@ -123,9 +123,9 @@ export function ReadingQuestionsPanel({
                 type="button"
                 onClick={() => goTo(qDisplay(q))}
                 className={cn(
-                  "flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-md border text-[12px] font-bold transition-colors",
+                  "inline-flex h-8 w-8 justify-self-center items-center justify-center rounded-full border text-[12px] font-bold tabular-nums transition-colors",
                   active
-                    ? "border-[var(--reading-accent)] bg-[var(--reading-accent)] text-white"
+                    ? "border-transparent bg-[var(--reading-accent)] text-white"
                     : answered
                       ? "border-[var(--reading-accent)]/40 bg-[var(--reading-accent-soft)] text-[var(--reading-accent)]"
                       : "border-[var(--reading-border)] bg-white text-[var(--reading-ink-muted)] hover:border-[var(--reading-muted)]",

@@ -7,12 +7,12 @@ import {
 
 export function StudyActivityCard({ days }: { days: ActivityDay[] }) {
   return (
-    <DashboardCard className="h-full">
+    <DashboardCard className="flex h-full flex-col">
       <DashboardCardHeader
         title="Study activity"
         subtitle="Last 12 weeks of practice"
       />
-      <div className="px-4 pb-4 pt-1 sm:px-5">
+      <div className="flex flex-1 flex-col justify-center px-4 pb-4 pt-1 sm:px-5">
         <ActivityHeatmap days={days} />
       </div>
     </DashboardCard>

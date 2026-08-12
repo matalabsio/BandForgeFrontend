@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { TextType } from "@/components/ui/text-type";
+import { bfPrimaryCtaExamFooterClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { useListeningAudio } from "@/modules/listening/hooks/use-listening-audio";
 import { cn } from "@/lib/utils";
 
@@ -206,9 +207,6 @@ export function QuestionAudio({
             <HeadphonesIcon className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--exam-accent)]">
-              Listening · Questions 1–10
-            </p>
             <p className="text-[13px] font-medium text-[var(--exam-ink)]">{statusLabel}</p>
           </div>
           {audio.isStarted ? (
@@ -285,7 +283,7 @@ export function QuestionAudio({
                   setAutoplayBlocked(true);
                 }
               }}
-              className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-[var(--exam-bar)] px-4 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(bfPrimaryCtaExamFooterClass, "mt-4 w-full sm:w-full")}
             >
               <svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden>
                 <path d="M8 5v14l11-7z" />

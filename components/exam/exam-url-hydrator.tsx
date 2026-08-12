@@ -16,11 +16,23 @@ function parseShortModulePath(pathname: string): {
   testNumber: number;
   module: ResultModule;
 } | null {
-  const match = pathname.match(/^\/test\/(\d+)\/(listening|reading|writing)$/);
+  // Active exam only — never results / review / pending (those need mock_attempt in the URL).
+  const match = pathname.match(
+    /^\/test\/(\d+)\/(listening|reading|writing|speaking)\/?$/,
+  );
   if (!match) return null;
   const testNumber = Number.parseInt(match[1], 10);
   if (!Number.isFinite(testNumber) || testNumber < 1) return null;
   return { testNumber, module: match[2] as ResultModule };
+}
+
+function isResultsOrReviewPath(pathname: string): boolean {
+  return (
+    pathname.includes("/results") ||
+    pathname.includes("/review") ||
+    pathname.includes("/pending") ||
+    pathname.includes("/checkpoint")
+  );
 }
 
 function ExamUrlHydratorInner() {
@@ -45,13 +57,27 @@ function ExamUrlHydratorInner() {
         persistMockAttemptId(mockApiId(mockSlugMatch[1]), mockAttempt);
       } else if (short) {
         persistMockAttemptId(mockTestIdForNumber(short.testNumber), mockAttempt);
-      } else if (pathname === "/test" || pathname.startsWith("/test/")) {
-        const testNumber = Number.parseInt(searchParams.get("test") ?? "1", 10);
-        if (Number.isFinite(testNumber) && testNumber >= 1) {
-          persistMockAttemptId(mockTestIdForNumber(testNumber), mockAttempt);
+      } else {
+        const resultsMatch = pathname.match(
+          /^\/test\/(\d+)\/(listening|reading|writing|speaking)\//,
+        );
+        if (resultsMatch?.[1]) {
+          const testNumber = Number.parseInt(resultsMatch[1], 10);
+          if (Number.isFinite(testNumber) && testNumber >= 1) {
+            persistMockAttemptId(mockTestIdForNumber(testNumber), mockAttempt);
+          }
+        } else if (pathname === "/test" || pathname.startsWith("/test/")) {
+          const testNumber = Number.parseInt(searchParams.get("test") ?? "1", 10);
+          if (Number.isFinite(testNumber) && testNumber >= 1) {
+            persistMockAttemptId(mockTestIdForNumber(testNumber), mockAttempt);
+          }
         }
       }
     }
+
+    // Keep mock_attempt on results / pending / review — SSR needs it to pick
+    // the full-mock continue CTA instead of “Back to Listening” practice UI.
+    if (isResultsOrReviewPath(pathname)) return;
 
     const url = new URL(window.location.href);
     let changed = false;

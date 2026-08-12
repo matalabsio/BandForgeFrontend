@@ -9,7 +9,7 @@ type TestTimerProps = {
 };
 
 /**
- * Countdown for timed modules — amber under 5 min, red under 1 min (4.3).
+ * Countdown for timed modules — red at 2:00 and below.
  */
 export function TestTimer({ remainingSeconds, className }: TestTimerProps) {
   const variant = getTimerVariant(remainingSeconds);

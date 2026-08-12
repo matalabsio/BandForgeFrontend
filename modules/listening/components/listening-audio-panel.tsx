@@ -1,6 +1,8 @@
 "use client";
 
 import { memo } from "react";
+import { bfPrimaryCtaExamFooterClass } from "@/components/bandforge/bf-primary-cta-styles";
+import { cn } from "@/lib/utils";
 import type { ListeningPart } from "@/modules/listening/types";
 import { QuestionAudio } from "@/modules/listening/components/question-audio";
 import { ListeningPreviewBanner } from "@/modules/listening/components/listening-preview-banner";
@@ -86,9 +88,6 @@ function ListeningAudioPanelBase({
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--exam-accent)]">
           Section {part.part}
         </p>
-        <h2 className="mt-1 font-display text-xl font-bold tracking-tight text-[var(--exam-ink)] sm:text-2xl">
-          {part.context}
-        </h2>
         <p className="mt-2 text-[13px] text-[var(--exam-ink-muted)]">
           Questions {qStart}–{qEnd}
           {part.common_question_type
@@ -124,7 +123,7 @@ function ListeningAudioPanelBase({
               type="button"
               disabled={!sharedUrl}
               onClick={onBeginSection}
-              className="flex w-full cursor-pointer items-center justify-center rounded-xl bg-[var(--exam-accent)] px-5 py-3.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-cyan disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(bfPrimaryCtaExamFooterClass, "w-full sm:w-full")}
             >
               Begin Test
             </button>

@@ -1,6 +1,6 @@
-import { DashboardContentSkeleton } from "@/components/bandforge/dashboard/dashboard-shell-skeleton";
+import { GenericAppContentSkeleton } from "@/components/bandforge/dashboard/app-route-skeletons";
 
-/** Content-only — layout already wraps routes in DashboardShell (logo/header). */
+/** Content-only fallback — layout already wraps routes in DashboardShell. */
 export default function BandforgeAppLoading() {
-  return <DashboardContentSkeleton />;
+  return <GenericAppContentSkeleton />;
 }

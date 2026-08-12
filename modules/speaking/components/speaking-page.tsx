@@ -22,7 +22,7 @@ import {
   markPlanStepDone,
   shouldCompleteHubForPlanTask,
 } from "@/lib/plan-step-completion";
-import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
+import { useEnsureFullMockAttempt } from "@/modules/mock/hooks/use-ensure-full-mock-attempt";
 import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch";
 import { mockApi } from "@/modules/mock/services/mock-api";
 import { SpeakingExamFlow } from "@/modules/speaking/components/speaking-exam-flow";
@@ -66,7 +66,10 @@ import type {
   SpeakingSessionRecording,
 } from "@/modules/speaking/types";
 import { TestHeader, TestShell, TestTimer } from "@/modules/shared";
+import { ExamTimeWarningDialog } from "@/components/exam/exam-time-warning-dialog";
 import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
+import { useExamForceSubmit } from "@/modules/shared/hooks/use-exam-force-submit";
+import { useExamTimeWarning } from "@/modules/shared/hooks/use-exam-time-warning";
 import { useListeningTimer } from "@/modules/shared/hooks/use-exam-timer";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
 import {
@@ -98,7 +101,15 @@ export function SpeakingPage({
   planHubId = null,
 }: Props) {
   const router = useRouter();
-  const mockAttemptId = useResolvedMockAttemptId(mockTestId);
+  const needsFullMock = !fromPlan;
+  const {
+    mockAttemptId,
+    ensuring: ensuringMockAttempt,
+    error: mockAttemptError,
+  } = useEnsureFullMockAttempt({
+    enabled: needsFullMock,
+    mockTestId,
+  });
   const testNumber = testNumberProp ?? testNumberForMockId(mockTestId);
   const micScope = mockAttemptId ?? mockTestId;
 
@@ -141,6 +152,12 @@ export function SpeakingPage({
     durationSeconds,
     active: Boolean(attemptId),
     onExpire: () => expiryHandlerRef.current(),
+  });
+  const timeWarning = useExamTimeWarning({
+    remaining,
+    durationSeconds,
+    resetKey: startedAtIso,
+    active: Boolean(attemptId) && remaining > 0,
   });
   useExamSessionGuard(Boolean(attemptId));
 
@@ -484,8 +501,11 @@ export function SpeakingPage({
   );
 
   const handleExamComplete = useCallback(
-    async (recordings: SpeakingSessionRecording[]) => {
-      if (!attemptId || busy || finalizeInFlightRef.current) return;
+    async (
+      recordings: SpeakingSessionRecording[],
+      opts?: { onExpiry?: boolean },
+    ): Promise<boolean> => {
+      if (!attemptId || busy || finalizeInFlightRef.current) return false;
       finalizeInFlightRef.current = true;
       recordings.forEach((recording) => recordingsRef.current.set(recording.questionId, recording));
       setBusy(true);
@@ -561,6 +581,7 @@ export function SpeakingPage({
               (response) => response.questionId === questionId,
             );
             if (!recording?.blob || !descriptor) {
+              if (opts?.onExpiry) return;
               throw new Error(
                 "One or more answers are missing. Resume the test to record every question.",
               );
@@ -587,7 +608,7 @@ export function SpeakingPage({
           expectedResponses,
           uploadedQuestionIdsRef.current,
         );
-        if (missing.length > 0) {
+        if (missing.length > 0 && !opts?.onExpiry) {
           throw new Error(
             `${missing.length} answer${missing.length === 1 ? " is" : "s are"} still uploading. Try submitting again.`,
           );
@@ -596,6 +617,7 @@ export function SpeakingPage({
         if (!manifestHash) throw new Error("The speaking manifest could not be verified.");
         const result = await speakingApi.finalize(attemptId, { manifestHash });
         goToResults(result.attempt_id);
+        return true;
       } catch (e) {
         // Finalize (or a prior attempt) may have already completed on the server.
         try {
@@ -606,12 +628,13 @@ export function SpeakingPage({
             missingExpectedResponseIds(expectedResponses, accepted).length === 0
           ) {
             goToResults(attemptId);
-            return;
+            return true;
           }
         } catch {
           /* fall through to error */
         }
         setError(formatExamSubmitError(e));
+        return false;
       } finally {
         finalizeInFlightRef.current = false;
         setBusy(false);
@@ -641,10 +664,14 @@ export function SpeakingPage({
     Boolean(manifestHash) &&
     !busy;
 
-  const onTimerExpire = useCallback(() => {
-    if (!canSubmitOnExpiry) return;
-    void handleExamComplete(Array.from(recordingsRef.current.values()));
-  }, [canSubmitOnExpiry, handleExamComplete]);
+  const { onExpire: onTimerExpire } = useExamForceSubmit({
+    canSubmit: canSubmitOnExpiry,
+    submit: () =>
+      handleExamComplete(Array.from(recordingsRef.current.values()), {
+        onExpiry: true,
+      }),
+    resetKey: startedAtIso,
+  });
 
   useEffect(() => {
     expiryHandlerRef.current = onTimerExpire;
@@ -656,6 +683,29 @@ export function SpeakingPage({
     onExpire: onTimerExpire,
     resetKey: startedAtIso,
   });
+
+  if (needsFullMock && (ensuringMockAttempt || (!mockAttemptId && !mockAttemptError))) {
+    return <ExamSectionLoader title="Starting full mock…" />;
+  }
+
+  if (needsFullMock && mockAttemptError) {
+    return (
+      <TestShell header={<TestHeader timer={null} />}>
+        <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+          <p className="text-[14px] text-red-600" role="alert">
+            {mockAttemptError}
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="cursor-pointer rounded-md bg-cyan px-5 py-2.5 text-[13px] font-bold text-navy"
+          >
+            Try again
+          </button>
+        </main>
+      </TestShell>
+    );
+  }
 
   if (!micStateReady) {
     return <ExamSectionLoader title="Loading speaking…" />;
@@ -752,6 +802,11 @@ export function SpeakingPage({
       </main>
 
       {busy ? <ExamBusyOverlay title="Uploading all speaking answers…" /> : null}
+      <ExamTimeWarningDialog
+        open={timeWarning.open}
+        remainingSeconds={remaining}
+        onDismiss={timeWarning.dismiss}
+      />
     </TestShell>
   );
 }

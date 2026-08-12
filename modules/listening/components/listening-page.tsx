@@ -29,10 +29,13 @@ import { listeningOptionLabelFromValue } from "@/modules/listening/lib/listening
 import { IeltsExamSkeleton } from "@/components/exam/ielts-exam-skeleton";
 import { ExamBusyOverlay } from "@/modules/shared/components/exam-section-loader";
 import { IeltsExamToolbar } from "@/components/exam/ielts-exam-toolbar";
+import { ExamTimeWarningDialog } from "@/components/exam/exam-time-warning-dialog";
 import { listeningApi } from "@/modules/listening/services/listening-api";
 import { useListeningStore } from "@/modules/listening/store/listening-store";
 import { useListeningTimer } from "@/modules/listening/hooks/use-listening-timer";
 import { useExamExpiryCatchUp } from "@/modules/shared/hooks/use-exam-expiry-catchup";
+import { useExamForceSubmit } from "@/modules/shared/hooks/use-exam-force-submit";
+import { useExamTimeWarning } from "@/modules/shared/hooks/use-exam-time-warning";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
 import {
   formatExamSubmitError,
@@ -62,7 +65,7 @@ import {
 } from "@/modules/listening/lib/listening-part-intro";
 import { useListeningPreviewCountdown } from "@/modules/listening/hooks/use-listening-preview-countdown";
 import { useListeningMockGuard } from "@/modules/listening/hooks/use-listening-mock-guard";
-import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
+import { useEnsureFullMockAttempt } from "@/modules/mock/hooks/use-ensure-full-mock-attempt";
 import { useExamNavFlags } from "@/modules/mock/hooks/use-exam-nav-flags";
 import { navigateAfterSectionSubmit } from "@/lib/mock-exam-nav";
 import {
@@ -144,7 +147,15 @@ export function ListeningPage({
     testNumber: resolvedTestNumber,
     module: "listening",
   });
-  const mockAttemptId = useResolvedMockAttemptId(testId);
+  const needsFullMock = isExam && !isDiagnostic && !fromPlan;
+  const {
+    mockAttemptId,
+    ensuring: ensuringMockAttempt,
+    error: mockAttemptError,
+  } = useEnsureFullMockAttempt({
+    enabled: needsFullMock,
+    mockTestId: testId,
+  });
   const bootedRef = useRef(false);
   const hydratedFromServerRef = useRef(false);
   const beginAttemptInFlightRef = useRef<Promise<void> | null>(null);
@@ -337,8 +348,8 @@ export function ListeningPage({
     [allQuestions, state.answers],
   );
 
-  const handleSubmit = useCallback(async () => {
-    if (!state.attemptId || state.status === "submitting") return;
+  const handleSubmit = useCallback(async (): Promise<boolean> => {
+    if (!state.attemptId || state.status === "submitting") return false;
     setBusy(true);
     dispatch({ type: "submitting" });
     try {
@@ -375,22 +386,24 @@ export function ListeningPage({
           total_questions: payload.total_questions,
         })
       )
-        return;
+        return true;
       if (mockAttemptId && !isDiagnostic) {
         goToMockSectionResults(payload.attempt_id, part);
-        return;
+        return true;
       }
       const listeningComplete =
         payload.mock_listening_complete === true || listeningDoneOnClient;
       void goToResults(payload.attempt_id, {
         mockListeningComplete: listeningComplete,
       });
+      return true;
     } catch (e) {
       dispatch({
         type: "error",
         message: formatExamSubmitError(e),
       });
       setBusy(false);
+      return false;
     }
   }, [
     state.attemptId,
@@ -407,36 +420,36 @@ export function ListeningPage({
     listeningPartCount,
   ]);
 
-  const expiryFiredRef = useRef(false);
-
-  useEffect(() => {
-    expiryFiredRef.current = false;
-  }, [state.startedAtIso]);
-
-  const canSubmitOnExpiry =
-    submissionActive &&
+  const canForceSubmit =
     Boolean(state.attemptId) &&
-    !busy &&
-    allQuestions.length > 0;
+    allQuestions.length > 0 &&
+    state.status !== "submitting" &&
+    state.status !== "completed";
 
-  const onTimerExpire = useCallback(() => {
-    if (expiryFiredRef.current) return;
-    if (!canSubmitOnExpiry) return;
-    expiryFiredRef.current = true;
-    void handleSubmit();
-  }, [canSubmitOnExpiry, handleSubmit]);
+  const { onExpire: onTimerExpire } = useExamForceSubmit({
+    canSubmit: canForceSubmit,
+    submit: handleSubmit,
+    resetKey: state.startedAtIso,
+  });
 
   const remaining = useListeningTimer({
     startedAtIso: state.startedAtIso,
     serverTimeIso: state.serverTimeIso,
     durationSeconds: state.durationSeconds,
-    active: submissionActive,
+    active: submissionActive || Boolean(state.attemptId),
     onExpire: onTimerExpire,
+  });
+
+  const timeWarning = useExamTimeWarning({
+    remaining,
+    durationSeconds: state.durationSeconds,
+    resetKey: state.startedAtIso,
+    active: Boolean(state.attemptId) && remaining > 0,
   });
 
   useExamExpiryCatchUp({
     remaining,
-    canSubmit: canSubmitOnExpiry,
+    canSubmit: canForceSubmit,
     onExpire: onTimerExpire,
     resetKey: state.startedAtIso,
   });
@@ -619,11 +632,21 @@ export function ListeningPage({
     if (!isExam) return;
     if (hydratedFromServerRef.current || initialBoot?.parts?.length) return;
     if (bootedRef.current) return;
+    if (needsFullMock && !mockAttemptId) return;
     if (part === 1 && !introSeen) return;
     if (state.status !== "idle") return;
     bootedRef.current = true;
     void beginAttempt(false);
-  }, [isExam, state.status, beginAttempt, part, mockAttemptId, initialBoot, introSeen]);
+  }, [
+    isExam,
+    state.status,
+    beginAttempt,
+    part,
+    mockAttemptId,
+    needsFullMock,
+    initialBoot,
+    introSeen,
+  ]);
 
   useEffect(() => {
     if (!isExam && autoStart && !bootedRef.current && state.status === "idle") {
@@ -680,6 +703,32 @@ export function ListeningPage({
   );
 
   if (isExam) {
+    if (needsFullMock && (ensuringMockAttempt || (!mockAttemptId && !mockAttemptError))) {
+      return (
+        <IeltsExamSkeleton
+          title="Starting full mock…"
+          subtitle="Opening Mock Test so Listening → Reading → Writing → Speaking stay linked."
+        />
+      );
+    }
+
+    if (needsFullMock && mockAttemptError) {
+      return (
+        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="max-w-md text-[14px] text-red-700" role="alert">
+            {mockAttemptError}
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="cursor-pointer rounded-md bg-[var(--exam-accent)] px-5 py-2.5 text-[13px] font-bold text-white"
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
+
     if (part === 1 && !introSeen && state.status === "idle") {
       return (
         <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
@@ -770,21 +819,25 @@ export function ListeningPage({
 
       return (
         <div className="flex min-h-dvh flex-col">
-          {submitting ? (
+          {submitting || remaining <= 0 ? (
             <ExamBusyOverlay
               title={
-                fromPlan
-                  ? "Submitting…"
-                  : part >= listeningPartCount
-                    ? "Finishing listening…"
-                    : `Submitting Part ${part}…`
+                remaining <= 0
+                  ? "Time's up — submitting…"
+                  : fromPlan
+                    ? "Submitting…"
+                    : part >= listeningPartCount
+                      ? "Finishing listening…"
+                      : `Submitting Part ${part}…`
               }
               subtitle={
-                fromPlan
-                  ? "Saving your answers…"
-                  : part >= listeningPartCount
-                    ? "Saving your answers and opening reading."
-                    : `Saving your answers and loading Part ${part + 1}.`
+                remaining <= 0
+                  ? "Saving your answers before the deadline."
+                  : fromPlan
+                    ? "Saving your answers…"
+                    : part >= listeningPartCount
+                      ? "Saving your answers and opening reading."
+                      : `Saving your answers and loading Part ${part + 1}.`
               }
             />
           ) : null}
@@ -816,19 +869,17 @@ export function ListeningPage({
             busy={busy}
             onSubmit={() => void handleSubmit()}
           />
+          <ExamTimeWarningDialog
+            open={timeWarning.open}
+            remainingSeconds={remaining}
+            onDismiss={timeWarning.dismiss}
+          />
 
           {sectionAdvance ? (
             <p className="shrink-0 border-b border-emerald-200 bg-emerald-50 px-4 py-2.5 text-center text-[13px] text-emerald-900">
               Reading section complete. Band {sectionAdvance.band.toFixed(1)} (
               {sectionAdvance.raw_score}/{sectionAdvance.total_questions} correct).
               Starting Listening now.
-            </p>
-          ) : null}
-
-          {state.resumedAttempt && !sectionAdvance ? (
-            <p className="shrink-0 border-b border-[var(--exam-accent)]/30 bg-[var(--exam-accent-soft)] px-4 py-2 text-center text-[12px] text-[var(--exam-ink)]">
-              Resumed your in-progress attempt. Timer and saved answers restored
-              where available.
             </p>
           ) : null}
 
