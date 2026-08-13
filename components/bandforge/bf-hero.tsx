@@ -10,24 +10,17 @@ import {
 } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Loader2 } from "lucide-react";
 import { BfHeroActions } from "@/components/bandforge/bf-hero-actions";
 import { BfHeroAntigravity } from "@/components/bandforge/bf-hero-antigravity";
 import { BfHeroStreamAvatar } from "@/components/bandforge/bf-hero-stream-avatar";
 import CircularText from "@/components/bandforge/circular-text";
+import {
+  resolveHeroStream,
+  type MarketingHero,
+} from "@/lib/hero-stream";
 
 gsap.registerPlugin(ScrollTrigger);
-
-const HERO_STREAM_UID = (
-  process.env.NEXT_PUBLIC_HERO_STREAM_UID || ""
-).trim();
-const HERO_STREAM_CUSTOMER = (
-  process.env.NEXT_PUBLIC_HERO_STREAM_CUSTOMER ||
-  process.env.NEXT_PUBLIC_STREAM_CUSTOMER_CODE ||
-  ""
-).trim();
-const HERO_STREAM_POSTER = (
-  process.env.NEXT_PUBLIC_HERO_STREAM_POSTER || ""
-).trim();
 
 function usePrefersReducedMotion() {
   const [reduce, setReduce] = useState(false);
@@ -67,7 +60,11 @@ function Word({
   );
 }
 
-export function BandForgeHero() {
+export function BandForgeHero({
+  initialHero = null,
+}: {
+  initialHero?: MarketingHero | null;
+}) {
   const reduceMotion = usePrefersReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -76,6 +73,41 @@ export function BandForgeHero() {
   const ctaRef = useRef<HTMLDivElement>(null);
   const spotlightRef = useRef<HTMLDivElement>(null);
   const [spotlightOn, setSpotlightOn] = useState(false);
+  const [hero, setHero] = useState<MarketingHero | null>(initialHero);
+  const resolved = resolveHeroStream(hero);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/marketing/hero", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as MarketingHero;
+        if (!cancelled && data && typeof data.configured === "boolean") {
+          setHero(data);
+        }
+      } catch {
+        /* keep SSR / env fallback */
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (resolved.kind !== "processing") return;
+    const id = window.setInterval(() => {
+      void fetch("/api/marketing/hero", { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: MarketingHero | null) => {
+          if (data && typeof data.configured === "boolean") setHero(data);
+        })
+        .catch(() => undefined);
+    }, 2000);
+    return () => window.clearInterval(id);
+  }, [resolved.kind]);
 
   const onMove = useCallback(
     (e: ReactMouseEvent<HTMLElement>) => {
@@ -325,22 +357,37 @@ export function BandForgeHero() {
               className="relative mx-auto w-full max-w-[min(96vw,400px)] shrink-0 will-change-transform sm:max-w-[min(82vw,460px)] lg:max-w-[min(48vw,520px)]"
             >
               <div data-hero-video-float className="will-change-transform">
-                {HERO_STREAM_UID && HERO_STREAM_CUSTOMER ? (
+                {resolved.kind === "ready" ? (
                   <BfHeroStreamAvatar
-                    streamUid={HERO_STREAM_UID}
-                    customerCode={HERO_STREAM_CUSTOMER}
-                    posterUrl={HERO_STREAM_POSTER || null}
+                    streamUid={resolved.streamUid}
+                    customerCode={resolved.customerCode}
+                    posterUrl={resolved.posterUrl}
                     title="Avatar demo"
                   />
                 ) : (
                   <div
                     className="relative flex w-full items-center justify-center overflow-hidden rounded-[16px] border border-[#94A3B8]/55 sm:rounded-[18px]"
                     style={{ aspectRatio: "16 / 10" }}
-                    aria-label="Avatar demo unavailable"
+                    aria-label={
+                      resolved.kind === "processing"
+                        ? "Hero video processing"
+                        : "Avatar demo unavailable"
+                    }
+                    role="status"
                   >
-                    <span className="px-4 text-center text-sm text-muted">
-                      Hero video not configured
-                    </span>
+                    {resolved.kind === "processing" ? (
+                      <span className="inline-flex items-center gap-2 px-4 text-center text-sm text-muted">
+                        <Loader2
+                          className="size-4 motion-safe:animate-spin"
+                          aria-hidden
+                        />
+                        Processing on Stream…
+                      </span>
+                    ) : (
+                      <span className="px-4 text-center text-sm text-muted">
+                        Hero video not configured
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

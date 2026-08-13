@@ -20,6 +20,8 @@ export async function syncDiagnosticLeadAfterAuth(
     phone: lead.phone,
     target_band: lead.targetBand,
     exam_date: lead.examDate,
+    ...(lead.purpose ? { ielts_purpose: lead.purpose } : {}),
+    ...(lead.goal ? { ielts_goal: lead.goal } : {}),
   }).catch(() => undefined);
 }
 

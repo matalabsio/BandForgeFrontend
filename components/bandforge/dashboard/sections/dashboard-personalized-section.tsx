@@ -19,6 +19,8 @@ type UserProps = {
   displayName: string;
   email: string | null;
   avatarUrl: string | null;
+  ieltsPurpose: string | null;
+  ieltsGoal: string | null;
 };
 
 type Props = {
@@ -83,9 +85,11 @@ export async function DashboardPersonalizedSection({
           displayName={user.displayName}
           email={user.email}
           avatarUrl={user.avatarUrl}
+          ieltsPurpose={user.ieltsPurpose}
+          ieltsGoal={user.ieltsGoal}
           planTimeline={examTimeline}
           todayTasks={learning.todays_tasks}
-          showReportButton={todayPlanComplete}
+          showReportButton
         />
       </DashPageItem>
 

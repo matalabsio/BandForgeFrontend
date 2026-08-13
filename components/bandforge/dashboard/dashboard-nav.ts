@@ -2,6 +2,7 @@ import type { ComponentType, SVGProps } from "react";
 import {
   BookIcon,
   CalendarIcon,
+  ClipboardIcon,
   FileTextIcon,
   HomeIcon,
 } from "@/components/bandforge/dashboard/icons";
@@ -17,6 +18,8 @@ export type NavLink = {
   disabled?: boolean;
   disabledHint?: string;
   indent?: boolean;
+  /** Mobile tab that opens the daily report instead of navigating. */
+  action?: "open-report";
 };
 
 export type NavGroup = {
@@ -53,11 +56,19 @@ export function getDashboardNav({
   ];
 }
 
-/** Mobile / tablet tab bar — full primary set (no sidebar drawer below lg). */
+/** Mobile / tablet tab bar — primary routes plus Report (no sidebar below lg). */
 export function getMobileBottomNav({
   mockUnlocked = false,
 }: NavOptions = {}): NavLink[] {
-  return getDashboardNav({ mockUnlocked })[0]?.items ?? [];
+  const items = [...(getDashboardNav({ mockUnlocked })[0]?.items ?? [])];
+  items.push({
+    label: "Report card",
+    shortLabel: "Report",
+    href: "#report",
+    Icon: ClipboardIcon,
+    action: "open-report",
+  });
+  return items;
 }
 
 export function isNavItemActive(pathname: string, href: string): boolean {

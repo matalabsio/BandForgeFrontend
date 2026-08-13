@@ -5,11 +5,14 @@ import { useCallback, useEffect, useState } from "react";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
 import { DevMockTestFooter } from "@/components/bandforge/dev-mock-test-footer";
+import { DashboardDailyReportHost } from "@/components/bandforge/dashboard/dashboard-daily-report-host";
+import { requestOpenDailyReport } from "@/components/bandforge/dashboard/dashboard-top-header";
 import { PanelIcon } from "@/components/bandforge/dashboard/icons";
 import {
   getMobileBottomNav,
   isNavItemActive,
 } from "@/components/bandforge/dashboard/dashboard-nav";
+import type { LearningStudyTask, SkillHubProgress } from "@/lib/learning-types";
 import { cn } from "@/lib/utils";
 
 const SHOW_DEV_MOCK_FOOTER = process.env.NODE_ENV === "development";
@@ -28,6 +31,15 @@ type Props = {
   hideChrome?: boolean;
   /** Full mocks unlocked after the personalized practice plan. */
   mockUnlocked?: boolean;
+  /** Daily growth report — opened from the header (lg+) or mobile nav. */
+  report?: {
+    studentName: string;
+    tasks: LearningStudyTask[];
+    hubProgress?: Record<string, SkillHubProgress>;
+    currentBand?: number | null;
+    targetBand?: number | null;
+    overallPlanPct?: number;
+  };
 };
 
 export function DashboardShell({
@@ -39,6 +51,7 @@ export function DashboardShell({
   hideHeader = false,
   hideChrome = false,
   mockUnlocked = false,
+  report,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -182,7 +195,7 @@ export function DashboardShell({
         {mobileNav.map((item) => {
           const active = isNavItemActive(pathname, item.href);
           const className = cn(
-            "flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[10px] font-semibold tracking-tight transition-colors duration-150 sm:text-[11px]",
+            "flex min-h-[48px] min-w-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[10px] font-semibold tracking-tight transition-colors duration-150 sm:text-[11px]",
             item.disabled
               ? "pointer-events-none opacity-45 text-muted-light"
               : active
@@ -210,6 +223,18 @@ export function DashboardShell({
               </span>
             );
           }
+          if (item.action === "open-report") {
+            return (
+              <button
+                key={item.href}
+                type="button"
+                onClick={() => requestOpenDailyReport()}
+                className={className}
+              >
+                {inner}
+              </button>
+            );
+          }
           return (
             <Link
               key={item.href}
@@ -222,6 +247,17 @@ export function DashboardShell({
           );
         })}
       </nav>
+
+      {report ? (
+        <DashboardDailyReportHost
+          studentName={report.studentName}
+          tasks={report.tasks}
+          hubProgress={report.hubProgress}
+          currentBand={report.currentBand}
+          targetBand={report.targetBand}
+          overallPlanPct={report.overallPlanPct}
+        />
+      ) : null}
     </div>
   );
 }

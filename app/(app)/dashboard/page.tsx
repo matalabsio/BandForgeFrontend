@@ -37,6 +37,8 @@ type UserProps = {
   displayName: string;
   email: string | null;
   avatarUrl: string | null;
+  ieltsPurpose: string | null;
+  ieltsGoal: string | null;
 };
 
 type DashboardBodyProps = {
@@ -63,6 +65,8 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
           displayName={user.displayName}
           email={user.email}
           avatarUrl={user.avatarUrl}
+          ieltsPurpose={user.ieltsPurpose}
+          ieltsGoal={user.ieltsGoal}
           showReportButton={false}
         />
         <DashboardUnlockGate
@@ -99,11 +103,16 @@ export default async function DashboardPage() {
     displayName: formatUserDisplayName(sessionUser),
     email: sessionUser.email,
     avatarUrl: sessionUser.avatar_display_url ?? null,
+    ieltsPurpose: sessionUser.ielts_purpose ?? null,
+    ieltsGoal: sessionUser.ielts_goal ?? null,
   };
 
   return (
     <>
-      <DashboardProfileSync />
+      <DashboardProfileSync
+        ieltsPurpose={userProps.ieltsPurpose}
+        ieltsGoal={userProps.ieltsGoal}
+      />
       <div className="space-y-6">
         <Suspense fallback={<DashboardContentSkeleton />}>
           <DashboardBody

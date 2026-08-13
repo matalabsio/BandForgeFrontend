@@ -101,6 +101,8 @@ function authUserToSessionUser(user: AuthUser): SessionUser {
     role: user.role ?? "student",
     avatar_display_url: user.avatar_display_url ?? null,
     is_active: user.is_active ?? true,
+    ielts_purpose: user.ielts_purpose ?? null,
+    ielts_goal: user.ielts_goal ?? null,
   };
 }
 

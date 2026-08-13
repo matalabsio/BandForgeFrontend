@@ -95,6 +95,8 @@ export type AuthUser = {
   avatar_url?: string | null;
   avatar_display_url?: string | null;
   target_band?: number | null;
+  ielts_purpose?: string | null;
+  ielts_goal?: string | null;
   role?: string;
   is_active?: boolean;
 };
@@ -107,6 +109,8 @@ export type SessionUser = {
   role: string;
   avatar_display_url: string | null;
   is_active: boolean;
+  ielts_purpose?: string | null;
+  ielts_goal?: string | null;
 };
 
 /** Used when NEXT_PUBLIC_AUTH_ENABLED is false (local UI / mock dev). */

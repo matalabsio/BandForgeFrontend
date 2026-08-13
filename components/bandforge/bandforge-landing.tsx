@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
 import { BandForgeHeaderMarketing } from "@/components/bandforge/bf-header-marketing";
 import { BandForgeHero } from "@/components/bandforge/bf-hero";
+import type { MarketingHero } from "@/lib/hero-stream";
 // import { BfLandingHashScroll } from "@/components/bandforge/bf-landing-hash-scroll";
 // import { BfSectionDotBridge } from "@/components/bandforge/bf-section-dot-bridge";
 // import { BfSectionSeam } from "@/components/bandforge/bf-section-seam";
@@ -37,13 +38,17 @@ const BandForgeFinishLine = dynamic(
 );
 
 /** Marketing home — BandForge IELTS landing at `/`. */
-export function BandForgeLanding() {
+export function BandForgeLanding({
+  initialHero = null,
+}: {
+  initialHero?: MarketingHero | null;
+}) {
   return (
     <div className="min-h-dvh overflow-x-hidden bg-white text-black">
       {/* <BfLandingHashScroll /> */}
       <BandForgeHeaderMarketing overHero />
       <main>
-        <BandForgeHero />
+        <BandForgeHero initialHero={initialHero} />
         {/* Temporarily hidden — product detail sections
         <BfSectionSeam />
         <div className="relative bg-white">

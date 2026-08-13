@@ -11,6 +11,8 @@ export type UpdateProfileInput = {
   phone?: string | null;
   target_band?: number | null;
   exam_date?: string | null;
+  ielts_purpose?: string | null;
+  ielts_goal?: string | null;
 };
 
 export type UpdateProfileResult = {
@@ -48,6 +50,10 @@ export async function updateProfile(
       phone: input.phone ?? null,
       target_band: input.target_band ?? null,
       exam_date: input.exam_date ?? null,
+      ...(input.ielts_purpose !== undefined
+        ? { ielts_purpose: input.ielts_purpose }
+        : {}),
+      ...(input.ielts_goal !== undefined ? { ielts_goal: input.ielts_goal } : {}),
     }),
   });
   return {

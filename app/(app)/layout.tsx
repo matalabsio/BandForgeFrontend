@@ -10,7 +10,10 @@ import {
   getBandforgePathname,
 } from "@/lib/bandforge-pathname";
 import { authGuardRedirectPath } from "@/lib/auth";
-import { isFullPracticePlanComplete } from "@/lib/dashboard-plan-math";
+import {
+  isFullPracticePlanComplete,
+  overallPlanPercent,
+} from "@/lib/dashboard-plan-math";
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import { fetchLearningProfile } from "@/lib/learning-server";
 import { fetchSubscriptionResult } from "@/lib/payments-server";
@@ -63,6 +66,16 @@ export default async function BandforgeAppLayout({
           hideHeader={hideHeader}
           hideChrome={quietChrome}
           mockUnlocked={mockUnlocked}
+          report={{
+            studentName: shellDisplayName,
+            tasks: learning?.todays_tasks ?? [],
+            hubProgress: learning?.hub_progress,
+            currentBand: learning?.current_band,
+            targetBand: learning?.target_band,
+            overallPlanPct: learning
+              ? overallPlanPercent(learning.study_plan)
+              : 0,
+          }}
           sidebar={
             <DashboardSidebarNav
               pathname={pathname}

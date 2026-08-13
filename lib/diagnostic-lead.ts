@@ -180,7 +180,7 @@ export function fallbackExamDate(option: DiagnosticTestDateOption): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function readDiagnosticLead(): DiagnosticLead | null {
+function parseStoredLead(): (DiagnosticLead & { goal?: string }) | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(DIAGNOSTIC_LEAD_KEY);
@@ -193,11 +193,71 @@ export function readDiagnosticLead(): DiagnosticLead | null {
       parsed.goalLabel = goal.label;
       parsed.targetBand = goal.targetBand;
     }
-    if (!isLeadComplete(parsed)) return null;
     return parsed;
   } catch {
     return null;
   }
+}
+
+export function readDiagnosticLead(): DiagnosticLead | null {
+  const parsed = parseStoredLead();
+  if (!parsed || !isLeadComplete(parsed)) return null;
+  return parsed;
+}
+
+/** Goal/purpose even when the stored lead is incomplete (e.g. no exam date). */
+export function readDiagnosticLeadLoose(): Partial<DiagnosticLead> | null {
+  return parseStoredLead();
+}
+
+/** Study Abroad Dream / Migration Dream — for dashboard greeting copy. */
+export function ieltsDreamName(
+  lead: Partial<DiagnosticLead> | null | undefined,
+): string {
+  const goal = (lead?.goal ?? "").toLowerCase();
+  const purpose = (lead?.purpose ?? "").toLowerCase();
+  const label = (lead?.goalLabel ?? "").toLowerCase();
+  const blob = `${goal} ${purpose} ${label}`;
+
+  if (
+    purpose === "immigration" ||
+    goal === "australian_pr" ||
+    goal === "canada_pr" ||
+    goal === "uk_visa" ||
+    /immigrat|migration|\bpr\b|visa/.test(blob)
+  ) {
+    return "Migration Dream";
+  }
+  if (
+    purpose === "university" ||
+    goal === "study_abroad" ||
+    /study|university|abroad/.test(blob)
+  ) {
+    return "Study Abroad Dream";
+  }
+  if (
+    purpose === "professional" ||
+    goal === "professional_registration" ||
+    /profession|career/.test(blob)
+  ) {
+    return "Professional Dream";
+  }
+  return "IELTS Dream";
+}
+
+/** Prefer persisted profile fields, then localStorage lead, then generic copy. */
+export function ieltsDreamNameFromProfile(opts: {
+  purpose?: string | null;
+  goal?: string | null;
+  lead?: Partial<DiagnosticLead> | null;
+}): string {
+  if (opts.purpose || opts.goal) {
+    return ieltsDreamName({
+      purpose: (opts.purpose ?? undefined) as DiagnosticPurposeId | undefined,
+      goal: (opts.goal ?? undefined) as DiagnosticGoalId | undefined,
+    });
+  }
+  return ieltsDreamName(opts.lead ?? null);
 }
 
 export function saveDiagnosticLead(lead: DiagnosticLead): void {
