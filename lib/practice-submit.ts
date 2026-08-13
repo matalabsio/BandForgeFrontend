@@ -163,12 +163,24 @@ export function parseVideoEmbed(url: string): VideoEmbed {
   }
 
   const streamMatch = trimmed.match(
-    /(?:https?:\/\/)?(customer-[a-z0-9]+)\.cloudflarestream\.com\/([a-zA-Z0-9]+)(?:\/(?:iframe|watch|manifest\/video\.m3u8))?/i,
+    /(?:https?:\/\/)?(customer-[a-z0-9]+)\.cloudflarestream\.com\/([^/?#]+)/i,
   );
   if (streamMatch?.[1] && streamMatch[2]) {
+    const customer = streamMatch[1];
+    const segment = decodeURIComponent(streamMatch[2]);
+    // Signed playback is a JWT in the path. Rewriting it to a bare UID 404s.
+    if (segment.includes(".")) {
+      const absolute = /^https?:\/\//i.test(trimmed)
+        ? trimmed
+        : `https://${trimmed.replace(/^\/+/, "")}`;
+      const embedUrl = /\/iframe(?:[/?#]|$)/i.test(absolute)
+        ? absolute
+        : `https://${customer}.cloudflarestream.com/${segment}/iframe`;
+      return { kind: "stream", embedUrl };
+    }
     return {
       kind: "stream",
-      embedUrl: `https://${streamMatch[1]}.cloudflarestream.com/${streamMatch[2]}/iframe`,
+      embedUrl: `https://${customer}.cloudflarestream.com/${segment}/iframe`,
     };
   }
 

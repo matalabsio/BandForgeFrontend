@@ -357,7 +357,7 @@ export function SpeakingMicCheck({
 
       <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-1 flex-col px-4 py-3 sm:px-6 sm:py-4 lg:max-w-4xl lg:px-8 lg:py-5">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[#E8EEF4] bg-white lg:rounded-[24px]">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 sm:py-5 lg:overflow-hidden lg:px-7 lg:py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 sm:py-5 lg:px-7 lg:py-5">
             <header className="mx-auto max-w-2xl shrink-0 text-center">
               <p className="font-mono text-[10px] tracking-[0.14em] text-teal uppercase">
                 Before you begin
@@ -464,12 +464,12 @@ export function SpeakingMicCheck({
               ) : null}
 
               {phase === "playback" || phase === "confirmed" ? (
-                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
+                <div className="mt-3 grid grid-cols-2 items-stretch gap-2 sm:gap-2.5">
                   <button
                     type="button"
                     onClick={handleConfirm}
                     className={cn(
-                      "flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-[13px] font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 sm:min-h-[48px] sm:text-sm",
+                      "flex h-full min-h-[44px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2 py-2 text-center text-[12px] font-semibold leading-snug transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 sm:min-h-[48px] sm:px-3 sm:text-sm",
                       confirmed
                         ? "border-[#A7F3D0] bg-[#ECFDF5] text-[#059669]"
                         : "border-[#E8EEF4] bg-white text-navy hover:border-cyan/40 hover:bg-cyan/5",
@@ -485,7 +485,7 @@ export function SpeakingMicCheck({
                   <button
                     type="button"
                     onClick={handleRecordAgain}
-                    className="flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#E8EEF4] bg-white px-3 py-2 text-[13px] font-semibold text-[#475569] transition-colors duration-200 hover:border-navy/20 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 sm:min-h-[48px] sm:text-sm"
+                    className="flex h-full min-h-[44px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#E8EEF4] bg-white px-2 py-2 text-center text-[12px] font-semibold leading-snug text-[#475569] transition-colors duration-200 hover:border-navy/20 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 sm:min-h-[48px] sm:px-3 sm:text-sm"
                   >
                     <RotateCcw className="size-3.5 shrink-0" aria-hidden />
                     Record again
@@ -494,7 +494,7 @@ export function SpeakingMicCheck({
               ) : null}
             </div>
 
-            <ul className="mx-auto mt-4 grid max-w-3xl gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-2.5 lg:mt-4">
+            <ul className="mx-auto mt-4 grid max-w-3xl grid-cols-2 items-stretch gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-2.5 lg:mt-4">
               <TipCard
                 title="Find a quiet room"
                 body="Background noise affects your transcript and examiner review."
@@ -523,7 +523,7 @@ export function SpeakingMicCheck({
           </p>
         ) : null}
 
-        <div className="shrink-0 pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pt-4">
+        <div className="sticky bottom-0 z-10 shrink-0 border-t border-[#E8EEF4] bg-white pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pt-4">
           <button
             type="button"
             disabled={!confirmed || beginBusy}
@@ -657,7 +657,7 @@ function TipCard({
   delayMs?: number;
 }) {
   return (
-    <li className="rounded-[12px] border border-[#E8EEF4] bg-[#F8FBFC] px-3 py-2.5 sm:px-3.5 sm:py-3">
+    <li className="flex h-full flex-col rounded-[12px] border border-[#E8EEF4] bg-[#F8FBFC] px-3 py-2.5 sm:px-3.5 sm:py-3 last:max-sm:col-span-2">
       <TextType
         as="p"
         text={title}

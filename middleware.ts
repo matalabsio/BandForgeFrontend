@@ -6,6 +6,16 @@ import { bootstrapNextPath } from "@/lib/bootstrap-next-path";
 import { isAuthEnabled } from "@/lib/flags";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
+function continueWithPathname(request: NextRequest, pathname: string) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", pathname);
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+  response.headers.set("x-pathname", pathname);
+  return response;
+}
+
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/scores",
@@ -21,9 +31,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!isAuthEnabled()) {
-    const response = NextResponse.next();
-    response.headers.set("x-pathname", pathname);
-    return response;
+    return continueWithPathname(request, pathname);
   }
 
   const isProtected = PROTECTED_PREFIXES.some(
@@ -46,15 +54,12 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  const refreshed = await middlewareRefreshAuth(request);
+  const refreshed = await middlewareRefreshAuth(request, pathname);
   if (refreshed) {
-    refreshed.headers.set("x-pathname", pathname);
     return refreshed;
   }
 
-  const response = NextResponse.next();
-  response.headers.set("x-pathname", pathname);
-  return response;
+  return continueWithPathname(request, pathname);
 }
 
 export const config = {

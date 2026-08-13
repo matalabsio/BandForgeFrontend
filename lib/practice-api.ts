@@ -63,6 +63,7 @@ export type BankExerciseStart = {
       options: unknown;
       instructions?: string | null;
       audio_url?: string | null;
+      video_url?: string | null;
     }>;
   };
 };

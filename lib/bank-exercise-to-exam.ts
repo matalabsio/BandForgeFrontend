@@ -7,6 +7,7 @@ import type {
 } from "@/modules/listening/types";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import type { BankExerciseStart } from "@/lib/practice-api";
+import type { SpeakingQuestionManifest } from "@/modules/speaking/types";
 
 const UI_TO_SLUG: Record<string, string> = {
   "Form completion": "form_completion",
@@ -156,14 +157,47 @@ export function bankExerciseWritingPrompt(exercise: BankExerciseStart): {
   };
 }
 
-export function bankExerciseSpeakingPrompts(exercise: BankExerciseStart): Array<{
-  id: string;
-  number: number;
-  prompt: string;
-}> {
-  return exercise.section.questions.map((q) => ({
-    id: q.id,
-    number: q.question_number,
-    prompt: q.prompt.trim() || "(prompt)",
-  }));
+function speakingPart(raw: number): 1 | 2 | 3 {
+  if (raw === 2) return 2;
+  if (raw === 3) return 3;
+  return 1;
+}
+
+function optionRecord(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  return raw as Record<string, unknown>;
+}
+
+function optionNumber(opts: Record<string, unknown>, key: string): number | undefined {
+  const n = Number(opts[key]);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+/** Bank hub questions → same manifest shape as mock /test speaking. */
+export function bankExerciseToSpeakingManifest(
+  exercise: BankExerciseStart,
+): SpeakingQuestionManifest[] {
+  const fallbackPart = speakingPart(exercise.part);
+  return exercise.section.questions.map((q, i) => {
+    const opts = optionRecord(q.options);
+    const kind =
+      String(opts.kind || "") === "part2_intro" || fallbackPart === 2
+        ? ("part2_intro" as const)
+        : ("question" as const);
+    const part = kind === "part2_intro" ? 2 : fallbackPart;
+    const recordSec =
+      optionNumber(opts, "record_sec") ?? optionNumber(opts, "speak_time_sec");
+    return {
+      id: q.id,
+      part,
+      questionNumber: q.question_number || i + 1,
+      sequence: i + 1,
+      prompt: q.prompt.trim() || "(prompt)",
+      kind,
+      videoUrl: q.video_url?.trim() || undefined,
+      prepSec: optionNumber(opts, "prep_sec"),
+      recordSec,
+      maxRecordSec: recordSec,
+    };
+  });
 }

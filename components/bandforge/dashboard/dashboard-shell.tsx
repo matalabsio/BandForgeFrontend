@@ -29,6 +29,8 @@ type Props = {
   hideHeader?: boolean;
   /** Checkout success: no sidebar, header, or mobile nav */
   hideChrome?: boolean;
+  /** Exam-style pages (bank speaking) — no padded max-width wrapper. */
+  fullBleed?: boolean;
   /** Full mocks unlocked after the personalized practice plan. */
   mockUnlocked?: boolean;
   /** Daily growth report — opened from the header (lg+) or mobile nav. */
@@ -50,6 +52,7 @@ export function DashboardShell({
   children,
   hideHeader = false,
   hideChrome = false,
+  fullBleed = false,
   mockUnlocked = false,
   report,
 }: Props) {
@@ -88,6 +91,13 @@ export function DashboardShell({
         : "grid-cols-3";
 
   if (hideChrome) {
+    if (fullBleed) {
+      return (
+        <div className="bf-dashboard relative min-h-dvh bg-white text-ink">
+          {children}
+        </div>
+      );
+    }
     return (
       <div className="bf-dashboard relative min-h-dvh text-ink">
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">

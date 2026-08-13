@@ -1,10 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { IeltsExamToolbar } from "@/components/exam/ielts-exam-toolbar";
-import { IELTS_EXAM_VARS } from "@/components/exam/ielts-exam-theme";
-import { bankExerciseSpeakingPrompts } from "@/lib/bank-exercise-to-exam";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ExamTimeWarningDialog } from "@/components/exam/exam-time-warning-dialog";
+import { bankExerciseToSpeakingManifest } from "@/lib/bank-exercise-to-exam";
 import type { BankExerciseStart } from "@/lib/practice-api";
+import { SpeakingExamFlow } from "@/modules/speaking/components/speaking-exam-flow";
+import { SpeakingMicCheck } from "@/modules/speaking/components/speaking-mic-check";
+import {
+  readMicCheckPassed,
+  writeMicCheckPassed,
+} from "@/modules/speaking/lib/speaking-mic-check-storage";
+import {
+  acquireSpeakingWakeLock,
+  type SpeakingWakeLockHandle,
+} from "@/modules/speaking/lib/speaking-wake-lock";
+import type { SpeakingSessionRecording } from "@/modules/speaking/types";
+import {
+  ExamSectionLoader,
+  TestHeader,
+  TestShell,
+  TestTimer,
+  useExamTimeWarning,
+  useListeningTimer,
+} from "@/modules/shared";
 
 type Props = {
   exercise: BankExerciseStart;
@@ -15,75 +33,171 @@ type Props = {
   onSubmit: (answers: Record<string, string>) => void;
 };
 
+const PRACTICE_SPEAKING_DURATION_SEC = 14 * 60;
+
 export function PracticeSpeakingExam({
   exercise,
-  hubHref,
-  hubLabel,
   busy,
   error,
   onSubmit,
 }: Props) {
-  const prompts = useMemo(
-    () => bankExerciseSpeakingPrompts(exercise),
+  const micScope = exercise.attempt_id;
+  const manifest = useMemo(
+    () => bankExerciseToSpeakingManifest(exercise),
     [exercise],
   );
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const answeredCount = prompts.filter((p) =>
-    (answers[p.id] ?? "").trim(),
-  ).length;
+  const [micStateReady, setMicStateReady] = useState(false);
+  const [micPassed, setMicPassed] = useState(false);
+  const [startedAtIso, setStartedAtIso] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const submittedRef = useRef(false);
+  const wakeLockRef = useRef<SpeakingWakeLockHandle | null>(null);
+  const recordingsRef = useRef<SpeakingSessionRecording[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setMicPassed(readMicCheckPassed(micScope));
+      setMicStateReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [micScope]);
+
+  useEffect(() => {
+    if (!micPassed || startedAtIso) return;
+    setStartedAtIso(new Date().toISOString());
+  }, [micPassed, startedAtIso]);
+
+  useEffect(() => {
+    if (!micPassed) return;
+    let cancelled = false;
+    void acquireSpeakingWakeLock().then((handle) => {
+      if (cancelled) {
+        void handle.release();
+        return;
+      }
+      wakeLockRef.current = handle;
+    });
+    return () => {
+      cancelled = true;
+      const handle = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (handle) void handle.release();
+    };
+  }, [micPassed]);
+
+  const finish = useCallback(
+    (recordings: SpeakingSessionRecording[]) => {
+      if (submittedRef.current || busy) return;
+      if (recordings.length < manifest.length) {
+        setLocalError(
+          `Please record every speaking answer before submitting (${manifest.length - recordings.length} remaining).`,
+        );
+        return;
+      }
+      submittedRef.current = true;
+      const answers: Record<string, string> = {};
+      for (const rec of recordings) {
+        answers[rec.questionId] = String(rec.durationSec);
+      }
+      onSubmit(answers);
+    },
+    [busy, manifest.length, onSubmit],
+  );
+
+  const remaining = useListeningTimer({
+    startedAtIso,
+    serverTimeIso: startedAtIso,
+    durationSeconds: PRACTICE_SPEAKING_DURATION_SEC,
+    active: micPassed,
+    onExpire: () => {
+      if (submittedRef.current || busy) return;
+      submittedRef.current = true;
+      const answers: Record<string, string> = {};
+      for (const rec of recordingsRef.current) {
+        answers[rec.questionId] = String(rec.durationSec);
+      }
+      onSubmit(answers);
+    },
+  });
+  const timeWarning = useExamTimeWarning({
+    remaining,
+    durationSeconds: PRACTICE_SPEAKING_DURATION_SEC,
+    resetKey: startedAtIso,
+    active: micPassed && remaining > 0,
+  });
+
+  const handleMicBegin = useCallback(() => {
+    writeMicCheckPassed(micScope);
+    setMicPassed(true);
+  }, [micScope]);
+
+  const handleStepRecorded = useCallback((recording: SpeakingSessionRecording) => {
+    const next = recordingsRef.current.filter(
+      (row) => row.questionId !== recording.questionId,
+    );
+    next.push(recording);
+    recordingsRef.current = next;
+  }, []);
+
+  if (!micStateReady) {
+    return (
+      <div className="fixed inset-0 z-[60] bg-white">
+        <ExamSectionLoader title="Loading speaking…" />
+      </div>
+    );
+  }
+
+  if (!micPassed) {
+    return (
+      <div className="fixed inset-0 z-[60] bg-white">
+        <TestShell fillViewport header={<TestHeader timer={null} />}>
+          <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+            <SpeakingMicCheck
+              onBegin={handleMicBegin}
+              beginBusy={busy}
+              totalMinutes={14}
+            />
+          </main>
+        </TestShell>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className="ielts-exam-theme fixed inset-0 z-40 flex flex-col overflow-hidden bg-[var(--exam-surface)] text-[var(--exam-ink)]"
-      style={IELTS_EXAM_VARS}
+    <div className="fixed inset-0 z-[60] bg-white">
+    <TestShell
+      fillViewport
+      header={<TestHeader timer={<TestTimer remainingSeconds={remaining} />} />}
     >
-      <IeltsExamToolbar
-        moduleName="Speaking"
-        stageLabel={`Part ${exercise.part}`}
-        testTitle={exercise.section.title?.trim() || "Speaking practice"}
-        hubHref={hubHref}
-        hubLabel={hubLabel}
-        remainingSeconds={10 * 60}
-        timerActive={false}
-        answeredCount={answeredCount}
-        totalQuestions={prompts.length}
-        busy={busy}
-        plainHeader
-        onSubmit={() => onSubmit(answers)}
+      <main className="flex min-h-0 w-full flex-1 flex-col overflow-hidden sm:p-4 md:p-6 lg:p-8">
+        <SpeakingExamFlow
+          key={exercise.attempt_id}
+          variant="mock"
+          manifest={manifest}
+          onStepRecorded={handleStepRecorded}
+          onExamComplete={(recordings) => finish(recordings)}
+          footerBusy={busy}
+          completeLabel="Submit for human review"
+        />
+        {error || localError ? (
+          <p
+            className="mt-3 shrink-0 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger"
+            role="alert"
+          >
+            {localError ?? error}
+          </p>
+        ) : null}
+      </main>
+      <ExamTimeWarningDialog
+        open={timeWarning.open}
+        remainingSeconds={remaining}
+        onDismiss={timeWarning.dismiss}
       />
-      {error ? (
-        <p
-          className="shrink-0 border-b border-red-200 bg-red-50 px-4 py-2 text-center text-[13px] text-red-700"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8">
-        <ol className="mx-auto max-w-2xl space-y-6">
-          {prompts.map((p) => (
-            <li
-              key={p.id}
-              className="rounded-xl border border-[var(--exam-border)] bg-[var(--exam-paper)] p-5"
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--exam-ink-muted)]">
-                Question {p.number}
-              </p>
-              <p className="mt-2 text-[15px] font-medium leading-relaxed">
-                {p.prompt}
-              </p>
-              <textarea
-                className="mt-4 min-h-28 w-full rounded-lg border border-[var(--exam-border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--exam-accent)]"
-                placeholder="Notes or spoken-response script…"
-                value={answers[p.id] ?? ""}
-                onChange={(e) =>
-                  setAnswers((prev) => ({ ...prev, [p.id]: e.target.value }))
-                }
-              />
-            </li>
-          ))}
-        </ol>
-      </div>
+    </TestShell>
     </div>
   );
 }

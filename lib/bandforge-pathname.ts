@@ -14,7 +14,12 @@ export function bandforgeHideShellHeader(pathname: string): boolean {
 
 /** Focused receipt page — no dashboard chrome. */
 export function bandforgeQuietCheckoutChrome(pathname: string): boolean {
-  return (
-    pathname === "/checkout/success" || pathname.startsWith("/checkout/success?")
-  );
+  const path = pathname.split("?")[0] ?? pathname;
+  return path === "/checkout/success";
+}
+
+/** Bank speaking exercise uses the same full-bleed chrome as /test speaking. */
+export function bandforgeQuietSpeakingExerciseChrome(pathname: string): boolean {
+  const path = pathname.split("?")[0] ?? pathname;
+  return /\/practice\/speaking\/[^/]+\/exercise\/?$/.test(path);
 }

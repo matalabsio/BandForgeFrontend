@@ -7,6 +7,7 @@ import { AppFontsShell } from "@/components/fonts/app-fonts-shell";
 import {
   bandforgeHideShellHeader,
   bandforgeQuietCheckoutChrome,
+  bandforgeQuietSpeakingExerciseChrome,
   getBandforgePathname,
 } from "@/lib/bandforge-pathname";
 import { authGuardRedirectPath } from "@/lib/auth";
@@ -45,7 +46,8 @@ export default async function BandforgeAppLayout({
     redirect(authGuardRedirectPath(pathname, cookieHeader));
   }
 
-  const quietChrome = bandforgeQuietCheckoutChrome(pathname);
+  const speakingExam = bandforgeQuietSpeakingExerciseChrome(pathname);
+  const quietChrome = bandforgeQuietCheckoutChrome(pathname) || speakingExam;
   const hideHeader = bandforgeHideShellHeader(pathname) || quietChrome;
   const shellDisplayName = formatUserDisplayName(user);
   const shellAvatarUrl = user.avatar_display_url ?? null;
@@ -65,6 +67,7 @@ export default async function BandforgeAppLayout({
           pathname={pathname}
           hideHeader={hideHeader}
           hideChrome={quietChrome}
+          fullBleed={speakingExam}
           mockUnlocked={mockUnlocked}
           report={{
             studentName: shellDisplayName,

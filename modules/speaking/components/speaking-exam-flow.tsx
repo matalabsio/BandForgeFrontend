@@ -5,10 +5,7 @@ import { Button } from "@/components/ui/button";
 import { isShortOrSilentResponse } from "@/modules/speaking/lib/detect-short-response";
 import { flattenExamSteps } from "@/modules/speaking/lib/speaking-question-manifest";
 import { useSpeakingRecorder } from "@/modules/speaking/hooks/use-speaking-recorder";
-import {
-  SpeakingQuestionCard,
-  SpeakingQuestionPlayer,
-} from "@/modules/speaking/components/speaking-question-player";
+import { SpeakingQuestionPlayer } from "@/modules/speaking/components/speaking-question-player";
 import { SpeakingRecordingControls } from "@/modules/speaking/components/speaking-recording-controls";
 import { SpeakingRetryDialog } from "@/modules/speaking/components/speaking-retry-dialog";
 import { SpeakingProgressHeader } from "@/modules/speaking/components/speaking-progress-header";
@@ -182,15 +179,6 @@ export function SpeakingExamFlow({
         ? `Part ${current.part} · Question ${current.questionNumber}`
         : "";
 
-  const nextLabel =
-    isLastStep && subPhase === "ready"
-      ? completeLabel
-      : subPhase === "record"
-        ? "Next question"
-        : isPart2
-          ? "Continue"
-          : "Next question";
-
   const showRecordingControls =
     subPhase === "record" || subPhase === "part2_record" || subPhase === "ready";
 
@@ -203,9 +191,14 @@ export function SpeakingExamFlow({
 
   const captured = recordingControlPhase === "captured";
 
-  /** Complete the answer in the recording card, then advance from the footer. */
-  const showFooter = subPhase === "ready";
+  const showFooter = subPhase !== "part2_prep";
   const footerDisabled = footerBusy;
+  const footerLabel =
+    subPhase === "play"
+      ? "Start recording"
+      : isLastStep
+        ? completeLabel
+        : "Next question";
 
   const flowMeta = useMemo((): SpeakingFlowMeta | null => {
     if (!current) return null;
@@ -221,13 +214,13 @@ export function SpeakingExamFlow({
           ? recordRemaining
           : null,
       showFooter,
-      footerLabel: nextLabel,
+      footerLabel,
       footerDisabled,
     };
   }, [
     current,
     footerDisabled,
-    nextLabel,
+    footerLabel,
     partLabel,
     prepRemaining,
     recordRemaining,
@@ -453,22 +446,30 @@ export function SpeakingExamFlow({
     stepIndex,
   ]);
 
-  const handleNextQuestion = useCallback(async () => {
-    if (subPhase === "record") {
-      const ok = await stopAndValidate();
-      if (!ok) return;
-      if (!isLastStep) advanceStep();
+  const handleSubmitExam = useCallback(async () => {
+    if (subPhase === "play") {
+      handleQuestionEnded();
       return;
     }
-
-    if (subPhase === "ready") {
-      if (isLastStep) {
-        onExamComplete(recordingsRef.current);
-      } else {
-        advanceStep();
-      }
+    if (subPhase === "record" || subPhase === "part2_record") {
+      const ok = await stopAndValidate();
+      if (!ok) return;
     }
-  }, [advanceStep, isLastStep, onExamComplete, stopAndValidate, subPhase]);
+    if (isLastStep) {
+      onExamComplete(recordingsRef.current);
+      return;
+    }
+    advanceStep();
+  }, [
+    advanceStep,
+    handleQuestionEnded,
+    isLastStep,
+    onExamComplete,
+    stopAndValidate,
+    subPhase,
+  ]);
+
+  const handleNextQuestion = handleSubmitExam;
 
   const handleRetry = useCallback(() => {
     setShowRetry(false);
@@ -517,9 +518,81 @@ export function SpeakingExamFlow({
     );
   }
 
+  const recordPanel =
+    subPhase === "record" ||
+    subPhase === "part2_record" ||
+    subPhase === "ready" ? (
+      <>
+        <p className="text-center font-mono text-[10px] font-medium tracking-[0.14em] text-teal uppercase sm:text-left">
+          {isPart2 ? "Cue card" : "Question"}
+        </p>
+        {recordPromptText.trim() ? (
+          <div className="mt-2 min-h-[1.6em] text-center sm:text-left">
+            <TextType
+              key={`${current.id}-${subPhase}-prompt`}
+              as="h2"
+              text={recordPromptText}
+              loop={false}
+              typingSpeed={recordPromptPlan.typingSpeed}
+              variableSpeed={recordPromptPlan.variableSpeed}
+              initialDelay={80}
+              showCursor={subPhase === "record" || subPhase === "part2_record"}
+              cursorCharacter="|"
+              cursorBlinkDuration={0.5}
+              className="block w-full break-words font-display text-[15px] font-semibold leading-snug text-navy sm:text-lg lg:text-xl"
+            />
+          </div>
+        ) : (
+          <p className="mt-2 text-center text-[13px] leading-snug text-[#5A6B82] sm:text-left sm:text-sm">
+            Record your answer to the examiner.
+          </p>
+        )}
+
+        {(subPhase === "record" || subPhase === "part2_record") &&
+        !recorder.recording ? (
+          <p className="mt-3 text-sm text-[#5A6B82]" role="status">
+            {subPhase === "part2_record"
+              ? `Recording is starting automatically · up to ${recordSec} seconds`
+              : `Recording is starting automatically · up to ${Math.round((currentRecordLimit ?? SPEAKING_PART1_MAX_RECORD_SEC) / 60)} min`}
+          </p>
+        ) : null}
+
+        {showRecordingControls ? (
+          <SpeakingRecordingControls
+            phase={recordingControlPhase}
+            seconds={recorder.seconds}
+            waveform={recorder.waveform}
+            countdownSec={
+              subPhase === "part2_record" || subPhase === "record"
+                ? (currentRecordLimit ?? recordSec)
+                : null
+            }
+            answerBlob={captured ? answerBlob : null}
+            onStop={handleStop}
+            onRerecord={() => undefined}
+            showRerecord={false}
+            showStop={false}
+            stopLabel={isPart2 ? "Finish long turn" : "Complete answer"}
+            hideElapsed={false}
+            className="mt-2 min-h-0 flex-1 overflow-hidden !py-2 sm:mt-3 sm:!py-5"
+          />
+        ) : null}
+
+        {subPhase === "ready" ? (
+          <div className="mt-3 rounded-[14px] border border-cyan/25 bg-cyan/10 px-3 py-2.5 text-center sm:mt-4 sm:px-4 sm:py-3">
+            <p className="text-[13px] font-semibold text-[#075985] sm:text-sm">
+              {isLastStep
+                ? "Answer saved. Hear it back or submit when ready."
+                : "Answer saved. Hear it back, then continue."}
+            </p>
+          </div>
+        ) : null}
+      </>
+    ) : null;
+
   const content = (
-    <div className="flex flex-col gap-5">
-      {subPhase === "play" ? (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {subPhase !== "part2_prep" ? (
         <SpeakingQuestionPlayer
           variant={variant}
           playKey={`${current.id}-${stepIndex}-${playKey}`}
@@ -528,89 +601,20 @@ export function SpeakingExamFlow({
           prompt={current.prompt}
           partLabel={partLabel}
           onEnded={handleQuestionEnded}
-          onStartAnswerNow={handleQuestionEnded}
+          stage={subPhase === "play" ? "play" : "record"}
+          examinerStatus={
+            subPhase === "ready"
+              ? "CAPTURED"
+              : subPhase === "play"
+                ? "ASKING"
+                : "LISTENING"
+          }
+          recordPanel={recordPanel}
         />
       ) : null}
 
-      {(subPhase === "record" || subPhase === "part2_record" || subPhase === "ready") ? (
-        <div className="grid min-w-0 items-stretch gap-5 lg:grid-cols-2 lg:gap-6">
-          <SpeakingQuestionCard
-            variant={variant}
-            partLabel={partLabel}
-            prompt={current.prompt}
-            videoUrl={current.videoUrl}
-            examinerStatus={subPhase === "ready" ? "CAPTURED" : "LISTENING"}
-          />
-          <div
-            className={cn(
-              "flex min-w-0 flex-col rounded-[20px] border border-navy/12 bg-white p-4 sm:p-5",
-              isDiagnostic && "shadow-[0_14px_30px_rgba(13,31,60,0.07)]",
-            )}
-          >
-            <p className="font-mono text-[10px] font-medium tracking-[0.14em] text-teal uppercase">
-              {isPart2 ? "Cue card" : "Question"}
-            </p>
-            <div className="mt-2 min-h-[1.6em]">
-              <TextType
-                key={`${current.id}-${subPhase}-prompt`}
-                as="h2"
-                text={recordPromptText}
-                loop={false}
-                typingSpeed={recordPromptPlan.typingSpeed}
-                variableSpeed={recordPromptPlan.variableSpeed}
-                initialDelay={80}
-                showCursor={subPhase === "record" || subPhase === "part2_record"}
-                cursorCharacter="|"
-                cursorBlinkDuration={0.5}
-                className="block w-full break-words font-display text-lg font-semibold leading-snug text-navy sm:text-xl"
-              />
-            </div>
-
-            {(subPhase === "record" || subPhase === "part2_record") &&
-            !recorder.recording ? (
-              <p className="mt-3 text-sm text-[#5A6B82]" role="status">
-                {subPhase === "part2_record"
-                  ? `Recording is starting automatically · up to ${recordSec} seconds`
-                  : `Recording is starting automatically · up to ${Math.round((currentRecordLimit ?? SPEAKING_PART1_MAX_RECORD_SEC) / 60)} min`}
-              </p>
-            ) : null}
-
-            {showRecordingControls ? (
-              <SpeakingRecordingControls
-                phase={recordingControlPhase}
-                seconds={recorder.seconds}
-                waveform={recorder.waveform}
-                countdownSec={
-                  subPhase === "part2_record" || subPhase === "record"
-                    ? (currentRecordLimit ?? recordSec)
-                    : null
-                }
-                answerBlob={captured ? answerBlob : null}
-                onStop={handleStop}
-                onRerecord={() => undefined}
-                showRerecord={false}
-                showStop={subPhase === "record" || subPhase === "part2_record"}
-                stopLabel={isPart2 ? "Finish long turn" : "Complete answer"}
-                hideElapsed={false}
-                className="mt-4 flex-1"
-              />
-            ) : null}
-
-            {subPhase === "ready" ? (
-              <div className="mt-4 rounded-[14px] border border-cyan/25 bg-cyan/10 px-4 py-3 text-center">
-                <p className="text-sm font-semibold text-[#075985]">
-                  {isLastStep
-                    ? "Answer saved. Hear it back or submit when ready."
-                    : "Answer saved. Hear it back, then continue."}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
       {subPhase === "part2_prep" && cueCard ? (
-        <div className="grid min-w-0 items-stretch gap-6 lg:grid-cols-2 lg:gap-6">
+        <div className="grid min-w-0 grid-cols-1 items-stretch gap-4 sm:grid-cols-2 sm:gap-5 lg:gap-6">
           <div className="min-w-0">
             <div className="mb-4 lg:hidden">
               <div className="flex min-h-14 items-center gap-3 rounded-2xl border border-cyan/30 bg-[#0B1B32] px-4 py-3 text-white">
@@ -753,20 +757,20 @@ export function SpeakingExamFlow({
         showLogo={!isDiagnostic}
       />
       <div
-        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
         data-speaking-scroll-region
       >
-        <div className="mx-auto w-full max-w-[1200px] px-4 py-5 pb-8 sm:px-6 sm:py-7 lg:px-10 lg:py-8">
+        <div className="flex min-h-0 flex-1 flex-col p-1.5 sm:p-4 lg:p-6">
           {content}
         </div>
       </div>
       {showFooter ? (
         <SpeakingExamFooter
-          label={nextLabel}
+          label={footerLabel}
           busy={footerBusy}
-          busyLabel="Submitting…"
+          busyLabel={isLastStep && subPhase !== "play" ? "Submitting…" : "Saving…"}
           disabled={footerDisabled}
-          onClick={() => void handleNextQuestion()}
+          onClick={() => void handleSubmitExam()}
         />
       ) : null}
     </div>

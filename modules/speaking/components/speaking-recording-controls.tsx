@@ -132,14 +132,14 @@ export function SpeakingRecordingControls({
   return (
     <div
       className={cn(
-        "rounded-[16px] border border-cyan/25 bg-cyan/5 px-4 py-5 sm:px-6",
+        "flex h-full min-h-0 w-full flex-col justify-center rounded-[14px] border border-cyan/25 bg-cyan/5 px-3 py-3 sm:px-6 sm:py-5",
         className,
       )}
     >
       <audio ref={audioRef} className="hidden" playsInline preload="auto" />
 
       <div className="flex flex-col items-center">
-        <div className="relative flex size-20 items-center justify-center" aria-hidden>
+        <div className="relative flex size-14 items-center justify-center sm:size-20" aria-hidden>
           {recording ? (
             <>
               <span className="absolute inset-1 rounded-full border-2 border-cyan/50 motion-safe:animate-ping" />
@@ -148,7 +148,7 @@ export function SpeakingRecordingControls({
           ) : null}
           <span
             className={cn(
-              "relative flex size-14 items-center justify-center rounded-full shadow-[0_10px_24px_rgba(0,151,167,0.25)]",
+              "relative flex size-11 items-center justify-center rounded-full shadow-[0_10px_24px_rgba(0,151,167,0.25)] sm:size-14",
               recording
                 ? "bg-cyan text-[#06222B]"
                 : captured
@@ -156,7 +156,7 @@ export function SpeakingRecordingControls({
                   : "bg-slate-200 text-slate-500",
             )}
           >
-            <Mic className="size-6" />
+            <Mic className="size-5 sm:size-6" />
           </span>
         </div>
         <div className="mt-3 flex items-baseline justify-center gap-2">
@@ -172,7 +172,7 @@ export function SpeakingRecordingControls({
       </div>
 
       <div
-        className="mx-auto my-4 flex h-10 w-full max-w-xs items-end justify-center gap-1 overflow-hidden"
+        className="mx-auto my-2 flex h-7 w-full max-w-xs items-end justify-center gap-1 overflow-hidden sm:my-4 sm:h-10"
         aria-label={recording ? "Live microphone level" : "Audio waveform"}
         role="img"
       >
@@ -199,7 +199,7 @@ export function SpeakingRecordingControls({
         ))}
       </div>
 
-      <p className="text-center font-mono text-sm text-[#475569]">
+      <p className="hidden text-center font-mono text-sm text-[#475569] sm:block">
         {label}
       </p>
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
@@ -284,12 +284,6 @@ export function SpeakingRecordingControls({
             </button>
           ) : null}
         </div>
-      ) : null}
-
-      {recording && !showStop ? (
-        <p className="mt-4 text-center text-xs leading-relaxed text-[#64748B]">
-          Tap Next question when you finish speaking.
-        </p>
       ) : null}
     </div>
   );

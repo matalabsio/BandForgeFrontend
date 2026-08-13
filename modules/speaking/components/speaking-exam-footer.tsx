@@ -13,7 +13,7 @@ type Props = {
   className?: string;
 };
 
-/** Sticky exam footer — matches diagnostic module footer styling. */
+/** Sticky exam footer — one Next / Submit control. */
 export function SpeakingExamFooter({
   label,
   busy = false,

@@ -11,6 +11,7 @@ import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 /** Refresh access token before RSC when access is missing/expired but refresh cookie exists. */
 export async function middlewareRefreshAuth(
   request: NextRequest,
+  pathname?: string,
 ): Promise<NextResponse | null> {
   const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
   if (!refresh) return null;
@@ -23,7 +24,12 @@ export async function middlewareRefreshAuth(
     const refreshed = await refreshAuthSession(cookieHeader);
     if (!refreshed) return null;
 
-    const response = NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    if (pathname) requestHeaders.set("x-pathname", pathname);
+    const response = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    if (pathname) response.headers.set("x-pathname", pathname);
     if (refreshed.setCookieHeaders.length) {
       applyAuthCookiesToResponse(response, refreshed.setCookieHeaders);
     }
