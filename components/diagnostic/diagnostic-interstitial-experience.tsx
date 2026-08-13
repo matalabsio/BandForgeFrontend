@@ -78,7 +78,7 @@ export function DiagnosticInterstitialExperience({ slug }: Props) {
           canContinue ? (
             <>
               {config.ctaLabel}
-              <ArrowRight className="size-4" aria-hidden />
+              <ArrowRight className="size-4 shrink-0" aria-hidden />
             </>
           ) : (
             `Ready in ${remaining}s`

@@ -30,6 +30,7 @@ export type DiagnosticWritingTask = {
 export type DiagnosticSpeakingPart1Question = {
   id: string;
   prompt: string;
+  videoUrl?: string;
   minSec: number;
   maxSec: number;
 };
@@ -161,9 +162,12 @@ function parseSpeaking(speaking: unknown): DiagnosticPack["speaking"] {
   const questions = Array.isArray(part1?.questions)
     ? part1.questions.map((q, i) => {
         const item = q as Record<string, unknown>;
+        const videoUrl =
+          typeof item.videoUrl === "string" ? item.videoUrl.trim() : "";
         return {
           id: String(item.id ?? `S${i + 1}`),
           prompt: String(item.prompt ?? ""),
+          videoUrl: videoUrl || undefined,
           minSec: Number(item.minSec ?? 30),
           maxSec: Number(item.maxSec ?? 45),
         };

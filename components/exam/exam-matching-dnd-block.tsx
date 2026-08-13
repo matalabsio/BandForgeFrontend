@@ -298,7 +298,7 @@ function QuestionSlot({
       className={cn(
         "flex flex-col gap-2 border-b border-dashed py-3.5 last:border-b-0",
         theme.border,
-        isActive && cn(theme.accentSoft, "-mx-1 rounded-md px-1"),
+        isActive && "rounded-[10px] border border-cyan/40 px-2 -mx-1",
       )}
     >
       <span

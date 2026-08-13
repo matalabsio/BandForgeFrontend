@@ -15,13 +15,17 @@ const MATCHING_INSTRUCTION =
 type Props = {
   questions: ReadingQuestion[];
   answers: Record<string, string>;
+  currentQuestionId?: string | null;
   onAnswer: (id: string, value: string) => void;
+  onFocus?: (id: string) => void;
 };
 
 export function DiagnosticReadingMatchingHeadings({
   questions,
   answers,
+  currentQuestionId = null,
   onAnswer,
+  onFocus,
 }: Props) {
   const sortedQuestions = useMemo(
     () =>
@@ -49,7 +53,15 @@ export function DiagnosticReadingMatchingHeadings({
   const qEnd = sortedQuestions[sortedQuestions.length - 1]?.question_number ?? 9;
 
   return (
-    <li className="list-none">
+    <li className="relative list-none">
+      {sortedQuestions.map((q) => (
+        <span
+          key={q.id}
+          id={`reading-q-${q.id}`}
+          className="absolute"
+          aria-hidden
+        />
+      ))}
       <div className="rounded-xl border border-navy/10 bg-white p-4 sm:p-5">
         <p className="font-mono text-[11px] tracking-wide text-teal uppercase">
           Questions {qStart}–{qEnd}: Matching headings
@@ -62,7 +74,9 @@ export function DiagnosticReadingMatchingHeadings({
             questions={sortedQuestions}
             options={options}
             answers={answers}
+            currentQuestionId={currentQuestionId}
             onAnswer={onAnswer}
+            onFocus={onFocus}
             labelFormat="roman"
             variant="reading"
             normalize={normalizeRoman}

@@ -1021,7 +1021,7 @@ export function DiagnosticSplitShell({
     return (
       <div
         className={cn(
-          "flex h-dvh max-h-dvh flex-col overflow-hidden bg-white lg:flex-row",
+          "flex h-dvh max-h-dvh w-dvw max-w-[100dvw] flex-col overflow-hidden bg-white lg:flex-row",
           fillViewport && "fixed inset-0 z-40",
         )}
       >
@@ -1119,7 +1119,7 @@ export function DiagnosticSplitShell({
   return (
     <div
       className={cn(
-        "flex h-dvh max-h-dvh flex-col overflow-hidden bg-white lg:flex-row",
+        "flex h-dvh max-h-dvh w-dvw max-w-[100dvw] flex-col overflow-hidden bg-white lg:flex-row",
         fillViewport && "fixed inset-0 z-40",
       )}
     >

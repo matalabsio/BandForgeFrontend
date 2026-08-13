@@ -61,23 +61,36 @@ function ReadingQuestionRow({
   q,
   value,
   onChange,
+  onFocus,
   index,
   total,
+  isCurrent,
 }: {
   q: ReadingQuestion;
   value: string;
   onChange: (v: string) => void;
+  onFocus: () => void;
   index: number;
   total: number;
+  isCurrent: boolean;
 }) {
   const num = q.display_number ?? q.question_number;
   const type = q.question_type.toLowerCase();
+  const frameClass = cn(
+    "scroll-mt-3 cursor-pointer rounded-[14px] border p-3 sm:p-4",
+    isCurrent ? "border-cyan/40" : "border-transparent",
+  );
 
   if (type === "sentence_completion") {
     const parts = splitPromptBlank(q.prompt);
     if (parts) {
       return (
-        <li>
+        <li
+          id={`reading-q-${q.id}`}
+          className={frameClass}
+          onClick={onFocus}
+          onFocusCapture={onFocus}
+        >
           <p className="mb-2.5 font-mono text-xs text-[#6E83A0]">
             Question {index + 1} of {total}
           </p>
@@ -97,7 +110,12 @@ function ReadingQuestionRow({
   }
 
   return (
-    <li>
+    <li
+      id={`reading-q-${q.id}`}
+      className={frameClass}
+      onClick={onFocus}
+      onFocusCapture={onFocus}
+    >
       <p className="mb-2.5 font-mono text-xs text-[#6E83A0]">
         Question {index + 1} of {total}
       </p>
@@ -132,52 +150,104 @@ function stripLeadingPassageTitle(passage: string, title: string): string {
   return trimmed.slice(title.length).replace(/^\s*\n+/, "");
 }
 
-function QuestionsContent({
+function ReadingAnswerSheet({
   questions,
-  questionCount,
   answers,
-  onAnswer,
+  currentQuestionId,
+  onJump,
 }: {
   questions: ReturnType<typeof packToReadingQuestions>;
-  questionCount: number;
   answers: Record<string, string>;
-  onAnswer: (id: string, value: string) => void;
+  currentQuestionId: string | null;
+  onJump: (id: string) => void;
 }) {
   return (
-    <>
-      <div className="mb-4 rounded-xl border border-cyan/20 bg-cyan/10 p-3.5 lg:mb-5">
-        <p className="font-mono text-[11px] tracking-wide text-teal uppercase">
-          Questions 1–{questionCount}
+    <div className="shrink-0 border-b border-navy/10 bg-white px-3 py-3 sm:px-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-bold tracking-[0.16em] text-cyan uppercase">
+          Answer sheet
         </p>
-        <p className="mt-1 text-[13.5px] leading-snug font-light text-[#3D4D63]">
-          Answer all questions based on the passage.
+        <p className="rounded-full bg-navy/[0.04] px-2.5 py-0.5 text-[11px] font-bold text-navy tabular-nums">
+          1-{questions.length}
         </p>
       </div>
-      <ol className="space-y-6">
-        {groupReadingBlocks(questions).map((block) => {
-          if (block.kind === "matching_headings") {
-            return (
-              <DiagnosticReadingMatchingHeadings
-                key="matching-headings"
-                questions={block.questions}
-                answers={answers}
-                onAnswer={onAnswer}
-              />
-            );
-          }
+      <div
+        className="mt-2.5 grid grid-cols-5 gap-1.5 sm:grid-cols-10"
+        role="tablist"
+        aria-label="Question navigation"
+      >
+        {questions.map((q) => {
+          const answered = Boolean((answers[q.id] ?? "").trim());
+          const isCurrent = currentQuestionId === q.id;
+          const num = q.display_number ?? q.question_number;
           return (
-            <ReadingQuestionRow
-              key={block.q.id}
-              q={block.q}
-              value={answers[block.q.id] ?? ""}
-              onChange={(v) => onAnswer(block.q.id, v)}
-              index={block.index}
-              total={questions.length}
-            />
+            <button
+              key={q.id}
+              type="button"
+              role="tab"
+              onClick={() => onJump(q.id)}
+              className={cn(
+                "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center justify-self-center rounded-full border text-[12px] font-bold tabular-nums",
+                isCurrent
+                  ? "border-transparent bg-cyan text-white"
+                  : answered
+                    ? "border-cyan/50 bg-cyan/10 text-cyan"
+                    : "border-navy/14 bg-white text-[#5A6B82] hover:border-navy/30",
+              )}
+              aria-label={`Question ${num}${answered ? ", answered" : ""}`}
+              aria-selected={isCurrent}
+            >
+              {num}
+            </button>
           );
         })}
-      </ol>
-    </>
+      </div>
+    </div>
+  );
+}
+
+function QuestionsContent({
+  questions,
+  answers,
+  currentQuestionId,
+  onAnswer,
+  onFocus,
+}: {
+  questions: ReturnType<typeof packToReadingQuestions>;
+  answers: Record<string, string>;
+  currentQuestionId: string | null;
+  onAnswer: (id: string, value: string) => void;
+  onFocus: (id: string) => void;
+}) {
+  return (
+    <ol className="space-y-6 px-6 py-[18px] lg:px-8 lg:py-8">
+      {groupReadingBlocks(questions).map((block) => {
+        if (block.kind === "matching_headings") {
+          return (
+            <DiagnosticReadingMatchingHeadings
+              key="matching-headings"
+              questions={block.questions}
+              answers={answers}
+              currentQuestionId={currentQuestionId}
+              onAnswer={onAnswer}
+              onFocus={onFocus}
+            />
+          );
+        }
+        return (
+          <ReadingQuestionRow
+            key={block.q.id}
+            q={block.q}
+            value={answers[block.q.id] ?? ""}
+            onChange={(v) => onAnswer(block.q.id, v)}
+            onFocus={() => onFocus(block.q.id)}
+            index={block.index}
+            total={questions.length}
+            isCurrent={currentQuestionId === block.q.id}
+          />
+        );
+      })}
+    </ol>
   );
 }
 
@@ -190,6 +260,7 @@ export function DiagnosticReadingExperience() {
   );
   const [submitting, setSubmitting] = useState(false);
   const [tab, setTab] = useState<Tab>("passage");
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
 
   useEffect(() => {
     void loadDiagnosticPack()
@@ -200,13 +271,22 @@ export function DiagnosticReadingExperience() {
   }, []);
 
   const questions = pack ? packToReadingQuestions(pack) : [];
-  const questionCount = pack?.reading.questions.length ?? 0;
 
   const handleAnswer = useCallback((id: string, value: string) => {
+    setCurrentQuestionId(id);
     setAnswers((prev) => {
       const next = { ...prev, [id]: value };
       saveModuleAnswers("reading", next);
       return next;
+    });
+  }, []);
+
+  const handleJump = useCallback((id: string) => {
+    setCurrentQuestionId(id);
+    setTab("questions");
+    window.requestAnimationFrame(() => {
+      const el = document.getElementById(`reading-q-${id}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, []);
 
@@ -310,16 +390,25 @@ export function DiagnosticReadingExperience() {
                   {/* Questions panel */}
                   <div
                     className={cn(
-                      "min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-t border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[40%] lg:flex-none lg:border-t-0 lg:px-8 lg:py-8",
-                      tab !== "questions" && "hidden lg:block",
+                      "flex min-h-0 flex-1 flex-col overflow-hidden border-t border-navy/10 bg-navy/[0.03] lg:w-[40%] lg:flex-none lg:border-t-0",
+                      tab !== "questions" && "hidden lg:flex",
                     )}
                   >
-                    <QuestionsContent
+                    <ReadingAnswerSheet
                       questions={questions}
-                      questionCount={questionCount}
                       answers={answers}
-                      onAnswer={handleAnswer}
+                      currentQuestionId={currentQuestionId}
+                      onJump={handleJump}
                     />
+                    <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+                      <QuestionsContent
+                        questions={questions}
+                        answers={answers}
+                        currentQuestionId={currentQuestionId}
+                        onAnswer={handleAnswer}
+                        onFocus={setCurrentQuestionId}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

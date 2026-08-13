@@ -1,7 +1,10 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
+import {
+  bfPrimaryCtaDiagClass,
+  bfPrimaryCtaDiagInnerClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -37,10 +40,12 @@ export function SpeakingExamFooter({
           onClick={onClick}
           className={bfPrimaryCtaDiagClass}
         >
-          <span className="relative z-[1]">{busy ? busyLabel : label}</span>
-          {!busy ? (
-            <ArrowRight className="relative z-[1] h-4 w-4 shrink-0" aria-hidden />
-          ) : null}
+          <span className={bfPrimaryCtaDiagInnerClass}>
+            {busy ? busyLabel : label}
+            {!busy ? (
+              <ArrowRight className="size-4 shrink-0" aria-hidden />
+            ) : null}
+          </span>
         </button>
       </div>
     </div>

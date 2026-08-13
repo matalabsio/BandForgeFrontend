@@ -757,6 +757,47 @@ html {
   }
 }
 
+@keyframes bf-diag-wait-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bf-diag-cta-wait-ring {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  padding: 2px;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.bf-diag-cta-wait-ring > span {
+  position: absolute;
+  inset: -70%;
+  background: conic-gradient(
+    from 0deg,
+    #00838f 0deg,
+    #00bcd4 50deg,
+    transparent 105deg,
+    transparent 255deg,
+    #4dd0e1 310deg,
+    #0097a7 360deg
+  );
+  animation: bf-diag-wait-spin 2.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-diag-cta-wait-ring > span {
+    animation: none;
+  }
+}
+
 @keyframes bfwave {
   0%,
   100% {

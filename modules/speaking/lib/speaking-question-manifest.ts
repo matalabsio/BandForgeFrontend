@@ -101,6 +101,7 @@ export function diagnosticManifestFromPack(pack: DiagnosticPack): SpeakingQuesti
     prompt: q.prompt,
     kind: "question" as const,
     maxRecordSec: q.maxSec,
+    videoUrl: q.videoUrl,
   }));
 
   if (pack.speaking.part2.enabled && pack.speaking.part2.cueCard.trim()) {

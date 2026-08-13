@@ -18,12 +18,15 @@ import { TextType } from "@/components/ui/text-type";
 import { planTimedTextType } from "@/lib/timed-text-type";
 import { cn } from "@/lib/utils";
 
-/** Two equal cards that fill the exam pane (full width + remaining height). */
+/** Fills the remaining viewport. Stacked 1:1 on small screens; row from md up. */
 export const SPEAKING_SQUARE_PAIR_CLASS =
-  "flex h-full min-h-0 w-full flex-col gap-2 sm:flex-row sm:gap-3";
+  "grid h-full min-h-0 w-full max-h-full max-w-full grid-cols-1 grid-rows-2 gap-2 overflow-hidden sm:gap-3 md:grid-cols-2 md:grid-rows-1";
+
+export const SPEAKING_SQUARE_CELL_CLASS =
+  "@container relative flex h-full min-h-0 min-w-0 items-center justify-center overflow-hidden";
 
 export const SPEAKING_SQUARE_CARD_CLASS =
-  "relative min-h-0 min-w-0 w-full flex-1 overflow-hidden";
+  "relative aspect-square h-auto w-[min(100%,100cqh)] max-h-full max-w-full overflow-hidden";
 
 type Props = {
   videoUrl?: string;
@@ -102,6 +105,8 @@ function ExaminerPanel({
           src={videoUrl}
           className="absolute inset-0 size-full object-cover"
           playsInline
+          disablePictureInPicture
+          controlsList="nofullscreen nodownload noremoteplayback"
           onEnded={onEnded}
           onLoadedMetadata={(e) => {
             const d = e.currentTarget.duration;
@@ -222,6 +227,12 @@ export function SpeakingQuestionPlayer({
     let mediaWatchdog: number | undefined;
 
     const runSpeechFallback = () => {
+      if (videoUrl) {
+        fallbackTimer = window.setTimeout(() => {
+          if (!cancelled) finishAutoPlay();
+        }, 400);
+        return;
+      }
       if (prompt.trim() && canSpeakPrompt()) {
         setIsListening(true);
         cancelSpeakRef.current = speakPromptText(prompt, () => {
@@ -328,7 +339,7 @@ export function SpeakingQuestionPlayer({
       return;
     }
 
-    if (canSpeakPrompt()) {
+    if (!videoUrl && canSpeakPrompt()) {
       setIsListening(true);
       cancelSpeakRef.current = speakPromptText(prompt, () => {
         cancelSpeakRef.current = null;
@@ -363,63 +374,117 @@ export function SpeakingQuestionPlayer({
 
   const listenLabel = isListening ? "Stop" : "Listen";
   const hasPrompt = Boolean(prompt.trim());
+  const videoOnlyAsk = Boolean(videoUrl?.trim()) && !hasPrompt;
   const canListen = Boolean(
     videoUrl || audioUrl || (hasPrompt && canSpeakPrompt()),
   );
 
+  const listenButton = canListen ? (
+    <button
+      type="button"
+      onClick={handleListen}
+      className={cn(
+        "inline-flex min-h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors duration-200 sm:min-h-11 sm:gap-2 sm:px-4 sm:py-2 sm:text-[13px]",
+        isListening
+          ? "border-cyan/45 bg-cyan/12 text-teal"
+          : "border-navy/15 bg-slate-50 text-navy hover:border-cyan/40 hover:bg-cyan/10",
+      )}
+      aria-label={
+        isListening
+          ? "Stop listening to question"
+          : "Listen to examiner question"
+      }
+    >
+      {isListening ? (
+        <Loader2 className="size-3.5 shrink-0 motion-safe:animate-spin" />
+      ) : (
+        <Headphones className="size-3.5 shrink-0" />
+      )}
+      {listenLabel}
+    </button>
+  ) : null;
+
   return (
     <div className={SPEAKING_SQUARE_PAIR_CLASS}>
-      <div className={SPEAKING_SQUARE_CARD_CLASS}>
-      <ExaminerPanel
-        videoUrl={videoUrl}
-        videoRef={videoRef}
-        playKey={playKey}
-        onEnded={handleMediaEnded}
-        active={isListening}
-        status={examinerStatus}
-        onDuration={handleAskDuration}
-      />
+      <div className={SPEAKING_SQUARE_CELL_CLASS}>
+        <div className={SPEAKING_SQUARE_CARD_CLASS}>
+          <ExaminerPanel
+            videoUrl={videoUrl}
+            videoRef={videoRef}
+            playKey={playKey}
+            onEnded={handleMediaEnded}
+            active={isListening}
+            status={examinerStatus}
+            onDuration={handleAskDuration}
+          />
+        </div>
       </div>
 
-      <div
-        className={cn(
-          SPEAKING_SQUARE_CARD_CLASS,
-          "flex flex-col overflow-hidden rounded-[16px] border border-navy/12 bg-white p-3 sm:rounded-[20px] sm:p-5 lg:p-6",
-          variant === "diagnostic" && "shadow-[0_14px_30px_rgba(13,31,60,0.07)]",
-        )}
-      >
+      <div className={SPEAKING_SQUARE_CELL_CLASS}>
+        <div
+          className={cn(
+            SPEAKING_SQUARE_CARD_CLASS,
+            "flex flex-col overflow-hidden rounded-[16px] border border-navy/12 bg-white p-3 sm:rounded-[20px] sm:p-5 lg:p-6",
+            variant === "diagnostic" && "shadow-[0_14px_30px_rgba(13,31,60,0.07)]",
+          )}
+        >
         {stage === "record" && recordPanel ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{recordPanel}</div>
+        ) : videoOnlyAsk ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-9 flex-wrap items-start justify-between gap-2 sm:min-h-11 sm:gap-3">
+              <p className="font-mono text-[9px] tracking-[0.14em] text-teal uppercase sm:text-[11px]">
+                {partLabel}
+              </p>
+              {listenButton}
+            </div>
+            <div
+              className="mt-2 flex min-h-0 flex-1 flex-col justify-center rounded-[14px] border border-cyan/25 bg-cyan/5 px-3 py-3 sm:mt-0 sm:px-6 sm:py-5"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex flex-col items-center">
+                <span className="relative flex size-11 items-center justify-center rounded-full bg-cyan text-[#06222B] shadow-[0_10px_24px_rgba(0,151,167,0.25)] sm:size-14">
+                  <Headphones className="size-5 sm:size-6" aria-hidden />
+                </span>
+                <p className="mt-3 font-mono text-xs font-medium tracking-[0.1em] text-teal uppercase">
+                  Question playing
+                </p>
+              </div>
+              <div
+                className="mx-auto my-2 flex h-7 w-full max-w-xs items-end justify-center gap-1 overflow-hidden sm:my-4 sm:h-10"
+                aria-hidden
+              >
+                {Array.from({ length: 24 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "w-1 shrink-0 rounded-sm bg-cyan",
+                      isListening &&
+                        "motion-safe:animate-[bfwave_1.1s_ease-in-out_infinite]",
+                    )}
+                    style={{
+                      height: isListening
+                        ? `${10 + (i % 5) * 6}px`
+                        : "6px",
+                      animationDelay: isListening ? `${i * 0.05}s` : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="text-center text-[13px] leading-snug text-[#5A6B82] sm:text-sm">
+                Recording starts when the question ends.
+              </p>
+            </div>
+            <span className="sr-only">{partLabel}. Watch the examiner question.</span>
+          </div>
         ) : (
           <>
             <div className="flex min-h-9 flex-wrap items-start justify-between gap-2 sm:min-h-11 sm:gap-3">
               <p className="font-mono text-[9px] tracking-[0.14em] text-teal uppercase sm:text-[11px]">
                 {partLabel}
               </p>
-              {canListen ? (
-                <button
-                  type="button"
-                  onClick={handleListen}
-                  className={cn(
-                    "inline-flex min-h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors duration-200 sm:min-h-11 sm:gap-2 sm:px-4 sm:py-2 sm:text-[13px]",
-                    isListening
-                      ? "border-cyan/45 bg-cyan/12 text-teal"
-                      : "border-navy/15 bg-slate-50 text-navy hover:border-cyan/40 hover:bg-cyan/10",
-                  )}
-                  aria-label={
-                    isListening
-                      ? "Stop listening to question"
-                      : "Listen to examiner question"
-                  }
-                >
-                  {isListening ? (
-                    <Loader2 className="size-3.5 shrink-0 motion-safe:animate-spin" />
-                  ) : (
-                    <Headphones className="size-3.5 shrink-0" />
-                  )}
-                  {listenLabel}
-                </button>
-              ) : null}
+              {listenButton}
             </div>
 
             {audioUrl && !videoUrl ? (
@@ -465,9 +530,7 @@ export function SpeakingQuestionPlayer({
                 </div>
               ) : (
                 <p className="mt-2 max-w-[20rem] text-[13px] leading-snug text-[#5A6B82] sm:mt-3 sm:max-w-none sm:text-sm">
-                  {videoUrl
-                    ? "Watch the examiner, then record your answer."
-                    : "Recording starts automatically."}
+                  Recording starts automatically.
                 </p>
               )}
               <p className="mt-3 hidden text-sm leading-relaxed text-[#5A6B82] sm:mt-5 sm:block">
@@ -478,6 +541,7 @@ export function SpeakingQuestionPlayer({
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );
@@ -507,7 +571,7 @@ export function SpeakingQuestionCard({
         status={examinerStatus}
       />
       <span className="sr-only">
-        {partLabel}. {prompt}
+        {partLabel}. {prompt.trim() || "Watch the examiner question."}
       </span>
     </div>
   );

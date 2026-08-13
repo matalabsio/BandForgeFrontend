@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { TextType } from "@/components/ui/text-type";
-import { bfPrimaryCtaExamFooterClass } from "@/components/bandforge/bf-primary-cta-styles";
+import {
+  bfPrimaryCtaDiagClass,
+  bfPrimaryCtaExamFooterClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { useListeningAudio } from "@/modules/listening/hooks/use-listening-audio";
 import { cn } from "@/lib/utils";
 
@@ -283,7 +286,10 @@ export function QuestionAudio({
                   setAutoplayBlocked(true);
                 }
               }}
-              className={cn(bfPrimaryCtaExamFooterClass, "mt-4 w-full sm:w-full")}
+              className={cn(
+                animateCopy ? bfPrimaryCtaDiagClass : bfPrimaryCtaExamFooterClass,
+                "mt-4 w-full sm:w-full",
+              )}
             >
               <svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden>
                 <path d="M8 5v14l11-7z" />

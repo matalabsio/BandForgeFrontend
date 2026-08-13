@@ -33,9 +33,17 @@ export const bfPrimaryCtaHeroClass = cn(
 
 /** Exam / form full-width primary CTA — flat (no shadow / border chrome). */
 export const bfPrimaryCtaDiagClass = cn(
-  "group relative inline-flex w-full min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full border-0 font-display px-6 py-3.5 text-base font-semibold text-white no-underline shadow-none transition-[background-position] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60",
+  "group relative inline-flex h-[54px] w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full border-0 font-display px-6 text-[16px] font-semibold text-white no-underline shadow-none transition-[background-position] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 flex-nowrap",
   BF_PRIMARY_CTA_GRADIENT,
 );
+
+/**
+ * Label + arrow row inside diagnostic CTAs.
+ * Tailwind preflight sets `svg { display: block }`, so text + icon stack
+ * unless this wrapper is flex.
+ */
+export const bfPrimaryCtaDiagInnerClass =
+  "relative z-[1] inline-flex items-center justify-center gap-2 whitespace-nowrap";
 
 /** In-exam sticky footer Continue / Submit — same gradient + hover as hero. */
 export const bfPrimaryCtaExamFooterClass = cn(

@@ -400,7 +400,7 @@
         "part": 1,
         "minWords": 150,
         "title": "Writing Task 1",
-        "prompt": "You should spend about 20 minutes on this task.\n\nThe bar chart below shows the proportion of workers who used four different modes of transport — car, public transport, cycling, and walking — to travel to work in Tokyo, Berlin, São Paulo, and Toronto in 2022.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.\n\nWrite at least 150 words.",
+        "prompt": "The bar chart below shows the proportion of workers who used four different modes of transport — car, public transport, cycling, and walking — to travel to work in Tokyo, Berlin, São Paulo, and Toronto in 2022.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
         "diagramUrl": "/diagnostic/images/writing-task1-chart.svg"
       }
     ]
@@ -410,7 +410,8 @@
       "questions": [
         {
           "id": "S1",
-          "prompt": "Please introduce yourself.",
+          "prompt": "",
+          "videoUrl": "/diagnostic/video/tell-me-about-your-place.mp4",
           "minSec": 90,
           "maxSec": 120
         }

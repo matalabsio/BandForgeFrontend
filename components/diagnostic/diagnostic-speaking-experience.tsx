@@ -234,7 +234,7 @@ export function DiagnosticSpeakingExperience() {
         fillViewport
         timer={micPassed ? timer : undefined}
       >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+        <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-white">
           {error ? (
             <p className="shrink-0 border-b border-red-100 bg-red-50 px-4 py-2.5 text-center text-sm text-red-700" role="alert">
               {error}

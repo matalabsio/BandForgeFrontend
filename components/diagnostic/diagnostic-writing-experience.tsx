@@ -317,16 +317,10 @@ export function DiagnosticWritingExperience() {
                   <div className="min-h-0 flex-1 py-4">
                     <div className="mb-3 max-w-full rounded-[14px] border border-navy/10 bg-navy/[0.04] p-4">
                       <p className="font-mono text-[10px] tracking-wider text-teal uppercase">
-                        Task {activeTask.part} · {activeTask.part === 1 ? "20" : "25"} min ·{" "}
-                        {activeTask.minWords}+ words
+                        Task {activeTask.part}
                       </p>
                       {promptBlocks ? (
                         <div className="mt-2.5 space-y-2.5">
-                          {promptBlocks.intro ? (
-                            <p className="text-[13px] font-semibold text-[#1B2B45]">
-                              {promptBlocks.intro}
-                            </p>
-                          ) : null}
                           {promptBlocks.description ? (
                             <p className="break-words text-sm leading-relaxed font-light text-[#334155]">
                               {promptBlocks.description}
@@ -335,11 +329,6 @@ export function DiagnosticWritingExperience() {
                           {promptBlocks.instruction ? (
                             <p className="break-words text-sm leading-relaxed font-medium text-[#1B2B45]">
                               {promptBlocks.instruction}
-                            </p>
-                          ) : null}
-                          {promptBlocks.minWordsLine ? (
-                            <p className="text-[13px] font-semibold text-teal">
-                              {promptBlocks.minWordsLine}
                             </p>
                           ) : null}
                         </div>
@@ -369,30 +358,9 @@ export function DiagnosticWritingExperience() {
                       className="min-h-[280px] w-full max-w-full resize-y rounded-[14px] border border-navy/10 bg-white p-4 text-sm leading-relaxed text-navy outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
                       placeholder="Write your response here…"
                     />
-                    <div className="mt-3 space-y-2">
-                      <p
-                        className={cn(
-                          "text-right font-mono text-xs",
-                          words >= activeTask.minWords ? "text-teal" : "text-[#6E83A0]",
-                        )}
-                      >
-                        Current words: {words}
-                      </p>
-                      {words < activeTask.minWords ? (
-                        <div
-                          className="px-0.5 py-1 text-[13px] leading-snug font-light text-[#5A6B82]"
-                          role="status"
-                        >
-                          <p className="font-medium text-navy">
-                            IELTS Task {activeTask.part} requires at least {activeTask.minWords} words.
-                          </p>
-                          <p className="mt-1">
-                            Your score may be significantly reduced. Write an overview, key features,
-                            and comparisons before continuing.
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
+                    <p className="mt-3 text-right font-mono text-xs text-[#6E83A0]">
+                      Current words: {words}
+                    </p>
                   </div>
                 </DiagnosticExamColumn>
               </DiagnosticExamScroll>

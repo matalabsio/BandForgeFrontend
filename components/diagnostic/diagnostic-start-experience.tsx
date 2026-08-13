@@ -1,6 +1,10 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Check, Shield, GraduationCap, ClipboardCheck, Headphones } from "lucide-react";
+import { ArrowRight, Check, Shield, GraduationCap, ClipboardCheck, Headphones } from "lucide-react";
+import {
+  bfPrimaryCtaDiagClass,
+  bfPrimaryCtaDiagInnerClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { gsap } from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
@@ -189,10 +193,6 @@ export function DiagnosticStartExperience() {
     }
   };
 
-  const handleBack = () => {
-    if (step > 0) setStep(step - 1);
-  };
-
   const handleContinueDiagnostic = () => {
     setBusy(true);
     const lead = buildLead();
@@ -309,34 +309,21 @@ export function DiagnosticStartExperience() {
           </div>
 
           {/* Footer nav */}
-          <div className="mt-auto flex items-center justify-between pt-8">
-            {step > 0 ? (
-              <button
-                type="button"
-                onClick={handleBack}
-                className="cursor-pointer text-[15px] text-[#8A99AC] transition-colors hover:text-navy"
-              >
-                <ArrowLeft className="mr-1 inline size-4" aria-hidden />
-                Back
-              </button>
-            ) : (
-              <div />
-            )}
+          <div className="mt-auto pt-8">
             <button
               type="button"
               disabled={!stepValid() || busy}
               onClick={handleNext}
-              className="inline-flex cursor-pointer items-center gap-[10px] rounded-full px-10 py-4 font-display text-[17px] font-semibold text-white shadow-[0_14px_32px_rgba(0,151,167,0.32)] transition-[filter,transform] hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-              style={{
-                background: "linear-gradient(135deg, #4DD0E1 0%, #00BCD4 42%, #00838F 100%)",
-              }}
+              className={bfPrimaryCtaDiagClass}
             >
-              {step === 4
-                ? busy
-                  ? "Starting…"
-                  : "Begin Diagnostic"
-                : "Continue"}
-              <ArrowRight className="size-[17px]" aria-hidden />
+              <span className={bfPrimaryCtaDiagInnerClass}>
+                {step === 4
+                  ? busy
+                    ? "Starting…"
+                    : "Begin Diagnostic"
+                  : "Continue"}
+                <ArrowRight className="size-4 shrink-0" aria-hidden />
+              </span>
             </button>
           </div>
         </div>
@@ -682,13 +669,12 @@ function StepNativeLanguage({
             type="button"
             disabled={busy}
             onClick={onContinueDiagnostic}
-            className="flex h-[50px] w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] font-display text-[15px] font-semibold text-white shadow-[0_10px_24px_rgba(0,151,167,0.28)] transition-[filter] hover:brightness-105 disabled:opacity-50"
-            style={{
-              background: "linear-gradient(135deg, #4DD0E1 0%, #00BCD4 45%, #00838F 100%)",
-            }}
+            className={bfPrimaryCtaDiagClass}
           >
-            Continue diagnostic
-            <ArrowRight className="size-4" aria-hidden />
+            <span className={bfPrimaryCtaDiagInnerClass}>
+              Continue diagnostic
+              <ArrowRight className="size-4 shrink-0" aria-hidden />
+            </span>
           </button>
           <button
             type="button"

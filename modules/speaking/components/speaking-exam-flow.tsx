@@ -500,9 +500,11 @@ export function SpeakingExamFlow({
   }, [footerDisabled, handleNextQuestion]);
 
   const cueCard = current && isPart2 ? parseSpeakingCueCard(current.prompt) : null;
-  const recordPromptText = current
-    ? (cueCard?.title ?? current.prompt)
-    : "";
+  const hidePromptText = Boolean(current?.videoUrl);
+  const recordPromptText =
+    current && !hidePromptText
+      ? (cueCard?.title ?? current.prompt)
+      : "";
   const recordPromptPlan = useMemo(
     () =>
       planTimedTextType(
@@ -523,10 +525,12 @@ export function SpeakingExamFlow({
     subPhase === "part2_record" ||
     subPhase === "ready" ? (
       <>
-        <p className="text-center font-mono text-[10px] font-medium tracking-[0.14em] text-teal uppercase sm:text-left">
-          {isPart2 ? "Cue card" : "Question"}
-        </p>
-        {recordPromptText.trim() ? (
+        {hidePromptText ? null : (
+          <p className="text-center font-mono text-[10px] font-medium tracking-[0.14em] text-teal uppercase sm:text-left">
+            {isPart2 ? "Cue card" : "Question"}
+          </p>
+        )}
+        {hidePromptText ? null : recordPromptText.trim() ? (
           <div className="mt-2 min-h-[1.6em] text-center sm:text-left">
             <TextType
               key={`${current.id}-${subPhase}-prompt`}
@@ -591,7 +595,7 @@ export function SpeakingExamFlow({
     ) : null;
 
   const content = (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {subPhase !== "part2_prep" ? (
         <SpeakingQuestionPlayer
           variant={variant}
@@ -757,10 +761,10 @@ export function SpeakingExamFlow({
         showLogo={!isDiagnostic}
       />
       <div
-        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         data-speaking-scroll-region
       >
-        <div className="flex min-h-0 flex-1 flex-col p-1.5 sm:p-4 lg:p-6">
+        <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-1.5 sm:p-4 lg:p-6">
           {content}
         </div>
       </div>

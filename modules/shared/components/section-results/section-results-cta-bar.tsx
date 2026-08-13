@@ -36,9 +36,11 @@ export function SectionResultsCtaBar({
         BF_PRIMARY_CTA_HOVER,
       )}
     >
-      {primaryLoading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-      {primaryLabel}
-      {!primaryLoading ? <ArrowRight className="size-4" aria-hidden /> : null}
+      <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+        {primaryLoading ? <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden /> : null}
+        {primaryLabel}
+        {!primaryLoading ? <ArrowRight className="size-4 shrink-0" aria-hidden /> : null}
+      </span>
     </button>
   );
 

@@ -3,7 +3,10 @@
 import { useMemo, useRef, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
-import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
+import {
+  bfPrimaryCtaDiagClass,
+  bfPrimaryCtaDiagInnerClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { DiagnosticBookLoader } from "@/components/diagnostic/ui/diagnostic-book-loader";
 import { DiagnosticProcessingLoader } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import { TextType } from "@/components/ui/text-type";
@@ -301,9 +304,21 @@ export function DiagnosticStagePanel({
             data-stage-reveal
             disabled={ctaDisabled}
             onClick={onCta}
-            className={cn(bfPrimaryCtaDiagClass, "mt-7 h-[54px] text-[16px]")}
+            className={cn(
+              "mt-7",
+              ctaDisabled
+                ? "relative inline-flex h-[54px] w-full cursor-not-allowed items-center justify-center overflow-hidden rounded-full bg-transparent px-6 font-display text-[16px] font-semibold text-navy disabled:opacity-100"
+                : bfPrimaryCtaDiagClass,
+            )}
           >
-            <span className="relative z-[1]">{ctaLabel}</span>
+            {ctaDisabled ? (
+              <span className="bf-diag-cta-wait-ring" aria-hidden>
+                <span />
+              </span>
+            ) : null}
+            <span className={cn(bfPrimaryCtaDiagInnerClass, ctaDisabled && "text-navy")}>
+              {ctaLabel}
+            </span>
           </button>
         ) : null}
       </div>

@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Pause, Play, RotateCcw } from "lucide-react";
-import { bfPrimaryCtaDiagClass } from "@/components/bandforge/bf-primary-cta-styles";
+import { ArrowRight, Check, Pause, Play, RotateCcw } from "lucide-react";
+import {
+  bfPrimaryCtaDiagClass,
+  bfPrimaryCtaDiagInnerClass,
+} from "@/components/bandforge/bf-primary-cta-styles";
 import { TextType } from "@/components/ui/text-type";
 import {
   formatAudioDuration,
@@ -405,10 +408,7 @@ export function SpeakingMicCheck({
                 <button
                   type="button"
                   onClick={() => void startTest()}
-                  className={cn(
-                    bfPrimaryCtaDiagClass,
-                    "mt-4 h-[46px] sm:mx-auto sm:mt-4 sm:h-[48px] sm:max-w-sm",
-                  )}
+                  className={cn(bfPrimaryCtaDiagClass, "mt-4")}
                 >
                   <span className="relative z-[1]">Test my microphone</span>
                 </button>
@@ -528,13 +528,13 @@ export function SpeakingMicCheck({
             type="button"
             disabled={!confirmed || beginBusy}
             onClick={onBegin}
-            className={cn(
-              bfPrimaryCtaDiagClass,
-              "h-[48px] text-[15px] sm:h-[52px] sm:text-[16px]",
-            )}
+            className={bfPrimaryCtaDiagClass}
           >
-            <span className="relative z-[1]">
+            <span className={bfPrimaryCtaDiagInnerClass}>
               {beginBusy ? "Starting…" : beginLabel}
+              {!beginBusy ? (
+                <ArrowRight className="size-4 shrink-0" aria-hidden />
+              ) : null}
             </span>
           </button>
           <p className="mt-2 text-center font-mono text-[10px] tracking-[0.14em] text-[#94A3B8] uppercase">
