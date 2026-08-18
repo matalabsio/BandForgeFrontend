@@ -17,7 +17,7 @@ export default function WritingPage() {
   return (
     <>
       <JsonLd
-        data={sprintPageSchemaGraph("writing-sprint", {
+        data={sprintPageSchemaGraph("writing", {
           name: copy.title,
           description: copy.description,
           path: "/writing",

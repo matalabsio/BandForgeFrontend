@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ skill: string }>;
-  searchParams: Promise<{ hub?: string; mock?: string }>;
+  searchParams: Promise<{ hub?: string; mock?: string; unlock?: string }>;
 };
 
 export async function generateMetadata({ params }: PageProps) {
@@ -45,6 +45,7 @@ export default async function PracticeSkillPage({
   }
   const mockLockedMessage = sp.mock === "locked";
   const hubLockedMessage = hubParam === "locked";
+  const unlockAllForTesting = sp.unlock === "all" || sp.unlock === "1";
 
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerSession(cookieHeader);
@@ -60,12 +61,19 @@ export default async function PracticeSkillPage({
     fetchPracticeHubs(cookieHeader, skill),
     fetchMockUnlock(cookieHeader, skill),
   ]);
+  const visibleHubs = unlockAllForTesting
+    ? (hubs ?? []).map((hub) => ({
+        ...hub,
+        accessible: true,
+        locked_reason: null,
+      }))
+    : (hubs ?? []);
 
   return (
     <EntitledRouteGate learning={profile} subscription={subscription}>
       <PracticeHubListExperience
         skill={skill}
-        hubs={hubs ?? []}
+        hubs={visibleHubs}
         mockUnlock={mockUnlock}
         mockLockedMessage={mockLockedMessage}
         hubLockedMessage={hubLockedMessage}

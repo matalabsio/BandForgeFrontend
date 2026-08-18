@@ -974,3 +974,25 @@ html {
     page-break-after: avoid;
   }
 }
+
+.bf-rich-text p {
+  margin: 0 0 0.75em;
+}
+
+.bf-rich-text p:last-child {
+  margin-bottom: 0;
+}
+
+.bf-rich-text strong,
+.bf-rich-text b {
+  font-weight: 700;
+}
+
+.bf-rich-text em,
+.bf-rich-text i {
+  font-style: italic;
+}
+
+.bf-rich-text u {
+  text-decoration: underline;
+}

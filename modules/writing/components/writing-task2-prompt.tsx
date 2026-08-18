@@ -1,5 +1,6 @@
 import type { WritingTask } from "@/modules/writing/types";
 import { WritingTaskPromptHeader } from "@/modules/writing/components/writing-task-prompt-header";
+import { RichText } from "@/components/rich-text";
 
 type ParsedPrompt = {
   intro: string;
@@ -59,7 +60,9 @@ export function WritingTask2Prompt({
       />
 
       {parsed.intro ? (
-        <p className="text-[15px] leading-relaxed text-[#334155]">{parsed.intro}</p>
+        <p className="text-[15px] leading-relaxed text-[#334155]">
+          <RichText text={parsed.intro} />
+        </p>
       ) : null}
 
       {parsed.question ? (
@@ -67,16 +70,18 @@ export function WritingTask2Prompt({
           className="rounded-xl border border-[#A5F3FC] border-l-4 border-l-cyan bg-[#ECFEFF]/60 px-4 py-3 text-[15px] font-semibold leading-relaxed text-ink"
           cite="task"
         >
-          {parsed.question}
+          <RichText text={parsed.question} />
         </blockquote>
       ) : (
         <p className="text-question leading-relaxed text-ink" data-test-question>
-          {task.prompt}
+          <RichText text={task.prompt} />
         </p>
       )}
 
       {parsed.requirements ? (
-        <p className="text-[14px] leading-relaxed text-[#475569]">{parsed.requirements}</p>
+        <p className="text-[14px] leading-relaxed text-[#475569]">
+          <RichText text={parsed.requirements} />
+        </p>
       ) : null}
 
       {showChecklist ? (

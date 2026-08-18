@@ -340,20 +340,15 @@ export function PricingClient() {
         </p>
         {usingFallbackPlans ? (
           <p className="max-w-xl text-center text-xs text-muted-light">
-            Live checkout plans could not be loaded — showing reference sprint pricing below.
+            Live checkout plans could not be loaded — showing reference pricing below.
           </p>
         ) : null}
       </div>
 
       <div className="mt-6 sm:mt-8">
         {loadingPlans ? (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-[26rem] animate-pulse rounded-[1.25rem] border border-border-soft bg-surface"
-              />
-            ))}
+          <div className="mx-auto grid max-w-md gap-5">
+            <div className="h-[26rem] animate-pulse rounded-[1.25rem] border border-border-soft bg-surface" />
           </div>
         ) : loadError && plans.length === 0 ? (
           <p className="text-center text-sm text-danger">{loadError}</p>
@@ -364,7 +359,7 @@ export function PricingClient() {
               : "Payments are temporarily unavailable. Please try again later."}
           </p>
         ) : (
-          <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
+          <div className="mx-auto grid max-w-md items-stretch gap-5">
             {displayPlans.map((plan) => (
               <PlanCard
                 key={plan.id}
@@ -448,8 +443,8 @@ export function PricingClient() {
           Not sure where to start?
         </h2>
         <p className="mx-auto mt-2.5 max-w-[36ch] text-sm leading-relaxed text-white/70">
-          Take the free diagnostic first. Then pick the sprint that matches your weakest
-          section.
+          Take the free diagnostic first. Then unlock the Full Skill Program for all four
+          sections.
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link

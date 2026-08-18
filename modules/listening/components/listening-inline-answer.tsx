@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { RichText, richTextToPlain } from "@/components/rich-text";
 
 type Variant = "default" | "exam" | "reading";
 
@@ -44,7 +45,7 @@ export function SentenceInlineBlank({
     >
       <p
         className={cn(
-          "font-semibold leading-relaxed",
+          "font-normal leading-relaxed",
           isExam && "text-[14px] text-[var(--exam-ink)]",
           isReading && "text-[14px] text-[var(--reading-ink)]",
           !isExam && !isReading && "text-body text-ink",
@@ -62,7 +63,11 @@ export function SentenceInlineBlank({
             {questionNumber}
           </span>
         ) : null}
-        {before ? <span>{before} </span> : null}
+        {before ? (
+          <span>
+            <RichText text={before} />{" "}
+          </span>
+        ) : null}
         <span className="inline-flex max-w-full items-baseline align-baseline">
           <input
             type="text"
@@ -84,7 +89,12 @@ export function SentenceInlineBlank({
             )}
           />
         </span>
-        {after ? <span> {after}</span> : null}
+        {after ? (
+          <span>
+            {" "}
+            <RichText text={after} />
+          </span>
+        ) : null}
       </p>
     </div>
   );
@@ -134,7 +144,7 @@ export function LabelInlineBlank({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={onFocus}
-        aria-label={`Question ${questionNumber}: ${label}`}
+        aria-label={`Question ${questionNumber}: ${richTextToPlain(label)}`}
         autoComplete="off"
         spellCheck={false}
         className={cn(
@@ -159,7 +169,9 @@ export function LabelInlineBlank({
         <span className="font-mono text-[12px] font-semibold tabular-nums text-[#18181b]">
           {questionNumber}
         </span>
-        <span className="text-[13px] text-[#52525b] sm:col-start-2">{label}</span>
+        <span className="text-[13px] font-normal text-[#52525b] sm:col-start-2">
+          <RichText text={label} />
+        </span>
         <span className="col-span-2 flex min-w-0 items-baseline gap-1 border-b border-[#18181b] pb-0.5 sm:col-span-1 sm:col-start-3">
           {input}
         </span>
@@ -174,8 +186,8 @@ export function LabelInlineBlank({
         isActive && "rounded-lg ring-2 ring-teal/30 ring-offset-2",
       )}
     >
-      <span className="min-w-[10rem] shrink-0 text-[12px] text-ink/70">
-        ({questionNumber}) {label}:
+      <span className="min-w-[10rem] shrink-0 text-[12px] font-normal text-ink/70">
+        ({questionNumber}) <RichText text={label} />:
       </span>
       <span className="flex min-w-0 flex-1 items-center gap-1 border-b border-ink/25 pb-1">
         {input}

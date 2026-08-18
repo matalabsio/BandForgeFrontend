@@ -5,6 +5,7 @@ import {
   WritingTask1LineChart,
 } from "@/modules/writing/components/writing-task1-chart";
 import type { WritingChartSpec } from "@/modules/writing/types";
+import { RichText } from "@/components/rich-text";
 
 type Props = {
   task: WritingTask;
@@ -139,7 +140,7 @@ function splitTask1Prompt(raw: string): { beforeChart: string; afterChart: strin
 }
 
 function splitTask1InstructionBlocks(raw: string): PromptParts | null {
-  const text = raw.replace(/\s+/g, " ").trim();
+  const text = raw.trim();
   if (!text) return null;
 
   const introMatch = text.match(/You should spend about .*? on this task\./i);
@@ -156,7 +157,7 @@ function splitTask1InstructionBlocks(raw: string): PromptParts | null {
   if (intro) description = description.replace(intro, "").trim();
   if (summarise) description = description.replace(summarise, "").trim();
   if (minWords) description = description.replace(minWords, "").trim();
-  description = description.replace(/\s+/g, " ").trim();
+  description = description.trim();
 
   return {
     intro,
@@ -227,39 +228,43 @@ export function WritingTask1Prompt({
           <div className="space-y-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 md:p-4">
             {instructionParts.intro ? (
               <p className="text-[13px] font-semibold text-[#334155]">
-                {instructionParts.intro}
+                <RichText text={instructionParts.intro} />
               </p>
             ) : null}
             {instructionParts.description ? (
               <p className="text-[14px] leading-relaxed text-[#475569]">
-                {instructionParts.description}
+                <RichText text={instructionParts.description} />
               </p>
             ) : null}
             {instructionParts.summarise ? (
               <p className="text-[14px] leading-relaxed text-[#334155]">
-                {instructionParts.summarise}
+                <RichText text={instructionParts.summarise} />
               </p>
             ) : null}
             {instructionParts.minWords ? (
               <p className="text-[13px] font-semibold text-teal">
-                {instructionParts.minWords}
+                <RichText text={instructionParts.minWords} />
               </p>
             ) : null}
           </div>
         ) : (
-          <p className="text-[15px] leading-relaxed text-[#334155]">{beforeChart}</p>
+          <p className="text-[15px] leading-relaxed text-[#334155]">
+            <RichText text={beforeChart} />
+          </p>
         )
       ) : null}
 
       <div data-test-question>{chartBlock}</div>
 
       {afterChart ? (
-        <p className="text-[15px] leading-relaxed text-[#334155]">{afterChart}</p>
+        <p className="text-[15px] leading-relaxed text-[#334155]">
+          <RichText text={afterChart} />
+        </p>
       ) : null}
 
       {!beforeChart && !afterChart ? (
         <p className="text-[15px] leading-relaxed text-[#334155]" data-test-question>
-          {task.prompt}
+          <RichText text={task.prompt} />
         </p>
       ) : null}
 

@@ -10,12 +10,12 @@ export function TeluguLandingExperience() {
       description={PAGE_SEO_COPY.telugu.description}
       diagnosticHeadline="Telugu speaker? Know your band in 15 minutes — free."
       whyHeading="Why do Telugu speakers choose BandForge?"
-      leadAnswer="BandForge helps Telugu-speaking students in Andhra Pradesh and Telangana find their real IELTS band before exam day — with a free diagnostic and targeted sprints from ₹999."
-      body="Most coaching centres treat every student the same. BandForge maps your section-wise scores first, then gives you 12 focused tasks in the skill that is actually blocking your band — Writing, Speaking, or both."
+      leadAnswer="BandForge helps Telugu-speaking students in Andhra Pradesh and Telangana find their real IELTS band before exam day — with a free diagnostic and the Full Skill Program (Rs. 2999)."
+      body="Most coaching centres treat every student the same. BandForge maps your section-wise scores first, then builds a personalised daily plan across Listening, Reading, Writing, and Speaking until your exam date."
       benefitsHeading="What you get"
       benefits={[
         "Free 15-minute diagnostic with section-wise bands",
-        "Writing and Speaking sprints from ₹999",
+        "Full Skill Program — all four skills for Rs. 2999",
         "Band 9-trained human review within 48 hours",
         "90 days access, 12 tasks, 1 mock on completion",
         "Mobile-friendly — study between classes or work",

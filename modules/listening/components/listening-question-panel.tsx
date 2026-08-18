@@ -19,6 +19,7 @@ import {
   listeningOptionsHaveUniqueLetters,
   listeningOptionValue,
 } from "@/modules/listening/lib/listening-option-value";
+import { RichText, richTextToPlain } from "@/components/rich-text";
 
 type Props = {
   question: ListeningQuestion;
@@ -73,7 +74,7 @@ function renderTextAnswer(
   opts: { onFocus?: () => void; isActive?: boolean; hideMeta?: boolean },
 ) {
   const { onFocus, isActive, hideMeta } = opts;
-  const ariaLabel = `Question ${question.question_number}: ${question.prompt}`;
+  const ariaLabel = `Question ${question.question_number}: ${richTextToPlain(question.prompt)}`;
   const inlineVariant = variant === "diagnostic" ? "exam" : variant;
 
   if (shouldUseInlineBlank(question)) {
@@ -94,7 +95,7 @@ function renderTextAnswer(
         />
       );
     }
-    const stripped = question.prompt.replace(INLINE_BLANK_PATTERN, " ").replace(/\s+/g, " ").trim();
+    const stripped = question.prompt.replace(INLINE_BLANK_PATTERN, " ").trim();
     return (
       <SentenceInlineBlank
         before={stripped}
@@ -170,11 +171,13 @@ function ListeningQuestionPanelBase({
             <p className="mb-3.5 font-mono text-xs tracking-wide text-[#6E83A0]">
               Question {question.question_number}
             </p>
-            <p className="font-display text-lg font-bold tracking-tight text-navy break-words">
-              {question.instructions ?? question.prompt}
+            <p className="font-display text-lg font-normal tracking-tight text-navy break-words">
+              <RichText text={question.instructions ?? question.prompt} />
             </p>
             {question.instructions && question.prompt !== question.instructions ? (
-              <p className="mt-1 text-sm font-light text-[#5A6B82] break-words">{question.prompt}</p>
+              <p className="mt-1 text-sm font-light text-[#5A6B82] break-words">
+                <RichText text={question.prompt} />
+              </p>
             ) : null}
           </>
         ) : null}
@@ -283,15 +286,15 @@ function ListeningQuestionPanelBase({
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         {!usesInlineLayout && !hideMeta ? (
-          <p className="text-[14px] font-semibold leading-snug text-[var(--exam-ink)]">
+          <p className="text-[14px] font-normal leading-snug text-[var(--exam-ink)]">
             <span className="mr-2 inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[var(--exam-bar)] text-[12px] font-bold text-white">
               {question.question_number}
             </span>
-            {question.prompt}
+            <RichText text={question.prompt} />
           </p>
         ) : !usesInlineLayout && hideMeta ? (
-          <p className="text-[14px] font-semibold leading-snug text-[var(--exam-ink)]">
-            {question.prompt}
+          <p className="text-[14px] font-normal leading-snug text-[var(--exam-ink)]">
+            <RichText text={question.prompt} />
           </p>
         ) : null}
         {audioSlot ? <div className="mt-3">{audioSlot}</div> : null}
@@ -368,10 +371,12 @@ function ListeningQuestionPanelBase({
           </p>
           {question.instructions ? (
             <p className="mt-1 text-[12px] italic text-ink/60">
-              {question.instructions}
+              <RichText text={question.instructions} />
             </p>
           ) : null}
-          <p className="mt-2 text-body text-ink">{question.prompt}</p>
+          <p className="mt-2 text-body text-ink">
+            <RichText text={question.prompt} />
+          </p>
         </header>
       ) : null}
 

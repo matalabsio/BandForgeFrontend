@@ -2,10 +2,28 @@ export type PassageBlock =
   | { kind: "title"; text: string }
   | { kind: "paragraph"; label: string; text: string };
 
+function htmlParagraphs(raw: string): string[] | null {
+  if (!/<p\b/i.test(raw)) return null;
+  const parts = raw
+    .split(/<\/p>/i)
+    .map((chunk) => chunk.replace(/<p\b[^>]*>/gi, "").trim())
+    .filter((chunk) => chunk.replace(/<br\s*\/?>/gi, "").trim().length > 0);
+  return parts.length > 0 ? parts : null;
+}
+
 /** Split founder passage text into title + labelled paragraphs (A, B, …). */
 export function parsePassageBlocks(raw: string): PassageBlock[] {
   const trimmed = raw.trim();
   if (!trimmed) return [];
+
+  const htmlParts = htmlParagraphs(trimmed);
+  if (htmlParts) {
+    return htmlParts.map((text, i) =>
+      i === 0
+        ? { kind: "title" as const, text }
+        : { kind: "paragraph" as const, label: "", text },
+    );
+  }
 
   const parts = trimmed.split(/\n\n+/);
   const blocks: PassageBlock[] = [];

@@ -1,7 +1,7 @@
 import type { BlogPost } from "@/lib/seo/blog-posts";
 import type { FaqItem } from "@/lib/seo/faq-content";
 import { SITE_ENTITY_DESCRIPTION } from "@/lib/seo/metadata";
-import { SPRINT_PLANS } from "@/lib/seo/claims";
+import { FULL_SKILL_PROGRAM, PAID_PLANS } from "@/lib/seo/claims";
 import { siteUrl } from "@/lib/site";
 
 /** Fill when social URLs are confirmed (Instagram, Facebook, YouTube, WhatsApp). */
@@ -62,7 +62,7 @@ export function pricingProductSchemas(): JsonLdObject[] {
   const pricingUrl = siteUrl("/pricing");
   const orgRef = { "@id": organizationId() };
 
-  return SPRINT_PLANS.map((product) => ({
+  return PAID_PLANS.map((product) => ({
     "@type": "Product",
     "@id": `${pricingUrl}/#${product.slug}`,
     name: product.name,
@@ -89,12 +89,28 @@ export function pricingSchemaGraph(): JsonLdObject {
   };
 }
 
-function sprintPlanBySlug(slug: string) {
-  const plan = SPRINT_PLANS.find((entry) => entry.slug === slug);
-  if (!plan) {
-    throw new Error(`Unknown sprint slug: ${slug}`);
-  }
-  return plan;
+export function fullSkillProgramProductSchema(): JsonLdObject {
+  const plan = FULL_SKILL_PROGRAM;
+  const pricingUrl = siteUrl("/pricing");
+  const orgRef = { "@id": organizationId() };
+
+  return {
+    "@type": "Product",
+    "@id": `${pricingUrl}/#${plan.slug}`,
+    name: plan.name,
+    description: plan.schemaDescription,
+    url: pricingUrl,
+    brand: orgRef,
+    seller: orgRef,
+    offers: {
+      "@type": "Offer",
+      url: pricingUrl,
+      priceCurrency: "INR",
+      price: String(plan.priceInr),
+      availability: "https://schema.org/InStock",
+      seller: orgRef,
+    },
+  };
 }
 
 export function webPageSchema({
@@ -117,23 +133,23 @@ export function webPageSchema({
   };
 }
 
-export function sprintProductSchema(slug: string): JsonLdObject {
-  const plan = sprintPlanBySlug(slug);
-  const pagePath = slug === "writing-sprint" ? "/writing" : "/speaking";
+export function sprintProductSchema(slug: "writing" | "speaking"): JsonLdObject {
+  const pagePath = slug === "writing" ? "/writing" : "/speaking";
   const pageUrl = siteUrl(pagePath);
   const orgRef = { "@id": organizationId() };
+  const plan = FULL_SKILL_PROGRAM;
 
   return {
     "@type": "Product",
     "@id": `${pageUrl}/#${plan.slug}`,
-    name: plan.name,
+    name: `IELTS ${slug === "writing" ? "Writing" : "Speaking"} — ${plan.name}`,
     description: plan.schemaDescription,
-    url: pageUrl,
+    url: siteUrl("/pricing"),
     brand: orgRef,
     seller: orgRef,
     offers: {
       "@type": "Offer",
-      url: pageUrl,
+      url: siteUrl("/pricing"),
       priceCurrency: "INR",
       price: String(plan.priceInr),
       availability: "https://schema.org/InStock",
@@ -143,7 +159,7 @@ export function sprintProductSchema(slug: string): JsonLdObject {
 }
 
 export function sprintPageSchemaGraph(
-  slug: "writing-sprint" | "speaking-sprint",
+  slug: "writing" | "speaking",
   page: { name: string; description: string; path: string },
 ): JsonLdObject {
   return {
@@ -177,7 +193,7 @@ export function localBusinessSchema(): JsonLdObject {
     description: SITE_ENTITY_DESCRIPTION,
     url,
     image: siteUrl("/icon-512.png"),
-    priceRange: "₹999–₹2,999",
+    priceRange: "Rs. 2999",
     address: {
       "@type": "PostalAddress",
       streetAddress: "Gachibowli",

@@ -9,6 +9,7 @@ import { DiagnosticPassageText } from "@/components/diagnostic/diagnostic-exam-s
 import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-module-footer";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
 import { DIAGNOSTIC_READING_TIMER_SEC } from "@/lib/diagnostic-catalog";
+import { RichText } from "@/components/rich-text";
 import {
   loadDiagnosticPack,
   packToReadingQuestions,
@@ -119,9 +120,9 @@ function ReadingQuestionRow({
       <p className="mb-2.5 font-mono text-xs text-[#6E83A0]">
         Question {index + 1} of {total}
       </p>
-      <p className="mb-4 break-words text-[15.5px] leading-snug font-medium text-navy">
-        {q.prompt}
-      </p>
+      <div className="mb-4 break-words text-[15.5px] leading-snug font-normal text-navy">
+        <RichText text={q.prompt} />
+      </div>
       <ReadingQuestionInput q={q} value={value} onChange={onChange} />
     </li>
   );

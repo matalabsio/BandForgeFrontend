@@ -15,11 +15,11 @@ export function HyderabadLandingExperience() {
       diagnosticHeadline="Hyderabad student? Take the free 15-minute diagnostic."
       whyHeading="Where is BandForge IELTS coaching located?"
       leadAnswer={`${OPERATOR_NAME} operates BandForge from Gachibowli, Hyderabad — serving Telangana, Andhra Pradesh, and online learners across India.`}
-      body="You do not need to visit a classroom. Take the diagnostic and sprints online — the same quality feedback Hyderabad coaching centres promise, at sprint prices from ₹999 with a free starting point."
+      body="You do not need to visit a classroom. Take the diagnostic and Full Skill Program online — the same quality feedback Hyderabad coaching centres promise, at Rs. 2999 with a free starting point."
       benefitsHeading="Why Hyderabad students choose BandForge"
       benefits={[
         "Free 15-minute diagnostic before you spend on coaching",
-        "Sprints from ₹999 — Writing, Speaking, Dual, All Skills",
+        "Full Skill Program — Rs. 2999 for all four skills",
         "Band 9-trained human review within 48 hours",
         "Built locally in Gachibowli by MATA Labs",
         "Serves Telangana and Andhra Pradesh students online",

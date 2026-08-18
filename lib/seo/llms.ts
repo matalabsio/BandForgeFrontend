@@ -4,7 +4,6 @@ import {
   HUMAN_REVIEW_SLA,
   OPERATOR_LOCATION,
   OPERATOR_NAME,
-  SPRINT_ACCESS_DAYS,
   SPRINT_MOCK_COUNT,
   SPRINT_PLANS,
   SPRINT_TASK_COUNT,
@@ -45,8 +44,8 @@ export function buildLlmsTxt(): string {
     "- Free IELTS diagnostic with section-wise band scores",
     `- Diagnostic takes ${DIAGNOSTIC_DURATION_MINUTES} minutes`,
     ...sprintPriceLines,
-    `- Sprint access: ${SPRINT_ACCESS_DAYS} days`,
-    `- Tasks per sprint: ${SPRINT_TASK_COUNT}`,
+    "- Program access: personalised plan until your exam date",
+    `- Practice hubs: 48 (12 per skill)`,
     `- Mock unlocked on completion: ${SPRINT_MOCK_COUNT}`,
     `- Evaluation: AI practice plus Band 9-trained human review ${HUMAN_REVIEW_SLA}`,
     "- Completion Guarantee: finish all 12 tasks with no improvement and get a free extension",
@@ -58,7 +57,7 @@ export function buildLlmsTxt(): string {
         title: "BandForge Home",
         path: "/",
         description:
-          "IELTS prep for Telugu and Urdu speakers — free diagnostic and skill sprints from ₹999.",
+          "IELTS prep for Telugu and Urdu speakers — free diagnostic and Full Skill Program (Rs. 2999).",
       },
       {
         title: "Free IELTS Diagnostic",
@@ -70,19 +69,19 @@ export function buildLlmsTxt(): string {
         title: "BandForge Pricing",
         path: "/pricing",
         description:
-          "Writing, Speaking, Dual, and All Skills sprints. Diagnostic always free.",
+          "Full Skill Program — Rs. 2999 one-time. Diagnostic always free.",
       },
       {
         title: "IELTS Writing Sprint",
         path: "/writing",
         description:
-          "90-day Writing sprint with 12 tasks and Band 9 human review within 48 hours. From ₹999.",
+          "Writing practice within the Full Skill Program — AI + Band 9 human review within 48 hours.",
       },
       {
         title: "IELTS Speaking Sprint",
         path: "/speaking",
         description:
-          "90-day Speaking sprint with AI analysis and Band 9 human review within 48 hours. From ₹999.",
+          "Speaking practice within the Full Skill Program — AI analysis and Band 9 human review within 48 hours.",
       },
     ]),
     "",
@@ -105,7 +104,7 @@ export function buildLlmsTxt(): string {
       {
         title: "IELTS Coaching in Hyderabad",
         path: "/hyderabad",
-        description: "Online IELTS prep from Gachibowli, Hyderabad — sprints from ₹999.",
+        description: "Online IELTS prep from Gachibowli, Hyderabad — Full Skill Program Rs. 2999.",
       },
       {
         title: "BandForge FAQ",

@@ -133,7 +133,7 @@ export const BRAND_HOW_STEPS_MOBILE = [
   },
 ] as const;
 
-export type PricingTierId = "single" | "dual" | "all-skills";
+export type PricingTierId = "full-skill-program";
 
 export const BRAND_PRICING_TIERS: {
   id: PricingTierId;
@@ -146,35 +146,15 @@ export const BRAND_PRICING_TIERS: {
   variant: "outline" | "primary";
 }[] = [
   {
-    id: "single",
-    name: "Writing or Speaking",
-    price: "₹999",
-    period: "/ 90 days",
+    id: "full-skill-program",
+    name: "Full Skill Program",
+    price: "Rs. 2999",
+    period: "one-time",
     description:
-      "Pick one skill — 12 tasks, AI practice, Band 9 human review within 48 hours.",
-    cta: "Get Single Skill",
-    variant: "outline",
-  },
-  {
-    id: "dual",
-    name: "Dual",
-    price: "₹1,799",
-    period: "/ 90 days",
-    description:
-      "Writing + Speaking together — 12 tasks each track, AI plus Band 9 review within 48 hours.",
-    cta: "Get Dual",
+      "All four skills — 48 practice hubs, personalised plan until your exam, AI plus Band 9 human review within 48 hours.",
+    cta: "Get Full Skill Program",
     recommended: true,
     variant: "primary",
-  },
-  {
-    id: "all-skills",
-    name: "All Skills",
-    price: "₹2,999",
-    period: "/ 90 days",
-    description:
-      "Listening, Reading, Writing, and Speaking — full prep with AI practice and Band 9 review.",
-    cta: "Get All Skills",
-    variant: "outline",
   },
 ];
 
@@ -298,55 +278,23 @@ export const BRAND_PROFILE_STATS = {
 
 export const BRAND_PLAN_PAGE_TIERS = [
   {
-    id: "single" as const,
-    name: "Writing or Speaking",
-    price: "₹999",
-    period: "/ 90 days",
-    description: "Single-skill sprint — choose Writing or Speaking.",
+    id: "full-skill-program" as const,
+    name: "Full Skill Program",
+    price: "Rs. 2999",
+    period: "one-time",
+    description: "All four IELTS skills — personalised plan until your exam date.",
     features: [
-      "Pick Writing or Speaking",
-      "12 tasks",
-      "AI practice feedback",
-      "Band 9 human review in 48 hrs",
-      "1 mock on completion",
-    ],
-    cta: "Get Single Skill",
-    variant: "outline" as const,
-    recommended: false,
-  },
-  {
-    id: "dual" as const,
-    name: "Dual",
-    price: "₹1,799",
-    period: "/ 90 days",
-    description: "Writing + Speaking dual sprint — both skills, one plan.",
-    features: [
-      "Writing + Speaking tracks",
-      "12 tasks per track",
+      "All four IELTS skills",
+      "48 practice hubs (12 per skill)",
+      "Personalised daily plan",
       "AI + Band 9 review in 48 hrs",
-      "1 mock on completion",
+      "4 mocks on completion",
+      "Free diagnostic included",
     ],
-    cta: "Get Dual",
+    cta: "Get Full Skill Program",
     variant: "primary" as const,
     recommended: true,
     navy: true,
-  },
-  {
-    id: "all-skills" as const,
-    name: "All Skills",
-    price: "₹2,999",
-    period: "/ 90 days",
-    description: "Full four-skill sprint — Listening, Reading, Writing, Speaking.",
-    features: [
-      "All four IELTS skills",
-      "12 structured tasks",
-      "AI + Band 9 review in 48 hrs",
-      "1 mock on completion",
-      "Free diagnostic included",
-    ],
-    cta: "Get All Skills",
-    variant: "outline" as const,
-    recommended: false,
   },
 ];
 

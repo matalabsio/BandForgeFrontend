@@ -8,43 +8,29 @@ type Props = {
   planHref: string;
 };
 
-const DUAL_FEATURES = [
-  "Writing + Speaking",
-  "12 tasks per track",
-  "AI + Band 9 review",
-  "1 mock on completion",
-];
-
-const ALL_SKILLS_FEATURES = [
+const FULL_SKILL_FEATURES = [
   "All four IELTS skills",
-  "12 structured tasks",
-  "AI + Band 9 review",
-  "1 mock on completion",
+  "48 practice hubs (12 per skill)",
+  "Personalised daily plan",
+  "AI + Band 9 review in 48 hrs",
+  "4 mocks on completion",
   "Free diagnostic included",
 ];
 
 export function DiagnosticPlanCompare({ planHref }: Props) {
-  const dual = BRAND_PLAN_PAGE_TIERS.find((t) => t.id === "dual");
-  const allSkills = BRAND_PLAN_PAGE_TIERS.find((t) => t.id === "all-skills");
+  const program = BRAND_PLAN_PAGE_TIERS.find((t) => t.id === "full-skill-program");
 
-  if (!dual || !allSkills) return null;
+  if (!program) return null;
 
   return (
-    <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-4">
+    <div className="mx-auto max-w-md">
       <PlanCard
-        name="Dual"
-        price={dual.price}
-        features={DUAL_FEATURES}
-        href={planHref}
-        variant="outline"
-      />
-      <PlanCard
-        name="All Skills"
-        price={allSkills.price}
-        features={ALL_SKILLS_FEATURES}
+        name={program.name}
+        price={program.price}
+        features={FULL_SKILL_FEATURES}
         href={planHref}
         variant="primary"
-        badge="Most Popular"
+        badge="Recommended"
       />
     </div>
   );

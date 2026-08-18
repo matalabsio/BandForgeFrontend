@@ -9,7 +9,7 @@ export const SITE_DEFAULT_DESCRIPTION = PAGE_SEO_COPY.home.description;
 
 /** Canonical entity blurb for footer and future schema (playbook Section 9.1). */
 export const SITE_ENTITY_DESCRIPTION =
-  "BandForge is an online IELTS preparation platform built for Telugu- and Urdu-speaking students in Telangana and Andhra Pradesh. Free 15-minute diagnostic with section-wise band scores; targeted skill sprints from ₹999 with AI practice and human evaluation. Based in Hyderabad.";
+  "BandForge is an online IELTS preparation platform built for Telugu- and Urdu-speaking students in Telangana and Andhra Pradesh. Free 15-minute diagnostic with section-wise band scores; Full Skill Program (Rs. 2999) with AI practice and human evaluation. Based in Hyderabad.";
 
 export const OG_IMAGE_PATH = "/og-default.png";
 

@@ -100,17 +100,17 @@ export function SeoSprintLandingSections({
 
       <section className="bf-section">
         <div className="bf-container max-w-3xl text-center">
-          <BfSectionHeading as="h2">Need more than one skill?</BfSectionHeading>
+          <BfSectionHeading as="h2">Ready for all four skills?</BfSectionHeading>
           <p className="mt-4 text-base leading-relaxed text-ink/70">
-            Dual Sprint covers Writing + Speaking from ₹1,799. All Skills Sprint covers
-            all four sections from ₹2,999. The diagnostic stays free on every plan.
+            The Full Skill Program covers Listening, Reading, Writing, and Speaking
+            from Rs. 2999. The diagnostic stays free on every plan.
           </p>
           <Link
             href="/pricing"
             prefetch
             className="mt-6 inline-flex cursor-pointer items-center justify-center rounded-full border border-navy/15 bg-white px-6 py-3 text-sm font-semibold text-navy no-underline transition-colors hover:border-teal/40 hover:text-teal"
           >
-            Compare all sprint plans
+            View Full Skill Program pricing
           </Link>
         </div>
       </section>

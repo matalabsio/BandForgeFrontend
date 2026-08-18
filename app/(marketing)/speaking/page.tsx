@@ -17,7 +17,7 @@ export default function SpeakingPage() {
   return (
     <>
       <JsonLd
-        data={sprintPageSchemaGraph("speaking-sprint", {
+        data={sprintPageSchemaGraph("speaking", {
           name: copy.title,
           description: copy.description,
           path: "/speaking",
