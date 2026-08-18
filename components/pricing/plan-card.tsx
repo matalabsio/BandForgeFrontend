@@ -46,16 +46,16 @@ export const PLAN_COPY: Record<string, PlanCardCopy> = {
     cta: "Buy Dual Sprint",
     badge: "Most popular",
   },
-  "all-skills-sprint": {
+  "full_skill_program": {
     tagline: "Listening, Reading, Writing, and Speaking in one focused program.",
     features: [
-      "12 tasks across all four IELTS skills over 90 days",
-      "AI practice plus Band 9 human review within 48 hours",
-      "1 full mock test unlocked on completion",
+      "48 practice hubs (12 per skill)",
+      "Personalised daily plan until your exam date",
+      "4 full mocks (unlock after 12/12 per skill)",
+      "AI + examiner-reviewed Writing & Speaking",
       "Completion Guarantee — extend free if no improvement",
-      "Best value for full-band improvement",
     ],
-    cta: "Buy All Skills Sprint",
+    cta: "Buy Full Skill Program",
     badge: "Best value",
   },
   starter_monthly: {

@@ -6,6 +6,7 @@ import { SeoPrimaryCta } from "@/components/seo/seo-cta-button";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import {
   DIAGNOSTIC_DURATION_MINUTES,
+  FULL_SKILL_PROGRAM,
   HUMAN_REVIEW_SLA,
   formatPriceInr,
 } from "@/lib/seo/claims";
@@ -21,7 +22,7 @@ const comparisonRows: ComparisonRow[] = [
   {
     factor: "Starting cost",
     coaching: "₹15,000–₹40,000+ for classroom bundles",
-    bandforge: `Free diagnostic; sprints from ${formatPriceInr(999)}`,
+    bandforge: `Free diagnostic; Full Skill Program ${formatPriceInr(FULL_SKILL_PROGRAM.priceInr)}`,
   },
   {
     factor: "Feedback speed",
@@ -71,8 +72,8 @@ export function VsCoachingCentresExperience() {
           <div className="mt-3">
             <BfSeoLeadAnswer>
               It depends on your schedule and budget — BandForge suits students
-              who want a free diagnostic first, faster feedback, and sprints from
-              ₹999 without a long classroom commitment.
+              who want a free diagnostic first, faster feedback, and the Full Skill
+              Program at Rs. 2999 without a long classroom commitment.
             </BfSeoLeadAnswer>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-muted sm:text-[0.9375rem]">

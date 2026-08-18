@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RichText } from "@/components/rich-text";
 import type { DiagnosticModule } from "@/lib/diagnostic-storage";
 import { DiagnosticExamTopBar } from "@/components/diagnostic/ui/diagnostic-exam-top-bar";
 import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-module-footer";
@@ -96,9 +97,9 @@ export function DiagnosticExamShell({
 
 export function DiagnosticPassageText({ text }: { text: string }) {
   return (
-    <p className="whitespace-pre-wrap font-sans text-[15px] leading-[1.65] text-[#243650] lg:text-base lg:leading-[1.7]">
-      {text}
-    </p>
+    <div className="font-sans text-[15px] font-normal leading-[1.65] text-[#243650] lg:text-base lg:leading-[1.7]">
+      <RichText text={text} />
+    </div>
   );
 }
 

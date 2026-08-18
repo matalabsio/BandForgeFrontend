@@ -4,7 +4,7 @@
  * Usage: node scripts/verify-seo.mjs [baseUrl]
  */
 
-const BASE = (process.argv[2] ?? process.env.SEO_BASE_URL ?? "https://bandforge-web.vercel.app").replace(/\/$/, "");
+const BASE = (process.argv[2] ?? process.env.SEO_BASE_URL ?? "https://bandforgeuinew.vercel.app").replace(/\/$/, "");
 
 const PATHS = [
   "/",
@@ -35,9 +35,7 @@ const FORBIDDEN = [
 
 const REQUIRED_ON_MARKETING = [
   "15-minute",
-  "₹999",
-  "90 days",
-  "12 tasks",
+  "2999",
   "48 hours",
 ];
 

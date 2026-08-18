@@ -1,6 +1,7 @@
 import { BandForgeFinalCta } from "@/components/bandforge/bf-final-cta";
 import { BandForgeRouteShell } from "@/components/bandforge/bf-route-shell";
 import { SeoSprintLandingSections } from "@/components/bandforge/seo/seo-sprint-sections";
+import { FULL_SKILL_PROGRAM } from "@/lib/seo/claims";
 import {
   PAGE_SEO_COPY,
   SPEAKING_SPRINT_LEAD_ANSWER,
@@ -18,7 +19,7 @@ export function SpeakingSprintExperience() {
     >
       <SeoSprintLandingSections
         skill="Speaking"
-        priceInr={999}
+        priceInr={FULL_SKILL_PROGRAM.priceInr}
         leadQuestion="What is the BandForge Speaking Sprint?"
         leadAnswer={SPEAKING_SPRINT_LEAD_ANSWER}
         skillDetail="You practice Part 1, 2, and 3 style prompts, get structured feedback on fluency and coherence, and build confidence before your real exam — without waiting for a batch schedule."

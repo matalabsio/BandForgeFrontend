@@ -1,6 +1,7 @@
 "use client";
 
 import { parsePassageBlocks } from "@/modules/reading/lib/passage-format";
+import { RichText } from "@/components/rich-text";
 
 type Props = {
   passageText: string;
@@ -21,7 +22,7 @@ export function ReadingPassagePanel({ passageText }: Props) {
                     key={`t-${i}`}
                     className="font-display text-center text-lg font-bold leading-snug text-[var(--reading-ink)] sm:text-xl"
                   >
-                    {block.text}
+                    <RichText text={block.text} />
                   </h2>
                 );
               }
@@ -35,16 +36,16 @@ export function ReadingPassagePanel({ passageText }: Props) {
                       {block.label}
                     </span>
                   ) : null}
-                  <p className="text-[15px] leading-[1.75] text-[var(--reading-ink)]/90">
-                    {block.text}
+                  <p className="text-[15px] font-normal leading-[1.75] text-[var(--reading-ink)]/90">
+                    <RichText text={block.text} />
                   </p>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p className="whitespace-pre-wrap text-[15px] leading-[1.75] text-[var(--reading-ink)]/90">
-            {passageText}
+          <p className="whitespace-pre-wrap text-[15px] font-normal leading-[1.75] text-[var(--reading-ink)]/90">
+            <RichText text={passageText} />
           </p>
         )}
       </div>

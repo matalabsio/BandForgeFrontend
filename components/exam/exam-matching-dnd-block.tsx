@@ -19,6 +19,7 @@ import {
   planExclusiveClear,
 } from "@/modules/shared/lib/exclusive-matching-assign";
 import { cn } from "@/lib/utils";
+import { RichText, richTextToPlain } from "@/components/rich-text";
 
 export type MatchingQuestion = {
   id: string;
@@ -309,7 +310,7 @@ function QuestionSlot({
         )}
       >
         <strong className="mr-1.5 tabular-nums">{num}</strong>
-        {q.prompt}
+        <RichText text={q.prompt} />
       </span>
       <div className="flex w-full min-w-0 items-start gap-2">
         {isEmpty ? (
@@ -321,7 +322,7 @@ function QuestionSlot({
               onTapSlot();
             }}
             onFocus={onFocus}
-            aria-label={`Question ${num}: ${q.prompt}. ${slotPlaceholder}`}
+            aria-label={`Question ${num}: ${richTextToPlain(q.prompt)}. ${slotPlaceholder}`}
             className={cn(
               "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border-2 border-dashed px-3 py-2.5 text-left transition-colors",
               theme.border,

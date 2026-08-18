@@ -21,6 +21,7 @@ import {
   shouldUseReadingInlineBlank,
   splitPromptBlank,
 } from "@/modules/reading/lib/reading-inline-blank";
+import { RichText, richTextToPlain } from "@/components/rich-text";
 type Props = {
   group: QuestionGroup;
   sectionId: QuestionSectionId;
@@ -44,7 +45,7 @@ function ReadingSentenceInline({
   onChange: (v: string) => void;
 }) {
   const num = qDisplay(q);
-  const ariaLabel = `Question ${num}: ${q.prompt}`;
+  const ariaLabel = `Question ${num}: ${richTextToPlain(q.prompt)}`;
   const parts = splitPromptBlank(q.prompt);
   if (parts) {
     return (
@@ -62,7 +63,6 @@ function ReadingSentenceInline({
   }
   const stripped = q.prompt
     .replace(INLINE_BLANK_PATTERN, " ")
-    .replace(/\s+/g, " ")
     .trim();
   return (
     <SentenceInlineBlank
@@ -119,7 +119,7 @@ export function ReadingQuestionSection({
             {group.title}
           </h2>
           <p className="mt-2 text-[13px] leading-relaxed text-[var(--reading-ink-muted)]">
-            {group.instruction}
+            <RichText text={group.instruction} />
           </p>
         </div>
 
@@ -139,12 +139,12 @@ export function ReadingQuestionSection({
                   />
                 ) : (
                   <>
-                    <p className="text-[14px] font-semibold leading-snug text-[var(--reading-ink)]">
+                    <div className="text-[14px] font-normal leading-snug text-[var(--reading-ink)]">
                       <span className="mr-2 inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[var(--reading-bar)] text-[12px] font-bold text-white">
                         {qDisplay(q)}
                       </span>
-                      {q.prompt}
-                    </p>
+                      <RichText text={q.prompt} />
+                    </div>
                     <div className="mt-3">
                       <ReadingQuestionInput
                         q={q}

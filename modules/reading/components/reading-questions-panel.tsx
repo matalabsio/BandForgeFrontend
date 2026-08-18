@@ -8,6 +8,7 @@ import {
 } from "@/modules/reading/lib/question-groups";
 import { ReadingQuestionInput } from "@/modules/reading/components/reading-question-input";
 import { cn } from "@/lib/utils";
+import { RichText } from "@/components/rich-text";
 
 type Props = {
   passage: number;
@@ -147,7 +148,7 @@ export function ReadingQuestionsPanel({
               {group.title}
             </h3>
             <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--reading-ink-muted)]">
-              {group.instruction}
+              <RichText text={group.instruction} />
             </p>
           </div>
         ) : group ? (
@@ -160,12 +161,12 @@ export function ReadingQuestionsPanel({
           key={current.id}
           className="flex min-h-0 flex-1 flex-col rounded-lg border border-[var(--reading-accent)] bg-white p-5 shadow-sm ring-1 ring-[var(--reading-accent)]/15"
         >
-          <p className="text-[14px] font-semibold leading-snug text-[var(--reading-ink)]">
+          <div className="text-[14px] font-normal leading-snug text-[var(--reading-ink)]">
             <span className="mr-2 inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[var(--reading-bar)] text-[12px] font-bold text-white">
               {qDisplay(current)}
             </span>
-            {current.prompt}
-          </p>
+            <RichText text={current.prompt} />
+          </div>
           <div className="mt-4 flex-1">
             <ReadingQuestionInput
               q={current}

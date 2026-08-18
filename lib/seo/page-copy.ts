@@ -29,25 +29,25 @@ export const PAGE_SEO_COPY = {
     h1: "Your real IELTS band, in 15 minutes. Free.",
   },
   writing: {
-    title: "IELTS Writing Sprint — Band 9 Feedback in 48 Hrs | ₹999",
+    title: "IELTS Writing Practice — Band 9 Feedback in 48 Hrs | BandForge",
     description:
-      "12 evaluated Writing tasks over 90 days. Band 9 trainer feedback within 48 hours, Completion Guarantee. ₹999. Free diagnostic finds your leak first.",
+      "Writing practice in the Full Skill Program — 12 hubs per skill, Band 9 trainer feedback within 48 hours. Rs. 2999 for all four skills. Free diagnostic finds your leak first.",
     h1: "The IELTS Writing Sprint — fix the section that's costing you",
     openingCopy:
       "Stuck at Writing 6 while everything else is 7? You don't need another full course — you need the one criterion that's leaking marks, found and fixed. The free diagnostic locates it. The Writing Sprint targets it: 12 structured tasks across every Task 1 and Task 2 format, each evaluated by AI instantly and reviewed by a Band 9-trained evaluator within 48 hours, over 90 days of access, with a full mock test unlocked on completion — and a Completion Guarantee: finish all 12 tasks with no score improvement and your sprint is extended free.",
   },
   speaking: {
-    title: "IELTS Speaking Sprint — AI + Band 9 Review | ₹999",
+    title: "IELTS Speaking Practice — AI + Band 9 Review | BandForge",
     description:
-      "12 recorded Speaking tasks over 90 days — every IELTS part covered. AI + Band 9-trained human review in 48 hrs. Completion Guarantee. ₹999.",
+      "Speaking practice in the Full Skill Program — every IELTS part covered. AI + Band 9-trained human review in 48 hrs. Rs. 2999 for all four skills.",
     h1: "The IELTS Speaking Sprint — real answers, real evaluation",
     openingCopy:
       "Fluent with friends, Band 6 with examiners? The gap is scored criteria — fluency, vocabulary, grammar, pronunciation — not confidence. The Speaking Sprint has you record real answers across Parts 1, 2 and 3: AI transcribes and evaluates instantly; a Band 9-trained specialist reviews within 48 hours and tells you exactly what to change. 12 tasks, 90 days of access, mock test on completion, Completion Guarantee. Built around the errors Telugu and Urdu speakers actually make.",
   },
   pricing: {
-    title: "BandForge Pricing — IELTS Sprints From ₹999",
+    title: "BandForge Pricing — Full Skill Program Rs. 2999",
     description:
-      "Writing ₹999 · Speaking ₹999 · Dual ₹1,799 · All Skills ₹2,999. Free diagnostic first, always. No lock-ins, no coaching-centre fees.",
+      "Full Skill Program — Rs. 2999 one-time. All four IELTS skills, personalised plan until your exam. Free diagnostic first, always. No lock-ins.",
     h1: "Simple pricing. Diagnostic always free.",
   },
   telugu: {
@@ -59,13 +59,13 @@ export const PAGE_SEO_COPY = {
   urdu: {
     title: "IELTS for Urdu Speakers — Hyderabad's Own Platform",
     description:
-      "IELTS prep for Urdu-speaking students in Hyderabad and beyond. UK, Canada, US routes. Free 15-minute diagnostic, sprints from ₹999.",
+      "IELTS prep for Urdu-speaking students in Hyderabad and beyond. UK, Canada, US routes. Free 15-minute diagnostic, Full Skill Program Rs. 2999.",
     h1: "IELTS, built for Urdu speakers.",
   },
   hyderabad: {
     title: "IELTS Coaching in Hyderabad — Online | BandForge",
     description:
-      "Hyderabad-built online IELTS coaching. Skip the Ameerpet queues — free diagnostic, section-wise scores, sprints from ₹999. Gachibowli-based team.",
+      "Hyderabad-built online IELTS coaching. Skip the Ameerpet queues — free diagnostic, section-wise scores, Full Skill Program Rs. 2999. Gachibowli-based team.",
     h1: "IELTS coaching in Hyderabad, without the commute.",
   },
   faq: {
