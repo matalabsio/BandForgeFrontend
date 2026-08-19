@@ -39,6 +39,7 @@ export function ProductionAuthConfigError() {
             </li>
             <li>NEXT_PUBLIC_OAUTH_SITE_URL=https://bandforge-web.vercel.app</li>
             <li>NEXT_PUBLIC_PHONE_OTP_ENABLED=false</li>
+            <li>NEXT_PUBLIC_EMAIL_OTP_ENABLED=false</li>
             <li>ADMIN_ALLOWED_EMAIL=product@matalabs.io</li>
           </ul>
           <p className="mt-3 text-meta text-ink/60">
