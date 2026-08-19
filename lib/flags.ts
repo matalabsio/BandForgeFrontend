@@ -3,6 +3,11 @@ export function isPhoneOtpEnabled(): boolean {
   return process.env.NEXT_PUBLIC_PHONE_OTP_ENABLED === "true";
 }
 
+/** Email OTP (Resend) — off by default until NEXT_PUBLIC_EMAIL_OTP_ENABLED=true */
+export function isEmailOtpEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_EMAIL_OTP_ENABLED === "true";
+}
+
 function isTruthyEnvFlag(value: string | undefined): boolean {
   return value?.trim().toLowerCase() === "true";
 }

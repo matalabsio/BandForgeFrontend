@@ -42,6 +42,18 @@ export const otpSchema = z.object({
     .regex(/^\d+$/, "OTP must be digits only"),
 });
 
+export const emailOtpSendSchema = z.object({
+  email: emailSchema,
+});
+
+export const emailOtpVerifySchema = z.object({
+  email: emailSchema,
+  code: z
+    .string()
+    .length(6, "Enter the 6-digit code")
+    .regex(/^\d+$/, "Code must be digits only"),
+});
+
 export const forgotPasswordSchema = z.object({
   email: emailSchema,
 });
@@ -55,3 +67,4 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type PhoneInput = z.infer<typeof phoneSchema>;
 export type OtpInput = z.infer<typeof otpSchema>;
+export type EmailOtpSendInput = z.infer<typeof emailOtpSendSchema>;

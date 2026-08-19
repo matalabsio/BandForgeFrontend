@@ -139,6 +139,25 @@ export async function verifyOtp(input: {
   return data;
 }
 
+export async function sendEmailOtp(email: string): Promise<MessageResponse> {
+  return authFetch<MessageResponse>("send-email-otp", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function verifyEmailOtp(input: {
+  email: string;
+  code: string;
+}): Promise<AuthResponse> {
+  const data = await authFetch<AuthResponse>("verify-email-otp", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  storeAuthFromResponse(data);
+  return data;
+}
+
 export async function verifyEmail(token: string): Promise<AuthResponse> {
   const data = await authFetch<AuthResponse>("verify-email", {
     method: "POST",

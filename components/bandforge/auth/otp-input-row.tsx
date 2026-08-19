@@ -8,13 +8,15 @@ import {
   type KeyboardEvent,
 } from "react";
 
-const LENGTH = 4;
+const DEFAULT_LENGTH = 4;
 
 type OtpInputRowProps = {
   value: string;
   onChange: (code: string) => void;
   disabled?: boolean;
   idPrefix?: string;
+  /** Number of OTP digits (default 4 for phone). */
+  length?: number;
   /** Increment when the OTP step mounts to autofocus first cell */
   focusToken?: number;
 };
@@ -24,18 +26,19 @@ export function OtpInputRow({
   onChange,
   disabled,
   idPrefix = "otp",
+  length = DEFAULT_LENGTH,
   focusToken = 0,
 }: OtpInputRowProps) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
-  const clean = value.replace(/\D/g, "").slice(0, LENGTH);
+  const clean = value.replace(/\D/g, "").slice(0, length);
 
   const focusAt = useCallback((i: number) => {
     requestAnimationFrame(() => {
-      const el = refs.current[Math.max(0, Math.min(LENGTH - 1, i))];
+      const el = refs.current[Math.max(0, Math.min(length - 1, i))];
       el?.focus();
       el?.select();
     });
-  }, []);
+  }, [length]);
 
   useEffect(() => {
     if (!disabled) focusAt(0);
@@ -43,11 +46,11 @@ export function OtpInputRow({
 
   const applyString = useCallback(
     (raw: string) => {
-      const next = raw.replace(/\D/g, "").slice(0, LENGTH);
+      const next = raw.replace(/\D/g, "").slice(0, length);
       onChange(next);
-      focusAt(Math.min(next.length, LENGTH - 1));
+      focusAt(Math.min(next.length, length - 1));
     },
-    [onChange, focusAt],
+    [onChange, focusAt, length],
   );
 
   const onPaste = useCallback(
@@ -85,7 +88,7 @@ export function OtpInputRow({
       role="group"
       aria-label="One-time password"
     >
-      {Array.from({ length: LENGTH }, (_, i) => (
+      {Array.from({ length }, (_, i) => (
         <input
           key={i}
           id={`${idPrefix}-${i}`}
@@ -100,7 +103,7 @@ export function OtpInputRow({
           disabled={disabled}
           value={clean[i] ?? ""}
           className="h-12 w-10 rounded-xl border border-border bg-white text-center font-mono text-lg font-semibold text-navy shadow-[var(--shadow-soft)] transition-colors duration-200 focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/25 disabled:opacity-50 sm:h-14 sm:w-11 sm:text-xl"
-          aria-label={`Digit ${i + 1} of ${LENGTH}`}
+          aria-label={`Digit ${i + 1} of ${length}`}
           onPaste={i === 0 ? onPaste : undefined}
           onKeyDown={(e) => onKeyDown(i, e)}
           onChange={(e) => {
@@ -111,10 +114,10 @@ export function OtpInputRow({
             }
             const next = (clean.slice(0, i) + d + clean.slice(i + 1)).slice(
               0,
-              LENGTH,
+              length,
             );
             onChange(next);
-            if (i < LENGTH - 1) focusAt(i + 1);
+            if (i < length - 1) focusAt(i + 1);
           }}
         />
       ))}

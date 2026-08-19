@@ -17,7 +17,7 @@ import {
 } from "@/lib/session";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { safePostLoginPath } from "@/lib/post-login-destination";
-import { isPhoneOtpEnabled } from "@/lib/flags";
+import { isEmailOtpEnabled, isPhoneOtpEnabled } from "@/lib/flags";
 
 function hasAuthCookies(): boolean {
   return hasSessionHintCookie();
@@ -170,6 +170,17 @@ function LoginForm() {
             className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
           >
             Sign in with phone
+          </Link>
+        </p>
+      ) : null}
+
+      {isEmailOtpEnabled() ? (
+        <p className="mt-6 text-center text-sm text-[#081B33]/55">
+          <Link
+            href="/verify-email-otp"
+            className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
+          >
+            Sign in with email OTP
           </Link>
         </p>
       ) : null}
