@@ -21,6 +21,7 @@ const AUTH_SESSION_ROUTE_PREFIXES = [
   "/login",
   "/signup",
   "/verify-phone",
+  "/verify-email-otp",
   "/verify-email",
   "/forgot-password",
   "/reset-password",

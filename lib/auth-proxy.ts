@@ -9,7 +9,13 @@ import type { AuthResponse } from "@/lib/auth";
 import { refreshAuthSession } from "@/lib/auth-server";
 import { getApiUrl, isApiUrlConfiguredForVercel, type ApiErrorBody } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/fetch-server";
+import {
+  AUTH_PROXY_SESSION_PATHS,
+  isAuthProxyPath,
+} from "@/lib/auth-proxy-paths";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+
+export { isAuthProxyPath } from "@/lib/auth-proxy-paths";
 
 async function proxyCoalescedRefresh(
   cookieHeader: string,
@@ -30,33 +36,12 @@ async function proxyCoalescedRefresh(
   return res;
 }
 
-const AUTH_PATHS = new Set([
-  "register",
-  "collect-lead",
-  "login",
-  "send-otp",
-  "verify-otp",
-  "verify-email",
-  "refresh",
-  "restore",
-  "logout",
-  "forgot-password",
-  "reset-password",
-  "me",
-  "profile",
-  "profile/avatar",
-]);
-
-function isAuthPath(path: string): boolean {
-  return AUTH_PATHS.has(path);
-}
-
 export async function proxyAuthRequest(
   req: Request,
   pathSegments: string[],
 ): Promise<NextResponse> {
   const path = pathSegments.join("/");
-  if (!isAuthPath(path)) {
+  if (!isAuthProxyPath(path)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -121,13 +106,7 @@ export async function proxyAuthRequest(
 
   applyAuthCookiesToResponse(res, collectSetCookieHeaders(backendRes.headers));
 
-  if (
-    backendRes.ok &&
-    (path === "restore" ||
-      path === "login" ||
-      path === "verify-otp" ||
-      path === "verify-email")
-  ) {
+  if (backendRes.ok && AUTH_PROXY_SESSION_PATHS.has(path)) {
     try {
       const parsed = JSON.parse(body) as AuthResponse;
       applyAuthTokensToResponse(res, parsed);
