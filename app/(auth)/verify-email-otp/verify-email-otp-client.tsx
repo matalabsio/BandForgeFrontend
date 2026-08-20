@@ -14,6 +14,7 @@ import { safePostLoginPath } from "@/lib/post-login-destination";
 
 const EMAIL_OTP_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
+const OTP_COOLDOWN_MESSAGE = /Please wait (\d+)s before requesting another OTP\./;
 
 const AUTH_LINK =
   "cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]";
@@ -57,7 +58,16 @@ function VerifyEmailOtpForm() {
       setStep("otp");
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : "Could not send code.");
+      const message = e instanceof ApiError ? e.message : "Could not send code.";
+      setFormError(message);
+      if (e instanceof ApiError && e.status === 429) {
+        const cooldown = message.match(OTP_COOLDOWN_MESSAGE);
+        if (cooldown) {
+          setEmail(address);
+          setStep("otp");
+          setResendCooldown(Number(cooldown[1]));
+        }
+      }
     } finally {
       setLoading(false);
     }
