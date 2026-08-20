@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
-import { isPhoneOtpEnabled } from "@/lib/flags";
+import { isEmailOtpEnabled, isPhoneOtpEnabled } from "@/lib/flags";
+
+const SIGNUP_NEXT = "/diagnostic";
 
 export default function SignupPage() {
   return (
@@ -11,15 +13,26 @@ export default function SignupPage() {
       title="Create your account"
       subtitle="Start your IELTS preparation."
     >
-      <GoogleSignInButton next="/diagnostic" />
+      <GoogleSignInButton next={SIGNUP_NEXT} />
 
       {isPhoneOtpEnabled() ? (
         <p className="mt-6 text-center text-sm text-[#081B33]/55">
           <Link
-            href="/verify-phone"
+            href={`/verify-phone?next=${encodeURIComponent(SIGNUP_NEXT)}`}
             className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
           >
             Sign up with phone
+          </Link>
+        </p>
+      ) : null}
+
+      {isEmailOtpEnabled() ? (
+        <p className="mt-6 text-center text-sm text-[#081B33]/55">
+          <Link
+            href={`/verify-email-otp?next=${encodeURIComponent(SIGNUP_NEXT)}`}
+            className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
+          >
+            Sign up with email OTP
           </Link>
         </p>
       ) : null}

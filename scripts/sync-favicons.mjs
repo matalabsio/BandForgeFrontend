@@ -1,6 +1,6 @@
 /**
  * Regenerate favicons and PWA icons from the brand logo.
- * Source priority: favi.png → logo.png → Group 103.png → modules/listening/img/logo.png
+ * Source priority: favi.png (transparent meter) → logo.png → Group 103.png → modules/listening/img/logo.png
  * Run: npm run sync:favicons
  */
 import fs from "node:fs";

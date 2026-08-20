@@ -24,7 +24,7 @@ type BandForgeLogoLinkProps = {
   onDark?: boolean;
 };
 
-/** Brand logo — single asset (`logo.png` / Group 103). Links home by default. */
+/** Brand logo — Group 201 wordmark (`logo.png`, transparent). Links home by default. */
 export function BandForgeLogoLink({
   href = "/",
   size = "md",

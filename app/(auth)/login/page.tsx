@@ -166,7 +166,7 @@ function LoginForm() {
       {isPhoneOtpEnabled() ? (
         <p className="mt-6 text-center text-sm text-[#081B33]/55">
           <Link
-            href="/verify-phone"
+            href={`/verify-phone?next=${encodeURIComponent(next)}`}
             className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
           >
             Sign in with phone
@@ -177,7 +177,7 @@ function LoginForm() {
       {isEmailOtpEnabled() ? (
         <p className="mt-6 text-center text-sm text-[#081B33]/55">
           <Link
-            href="/verify-email-otp"
+            href={`/verify-email-otp?next=${encodeURIComponent(next)}`}
             className="cursor-pointer font-semibold text-[#00A9C0] transition-colors duration-200 hover:text-[#00B8D1]"
           >
             Sign in with email OTP
