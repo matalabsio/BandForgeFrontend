@@ -1,4 +1,5 @@
 import { examApiCall } from "@/lib/exam-api-call";
+import { ApiError } from "@/lib/api";
 import type {
   HubCompleteResult,
   MockUnlock,
@@ -99,4 +100,30 @@ export function submitPracticeExercise(
       body: JSON.stringify({ answers }),
     },
   );
+}
+
+export type WritingSkillExamModule = "academic" | "general_training";
+
+export type WritingSkillExamModuleResult = {
+  exam_module: WritingSkillExamModule;
+  usage_id: string;
+  changed: boolean;
+};
+
+export function setWritingSkillExamModule(
+  examModule: WritingSkillExamModule,
+): Promise<WritingSkillExamModuleResult> {
+  return examApiCall<WritingSkillExamModuleResult>(
+    "/api/practice/writing-skill/exam-module",
+    {
+      method: "POST",
+      body: JSON.stringify({ exam_module: examModule }),
+    },
+  );
+}
+
+export function isExamModuleRequiredError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  if (error.status !== 409) return false;
+  return /exam_module/i.test(error.message);
 }

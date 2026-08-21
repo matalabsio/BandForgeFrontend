@@ -10,6 +10,11 @@ import {
   getPaymentHistory,
   getSubscription,
 } from "@/lib/payments";
+import {
+  hasFullSkillProgram,
+  hasWritingSkillPlan,
+  WRITING_PRACTICE_PATH,
+} from "@/lib/entitlement";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -91,6 +96,19 @@ export function BillingClient() {
           <div className="space-y-2.5">
             <Row label="Plan" value={subscription?.plan_name ?? "—"} />
             <Row label="Expires" value={formatDate(subscription?.expires_at ?? null)} />
+            {hasWritingSkillPlan(subscription) && !hasFullSkillProgram(subscription) ? (
+              <>
+                <Row label="Course" value="Writing Skill" />
+                <div className="pt-1">
+                  <Link
+                    href={WRITING_PRACTICE_PATH}
+                    className="text-sm font-semibold text-teal hover:underline"
+                  >
+                    Open Writing Skill course →
+                  </Link>
+                </div>
+              </>
+            ) : null}
             <div className="pt-2">
               <Link
                 href="/pricing"

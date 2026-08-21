@@ -13,6 +13,12 @@ export async function syncDiagnosticLeadAfterAuth(
   const user = await getMe().catch(() => null);
   if (!user || user.role === "guest") return;
 
+  // Never overwrite an existing Writing track with purpose/lead defaults.
+  const shouldWriteExamModule =
+    Boolean(lead.examModule) &&
+    user.exam_module !== "academic" &&
+    user.exam_module !== "general_training";
+
   // Never block checkout / navigation on these writes
   void syncDiagnosticToServer(snapshot, startedAt);
   void updateProfile({
@@ -22,6 +28,9 @@ export async function syncDiagnosticLeadAfterAuth(
     exam_date: lead.examDate,
     ...(lead.purpose ? { ielts_purpose: lead.purpose } : {}),
     ...(lead.goal ? { ielts_goal: lead.goal } : {}),
+    ...(shouldWriteExamModule && lead.examModule
+      ? { exam_module: lead.examModule }
+      : {}),
   }).catch(() => undefined);
 }
 

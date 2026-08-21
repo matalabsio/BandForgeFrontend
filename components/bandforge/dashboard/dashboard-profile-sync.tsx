@@ -9,12 +9,14 @@ import { updateProfile } from "@/lib/profile";
 type Props = {
   ieltsPurpose?: string | null;
   ieltsGoal?: string | null;
+  examModule?: string | null;
 };
 
 /** Re-fetch dashboard server data when profile is saved elsewhere in the app. */
 export function DashboardProfileSync({
   ieltsPurpose = null,
   ieltsGoal = null,
+  examModule = null,
 }: Props) {
   const { refresh } = useRouter();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -39,9 +41,14 @@ export function DashboardProfileSync({
     const lead = readDiagnosticLeadLoose();
     const purpose = lead?.purpose;
     const goal = lead?.goal;
+    const leadModule = lead?.examModule;
     const needsPurpose = !ieltsPurpose && Boolean(purpose);
     const needsGoal = !ieltsGoal && Boolean(goal);
-    if (!needsPurpose && !needsGoal) return;
+    const needsExamModule =
+      examModule !== "academic" &&
+      examModule !== "general_training" &&
+      (leadModule === "academic" || leadModule === "general_training");
+    if (!needsPurpose && !needsGoal && !needsExamModule) return;
 
     const fullName = (lead?.fullName ?? "").trim();
     backfillStarted.current = true;
@@ -51,6 +58,12 @@ export function DashboardProfileSync({
       if (!user || user.role === "guest") return;
       const name = (user.full_name ?? fullName).trim();
       if (!name) return;
+      // Re-check profile module so we never overwrite an existing selection.
+      const profileModule = user.exam_module;
+      const writeModule =
+        profileModule !== "academic" &&
+        profileModule !== "general_training" &&
+        (leadModule === "academic" || leadModule === "general_training");
       await updateProfile({
         full_name: name,
         phone: user.phone ?? lead?.phone ?? null,
@@ -58,10 +71,11 @@ export function DashboardProfileSync({
         exam_date: lead?.examDate ?? null,
         ...(needsPurpose && purpose ? { ielts_purpose: purpose } : {}),
         ...(needsGoal && goal ? { ielts_goal: goal } : {}),
+        ...(writeModule && leadModule ? { exam_module: leadModule } : {}),
       });
       window.dispatchEvent(new CustomEvent("bf-profile-updated"));
     })().catch(() => undefined);
-  }, [ieltsPurpose, ieltsGoal]);
+  }, [ieltsPurpose, ieltsGoal, examModule]);
 
   return null;
 }

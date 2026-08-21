@@ -58,6 +58,17 @@ export const PLAN_COPY: Record<string, PlanCardCopy> = {
     cta: "Buy Full Skill Program",
     badge: "Best value",
   },
+  writing_skill: {
+    tagline: "Master IELTS Writing with a focused Academic or General Training track.",
+    features: [
+      "12 Writing practice hubs (Task 1 + Task 2)",
+      "Hard sequential unlock — finish one set to open the next",
+      "Academic or General Training track (you choose)",
+      "1 full Writing mock after course completion",
+      "180 days access · AI + examiner-style feedback",
+    ],
+    cta: "Buy Writing Skill",
+  },
   starter_monthly: {
     tagline: "Get started with focused mock practice.",
     features: [

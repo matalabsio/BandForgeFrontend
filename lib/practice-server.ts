@@ -27,6 +27,45 @@ export async function fetchPracticeHubs(
   }
 }
 
+/** Status-aware hubs fetch for Writing Skill track gating. */
+export async function fetchPracticeHubsStatus(
+  cookieHeader: string,
+  skill: string,
+): Promise<
+  | { status: "ok"; hubs: PracticeHub[] }
+  | { status: "needs_track" }
+  | { status: "forbidden" }
+  | { status: "error" }
+> {
+  if (!isAuthEnabled() || !cookieHeader.trim()) return { status: "error" };
+  try {
+    const res = await fetchWithTimeout(
+      `${getApiUrl()}/api/practice/hubs?skill=${encodeURIComponent(skill)}`,
+      {
+        headers: serverAuthHeaders(cookieHeader),
+        cache: "no-store",
+        timeoutMs: FETCH_MS,
+      },
+    );
+    if (res.status === 409) {
+      const body = (await res.json().catch(() => null)) as {
+        detail?: string;
+      } | null;
+      const detail =
+        typeof body?.detail === "string"
+          ? body.detail
+          : JSON.stringify(body?.detail ?? "");
+      if (/exam_module/i.test(detail)) return { status: "needs_track" };
+      return { status: "error" };
+    }
+    if (res.status === 403) return { status: "forbidden" };
+    if (!res.ok) return { status: "error" };
+    return { status: "ok", hubs: (await res.json()) as PracticeHub[] };
+  } catch {
+    return { status: "error" };
+  }
+}
+
 export async function fetchMockUnlock(
   cookieHeader: string,
   skill: string,

@@ -1,11 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import { PracticeHubListExperience } from "@/components/bandforge/practice/practice-hub-list-experience";
+import { WritingSkillCourseHome } from "@/components/bandforge/practice/writing-skill-course-home";
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import { fetchEntitlementGate } from "@/lib/entitled-route-server";
 import { EntitledRouteGate } from "@/components/bandforge/dashboard/entitled-route-gate";
 import {
+  hasFullSkillProgram,
+  hasWritingSkillPlan,
+  WRITING_SKILL_ONBOARDING_PATH,
+} from "@/lib/entitlement";
+import {
   fetchMockUnlock,
   fetchPracticeHubs,
+  fetchPracticeHubsStatus,
 } from "@/lib/practice-server";
 import { isUuid } from "@/lib/mock-ids";
 import { isPracticeSkill, practiceSkillLabel } from "@/lib/practice-types";
@@ -51,11 +58,48 @@ export default async function PracticeSkillPage({
   const user = await getCachedServerSession(cookieHeader);
   redirectIfUnauthenticated(user, `/practice/${skill}`, cookieHeader);
 
-  // Phase 4: entitlement gate only — skip full learning profile assemble.
+  // Phase 4/6A: entitlement gate only — skip full learning profile assemble.
   const { profile, subscription } = await fetchEntitlementGate(
     cookieHeader,
     user!.id,
   );
+
+  // Writing Skill pack without track → onboarding (usage.exam_module, not profile).
+  if (
+    skill === "writing" &&
+    hasWritingSkillPlan(subscription) &&
+    !hasFullSkillProgram(subscription)
+  ) {
+    const hubsStatus = await fetchPracticeHubsStatus(cookieHeader, skill);
+    if (hubsStatus.status === "needs_track") {
+      redirect(WRITING_SKILL_ONBOARDING_PATH);
+    }
+    const hubs =
+      hubsStatus.status === "ok" ? hubsStatus.hubs : [];
+    const mockUnlock = await fetchMockUnlock(cookieHeader, skill);
+    const visibleHubs = unlockAllForTesting
+      ? hubs.map((hub) => ({
+          ...hub,
+          accessible: true,
+          locked_reason: null,
+        }))
+      : hubs;
+
+    return (
+      <EntitledRouteGate
+        learning={profile}
+        subscription={subscription}
+        practiceSkill={skill}
+      >
+        <WritingSkillCourseHome
+          hubs={visibleHubs}
+          mockUnlock={mockUnlock}
+          mockLockedMessage={mockLockedMessage}
+          hubLockedMessage={hubLockedMessage}
+        />
+      </EntitledRouteGate>
+    );
+  }
 
   const [hubs, mockUnlock] = await Promise.all([
     fetchPracticeHubs(cookieHeader, skill),
@@ -70,7 +114,11 @@ export default async function PracticeSkillPage({
     : (hubs ?? []);
 
   return (
-    <EntitledRouteGate learning={profile} subscription={subscription}>
+    <EntitledRouteGate
+      learning={profile}
+      subscription={subscription}
+      practiceSkill={skill}
+    >
       <PracticeHubListExperience
         skill={skill}
         hubs={visibleHubs}

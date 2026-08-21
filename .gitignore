@@ -65,6 +65,8 @@ vitest.config.ts.timestamp-*
 # -----------------------------------------------------------------------------
 .env
 .env.*
+.env.local
+.env.*.local
 !.env.example
 !.env.production.example
 !.env*.example
@@ -80,6 +82,11 @@ certificates/
 *.key
 !*.key.example
 !**/fixtures/**/*.pem
+.envrc
+.direnv/
+*.keystore
+google-services.json
+GoogleService-Info.plist
 
 # -----------------------------------------------------------------------------
 # Logs & debug

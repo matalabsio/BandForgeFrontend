@@ -104,7 +104,11 @@ export default async function PracticeExercisePage({
   );
 
   return (
-    <EntitledRouteGate learning={profile} subscription={subscription}>
+    <EntitledRouteGate
+      learning={profile}
+      subscription={subscription}
+      practiceSkill={skill}
+    >
       <PracticeExerciseExperience
         skill={skill}
         hubId={hubId}

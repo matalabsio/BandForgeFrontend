@@ -15,6 +15,17 @@ export function emptySubscription(): Subscription {
     status: null,
     starts_at: null,
     expires_at: null,
+    entitlements: {
+      plans: [],
+      skills: {
+        listening: false,
+        reading: false,
+        writing: false,
+        speaking: false,
+      },
+      writing_skill: false,
+      full_skill_program: false,
+    },
   };
 }
 

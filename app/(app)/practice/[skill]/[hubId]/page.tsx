@@ -90,7 +90,11 @@ export default async function PracticeHubDetailPage({
   if (!hub || hub.skill !== skill) notFound();
 
   return (
-    <EntitledRouteGate learning={profile} subscription={subscription}>
+    <EntitledRouteGate
+      learning={profile}
+      subscription={subscription}
+      practiceSkill={skill}
+    >
       <PracticeHubExperience
         skill={skill}
         hub={hub}

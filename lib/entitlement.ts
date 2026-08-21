@@ -1,17 +1,113 @@
 import type { LearningProfile } from "@/lib/learning-types";
-import type { Subscription } from "@/lib/payments";
+import type { Entitlements, Subscription } from "@/lib/payments";
 import { FULL_SKILL_PROGRAM_SLUG } from "@/lib/plan-preview";
 
+export const WRITING_SKILL_SLUG = "writing_skill";
+
 const SKILL_KEYS = ["listening", "reading", "writing", "speaking"] as const;
+
+export type PracticeAccessKind = "fsp" | "writing_skill" | "none";
+
+export function emptyEntitlements(): Entitlements {
+  return {
+    plans: [],
+    skills: {
+      listening: false,
+      reading: false,
+      writing: false,
+      speaking: false,
+    },
+    writing_skill: false,
+    full_skill_program: false,
+  };
+}
+
+/**
+ * Prefer multi-SKU ``entitlements`` from the API when present.
+ * Falls back to single ``plan_slug`` for older responses / offline mocks.
+ */
+export function resolveEntitlementsFromSubscription(
+  sub: Subscription | null | undefined,
+): Entitlements {
+  if (sub?.entitlements) {
+    return {
+      plans: [...(sub.entitlements.plans ?? [])],
+      skills: {
+        listening: Boolean(sub.entitlements.skills?.listening),
+        reading: Boolean(sub.entitlements.skills?.reading),
+        writing: Boolean(sub.entitlements.skills?.writing),
+        speaking: Boolean(sub.entitlements.skills?.speaking),
+      },
+      writing_skill: Boolean(sub.entitlements.writing_skill),
+      full_skill_program: Boolean(sub.entitlements.full_skill_program),
+    };
+  }
+
+  // Legacy single-row fallback (order-dependent — avoid once entitlements ship).
+  const out = emptyEntitlements();
+  if (!sub?.is_active) return out;
+  const slug = (sub.plan_slug ?? "").toLowerCase();
+  const name = (sub.plan_name ?? "").toLowerCase();
+  if (slug === FULL_SKILL_PROGRAM_SLUG || slug.includes("full_skill") || name.includes("full skill")) {
+    out.plans.push(FULL_SKILL_PROGRAM_SLUG);
+    out.full_skill_program = true;
+    out.skills.listening = true;
+    out.skills.reading = true;
+    out.skills.writing = true;
+    out.skills.speaking = true;
+  }
+  if (slug === WRITING_SKILL_SLUG || name.includes("writing skill")) {
+    if (!out.plans.includes(WRITING_SKILL_SLUG)) out.plans.push(WRITING_SKILL_SLUG);
+    out.writing_skill = true;
+    out.skills.writing = true;
+  }
+  return out;
+}
 
 export function hasFullSkillProgram(
   sub: Subscription | null | undefined,
 ): boolean {
-  if (!sub?.is_active) return false;
-  if (sub.plan_slug === FULL_SKILL_PROGRAM_SLUG) return true;
-  const slug = (sub.plan_slug ?? "").toLowerCase();
-  const name = (sub.plan_name ?? "").toLowerCase();
-  return slug.includes("full_skill") || name.includes("full skill");
+  return resolveEntitlementsFromSubscription(sub).full_skill_program;
+}
+
+/** Active Writing Skill pack SKU (not FSP, not generic premium). */
+export function hasWritingSkillPlan(
+  sub: Subscription | null | undefined,
+): boolean {
+  return resolveEntitlementsFromSubscription(sub).writing_skill;
+}
+
+/**
+ * Writing practice access: FSP or Writing Skill pack.
+ * Does not treat arbitrary active subscriptions as writing access.
+ */
+export function hasWritingAccess(
+  sub: Subscription | null | undefined,
+): boolean {
+  return resolveEntitlementsFromSubscription(sub).skills.writing;
+}
+
+/**
+ * Practice access mode. FSP wins for behavior when both exist;
+ * entitlements still report both flags as true.
+ */
+export function resolvePracticeAccessKind(
+  sub: Subscription | null | undefined,
+): PracticeAccessKind {
+  const ent = resolveEntitlementsFromSubscription(sub);
+  if (ent.full_skill_program) return "fsp";
+  if (ent.writing_skill) return "writing_skill";
+  return "none";
+}
+
+export function canAccessPracticeSkill(
+  sub: Subscription | null | undefined,
+  skill: string,
+): boolean {
+  const kind = resolvePracticeAccessKind(sub);
+  if (kind === "fsp") return true;
+  if (kind === "writing_skill") return skill === "writing";
+  return false;
 }
 
 export function hasModuleSummaryBands(profile: LearningProfile): boolean {
@@ -56,4 +152,36 @@ export function canAccessPersonalizedDashboard(
 ): boolean {
   if (hasFullSkillProgram(subscription)) return true;
   return isDiagnosticComplete(profile);
+}
+
+export const WRITING_SKILL_ONBOARDING_PATH = "/practice/writing/onboarding";
+export const WRITING_PRACTICE_PATH = "/practice/writing";
+
+/**
+ * Where to send the user after checkout unlock succeeds.
+ * FSP → dashboard activating. Writing Skill only → track onboarding.
+ * Dual SKU: FSP-first (dashboard), without losing Writing Skill entitlement flags.
+ */
+export function postCheckoutDestination(
+  sub: Subscription | null | undefined,
+  opts?: { receiptPlanSlug?: string | null },
+): string {
+  if (hasFullSkillProgram(sub)) {
+    return "/dashboard?activating=1";
+  }
+  const receiptSlug = (opts?.receiptPlanSlug ?? "").toLowerCase();
+  if (
+    hasWritingSkillPlan(sub) ||
+    receiptSlug === WRITING_SKILL_SLUG
+  ) {
+    return WRITING_SKILL_ONBOARDING_PATH;
+  }
+  return "/pricing";
+}
+
+/** Subscription is “unlocked” for checkout success (FSP or Writing Skill). */
+export function subscriptionUnlocksAfterCheckout(
+  sub: Subscription | null | undefined,
+): boolean {
+  return hasFullSkillProgram(sub) || hasWritingSkillPlan(sub);
 }

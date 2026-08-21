@@ -97,6 +97,8 @@ export type AuthUser = {
   target_band?: number | null;
   ielts_purpose?: string | null;
   ielts_goal?: string | null;
+  /** FSP Writing track: academic | general_training | null */
+  exam_module?: "academic" | "general_training" | null;
   role?: string;
   is_active?: boolean;
 };
