@@ -26,6 +26,9 @@ export type DiagnosticPurposeId =
   | "professional"
   | "general";
 
+/** FSP Writing track — persisted to users.exam_module after auth. */
+export type DiagnosticExamModule = "academic" | "general_training";
+
 export type DiagnosticLead = {
   fullName: string;
   phone: string;
@@ -38,6 +41,8 @@ export type DiagnosticLead = {
   examDate: string;
   /** Onboarding step 3 — high-level purpose category. */
   purpose?: DiagnosticPurposeId;
+  /** Onboarding — explicit Writing module (Academic vs General Training). */
+  examModule?: DiagnosticExamModule;
   /** Onboarding step 4 — test date flexibility. */
   testDateOption?: DiagnosticTestDateOption;
   /** Onboarding step 5 — native language for tips. */
@@ -167,6 +172,62 @@ export function purposeToGoal(purpose: DiagnosticPurposeId): { goal: DiagnosticG
 
 export function purposeDefaultBand(purpose: DiagnosticPurposeId): number {
   return PURPOSE_TO_BAND[purpose];
+}
+
+/**
+ * Soft Writing-module recommendation from purpose.
+ * Never an irreversible assignment — user may still pick either track.
+ */
+export function recommendExamModule(
+  purpose: DiagnosticPurposeId | string | null | undefined,
+): DiagnosticExamModule | null {
+  if (purpose === "university") return "academic";
+  if (purpose === "immigration") return "general_training";
+  return null;
+}
+
+/** professional / general (and unknown) — show both options with no “correct” hint. */
+export function requiresExplicitExamModuleChoice(
+  purpose: DiagnosticPurposeId | string | null | undefined,
+): boolean {
+  if (purpose === "professional" || purpose === "general") return true;
+  if (!purpose) return true;
+  return recommendExamModule(purpose) === null;
+}
+
+export const EXAM_MODULE_OPTIONS: {
+  id: DiagnosticExamModule;
+  title: string;
+  subtitle: string;
+  task1: string;
+}[] = [
+  {
+    id: "academic",
+    title: "IELTS Academic",
+    subtitle: "For university, college and higher-education applications.",
+    task1: "Writing Task 1: charts, graphs, tables and diagrams.",
+  },
+  {
+    id: "general_training",
+    title: "IELTS General Training",
+    subtitle: "For immigration, work and general training purposes.",
+    task1: "Writing Task 1: letter writing.",
+  },
+];
+
+/** Prefer an existing selection; never invent Academic from a null module. */
+export function resolveExamModuleSelection(opts: {
+  existing?: DiagnosticExamModule | null;
+  purpose?: DiagnosticPurposeId | string | null;
+  draft?: DiagnosticExamModule | null;
+}): DiagnosticExamModule | null {
+  if (opts.existing === "academic" || opts.existing === "general_training") {
+    return opts.existing;
+  }
+  if (opts.draft === "academic" || opts.draft === "general_training") {
+    return opts.draft;
+  }
+  return null;
 }
 
 /** Generate a fallback exam date for non-booked options. */

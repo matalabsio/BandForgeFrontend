@@ -28,6 +28,21 @@ export type CreateOrderResult = {
   checkout_config_id?: string | null;
 };
 
+export type SkillEntitlements = {
+  listening: boolean;
+  reading: boolean;
+  writing: boolean;
+  speaking: boolean;
+};
+
+/** Multi-SKU snapshot from backend resolve_entitlements (via subscription). */
+export type Entitlements = {
+  plans: string[];
+  skills: SkillEntitlements;
+  writing_skill: boolean;
+  full_skill_program: boolean;
+};
+
 export type Subscription = {
   is_active: boolean;
   plan_slug: string | null;
@@ -35,6 +50,8 @@ export type Subscription = {
   status: string | null;
   starts_at: string | null;
   expires_at: string | null;
+  /** Present once backend attaches multi-SKU flags; prefer over plan_slug for access. */
+  entitlements?: Entitlements | null;
 };
 
 export type PaymentHistoryItem = {
@@ -59,6 +76,7 @@ export type CheckoutReceiptContext = {
   payment_id: string;
   signature: string;
   plan_name?: string | null;
+  plan_slug?: string | null;
   amount?: number;
   currency?: string;
 };

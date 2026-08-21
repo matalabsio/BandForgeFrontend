@@ -61,6 +61,10 @@ export type MockUnlock = {
   completed: number;
   required: number;
   mock_test_id: string | null;
+  mocks_granted?: number | null;
+  mocks_used?: number | null;
+  /** Writing Skill pack — from user_program_usage.exam_module */
+  exam_module?: "academic" | "general_training" | null;
 };
 
 export type HubCompleteResult = {

@@ -1,4 +1,5 @@
 import {
+  canAccessPracticeSkill,
   hasFullSkillProgram,
   isDiagnosticComplete,
 } from "@/lib/entitlement";
@@ -15,6 +16,7 @@ type Args = {
   subscription: Subscription;
 };
 
+/** Dashboard / study-plan / multi-skill routes — FSP only. */
 export function resolveEntitledRoute({
   learning,
   subscription,
@@ -24,6 +26,24 @@ export function resolveEntitledRoute({
   }
 
   // Paid users stay on the entitled route even if diagnostic counters lag.
+  return { kind: "ok", profile: learning };
+}
+
+type PracticeArgs = Args & {
+  skill: string;
+};
+
+/**
+ * Practice hub routes: FSP for all skills; Writing Skill pack for writing only.
+ */
+export function resolvePracticeEntitledRoute({
+  learning,
+  subscription,
+  skill,
+}: PracticeArgs): EntitledRouteResult {
+  if (!canAccessPracticeSkill(subscription, skill)) {
+    return { kind: "paywall" };
+  }
   return { kind: "ok", profile: learning };
 }
 

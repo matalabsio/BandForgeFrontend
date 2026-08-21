@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   BookIcon,
   HeadphonesIcon,
@@ -8,6 +9,11 @@ import {
 import { EntitledRouteGate } from "@/components/bandforge/dashboard/entitled-route-gate";
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import { fetchEntitlementGate } from "@/lib/entitled-route-server";
+import {
+  hasFullSkillProgram,
+  hasWritingSkillPlan,
+  WRITING_PRACTICE_PATH,
+} from "@/lib/entitlement";
 import { PRACTICE_SKILLS, practiceSkillLabel } from "@/lib/practice-types";
 import {
   getCachedCookieHeader,
@@ -43,6 +49,14 @@ export default async function PracticeIndexPage() {
     cookieHeader,
     user!.id,
   );
+
+  // Writing Skill-only: course home, not the four-skill practice index.
+  if (
+    hasWritingSkillPlan(subscription) &&
+    !hasFullSkillProgram(subscription)
+  ) {
+    redirect(WRITING_PRACTICE_PATH);
+  }
 
   return (
     <EntitledRouteGate learning={profile} subscription={subscription}>

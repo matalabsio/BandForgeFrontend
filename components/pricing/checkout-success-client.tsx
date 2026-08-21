@@ -7,7 +7,12 @@ import { Download } from "lucide-react";
 import { ApiError } from "@/lib/api";
 import { getMe } from "@/lib/auth";
 import { DASHBOARD_AFTER_CHECKOUT_PATH } from "@/lib/checkout-navigate";
-import { hasFullSkillProgram } from "@/lib/entitlement";
+import {
+  hasFullSkillProgram,
+  hasWritingSkillPlan,
+  postCheckoutDestination,
+  subscriptionUnlocksAfterCheckout,
+} from "@/lib/entitlement";
 import {
   type PaymentHistoryItem,
   type Subscription,
@@ -26,11 +31,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);
   });
-}
-
-/** Same gate as dashboard — Full Skill Program, not merely any active sub. */
-function subscriptionUnlocksDashboard(sub: Subscription | null | undefined): boolean {
-  return hasFullSkillProgram(sub);
 }
 
 function formatDate(iso: string | null): string {
@@ -160,7 +160,7 @@ export function CheckoutSuccessClient() {
 
         // After login redirect mid-verify: re-verify once from pending payload.
         if (
-          !subscriptionUnlocksDashboard(sub) &&
+          !subscriptionUnlocksAfterCheckout(sub) &&
           receiptCtx &&
           !reverifyAttemptedRef.current
         ) {
@@ -187,13 +187,13 @@ export function CheckoutSuccessClient() {
         }
 
         // Webhook / DB lag: poll subscription briefly before showing stuck state.
-        if (!subscriptionUnlocksDashboard(sub) && receiptCtx) {
+        if (!subscriptionUnlocksAfterCheckout(sub) && receiptCtx) {
           for (let i = 0; i < ACTIVATION_POLL_ATTEMPTS; i++) {
             await sleep(ACTIVATION_POLL_MS);
             if (!active) return;
             try {
               sub = await getSubscription();
-              if (subscriptionUnlocksDashboard(sub)) break;
+              if (subscriptionUnlocksAfterCheckout(sub)) break;
             } catch {
               /* keep polling */
             }
@@ -227,13 +227,13 @@ export function CheckoutSuccessClient() {
 
         if (latestPaid) setPayment(latestPaid);
 
-        if (!subscriptionUnlocksDashboard(sub)) {
+        if (!subscriptionUnlocksAfterCheckout(sub)) {
           if (!receiptCtx?.signature) {
             router.replace("/pricing");
             return;
           }
           setLoadError(
-            "Payment received. Unlocking your Full Skill Program…",
+            "Payment received. Unlocking your plan…",
           );
           setLoading(false);
           return;
@@ -356,11 +356,22 @@ export function CheckoutSuccessClient() {
 
       <button
         type="button"
-        onClick={() => router.replace(DASHBOARD_AFTER_CHECKOUT_PATH)}
-        disabled={!subscriptionUnlocksDashboard(subscription)}
+        onClick={() => {
+          const receipt = readCheckoutReceiptContext();
+          router.replace(
+            postCheckoutDestination(subscription, {
+              receiptPlanSlug: receipt?.plan_slug ?? null,
+            }),
+          );
+        }}
+        disabled={!subscriptionUnlocksAfterCheckout(subscription)}
         className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep disabled:opacity-50"
       >
-        Go to dashboard
+        {hasFullSkillProgram(subscription)
+          ? "Go to dashboard"
+          : hasWritingSkillPlan(subscription)
+            ? "Continue to Writing Skill"
+            : "Continue"}
       </button>
 
       <p className="mt-3 font-mono text-[11px] text-muted-light">

@@ -195,6 +195,7 @@ export function PricingClient() {
             payment_id: response.razorpay_payment_id,
             signature: response.razorpay_signature,
             plan_name: order.plan_name,
+            plan_slug: slug,
             amount: order.amount,
             currency: order.currency,
           });
@@ -359,7 +360,13 @@ export function PricingClient() {
               : "Payments are temporarily unavailable. Please try again later."}
           </p>
         ) : (
-          <div className="mx-auto grid max-w-md items-stretch gap-5">
+          <div
+            className={`mx-auto grid items-stretch gap-5 ${
+              displayPlans.length > 1
+                ? "max-w-3xl sm:grid-cols-2"
+                : "max-w-md"
+            }`}
+          >
             {displayPlans.map((plan) => (
               <PlanCard
                 key={plan.id}

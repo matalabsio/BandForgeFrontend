@@ -13,6 +13,8 @@ export type UpdateProfileInput = {
   exam_date?: string | null;
   ielts_purpose?: string | null;
   ielts_goal?: string | null;
+  /** FSP Writing track — omit to leave existing users.exam_module unchanged. */
+  exam_module?: "academic" | "general_training" | null;
 };
 
 export type UpdateProfileResult = {
@@ -54,6 +56,9 @@ export async function updateProfile(
         ? { ielts_purpose: input.ielts_purpose }
         : {}),
       ...(input.ielts_goal !== undefined ? { ielts_goal: input.ielts_goal } : {}),
+      ...(input.exam_module !== undefined && input.exam_module !== null
+        ? { exam_module: input.exam_module }
+        : {}),
     }),
   });
   return {

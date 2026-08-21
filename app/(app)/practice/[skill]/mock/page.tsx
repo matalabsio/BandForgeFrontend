@@ -1,8 +1,19 @@
 import { notFound, redirect } from "next/navigation";
 import { DashboardPlanPaywall } from "@/components/bandforge/dashboard/dashboard-plan-paywall";
+import { WritingSkillMockLaunch } from "@/components/bandforge/practice/writing-skill-mock-launch";
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
-import { fetchEntitledContext } from "@/lib/entitled-route-server";
-import { resolveEntitledRoute } from "@/lib/entitled-route";
+import {
+  fetchEntitledContext,
+  fetchEntitlementGate,
+} from "@/lib/entitled-route-server";
+import {
+  resolveEntitledRoute,
+  resolvePracticeEntitledRoute,
+} from "@/lib/entitled-route";
+import {
+  hasFullSkillProgram,
+  hasWritingSkillPlan,
+} from "@/lib/entitlement";
 import { shortModuleExamPath } from "@/lib/mock-catalog";
 import { appendSkillContext } from "@/lib/practice-submit";
 import { fetchMockUnlock } from "@/lib/practice-server";
@@ -40,12 +51,38 @@ export default async function PracticeSkillMockPage({ params }: PageProps) {
   const user = await getCachedServerSession(cookieHeader);
   redirectIfUnauthenticated(user, `/practice/${skill}/mock`, cookieHeader);
 
-  const { profile, subscription } = await fetchEntitledContext(
+  const { profile, subscription } = await fetchEntitlementGate(
     cookieHeader,
     user!.id,
   );
 
-  const entitled = resolveEntitledRoute({ learning: profile, subscription });
+  // Writing Skill-only: practice gate + allotted mock (never generic premium mock).
+  if (
+    skill === "writing" &&
+    hasWritingSkillPlan(subscription) &&
+    !hasFullSkillProgram(subscription)
+  ) {
+    const entitled = resolvePracticeEntitledRoute({
+      learning: profile,
+      subscription,
+      skill: "writing",
+    });
+    if (entitled.kind === "redirect") redirect(entitled.path);
+    if (entitled.kind === "paywall") return <DashboardPlanPaywall />;
+
+    const mockUnlock = await fetchMockUnlock(cookieHeader, skill);
+    if (!mockUnlock?.unlocked || !mockUnlock.mock_test_id) {
+      redirect("/practice/writing?mock=locked");
+    }
+    return <WritingSkillMockLaunch mockTestId={mockUnlock.mock_test_id} />;
+  }
+
+  // FSP (and dual-SKU FSP-first): existing mock shortcut.
+  const entitledCtx = await fetchEntitledContext(cookieHeader, user!.id);
+  const entitled = resolveEntitledRoute({
+    learning: entitledCtx.profile,
+    subscription: entitledCtx.subscription,
+  });
   if (entitled.kind === "redirect") {
     redirect(entitled.path);
   }
