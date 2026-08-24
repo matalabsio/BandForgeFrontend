@@ -25,7 +25,7 @@ import {
   readDiagnosticResults,
   type DiagnosticResultsSnapshot,
 } from "@/lib/diagnostic-session";
-import { shouldResumeDiagnosticCheckout } from "@/lib/checkout-resume";
+import { shouldResumeDiagnosticCheckout, ensureDiagnosticCheckoutQueryIfPending } from "@/lib/checkout-resume";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 
 function aggregatePartialBand(snapshot: DiagnosticResultsSnapshot): number {
@@ -155,6 +155,7 @@ export function DiagnosticResultsExperience() {
   );
 
   useEffect(() => {
+    ensureDiagnosticCheckoutQueryIfPending();
     if (shouldResumeDiagnosticCheckout()) {
       setCheckoutResumeGate(true);
     }
