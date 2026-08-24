@@ -8,6 +8,14 @@ export function isEmailOtpEnabled(): boolean {
   return process.env.NEXT_PUBLIC_EMAIL_OTP_ENABLED === "true";
 }
 
+/**
+ * Diagnostic results multi-SKU offer UI.
+ * Off by default until NEXT_PUBLIC_DIAGNOSTIC_MULTI_SKU_RECOMMEND=true.
+ */
+export function isDiagnosticMultiSkuRecommendEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_DIAGNOSTIC_MULTI_SKU_RECOMMEND === "true";
+}
+
 function isTruthyEnvFlag(value: string | undefined): boolean {
   return value?.trim().toLowerCase() === "true";
 }

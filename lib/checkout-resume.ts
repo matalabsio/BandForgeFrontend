@@ -1,4 +1,8 @@
-import { FULL_SKILL_PROGRAM_SLUG } from "@/lib/diagnostic-plan-content";
+import {
+  FULL_SKILL_PROGRAM_SLUG,
+  type RecommendableSlug,
+} from "@/lib/diagnostic-plan-content";
+import { normalizeDiagnosticCheckoutSlug } from "@/lib/diagnostic-checkout";
 
 const PENDING_CHECKOUT_KEY = "bf_pending_checkout";
 const OPENING_LOCK_KEY = "bf_checkout_opening";
@@ -8,16 +12,35 @@ const OPENING_LOCK_TTL_MS = 20_000;
 export const DIAGNOSTIC_CHECKOUT_RETURN_PATH = "/diagnostic/results?checkout=1";
 
 export type PendingCheckoutResume = {
-  planSlug: string;
+  planSlug: RecommendableSlug;
   returnTo: string;
 };
+
+function sanitizePendingCheckoutResume(
+  raw: unknown,
+): PendingCheckoutResume | null {
+  if (!raw || typeof raw !== "object") return null;
+  const parsed = raw as Partial<PendingCheckoutResume>;
+  if (!parsed.returnTo || typeof parsed.returnTo !== "string") return null;
+  if (
+    !parsed.returnTo.startsWith("/") ||
+    parsed.returnTo.startsWith("//")
+  ) {
+    return null;
+  }
+  const planSlug =
+    normalizeDiagnosticCheckoutSlug(parsed.planSlug) ?? FULL_SKILL_PROGRAM_SLUG;
+  return { planSlug, returnTo: parsed.returnTo };
+}
 
 export function setPendingCheckoutResume(
   input: Partial<PendingCheckoutResume> = {},
 ): void {
   if (typeof window === "undefined") return;
   const payload: PendingCheckoutResume = {
-    planSlug: input.planSlug ?? FULL_SKILL_PROGRAM_SLUG,
+    planSlug:
+      normalizeDiagnosticCheckoutSlug(input.planSlug) ??
+      FULL_SKILL_PROGRAM_SLUG,
     returnTo: input.returnTo ?? DIAGNOSTIC_CHECKOUT_RETURN_PATH,
   };
   try {
@@ -33,12 +56,7 @@ export function peekPendingCheckoutResume(): PendingCheckoutResume | null {
   try {
     const raw = sessionStorage.getItem(PENDING_CHECKOUT_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as PendingCheckoutResume;
-    if (!parsed?.planSlug || !parsed?.returnTo) return null;
-    if (!parsed.returnTo.startsWith("/") || parsed.returnTo.startsWith("//")) {
-      return null;
-    }
-    return parsed;
+    return sanitizePendingCheckoutResume(JSON.parse(raw));
   } catch {
     return null;
   }

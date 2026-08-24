@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DiagnosticBandGapCard } from "@/components/diagnostic/ui/diagnostic-band-gap-card";
+import { DiagnosticMultiSkuOffer } from "@/components/diagnostic/ui/diagnostic-multi-sku-offer";
 import { DiagnosticPlanBundleCard } from "@/components/diagnostic/ui/diagnostic-plan-bundle-card";
 import { DiagnosticPersonalizedBlurLock } from "@/components/diagnostic/ui/diagnostic-personalized-blur-lock";
 import { DiagnosticPlanTeaserContent } from "@/components/diagnostic/ui/diagnostic-plan-teaser-content";
@@ -27,6 +28,12 @@ import {
 } from "@/lib/diagnostic-plan-content";
 import type { SkillBands } from "@/lib/diagnostic-performance";
 import type { DiagnosticResultsSnapshot } from "@/lib/diagnostic-session";
+import {
+  buildMultiSkuOfferView,
+  type ActivePlanAmount,
+} from "@/lib/diagnostic-sku-offer";
+import { recommendSkuFromDiagnostic } from "@/lib/diagnostic-sku-recommend";
+import { isDiagnosticMultiSkuRecommendEnabled } from "@/lib/flags";
 import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
 import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
@@ -35,8 +42,20 @@ import {
   shouldSkipPaidBootstrapRedirectNow,
 } from "@/lib/checkout-navigate-client";
 import {
+  assertPlanSlugPurchasable,
+  CheckoutPlanNotPurchasableError,
+  destinationForEntitledPlanSlug,
+  logDiagnosticSkuCheckoutClick,
+  logDiagnosticSkuPurchased,
+  logDiagnosticSkuRecommended,
+  resolveDiagnosticCheckoutSlug,
+  userAlreadyEntitledToPlanSlug,
+  type DiagnosticCheckoutSlug,
+} from "@/lib/diagnostic-checkout";
+import {
   DIAGNOSTIC_CHECKOUT_RETURN_PATH,
   clearPendingCheckoutResume,
+  consumePendingCheckoutResume,
   releaseCheckoutOpeningLock,
   setPendingCheckoutResume,
   shouldResumeDiagnosticCheckout,
@@ -97,6 +116,8 @@ export function DiagnosticPlanCheckoutSection({
   const [hasSubscription, setHasSubscription] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planPrice, setPlanPrice] = useState("—");
+  const [activePlans, setActivePlans] = useState<ActivePlanAmount[]>([]);
+  const multiSkuEnabled = isDiagnosticMultiSkuRecommendEnabled();
   // Start null/false so SSR matches hydration; resume effect sets these after mount.
   const [overlay, setOverlay] = useState<OverlayState>(null);
   const [statusModal, setStatusModal] = useState<StatusModal>(null);
@@ -107,18 +128,32 @@ export function DiagnosticPlanCheckoutSection({
   const checkoutInFlightRef = useRef(false);
   const autoCheckoutStartedRef = useRef(false);
   const razorpayOpenRef = useRef(false);
+  const activePlansRef = useRef<ActivePlanAmount[]>([]);
+  const selectedCheckoutSlugRef = useRef<DiagnosticCheckoutSlug>(
+    FULL_SKILL_PROGRAM_SLUG,
+  );
+  const recommendedLoggedRef = useRef(false);
+
+  useEffect(() => {
+    activePlansRef.current = activePlans;
+  }, [activePlans]);
 
   const redirectToLoginForCheckout = useCallback(
-    (sessionExpired = false) => {
+    (sessionExpired = false, planSlug?: string) => {
+      const slug = resolveDiagnosticCheckoutSlug({
+        requestedSlug: planSlug ?? selectedCheckoutSlugRef.current,
+        multiSkuEnabled,
+      });
+      selectedCheckoutSlugRef.current = slug;
       setPendingCheckoutResume({
-        planSlug: FULL_SKILL_PROGRAM_SLUG,
+        planSlug: slug,
         returnTo: DIAGNOSTIC_CHECKOUT_RETURN_PATH,
       });
       router.push(
         loginPathWithNext(DIAGNOSTIC_CHECKOUT_RETURN_PATH, sessionExpired),
       );
     },
-    [router],
+    [multiSkuEnabled, router],
   );
 
   const forceLockThenRefresh = useCallback(() => {
@@ -155,6 +190,24 @@ export function DiagnosticPlanCheckoutSection({
     return buildPlanPreview({ bands: skillBands, target: targetBand, examDate });
   }, [skillBands, targetBand, examDate]);
 
+  const skuRecommendation = useMemo(
+    () =>
+      recommendSkuFromDiagnostic({
+        bands: skillBands,
+        targetBand,
+      }),
+    [skillBands, targetBand],
+  );
+
+  const multiSkuOffer = useMemo(() => {
+    if (!multiSkuEnabled) return null;
+    return buildMultiSkuOfferView({
+      recommendation: skuRecommendation,
+      bands: skillBands,
+      activePlans,
+    });
+  }, [multiSkuEnabled, skuRecommendation, skillBands, activePlans]);
+
   useEffect(() => {
     const currentLead = readDiagnosticLead();
     let cancelled = false;
@@ -169,6 +222,9 @@ export function DiagnosticPlanCheckoutSection({
         if (cancelled) return;
 
         if (plansRes) {
+          setActivePlans(
+            plansRes.plans.map((p) => ({ slug: p.slug, amount: p.amount })),
+          );
           const program = plansRes.plans.find(
             (p) => p.slug === FULL_SKILL_PROGRAM_SLUG,
           );
@@ -205,124 +261,6 @@ export function DiagnosticPlanCheckoutSection({
     };
   }, [router, snapshot]);
 
-  const handleCheckout = useCallback(async () => {
-    if (checkoutInFlightRef.current || checkoutBusy || hasSubscription) return;
-    checkoutInFlightRef.current = true;
-    setCheckoutBusy(true);
-    setOverlay("creating");
-
-    const clearBusy = () => {
-      checkoutInFlightRef.current = false;
-      setCheckoutBusy(false);
-      releaseCheckoutOpeningLock();
-    };
-
-    try {
-      const session = await ensureSession();
-      const user = session ? await getMe().catch(() => null) : null;
-      if (!session || !isFullAccountUser(user?.role)) {
-        setOverlay(null);
-        clearBusy();
-        redirectToLoginForCheckout();
-        return;
-      }
-
-      const currentLead = readDiagnosticLead();
-      if (currentLead) {
-        void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
-      }
-
-      const order = await createOrder(FULL_SKILL_PROGRAM_SLUG);
-      const opened = await openRazorpayCheckout({
-        order,
-        onSuccess: async (response) => {
-          saveCheckoutReceiptContext({
-            order_id: response.razorpay_order_id,
-            payment_id: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-            plan_name: order.plan_name,
-            amount: order.amount,
-            currency: order.currency,
-          });
-          setOverlay("verifying");
-          try {
-            paymentTraceLog("CHECKOUT_SUCCESS", {
-              order: response.razorpay_order_id,
-              payment: response.razorpay_payment_id,
-            });
-            await verifyPayment(response);
-            razorpayOpenRef.current = false;
-            navigateAfterCheckoutVerify({ router, verifyOk: true });
-          } catch (e) {
-            razorpayOpenRef.current = false;
-            setOverlay(null);
-            setHasSubscription(false);
-            if (e instanceof ApiError && e.status === 401) {
-              router.push(loginPathWithNext("/checkout/success"));
-            } else if (
-              navigateAfterCheckoutVerify({
-                router,
-                verifyOk: false,
-                hasReceipt: true,
-              })
-            ) {
-              return;
-            } else {
-              setPaymentFailureMessage(
-                e instanceof ApiError ? e.message : "Could not verify payment.",
-              );
-              setStatusModal("verify_failed");
-            }
-          } finally {
-            clearBusy();
-          }
-        },
-        onDismiss: () => {
-          razorpayOpenRef.current = false;
-          setOverlay(null);
-          clearBusy();
-          forceLockThenRefresh();
-          setStatusModal("cancelled");
-        },
-        onFailed: (message) => {
-          razorpayOpenRef.current = false;
-          setOverlay(null);
-          clearBusy();
-          forceLockThenRefresh();
-          setPaymentFailureMessage(razorpayPaymentFailureDetail(message));
-          setStatusModal("payment_failed");
-        },
-      });
-
-      if (opened) {
-        razorpayOpenRef.current = true;
-        // Razorpay modal owns the UI — drop our loader so it does not stack underneath.
-        setOverlay(null);
-      } else {
-        setOverlay(null);
-        clearBusy();
-        setStatusModal("checkout_unavailable");
-      }
-    } catch (e) {
-      setOverlay(null);
-      clearBusy();
-      if (e instanceof ApiError && e.status === 401) {
-        redirectToLoginForCheckout(true);
-      } else if (e instanceof ApiError && e.status === 503) {
-        setStatusModal("payments_disabled");
-      } else {
-        setStatusModal("verify_failed");
-      }
-    }
-  }, [
-    checkoutBusy,
-    forceLockThenRefresh,
-    hasSubscription,
-    redirectToLoginForCheckout,
-    router,
-    snapshot,
-  ]);
-
   const settleResumeGate = useCallback(() => {
     onResumeSettled?.();
     try {
@@ -331,6 +269,220 @@ export function DiagnosticPlanCheckoutSection({
       /* ignore */
     }
   }, [onResumeSettled]);
+
+  useEffect(() => {
+    if (!multiSkuEnabled || !multiSkuOffer || recommendedLoggedRef.current) return;
+    recommendedLoggedRef.current = true;
+    logDiagnosticSkuRecommended({
+      primary: skuRecommendation.primary,
+      weakSkills: skuRecommendation.weakSkills,
+      targetBand,
+      bands: skillBands,
+    });
+  }, [multiSkuEnabled, multiSkuOffer, skuRecommendation, skillBands, targetBand]);
+
+  const executeCheckout = useCallback(
+    async (opts: {
+      requestedSlug?: string | null;
+      pendingResumeSlug?: string | null;
+      wasPrimary?: boolean;
+      resumeMode?: boolean;
+    }) => {
+      if (checkoutInFlightRef.current || checkoutBusy || hasSubscription) {
+        if (opts.resumeMode) {
+          releaseCheckoutOpeningLock();
+          settleResumeGate();
+        }
+        return;
+      }
+
+      const checkoutSlug = resolveDiagnosticCheckoutSlug({
+        requestedSlug: opts.requestedSlug,
+        pendingResumeSlug: opts.pendingResumeSlug,
+        multiSkuEnabled,
+      });
+      selectedCheckoutSlugRef.current = checkoutSlug;
+
+      try {
+        assertPlanSlugPurchasable(checkoutSlug, activePlansRef.current);
+      } catch (e) {
+        if (e instanceof CheckoutPlanNotPurchasableError) {
+          setPaymentFailureMessage(e.message);
+          setStatusModal("verify_failed");
+          if (opts.resumeMode) {
+            releaseCheckoutOpeningLock();
+            settleResumeGate();
+          }
+          return;
+        }
+        throw e;
+      }
+
+      if (multiSkuEnabled) {
+        logDiagnosticSkuCheckoutClick({
+          slug: checkoutSlug,
+          wasPrimary: opts.wasPrimary ?? false,
+        });
+      }
+
+      checkoutInFlightRef.current = true;
+      setCheckoutBusy(true);
+      setOverlay("creating");
+
+      const clearBusy = () => {
+        checkoutInFlightRef.current = false;
+        setCheckoutBusy(false);
+        releaseCheckoutOpeningLock();
+      };
+
+      try {
+        const session = await ensureSession();
+        const user = session ? await getMe().catch(() => null) : null;
+        if (!session || !isFullAccountUser(user?.role)) {
+          setOverlay(null);
+          clearBusy();
+          redirectToLoginForCheckout(false, checkoutSlug);
+          return;
+        }
+
+        const currentLead = readDiagnosticLead();
+        if (currentLead) {
+          void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
+        }
+
+        const existingSub = await getSubscription().catch(() => null);
+        if (userAlreadyEntitledToPlanSlug(existingSub, checkoutSlug)) {
+          setOverlay(null);
+          clearBusy();
+          clearPendingCheckoutResume();
+          router.replace(destinationForEntitledPlanSlug(checkoutSlug));
+          if (opts.resumeMode) settleResumeGate();
+          return;
+        }
+
+        const order = await createOrder(checkoutSlug);
+        const opened = await openRazorpayCheckout({
+          order,
+          onSuccess: async (response) => {
+            saveCheckoutReceiptContext({
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+              plan_name: order.plan_name,
+              plan_slug: checkoutSlug,
+              amount: order.amount,
+              currency: order.currency,
+            });
+            setOverlay("verifying");
+            try {
+              paymentTraceLog("CHECKOUT_SUCCESS", {
+                order: response.razorpay_order_id,
+                payment: response.razorpay_payment_id,
+                plan_slug: checkoutSlug,
+              });
+              await verifyPayment(response);
+              logDiagnosticSkuPurchased(checkoutSlug);
+              razorpayOpenRef.current = false;
+              navigateAfterCheckoutVerify({ router, verifyOk: true });
+            } catch (e) {
+              razorpayOpenRef.current = false;
+              setOverlay(null);
+              setHasSubscription(false);
+              if (e instanceof ApiError && e.status === 401) {
+                router.push(loginPathWithNext("/checkout/success"));
+              } else if (
+                navigateAfterCheckoutVerify({
+                  router,
+                  verifyOk: false,
+                  hasReceipt: true,
+                })
+              ) {
+                return;
+              } else {
+                setPaymentFailureMessage(
+                  e instanceof ApiError ? e.message : "Could not verify payment.",
+                );
+                setStatusModal("verify_failed");
+                if (opts.resumeMode) settleResumeGate();
+              }
+            } finally {
+              clearBusy();
+            }
+          },
+          onDismiss: () => {
+            razorpayOpenRef.current = false;
+            setOverlay(null);
+            clearBusy();
+            forceLockThenRefresh();
+            if (opts.resumeMode) {
+              settleResumeGate();
+            } else {
+              setStatusModal("cancelled");
+            }
+          },
+          onFailed: (message) => {
+            razorpayOpenRef.current = false;
+            setOverlay(null);
+            clearBusy();
+            forceLockThenRefresh();
+            setPaymentFailureMessage(razorpayPaymentFailureDetail(message));
+            setStatusModal("payment_failed");
+          },
+        });
+
+        if (opened) {
+          razorpayOpenRef.current = true;
+          setOverlay(null);
+        } else {
+          setOverlay(null);
+          clearBusy();
+          if (opts.resumeMode) {
+            settleResumeGate();
+          } else {
+            setStatusModal("checkout_unavailable");
+          }
+        }
+      } catch (e) {
+        setOverlay(null);
+        clearBusy();
+        if (e instanceof ApiError && e.status === 401) {
+          redirectToLoginForCheckout(true, checkoutSlug);
+          if (opts.resumeMode) settleResumeGate();
+        } else if (e instanceof ApiError && e.status === 503) {
+          if (opts.resumeMode) {
+            settleResumeGate();
+          } else {
+            setStatusModal("payments_disabled");
+          }
+        } else if (e instanceof CheckoutPlanNotPurchasableError) {
+          setPaymentFailureMessage(e.message);
+          setStatusModal("verify_failed");
+          if (opts.resumeMode) settleResumeGate();
+        } else if (opts.resumeMode) {
+          settleResumeGate();
+        } else {
+          setStatusModal("verify_failed");
+        }
+      }
+    },
+    [
+      checkoutBusy,
+      forceLockThenRefresh,
+      hasSubscription,
+      multiSkuEnabled,
+      redirectToLoginForCheckout,
+      router,
+      snapshot,
+      settleResumeGate,
+    ],
+  );
+
+  const handleCheckout = useCallback(
+    (planSlug?: string, wasPrimary = false) => {
+      void executeCheckout({ requestedSlug: planSlug, wasPrimary });
+    },
+    [executeCheckout],
+  );
 
   useEffect(() => {
     if (diagnosticCheckoutResumeClaimed || autoCheckoutStartedRef.current) {
@@ -364,165 +516,13 @@ export function DiagnosticPlanCheckoutSection({
 
     diagnosticCheckoutResumeClaimed = true;
     autoCheckoutStartedRef.current = true;
-    clearPendingCheckoutResume();
+    const pending = consumePendingCheckoutResume();
 
-    setOverlay("creating");
-    setCheckoutBusy(true);
-    checkoutInFlightRef.current = true;
-
-    void (async () => {
-      const clearBusy = () => {
-        checkoutInFlightRef.current = false;
-        setCheckoutBusy(false);
-        releaseCheckoutOpeningLock();
-      };
-
-      try {
-        const session = await ensureSession();
-        const user = session ? await getMe().catch(() => null) : null;
-
-        if (!session || !isFullAccountUser(user?.role)) {
-          setOverlay(null);
-          clearBusy();
-          settleResumeGate();
-          redirectToLoginForCheckout();
-          return;
-        }
-
-        setIsLoggedIn(true);
-
-        const currentLead = readDiagnosticLead();
-        if (currentLead) {
-          void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
-        }
-
-        const existingSub = await getSubscription().catch(() => null);
-        if (hasFullSkillProgram(existingSub)) {
-          setHasSubscription(true);
-          clearBusy();
-          clearPendingCheckoutResume();
-          releaseCheckoutOpeningLock();
-          if (shouldSkipPaidBootstrapRedirectNow()) {
-            navigateAfterCheckoutVerify({
-              router,
-              verifyOk: true,
-              hasReceipt: true,
-            });
-            return;
-          }
-          router.replace("/dashboard");
-          return;
-        }
-
-        const order = await createOrder(FULL_SKILL_PROGRAM_SLUG);
-
-        const opened = await openRazorpayCheckout({
-          order,
-          onSuccess: async (response) => {
-            saveCheckoutReceiptContext({
-              order_id: response.razorpay_order_id,
-              payment_id: response.razorpay_payment_id,
-              signature: response.razorpay_signature,
-              plan_name: order.plan_name,
-              amount: order.amount,
-              currency: order.currency,
-            });
-            setOverlay("verifying");
-            try {
-              paymentTraceLog("CHECKOUT_SUCCESS", {
-                order: response.razorpay_order_id,
-                payment: response.razorpay_payment_id,
-              });
-              await verifyPayment(response);
-              razorpayOpenRef.current = false;
-              navigateAfterCheckoutVerify({ router, verifyOk: true });
-            } catch (e) {
-              razorpayOpenRef.current = false;
-              setOverlay(null);
-              setHasSubscription(false);
-              if (e instanceof ApiError && e.status === 401) {
-                router.push(loginPathWithNext("/checkout/success"));
-              } else if (
-                navigateAfterCheckoutVerify({
-                  router,
-                  verifyOk: false,
-                  hasReceipt: true,
-                })
-              ) {
-                return;
-              } else {
-                setPaymentFailureMessage(
-                  e instanceof ApiError ? e.message : "Could not verify payment.",
-                );
-                setStatusModal("verify_failed");
-                settleResumeGate();
-              }
-            } finally {
-              clearBusy();
-            }
-          },
-          onDismiss: () => {
-            razorpayOpenRef.current = false;
-            setOverlay(null);
-            clearBusy();
-            forceLockThenRefresh();
-            if (resumeGate) {
-              settleResumeGate();
-            } else {
-              setStatusModal("cancelled");
-            }
-          },
-          onFailed: (message) => {
-            razorpayOpenRef.current = false;
-            setOverlay(null);
-            clearBusy();
-            forceLockThenRefresh();
-            setPaymentFailureMessage(razorpayPaymentFailureDetail(message));
-            setStatusModal("payment_failed");
-            // Keep resumeGate until retry succeeds or the user closes the modal.
-          },
-        });
-
-        if (opened) {
-          razorpayOpenRef.current = true;
-          // Razorpay modal owns the UI — do not re-show the creating overlay.
-          setOverlay(null);
-        } else {
-          setOverlay(null);
-          clearBusy();
-          if (resumeGate) {
-            settleResumeGate();
-          } else {
-            setStatusModal("checkout_unavailable");
-          }
-        }
-      } catch (e) {
-        setOverlay(null);
-        clearBusy();
-        if (e instanceof ApiError && e.status === 401) {
-          settleResumeGate();
-          redirectToLoginForCheckout(true);
-        } else if (e instanceof ApiError && e.status === 503) {
-          if (resumeGate) {
-            settleResumeGate();
-          } else {
-            setStatusModal("payments_disabled");
-          }
-        } else if (resumeGate) {
-          settleResumeGate();
-        } else {
-          setStatusModal("verify_failed");
-        }
-      }
-    })();
-  }, [
-    forceLockThenRefresh,
-    redirectToLoginForCheckout,
-    resumeGate,
-    router,
-    settleResumeGate,
-    snapshot,
-  ]);
+    void executeCheckout({
+      pendingResumeSlug: pending?.planSlug,
+      resumeMode: true,
+    });
+  }, [executeCheckout, resumeGate, settleResumeGate]);
 
   const handleVerifyRetry = useCallback(async () => {
     const pending = readCheckoutReceiptContext();
@@ -589,7 +589,7 @@ export function DiagnosticPlanCheckoutSection({
             if (statusModal === "cancelled" || statusModal === "payment_failed") {
               setPaymentFailureMessage(null);
               setStatusModal(null);
-              void handleCheckout();
+              void handleCheckout(selectedCheckoutSlugRef.current);
               return;
             }
             setPaymentFailureMessage(null);
@@ -672,7 +672,15 @@ export function DiagnosticPlanCheckoutSection({
 
           <DiagnosticPersonalizedBlurLock
             unlocked={hasSubscription}
-            onUnlock={() => void handleCheckout()}
+            onUnlock={() => {
+              const slug =
+                multiSkuEnabled && multiSkuOffer
+                  ? multiSkuOffer.primary.isActive
+                    ? multiSkuOffer.displayPrimary
+                    : FULL_SKILL_PROGRAM_SLUG
+                  : FULL_SKILL_PROGRAM_SLUG;
+              void handleCheckout(slug, true);
+            }}
             unlockBusy={checkoutBusy}
             unlockDisabled={hasSubscription}
             title="Purchase your plan to unlock it"
@@ -695,12 +703,18 @@ export function DiagnosticPlanCheckoutSection({
             <div className="rounded-xl border border-[#B6E9F0] bg-[#E6F7FA] px-4 py-3 text-sm text-[#0E6E78]">
               <Link
                 href={loginPathWithNext(DIAGNOSTIC_CHECKOUT_RETURN_PATH)}
-                onClick={() =>
+                onClick={() => {
+                  const slug =
+                    multiSkuEnabled && multiSkuOffer
+                      ? multiSkuOffer.primary.isActive
+                        ? multiSkuOffer.displayPrimary
+                        : FULL_SKILL_PROGRAM_SLUG
+                      : FULL_SKILL_PROGRAM_SLUG;
                   setPendingCheckoutResume({
-                    planSlug: FULL_SKILL_PROGRAM_SLUG,
+                    planSlug: slug,
                     returnTo: DIAGNOSTIC_CHECKOUT_RETURN_PATH,
-                  })
-                }
+                  });
+                }}
                 className="cursor-pointer font-semibold text-[#0097A7] underline-offset-2 hover:underline"
               >
                 Sign in
@@ -709,13 +723,22 @@ export function DiagnosticPlanCheckoutSection({
             </div>
           ) : null}
 
-          <DiagnosticPlanBundleCard
-            bundle={FULL_SKILL_PROGRAM}
-            price={planPrice}
-            onCheckout={() => void handleCheckout()}
-            checkoutDisabled={hasSubscription}
-            checkoutLoading={checkoutBusy}
-          />
+          {multiSkuEnabled && multiSkuOffer ? (
+            <DiagnosticMultiSkuOffer
+              offer={multiSkuOffer}
+              onCheckout={(slug, wasPrimary) => void handleCheckout(slug, wasPrimary)}
+              checkoutDisabled={hasSubscription}
+              checkoutLoading={checkoutBusy}
+            />
+          ) : (
+            <DiagnosticPlanBundleCard
+              bundle={FULL_SKILL_PROGRAM}
+              price={planPrice}
+              onCheckout={() => void handleCheckout()}
+              checkoutDisabled={hasSubscription}
+              checkoutLoading={checkoutBusy}
+            />
+          )}
 
           {hasSubscription ? (
             <div className="text-center">

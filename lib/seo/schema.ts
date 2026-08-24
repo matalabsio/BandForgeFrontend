@@ -193,7 +193,7 @@ export function localBusinessSchema(): JsonLdObject {
     description: SITE_ENTITY_DESCRIPTION,
     url,
     image: siteUrl("/icon-512.png"),
-    priceRange: "Rs. 2999",
+    priceRange: "Rs. 2499",
     address: {
       "@type": "PostalAddress",
       streetAddress: "Gachibowli",

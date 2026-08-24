@@ -10,79 +10,102 @@ import {
   UserIcon,
 } from "@/components/bandforge/dashboard/icons";
 import { BfSettingsRow } from "@/components/bandforge/ui";
-import { BRAND_PROFILE_STATS } from "@/lib/brand-mock-data";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
+
+export type ProfileHubStats = {
+  planName: string;
+  planDaysRemaining: number | null;
+  targetBand: number | null;
+  testsCompleted: number;
+  expectedBand: number | null;
+  examDateLabel: string | null;
+};
 
 type Props = {
   displayName: string;
   email: string | null;
   avatarInitial: string;
+  stats: ProfileHubStats;
   children: ReactNode;
 };
 
-const settingsGroups = [
-  {
-    title: "Account",
-    rows: [
-      { label: "Edit Profile", icon: UserIcon, href: "#account-form" },
-      {
-        label: "Notification Preferences",
-        icon: BellIcon,
-        href: "#notification-preferences",
-      },
-      { label: "Language", icon: GlobeIcon, value: "English", href: "#" },
-    ],
-  },
-  {
-    title: "Plan",
-    rows: [
-      {
-        label: "Current Plan Details",
-        icon: CreditCardIcon,
-        value: BRAND_PROFILE_STATS.planName,
-        href: "/profile/billing",
-      },
-      { label: "Upgrade Plan", icon: CrownIcon, href: "/pricing" },
-      {
-        label: "Billing History",
-        icon: CreditCardIcon,
-        href: "/profile/billing",
-      },
-    ],
-  },
-  {
-    title: "Test Preferences",
-    rows: [
-      {
-        label: "Test Date",
-        icon: CalendarIcon,
-        value: "Aug 15, 2026",
-        href: "#",
-      },
-      {
-        label: "Native Language",
-        icon: GlobeIcon,
-        value: "Telugu",
-        href: "#",
-      },
-    ],
-  },
-  {
-    title: "Support",
-    rows: [
-      { label: "WhatsApp Support", icon: MessageIcon, href: "#" },
-      { label: "FAQs", icon: HelpCircleIcon, href: "/contact" },
-      { label: "Report an Issue", icon: HelpCircleIcon, href: "/contact" },
-    ],
-  },
-] as const;
+function formatBand(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return value.toFixed(1);
+}
 
 export function ProfileSettingsHub({
   displayName,
   email,
   avatarInitial,
+  stats,
   children,
 }: Props) {
+  const safeStats: ProfileHubStats = {
+    planName: stats?.planName || "Free",
+    planDaysRemaining: stats?.planDaysRemaining ?? null,
+    targetBand: stats?.targetBand ?? null,
+    testsCompleted: stats?.testsCompleted ?? 0,
+    expectedBand: stats?.expectedBand ?? null,
+    examDateLabel: stats?.examDateLabel ?? null,
+  };
+
+  const settingsGroups = [
+    {
+      title: "Account",
+      rows: [
+        { label: "Edit Profile", icon: UserIcon, href: "#account-form" },
+        {
+          label: "Notification Preferences",
+          icon: BellIcon,
+          href: "#notification-preferences",
+        },
+        { label: "Language", icon: GlobeIcon, value: "English", href: "#" },
+      ],
+    },
+    {
+      title: "Plan",
+      rows: [
+        {
+          label: "Current Plan Details",
+          icon: CreditCardIcon,
+          value: safeStats.planName,
+          href: "/profile/billing",
+        },
+        { label: "Upgrade Plan", icon: CrownIcon, href: "/pricing" },
+        {
+          label: "Billing History",
+          icon: CreditCardIcon,
+          href: "/profile/billing",
+        },
+      ],
+    },
+    {
+      title: "Test Preferences",
+      rows: [
+        {
+          label: "Test Date",
+          icon: CalendarIcon,
+          value: safeStats.examDateLabel ?? "Not set",
+          href: "#account-form",
+        },
+      ],
+    },
+    {
+      title: "Support",
+      rows: [
+        { label: "WhatsApp Support", icon: MessageIcon, href: "#" },
+        { label: "FAQs", icon: HelpCircleIcon, href: "/contact" },
+        { label: "Report an Issue", icon: HelpCircleIcon, href: "/contact" },
+      ],
+    },
+  ] as const;
+
+  const daysLabel =
+    safeStats.planDaysRemaining != null
+      ? `${safeStats.planDaysRemaining} days remaining`
+      : "No active plan expiry";
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:items-start">
@@ -103,28 +126,26 @@ export function ProfileSettingsHub({
               <p className="mt-1 text-sm text-muted-light">{email}</p>
             ) : null}
             <p className="mt-2 text-sm text-muted">
-              {BRAND_PROFILE_STATS.planName} ·{" "}
-              <span className="font-medium text-navy">
-                {BRAND_PROFILE_STATS.planDaysRemaining} days remaining
-              </span>
+              {safeStats.planName} ·{" "}
+              <span className="font-medium text-navy">{daysLabel}</span>
             </p>
           </div>
           <dl className="mt-6 grid grid-cols-3 gap-4 border-t border-border-soft pt-6 text-center">
             <div>
               <dt className="font-mono text-lg text-cyan">
-                {BRAND_PROFILE_STATS.targetBand.toFixed(1)}
+                {formatBand(safeStats.targetBand)}
               </dt>
               <dd className="text-xs text-muted-light">Target Band</dd>
             </div>
             <div>
               <dt className="font-mono text-lg text-cyan">
-                {BRAND_PROFILE_STATS.testsCompleted}
+                {safeStats.testsCompleted}
               </dt>
               <dd className="text-xs text-muted-light">Tests Completed</dd>
             </div>
             <div>
               <dt className="font-mono text-lg text-cyan">
-                {BRAND_PROFILE_STATS.expectedBand.toFixed(1)}
+                {formatBand(safeStats.expectedBand)}
               </dt>
               <dd className="text-xs text-muted-light">Expected Band</dd>
             </div>

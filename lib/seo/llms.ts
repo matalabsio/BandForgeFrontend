@@ -57,7 +57,7 @@ export function buildLlmsTxt(): string {
         title: "BandForge Home",
         path: "/",
         description:
-          "IELTS prep for Telugu and Urdu speakers — free diagnostic and Full Skill Program (Rs. 2999).",
+          "IELTS prep for Telugu and Urdu speakers — free diagnostic and Full Skill Program (Rs. 2499).",
       },
       {
         title: "Free IELTS Diagnostic",
@@ -69,7 +69,7 @@ export function buildLlmsTxt(): string {
         title: "BandForge Pricing",
         path: "/pricing",
         description:
-          "Full Skill Program — Rs. 2999 one-time. Diagnostic always free.",
+          "Full Skill Program — Rs. 2499 one-time. Diagnostic always free.",
       },
       {
         title: "IELTS Writing Sprint",
@@ -104,7 +104,7 @@ export function buildLlmsTxt(): string {
       {
         title: "IELTS Coaching in Hyderabad",
         path: "/hyderabad",
-        description: "Online IELTS prep from Gachibowli, Hyderabad — Full Skill Program Rs. 2999.",
+        description: "Online IELTS prep from Gachibowli, Hyderabad — Full Skill Program Rs. 2499.",
       },
       {
         title: "BandForge FAQ",

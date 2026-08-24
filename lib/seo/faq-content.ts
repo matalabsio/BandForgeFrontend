@@ -34,7 +34,7 @@ export const SITE_FAQ: FaqItem[] = [
     leadAnswer:
       "BandForge is an online IELTS preparation platform built for Telugu- and Urdu-speaking students in Telangana and Andhra Pradesh.",
     detail:
-      "It starts with a free 15-minute diagnostic showing section-wise band scores, followed by the Full Skill Program (Rs. 2999) with AI practice and human evaluation.",
+      "It starts with a free 15-minute diagnostic showing section-wise band scores, followed by the Full Skill Program (Rs. 2499) with AI practice and human evaluation.",
     category: "getting-started",
   },
   {
@@ -58,7 +58,7 @@ export const SITE_FAQ: FaqItem[] = [
     leadAnswer:
       "One program covering all four IELTS skills: 48 practice hubs, a personalised daily plan until your exam date, AI evaluation instantly, and Band 9-trained human review within 48 hours.",
     detail:
-      "Rs. 2999 one-time. Four full mocks unlock as you complete each skill track. Free diagnostic included.",
+      "Rs. 2499 one-time. Four full mocks unlock as you complete each skill track. Free diagnostic included.",
     category: "sprints",
   },
   {
@@ -98,7 +98,7 @@ export const SITE_FAQ: FaqItem[] = [
     leadAnswer:
       "Coaching centres sell you a full course before anyone measures where you actually stand.",
     detail:
-      "BandForge measures first — free — then sells you the Full Skill Program (Rs. 2999) with feedback on your individual work rather than batch lectures.",
+      "BandForge measures first — free — then sells you the Full Skill Program (Rs. 2499) with feedback on your individual work rather than batch lectures.",
     category: "language",
   },
   {

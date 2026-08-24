@@ -584,7 +584,7 @@ export function DrillsExperience() {
               </h2>
               <p className="mx-auto mt-3 max-w-[38ch] text-[0.9375rem] leading-relaxed text-white/75 sm:text-base">
                 Free diagnostic first — then Writing, Speaking, Dual, or All
-                Full Skill Program — Rs. 2999 for all four skills.
+                Full Skill Program — Rs. 2499 for all four skills.
               </p>
               <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row">
                 <Link

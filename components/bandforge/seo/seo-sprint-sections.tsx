@@ -103,7 +103,7 @@ export function SeoSprintLandingSections({
           <BfSectionHeading as="h2">Ready for all four skills?</BfSectionHeading>
           <p className="mt-4 text-base leading-relaxed text-ink/70">
             The Full Skill Program covers Listening, Reading, Writing, and Speaking
-            from Rs. 2999. The diagnostic stays free on every plan.
+            from Rs. 2499. The diagnostic stays free on every plan.
           </p>
           <Link
             href="/pricing"

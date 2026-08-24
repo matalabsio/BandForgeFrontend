@@ -21,7 +21,7 @@ export type PaidPlan = {
 /** Single purchasable SKU — matches backend `plans.slug`. */
 export const FULL_SKILL_PROGRAM: PaidPlan = {
   name: "Full Skill Program",
-  priceInr: 2999,
+  priceInr: 2499,
   slug: FULL_SKILL_PROGRAM_SLUG,
   schemaDescription:
     "All four IELTS skills — Listening, Reading, Writing, and Speaking — with 48 practice hubs, a personalised daily plan until your exam date, AI practice, and Band 9-trained human review within 48 hours. Free diagnostic included.",

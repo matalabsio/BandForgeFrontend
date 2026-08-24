@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfile, uploadProfileAvatar } from "@/lib/profile";
+import { generateLearningPlan } from "@/lib/learning-api";
 import type { AuthUser } from "@/lib/session";
 import { ApiError } from "@/lib/api";
 import { normalizeIndiaMobile, formatIndiaDisplay } from "@/lib/india-mobile";
@@ -14,6 +15,10 @@ const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 type Props = {
   user: AuthUser;
+  /** YYYY-MM-DD — from users.exam_date or learning/study plan fallback */
+  initialExamDate?: string | null;
+  /** When true, changing exam date regenerates the FSP personalized plan */
+  regeneratePlanOnExamChange?: boolean;
 };
 
 function phoneForInput(phone: string | null): string {
@@ -22,7 +27,19 @@ function phoneForInput(phone: string | null): string {
   return digits.length === 10 ? digits : phone;
 }
 
-export function ProfileForm({ user }: Props) {
+function todayIsoLocal(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function ProfileForm({
+  user,
+  initialExamDate = null,
+  regeneratePlanOnExamChange = false,
+}: Props) {
   const { refresh } = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
@@ -30,6 +47,9 @@ export function ProfileForm({ user }: Props) {
   const [phone, setPhone] = useState(phoneForInput(user.phone));
   const [targetBand, setTargetBand] = useState<number | "">(
     user.target_band ?? 7,
+  );
+  const [examDate, setExamDate] = useState(
+    (user.exam_date ?? initialExamDate ?? "").slice(0, 10),
   );
   const [avatarPreview, setAvatarPreview] = useState(
     user.avatar_display_url ?? null,
@@ -104,18 +124,55 @@ export function ProfileForm({ user }: Props) {
         setError("Full name is required.");
         return;
       }
+      const nextExam = examDate.trim().slice(0, 10);
+      const prevExam = (user.exam_date ?? initialExamDate ?? "")
+        .slice(0, 10)
+        .trim();
+      if (nextExam) {
+        const parsed = new Date(`${nextExam}T12:00:00`);
+        if (Number.isNaN(parsed.getTime())) {
+          setError("Enter a valid test date.");
+          return;
+        }
+        if (nextExam < todayIsoLocal()) {
+          setError("Test date must be today or a future date.");
+          return;
+        }
+      }
       setSaving(true);
       try {
         const { user: updated, warnings } = await updateProfile({
           full_name: name,
           phone: phone.trim() || null,
           target_band: targetBand === "" ? null : Number(targetBand),
+          exam_date: nextExam || null,
         });
         setFullName(updated.full_name ?? name);
         if (updated.target_band != null) {
           setTargetBand(updated.target_band);
         }
-        setMessage("Profile saved. Your dashboard target band is updated.");
+        if (updated.exam_date != null) {
+          setExamDate(updated.exam_date.slice(0, 10));
+        } else if (!nextExam) {
+          setExamDate("");
+        }
+        let planNote = "";
+        if (
+          regeneratePlanOnExamChange &&
+          nextExam &&
+          nextExam !== prevExam
+        ) {
+          try {
+            await generateLearningPlan();
+            planNote = " Personalized plan updated for your new test date.";
+          } catch {
+            planNote =
+              " Profile saved, but the personalized plan could not be regenerated yet — open Today to retry.";
+          }
+        }
+        setMessage(
+          `Profile saved. Your dashboard target band is updated.${planNote}`,
+        );
         if (warnings.phone) {
           setError(warnings.phone);
         }
@@ -131,7 +188,16 @@ export function ProfileForm({ user }: Props) {
         setSaving(false);
       }
     },
-    [fullName, phone, targetBand, refresh],
+    [
+      fullName,
+      phone,
+      targetBand,
+      examDate,
+      initialExamDate,
+      regeneratePlanOnExamChange,
+      user.exam_date,
+      refresh,
+    ],
   );
 
   return (
@@ -234,6 +300,19 @@ export function ProfileForm({ user }: Props) {
               </option>
             ))}
           </select>
+        </Field>
+
+        <Field
+          label="Test date"
+          hint="Synced from your diagnostic — change it anytime"
+        >
+          <input
+            type="date"
+            value={examDate}
+            min={todayIsoLocal()}
+            onChange={(e) => setExamDate(e.target.value)}
+            className={inputClass}
+          />
         </Field>
       </div>
 

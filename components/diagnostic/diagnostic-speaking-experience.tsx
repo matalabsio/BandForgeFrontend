@@ -137,15 +137,13 @@ export function DiagnosticSpeakingExperience() {
       const missingCount = expectedQuestionIds.filter(
         (questionId) => !recordedQuestionIds.has(questionId),
       ).length;
-      if (missingCount > 0) {
-        setError(
-          `Please record every speaking answer before submitting (${missingCount} remaining).`,
-        );
-        return;
-      }
 
       setSubmitting(true);
-      setError(null);
+      setError(
+        missingCount > 0
+          ? `No response collected for ${missingCount} speaking prompt(s). Missing answers will be scored as 0.`
+          : null,
+      );
 
       const progress = readDiagnosticProgress();
       if (!progress) return;

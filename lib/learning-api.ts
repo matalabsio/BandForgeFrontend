@@ -9,6 +9,15 @@ export async function refreshLearningProfile(): Promise<LearningProfile> {
   return examApiCall<LearningProfile>("/api/learning/refresh", { method: "POST" });
 }
 
+export async function generateLearningPlan(
+  planTier = "full_skill_program",
+): Promise<LearningProfile> {
+  return examApiCall<LearningProfile>("/api/learning/plan/generate", {
+    method: "POST",
+    body: JSON.stringify({ plan_tier: planTier }),
+  });
+}
+
 export async function patchLearningTask(
   taskId: string,
   status: "pending" | "done" | "skipped",
