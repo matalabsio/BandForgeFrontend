@@ -36,7 +36,7 @@ import { recommendSkuFromDiagnostic } from "@/lib/diagnostic-sku-recommend";
 import { isDiagnosticMultiSkuRecommendEnabled } from "@/lib/flags";
 import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
-import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
+import { ensureSession, ensureSessionForCheckout, getMe, loginPathWithNext } from "@/lib/auth";
 import {
   navigateAfterCheckoutVerify,
   shouldSkipPaidBootstrapRedirectNow,
@@ -58,16 +58,17 @@ import {
   clearCheckoutResumeClaimed,
   clearCheckoutResumeAutoOpenSuppress,
   clearPendingCheckoutResume,
+  clearStaleCheckoutAutoOpenSuppress,
   consumeCheckoutResumeSoftFailModal,
   consumePendingCheckoutResume,
   decideCheckoutResumeStart,
   ensureDiagnosticCheckoutQueryIfPending,
-  isCheckoutOpeningLockHeld,
   isCheckoutResumeAutoOpenSuppressed,
   isCheckoutResumeClaimed,
   markCheckoutResumeClaimed,
   prepareCheckoutResumeRetry,
   releaseCheckoutOpeningLock,
+  releaseStaleCheckoutOpeningLockIfIdle,
   setPendingCheckoutResume,
   shouldResumeDiagnosticCheckout,
   stashCheckoutResumeSoftFailModal,
@@ -294,6 +295,8 @@ export function DiagnosticPlanCheckoutSection({
       restorePendingSlug?: string | null;
       modal?: CheckoutResumeSoftFailModal;
       failureMessage?: string | null;
+      /** Default true when showing a post-Razorpay card; false for pre-open settle. */
+      suppressAutoOpen?: boolean;
     }) => {
       const slug =
         opts?.restorePendingSlug ?? selectedCheckoutSlugRef.current;
@@ -304,7 +307,9 @@ export function DiagnosticPlanCheckoutSection({
         onResumeSettled?.();
         return;
       }
-      prepareCheckoutResumeRetry(slug || FULL_SKILL_PROGRAM_SLUG);
+      prepareCheckoutResumeRetry(slug || FULL_SKILL_PROGRAM_SLUG, {
+        suppressAutoOpen: opts?.suppressAutoOpen !== false,
+      });
       autoCheckoutStartedRef.current = false;
       if (opts?.modal) {
         stashCheckoutResumeSoftFailModal({
@@ -354,16 +359,15 @@ export function DiagnosticPlanCheckoutSection({
       wasPrimary?: boolean;
       resumeMode?: boolean;
     }) => {
-      if (checkoutInFlightRef.current || checkoutBusy || hasSubscription) {
+      // Only the in-flight ref is authoritative. `checkoutBusy` React state can
+      // stay true from the resume-gate spinner during bootstrap and must not
+      // abort auto-open (that left users on "Preparing secure checkout" forever).
+      if (checkoutInFlightRef.current) {
+        return;
+      }
+      if (hasSubscription) {
         if (opts.resumeMode) {
-          if (hasSubscription) {
-            finishResumeGate({ stripQuery: true });
-          } else {
-            finishResumeGate({
-              restorePendingSlug: selectedCheckoutSlugRef.current,
-              modal: "cancelled",
-            });
-          }
+          finishResumeGate({ stripQuery: true });
         }
         return;
       }
@@ -411,12 +415,31 @@ export function DiagnosticPlanCheckoutSection({
         releaseCheckoutOpeningLock();
       };
 
+      /** Soft-settle with card only after Razorpay was shown (or order created + open failed). */
+      const softFailAfterRazorpay = (
+        modal: CheckoutResumeSoftFailModal,
+        failureMessage?: string | null,
+      ) => {
+        if (opts.resumeMode) {
+          finishResumeGate({
+            restorePendingSlug: checkoutSlug,
+            modal,
+            failureMessage: failureMessage ?? null,
+          });
+        } else {
+          if (failureMessage) setPaymentFailureMessage(failureMessage);
+          setStatusModal(modal);
+        }
+      };
+
       try {
-        const session = await ensureSession();
+        const session = await ensureSessionForCheckout();
         const user = session ? await getMe().catch(() => null) : null;
         if (!session || !isFullAccountUser(user?.role)) {
           setOverlay(null);
           clearBusy();
+          // Pre-Razorpay: restore pending without suppress/card so post-login can auto-open.
+          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: false });
           redirectToLoginForCheckout(false, checkoutSlug);
           if (opts.resumeMode) {
             onResumeSettled?.();
@@ -483,16 +506,7 @@ export function DiagnosticPlanCheckoutSection({
               } else {
                 const msg =
                   e instanceof ApiError ? e.message : "Could not verify payment.";
-                if (opts.resumeMode) {
-                  finishResumeGate({
-                    restorePendingSlug: checkoutSlug,
-                    modal: "verify_failed",
-                    failureMessage: msg,
-                  });
-                } else {
-                  setPaymentFailureMessage(msg);
-                  setStatusModal("verify_failed");
-                }
+                softFailAfterRazorpay("verify_failed", msg);
               }
             } finally {
               clearBusy();
@@ -503,31 +517,17 @@ export function DiagnosticPlanCheckoutSection({
             setOverlay(null);
             clearBusy();
             forceLockThenRefresh();
-            if (opts.resumeMode) {
-              finishResumeGate({
-                restorePendingSlug: checkoutSlug,
-                modal: "cancelled",
-              });
-            } else {
-              setStatusModal("cancelled");
-            }
+            softFailAfterRazorpay("cancelled");
           },
           onFailed: (message) => {
             razorpayOpenRef.current = false;
             setOverlay(null);
             clearBusy();
             forceLockThenRefresh();
-            const detail = razorpayPaymentFailureDetail(message);
-            if (opts.resumeMode) {
-              finishResumeGate({
-                restorePendingSlug: checkoutSlug,
-                modal: "payment_failed",
-                failureMessage: detail,
-              });
-            } else {
-              setPaymentFailureMessage(detail);
-              setStatusModal("payment_failed");
-            }
+            softFailAfterRazorpay(
+              "payment_failed",
+              razorpayPaymentFailureDetail(message),
+            );
           },
         });
 
@@ -537,19 +537,13 @@ export function DiagnosticPlanCheckoutSection({
         } else {
           setOverlay(null);
           clearBusy();
-          if (opts.resumeMode) {
-            finishResumeGate({
-              restorePendingSlug: checkoutSlug,
-              modal: "checkout_unavailable",
-            });
-          } else {
-            setStatusModal("checkout_unavailable");
-          }
+          softFailAfterRazorpay("checkout_unavailable");
         }
       } catch (e) {
         setOverlay(null);
         clearBusy();
         if (e instanceof ApiError && e.status === 401) {
+          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: false });
           redirectToLoginForCheckout(true, checkoutSlug);
           if (opts.resumeMode) {
             onResumeSettled?.();
@@ -575,11 +569,13 @@ export function DiagnosticPlanCheckoutSection({
             setStatusModal("verify_failed");
           }
         } else if (opts.resumeMode) {
+          // Pre-Razorpay unexpected error: dedicated modal, allow auto-open after remount.
           finishResumeGate({
             restorePendingSlug: checkoutSlug,
             modal: "checkout_unavailable",
             failureMessage:
               e instanceof Error ? e.message : "Checkout could not start.",
+            suppressAutoOpen: razorpayOpenRef.current,
           });
         } else {
           setStatusModal("verify_failed");
@@ -587,7 +583,6 @@ export function DiagnosticPlanCheckoutSection({
       }
     },
     [
-      checkoutBusy,
       finishResumeGate,
       forceLockThenRefresh,
       hasSubscription,
@@ -613,13 +608,21 @@ export function DiagnosticPlanCheckoutSection({
     ensureDiagnosticCheckoutQueryIfPending();
 
     if (bootstrapping) {
-      if (resumeGate && shouldResumeDiagnosticCheckout()) {
-        setCheckoutBusy(true);
-      }
+      // Keep the fullscreen gate visible; do NOT set checkoutBusy — that used
+      // to make executeCheckout no-op after bootstrap and hang forever.
       return;
     }
 
     const shouldResume = shouldResumeDiagnosticCheckout();
+    // While the fullscreen gate is up, drop sticky suppress + idle opening lock
+    // from earlier false soft-fails / abandoned attempts.
+    if (shouldResume && resumeGate) {
+      clearStaleCheckoutAutoOpenSuppress();
+      releaseStaleCheckoutOpeningLockIfIdle({
+        checkoutInFlight: checkoutInFlightRef.current,
+        razorpayOpen: razorpayOpenRef.current,
+      });
+    }
     const suppressed = isCheckoutResumeAutoOpenSuppressed();
 
     if (!shouldResume) {
@@ -637,22 +640,18 @@ export function DiagnosticPlanCheckoutSection({
       return;
     }
 
-    // Live attempt: in flight, Razorpay open, or opening lock still held (Strict Mode).
-    const liveAttempt =
-      checkoutInFlightRef.current ||
-      razorpayOpenRef.current ||
-      isCheckoutOpeningLockHeld();
+    // Only treat in-flight / Razorpay-open as live. A leftover sessionStorage
+    // opening lock must not hang the spinner for the full lock TTL.
+    const processLive =
+      checkoutInFlightRef.current || razorpayOpenRef.current;
     const claimed = isCheckoutResumeClaimed() || autoCheckoutStartedRef.current;
 
-    if (claimed && liveAttempt) {
-      if (resumeGate) {
-        setCheckoutBusy(true);
-      }
+    if (claimed && processLive) {
       return;
     }
 
     // Stale module claim with nothing live → recover so auto-open can run.
-    if (claimed && !liveAttempt) {
+    if (claimed && !processLive) {
       clearCheckoutResumeClaimed();
       autoCheckoutStartedRef.current = false;
     }
@@ -678,12 +677,12 @@ export function DiagnosticPlanCheckoutSection({
     });
 
     if (decision === "wait_lock") {
-      if (!resumeGate) return;
-      setCheckoutBusy(true);
       const t = window.setTimeout(() => {
         releaseCheckoutOpeningLock();
         if (!tryAcquireCheckoutOpeningLock()) {
-          prepareCheckoutResumeRetry(selectedCheckoutSlugRef.current);
+          prepareCheckoutResumeRetry(selectedCheckoutSlugRef.current, {
+            suppressAutoOpen: false,
+          });
           autoCheckoutStartedRef.current = false;
           stashCheckoutResumeSoftFailModal({
             modal: "checkout_unavailable",
@@ -693,8 +692,7 @@ export function DiagnosticPlanCheckoutSection({
           return;
         }
         startCheckout();
-      }, 2500);
-      // Only clear timer on unmount / bootstrapping flip — not on executeCheckout identity.
+      }, 400);
       return () => window.clearTimeout(t);
     }
 
@@ -704,6 +702,26 @@ export function DiagnosticPlanCheckoutSection({
 
     startCheckout();
   }, [bootstrapping, resumeGate]);
+
+  // Hard safety: never leave "Preparing secure checkout" forever.
+  useEffect(() => {
+    if (!resumeGate) return;
+    const t = window.setTimeout(() => {
+      if (razorpayOpenRef.current || checkoutInFlightRef.current) return;
+      prepareCheckoutResumeRetry(selectedCheckoutSlugRef.current, {
+        suppressAutoOpen: true,
+      });
+      autoCheckoutStartedRef.current = false;
+      clearCheckoutResumeClaimed();
+      releaseCheckoutOpeningLock();
+      stashCheckoutResumeSoftFailModal({
+        modal: "checkout_unavailable",
+        detail: "Checkout took too long to open. Tap Continue to try again.",
+      });
+      onResumeSettledRef.current?.();
+    }, 12_000);
+    return () => window.clearTimeout(t);
+  }, [resumeGate]);
 
   const handleVerifyRetry = useCallback(async () => {
     const pending = readCheckoutReceiptContext();

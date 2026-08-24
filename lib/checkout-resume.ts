@@ -4,7 +4,8 @@ const PENDING_CHECKOUT_KEY = "bf_pending_checkout";
 const OPENING_LOCK_KEY = "bf_checkout_opening";
 const SOFT_FAIL_MODAL_KEY = "bf_checkout_soft_fail_modal";
 const SUPPRESS_AUTO_KEY = "bf_checkout_suppress_auto";
-const OPENING_LOCK_TTL_MS = 20_000;
+/** Short Strict Mode / remount guard — long TTL caused ~20–30s spinner hangs. */
+const OPENING_LOCK_TTL_MS = 4_000;
 
 export const FULL_SKILL_PROGRAM_SLUG = "full_skill_program";
 export const WRITING_SKILL_SLUG = "writing_skill";
@@ -218,16 +219,23 @@ export function decideCheckoutResumeStart(opts: {
 
 /**
  * Soft-fail / dismiss: restore pending slug, clear claim + lock so retry works.
- * Suppresses auto-open until the student taps Continue to payment (or abandons).
+ * When `suppressAutoOpen` is true (default), waits for Continue to payment.
+ * Pass `suppressAutoOpen: false` for pre-Razorpay settle (busy race / auth redirect)
+ * so the next `?checkout=1` land can auto-open again.
  */
-export function prepareCheckoutResumeRetry(planSlug: string): void {
+export function prepareCheckoutResumeRetry(
+  planSlug: string,
+  opts?: { suppressAutoOpen?: boolean },
+): void {
   setPendingCheckoutResume({
     planSlug: normalizeCheckoutSlug(planSlug) ?? FULL_SKILL_PROGRAM_SLUG,
     returnTo: DIAGNOSTIC_CHECKOUT_RETURN_PATH,
   });
   releaseCheckoutOpeningLock();
   clearCheckoutResumeClaimed();
-  suppressCheckoutResumeAutoOpen();
+  if (opts?.suppressAutoOpen !== false) {
+    suppressCheckoutResumeAutoOpen();
+  }
 }
 
 /** Explicit leave checkout — clear intent and allow plain results. */
@@ -310,11 +318,11 @@ export function stashCheckoutResumeSoftFailModal(
   }
 }
 
-export function consumeCheckoutResumeSoftFailModal(): CheckoutResumeSoftFail | null {
+/** Read soft-fail modal without clearing (for auto-open suppress gating). */
+export function peekCheckoutResumeSoftFailModal(): CheckoutResumeSoftFail | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = sessionStorage.getItem(SOFT_FAIL_MODAL_KEY);
-    sessionStorage.removeItem(SOFT_FAIL_MODAL_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CheckoutResumeSoftFail;
     if (!parsed?.modal || typeof parsed.modal !== "string") return null;
@@ -324,6 +332,44 @@ export function consumeCheckoutResumeSoftFailModal(): CheckoutResumeSoftFail | n
     };
   } catch {
     return null;
+  }
+}
+
+export function consumeCheckoutResumeSoftFailModal(): CheckoutResumeSoftFail | null {
+  const soft = peekCheckoutResumeSoftFailModal();
+  clearCheckoutResumeSoftFailModal();
+  return soft;
+}
+
+/**
+ * Fresh `?checkout=1` land: clear sticky suppress from earlier false soft-fails
+ * unless a real post-Razorpay soft-fail modal is waiting to be shown.
+ */
+export function clearStaleCheckoutAutoOpenSuppress(): void {
+  if (peekCheckoutResumeSoftFailModal()) return;
+  clearCheckoutResumeAutoOpenSuppress();
+}
+
+/**
+ * Drop an abandoned opening lock (previous page/attempt) so auto-open is not
+ * blocked. Ignores brand-new locks (Strict Mode remount) via minAgeMs.
+ */
+export function releaseStaleCheckoutOpeningLockIfIdle(opts: {
+  checkoutInFlight: boolean;
+  razorpayOpen: boolean;
+  minAgeMs?: number;
+}): void {
+  if (opts.checkoutInFlight || opts.razorpayOpen) return;
+  if (typeof window === "undefined") return;
+  try {
+    const raw = sessionStorage.getItem(OPENING_LOCK_KEY);
+    if (!raw) return;
+    const started = Number(raw);
+    const minAge = opts.minAgeMs ?? 1_500;
+    if (!Number.isFinite(started) || Date.now() - started < minAge) return;
+    sessionStorage.removeItem(OPENING_LOCK_KEY);
+  } catch {
+    /* ignore */
   }
 }
 

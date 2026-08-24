@@ -201,10 +201,22 @@ function hasBrowserAuthCookies(): boolean {
   return hasSessionHintCookie();
 }
 
+export type EnsureSessionOptions = {
+  /**
+   * When true (default), a refresh 401 clears the session via logout.
+   * Checkout passes false so a blip redirects to login without wiping mid-flow
+   * via a full logout round-trip that races Razorpay auto-open.
+   */
+  logoutOnUnauthorized?: boolean;
+};
+
 /**
  * On app load: migrate legacy LS refresh if needed, then refresh via httpOnly cookies.
  */
-export async function ensureSession(): Promise<AuthResponse | null> {
+export async function ensureSession(
+  opts?: EnsureSessionOptions,
+): Promise<AuthResponse | null> {
+  const logoutOnUnauthorized = opts?.logoutOnUnauthorized !== false;
   const legacyRefresh = getRefreshToken();
 
   if (!hasBrowserAuthCookies() && legacyRefresh) {
@@ -220,15 +232,31 @@ export async function ensureSession(): Promise<AuthResponse | null> {
     if (err instanceof ApiError && err.status === 401 && legacyRefresh) {
       const restored = await restoreSessionFromStorage();
       if (restored) return restored;
-      await logout();
+      if (logoutOnUnauthorized) {
+        await logout();
+      } else {
+        clearAuthStorage();
+      }
       return null;
     }
     if (err instanceof ApiError && err.status === 401) {
-      await logout();
+      if (logoutOnUnauthorized) {
+        await logout();
+      } else {
+        clearAuthStorage();
+      }
       return null;
     }
     return null;
   }
+}
+
+/** Checkout path: one short retry, never hard-logout on 401. */
+export async function ensureSessionForCheckout(): Promise<AuthResponse | null> {
+  const first = await ensureSession({ logoutOnUnauthorized: false });
+  if (first) return first;
+  await new Promise((r) => setTimeout(r, 400));
+  return ensureSession({ logoutOnUnauthorized: false });
 }
 
 /** Server: cookies present → bootstrap; no cookies → login (client may escalate to bootstrap). */

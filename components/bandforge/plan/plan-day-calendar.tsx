@@ -236,7 +236,7 @@ function DayPlanPanel({
         <DayHeader day={day} status={status} mode="preview" />
         <div className="flex flex-1 flex-col justify-between px-5 py-4 sm:px-6">
           {locked ? (
-            <p className="flex items-start gap-2.5 rounded-2xl border border-white/50 bg-white/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted backdrop-blur-md">
+            <p className="flex items-start gap-2.5 rounded-2xl border border-white/50 bg-white/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted">
               <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
               Locked until you reach this day.
             </p>
@@ -259,9 +259,9 @@ function DayPlanPanel({
     <div className="flex h-full flex-col">
       <DayHeader day={day} status={status} mode="detail" />
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+      <div className="flex-1 overflow-y-visible px-4 py-4 sm:px-5">
         {locked ? (
-          <p className="flex items-start gap-2.5 rounded-2xl border border-white/50 bg-white/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted backdrop-blur-md">
+          <p className="flex items-start gap-2.5 rounded-2xl border border-white/50 bg-white/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted">
             <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             This day unlocks when you reach it. Focus on today first.
           </p>
@@ -469,7 +469,8 @@ export function PlanDayCalendar({
   if (!open) return null;
 
   const glassShell = cn(
-    "relative overflow-hidden rounded-[28px] border border-white/60",
+    // Do not use overflow-hidden/clip here — it traps wheel/touch and the page cannot scroll.
+    "relative overflow-visible rounded-[28px] border border-white/60",
     "bg-white/45 shadow-[0_8px_40px_rgba(8,145,178,0.10),0_1px_0_rgba(255,255,255,0.85)_inset]",
     "backdrop-blur-[28px] backdrop-saturate-[160%]",
   );
@@ -700,7 +701,7 @@ export function PlanDayCalendar({
         <div
           className={cn(
             "relative min-h-[260px] bg-gradient-to-b from-white/35 via-white/25 to-cyan-soft/30",
-            !isPage && "mt-4 overflow-hidden rounded-2xl border border-white/50",
+            !isPage && "mt-4 overflow-x-clip overflow-y-visible rounded-2xl border border-white/50",
           )}
           aria-live="polite"
           onMouseEnter={() => {
@@ -724,7 +725,7 @@ export function PlanDayCalendar({
                   : { opacity: 0, y: -6, filter: "blur(4px)" }
               }
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="h-full"
+              className="h-full min-h-0"
             >
               <DayPlanPanel
                 day={activeDay}

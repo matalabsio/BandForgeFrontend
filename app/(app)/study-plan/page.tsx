@@ -24,7 +24,7 @@ export default async function StudyPlanPage() {
   const examDate = profile.exam_date ?? studyPlan.exam_date ?? null;
 
   return (
-    <div className="relative space-y-5 pb-4">
+    <div className="relative space-y-5 pb-16">
       <header className="max-w-xl">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
           Your schedule

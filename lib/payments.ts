@@ -335,35 +335,48 @@ export function loadRazorpayScript(): Promise<boolean> {
       resolve(true);
       return;
     }
+
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      resolve(ok);
+    };
+    // Never hang the checkout spinner if the CDN stalls.
+    const watchdog = window.setTimeout(() => finish(false), 10_000);
+
     const existing = document.querySelector<HTMLScriptElement>(
       `script[src="${RAZORPAY_SCRIPT}"]`,
     );
     if (existing) {
       const marker = existing.dataset.bfRzp;
       if (marker === "ready") {
-        resolve(Boolean(window.Razorpay));
+        window.clearTimeout(watchdog);
+        finish(Boolean(window.Razorpay));
         return;
       }
       if (marker === "error") {
-        resolve(false);
+        window.clearTimeout(watchdog);
+        finish(false);
         return;
       }
-      // Already loaded without our marker (e.g. cached) — do not hang on load.
       if (window.Razorpay) {
         existing.dataset.bfRzp = "ready";
-        resolve(true);
+        window.clearTimeout(watchdog);
+        finish(true);
         return;
       }
-      // Mid-load: wait for one-shot load/error (do not resolve false immediately).
       const onLoad = () => {
         existing.dataset.bfRzp = "ready";
         cleanup();
-        resolve(Boolean(window.Razorpay));
+        window.clearTimeout(watchdog);
+        finish(Boolean(window.Razorpay));
       };
       const onError = () => {
         existing.dataset.bfRzp = "error";
         cleanup();
-        resolve(false);
+        window.clearTimeout(watchdog);
+        finish(false);
       };
       const cleanup = () => {
         existing.removeEventListener("load", onLoad);
@@ -378,11 +391,13 @@ export function loadRazorpayScript(): Promise<boolean> {
     script.async = true;
     script.onload = () => {
       script.dataset.bfRzp = "ready";
-      resolve(true);
+      window.clearTimeout(watchdog);
+      finish(true);
     };
     script.onerror = () => {
       script.dataset.bfRzp = "error";
-      resolve(false);
+      window.clearTimeout(watchdog);
+      finish(false);
     };
     document.body.appendChild(script);
   });
