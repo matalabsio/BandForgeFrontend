@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 const COPY = {
   cancelled: {
     title: "Payment not completed",
-    body: "Your subscription was not activated. You can try again when ready.",
-    primary: "Try again",
+    body: "Your subscription was not activated. You can continue to payment when ready.",
+    primary: "Continue to payment",
     secondary: "Back to plans",
   },
   verify_failed: {
@@ -24,7 +24,7 @@ const COPY = {
   checkout_unavailable: {
     title: "Checkout could not open",
     body: "We couldn't load the Razorpay payment window. Check your connection and try again.",
-    primary: "Try again",
+    primary: "Continue to payment",
     secondary: "Back to plans",
   },
   provider_misconfigured: {
@@ -42,7 +42,7 @@ const COPY = {
   payment_failed: {
     title: "Payment failed",
     body: "Your card or UPI payment was declined. No charge was made. You can try again.",
-    primary: "Try again",
+    primary: "Continue to payment",
     secondary: "Back to plans",
   },
 } as const;

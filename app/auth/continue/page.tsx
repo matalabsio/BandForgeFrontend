@@ -10,6 +10,7 @@ import { readDiagnosticResults } from "@/lib/diagnostic-session";
 import { isDiagnosticComplete, hasFullSkillProgram } from "@/lib/entitlement";
 import { getLearningProfile } from "@/lib/learning-api";
 import { getSubscription } from "@/lib/payments";
+import { resetCheckoutResumeForPostAuth } from "@/lib/checkout-resume";
 import {
   resolvePostLoginDestination,
   safePostLoginPath,
@@ -47,6 +48,8 @@ function PostLoginContinueInner() {
           hasPaidFullSkillProgram = false;
         }
         if (cancelled) return;
+        // New Google/auth return: drop sticky claim/suppress from earlier attempts.
+        resetCheckoutResumeForPostAuth();
         window.location.replace(
           resolvePostLoginDestination(requestedPath, Boolean(snapshot), {
             hasServerDiagnostic,
