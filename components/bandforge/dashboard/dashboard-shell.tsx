@@ -67,6 +67,13 @@ export function DashboardShell({
     }
   }, []);
 
+  // Diagnostic / exam shells lock document scroll; clear leftovers on every
+  // authenticated app route so Account and other pages can scroll on PC + phone.
+  useEffect(() => {
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }, [pathname]);
+
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => {
       const next = !prev;

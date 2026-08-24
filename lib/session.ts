@@ -95,6 +95,8 @@ export type AuthUser = {
   avatar_url?: string | null;
   avatar_display_url?: string | null;
   target_band?: number | null;
+  /** YYYY-MM-DD exam / test date from diagnostic or profile edit */
+  exam_date?: string | null;
   ielts_purpose?: string | null;
   ielts_goal?: string | null;
   /** FSP Writing track: academic | general_training | null */

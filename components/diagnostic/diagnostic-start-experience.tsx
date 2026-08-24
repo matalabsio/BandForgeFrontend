@@ -24,11 +24,9 @@ import {
   purposeToGoal,
   recommendExamModule,
   DIAGNOSTIC_PURPOSE_OPTIONS,
-  EXAM_MODULE_OPTIONS,
   NATIVE_LANGUAGE_OPTIONS,
   type DiagnosticLead,
   type DiagnosticPurposeId,
-  type DiagnosticExamModule,
   type DiagnosticTestDateOption,
   type DiagnosticNativeLanguage,
 } from "@/lib/diagnostic-lead";
@@ -47,12 +45,11 @@ const ONBOARDING_STEPS: SplitShellStep[] = [
   { id: "name", label: "Your details" },
   { id: "band", label: "Target band" },
   { id: "purpose", label: "Purpose" },
-  { id: "writing", label: "Writing module" },
   { id: "date", label: "Test date" },
   { id: "language", label: "Native language" },
 ];
 
-const LAST_STEP = 5;
+const LAST_STEP = 4;
 
 const BAND_OPTIONS = [5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5];
 
@@ -106,7 +103,6 @@ export function DiagnosticStartExperience() {
   const [phone, setPhone] = useState("");
   const [targetBand, setTargetBand] = useState<number | null>(null);
   const [purpose, setPurpose] = useState<DiagnosticPurposeId | null>(null);
-  const [examModule, setExamModule] = useState<DiagnosticExamModule | null>(null);
   const [testDateOption, setTestDateOption] = useState<DiagnosticTestDateOption | null>(null);
   const [examDate, setExamDate] = useState("");
   const [nativeLanguage, setNativeLanguage] = useState<DiagnosticNativeLanguage | null>(null);
@@ -118,7 +114,6 @@ export function DiagnosticStartExperience() {
       setPhone(lead.phone);
       setTargetBand(lead.targetBand);
       if (lead.purpose) setPurpose(lead.purpose);
-      if (lead.examModule) setExamModule(lead.examModule);
       if (lead.testDateOption) setTestDateOption(lead.testDateOption);
       if (lead.examDate) setExamDate(lead.examDate);
       if (lead.nativeLanguage) setNativeLanguage(lead.nativeLanguage);
@@ -147,12 +142,11 @@ export function DiagnosticStartExperience() {
       case 0: return Boolean(fullName.trim()) && isValidIndiaPhone(phone);
       case 1: return targetBand != null;
       case 2: return purpose != null;
-      case 3: return examModule != null;
-      case 4:
+      case 3:
         if (testDateOption == null) return false;
         if (testDateOption === "booked") return isValidFutureExamDate(examDate);
         return true;
-      case 5: return nativeLanguage != null;
+      case 4: return nativeLanguage != null;
       default: return false;
     }
   };
@@ -168,7 +162,7 @@ export function DiagnosticStartExperience() {
       targetBand: targetBand ?? 7.0,
       examDate: finalExamDate,
       purpose: purpose ?? undefined,
-      examModule: examModule ?? undefined,
+      examModule: recommendExamModule(purpose) ?? undefined,
       testDateOption: testDateOption ?? undefined,
       nativeLanguage: nativeLanguage ?? undefined,
     };
@@ -196,11 +190,6 @@ export function DiagnosticStartExperience() {
   const handleNext = () => {
     if (!stepValid()) return;
     if (step < LAST_STEP) {
-      // Soft-preselect recommended Writing module when entering that step.
-      if (step === 2 && examModule == null && purpose) {
-        const recommended = recommendExamModule(purpose);
-        if (recommended) setExamModule(recommended);
-      }
       setStep(step + 1);
     } else {
       setBusy(true);
@@ -302,13 +291,6 @@ export function DiagnosticStartExperience() {
                   <StepPurpose value={purpose} onChange={setPurpose} />
                 )}
                 {step === 3 && (
-                  <StepExamModule
-                    value={examModule}
-                    purpose={purpose}
-                    onChange={setExamModule}
-                  />
-                )}
-                {step === 4 && (
                   <StepTestDate
                     option={testDateOption}
                     examDate={examDate}
@@ -316,7 +298,7 @@ export function DiagnosticStartExperience() {
                     onExamDateChange={setExamDate}
                   />
                 )}
-                {step === 5 && (
+                {step === 4 && (
                   <StepNativeLanguage
                     value={nativeLanguage}
                     onChange={setNativeLanguage}
@@ -533,76 +515,7 @@ function StepPurpose({
   );
 }
 
-/* ─── Step 4: Writing module (Academic vs General Training) ─── */
-
-function StepExamModule({
-  value,
-  purpose,
-  onChange,
-}: {
-  value: DiagnosticExamModule | null;
-  purpose: DiagnosticPurposeId | null;
-  onChange: (v: DiagnosticExamModule) => void;
-}) {
-  const recommended = recommendExamModule(purpose);
-
-  return (
-    <>
-      <h2 className="max-w-[18ch] font-display text-[32px] leading-[1.06] font-bold tracking-[-0.03em] text-[#0D1F3C] sm:text-[42px]">
-        Which IELTS Writing module are you preparing for?
-      </h2>
-      <p className="mt-[14px] max-w-[52ch] text-[17px] leading-[1.55] text-[#5A6B82]">
-        Listening, Reading and Speaking are the same for both versions. This
-        selection only determines your Writing content.
-      </p>
-      <div className="mt-9 grid max-w-[680px] grid-cols-1 gap-[14px] sm:grid-cols-2">
-        {EXAM_MODULE_OPTIONS.map((opt) => {
-          const selected = value === opt.id;
-          const isRecommended = recommended === opt.id;
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => onChange(opt.id)}
-              className={cn(
-                "flex cursor-pointer flex-col rounded-[14px] p-5 text-left transition-all",
-                selected
-                  ? "border-[1.5px] border-cyan border-l-4 bg-[#F0FAFB]"
-                  : "border-[1.5px] border-[#D5DCE6] hover:border-cyan/40",
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-[16px] font-semibold text-[#0D1F3C]">{opt.title}</p>
-                {selected ? (
-                  <div className="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-cyan">
-                    <Check className="size-[13px] text-white" strokeWidth={3} aria-hidden />
-                  </div>
-                ) : null}
-              </div>
-              {isRecommended ? (
-                <span className="mt-2 inline-flex w-fit rounded-md bg-[#D9F2F5] px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide text-cyan uppercase">
-                  Recommended for your goal
-                </span>
-              ) : null}
-              <p className="mt-3 text-[13px] leading-snug text-[#5A6B82]">{opt.subtitle}</p>
-              <p className="mt-2 text-[13px] leading-snug font-medium text-[#0D1F3C]">
-                {opt.task1}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-      <div className="mt-6 max-w-[680px]">
-        <InfoTip>
-          You can choose either module even if we recommend one — purpose is a
-          hint, not the final Writing content gate.
-        </InfoTip>
-      </div>
-    </>
-  );
-}
-
-/* ─── Step 5: Test Date ─── */
+/* ─── Step 4: Test Date ─── */
 
 function StepTestDate({
   option,

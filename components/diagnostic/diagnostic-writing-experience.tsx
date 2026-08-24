@@ -36,11 +36,14 @@ import { ApiError } from "@/lib/api";
 import { examTextInputProps } from "@/lib/exam-input-props";
 
 type WritingPanel = "task1" | "task2";
+const WRITING_ZERO_BAND_MAX_WORDS = 49;
 
 function buildShortWritingEvaluation(
   words: number,
 ): DiagnosticWritingEvaluation {
-  const band = shortResponseBand(words);
+  const noResponse = words <= 0;
+  const veryShort = words > 0 && words <= WRITING_ZERO_BAND_MAX_WORDS;
+  const band = veryShort ? 0 : shortResponseBand(words);
   return {
     evaluation_id: `short-local-${Date.now()}`,
     writing_band: band,
@@ -52,11 +55,15 @@ function buildShortWritingEvaluation(
     },
     feedback: {
       strengths: [],
-      weaknesses: [
-        "Response too short for a full IELTS Writing evaluation.",
-      ],
+      weaknesses: noResponse
+        ? ["No response collected."]
+        : veryShort
+          ? ["Response too short (under 50 words)."]
+          : ["Response too short for a full IELTS Writing evaluation."],
       improvement_tips: [
-        "Write at least 100 words to unlock AI criterion scoring.",
+        noResponse || veryShort
+          ? "Write at least 50 words to receive a non-zero Writing score."
+          : "Write at least 100 words to unlock AI criterion scoring.",
       ],
     },
     metadata: {
@@ -64,9 +71,11 @@ function buildShortWritingEvaluation(
       sentence_count: 0,
       paragraph_count: 0,
     },
-    warnings: [
-      "Too short for full IELTS evaluation — write 100+ words for AI scoring.",
-    ],
+    warnings: noResponse
+      ? ["No response collected — Writing score set to 0."]
+      : veryShort
+        ? ["Under 50 words — Writing score set to 0."]
+        : ["Too short for full IELTS evaluation — write 100+ words for AI scoring."],
     provider: "short_local",
   };
 }

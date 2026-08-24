@@ -3,6 +3,8 @@ import type { Entitlements, Subscription } from "@/lib/payments";
 import { FULL_SKILL_PROGRAM_SLUG } from "@/lib/plan-preview";
 
 export const WRITING_SKILL_SLUG = "writing_skill";
+export const SPEAKING_SKILL_SLUG = "speaking_skill";
+export const DUAL_BUNDLE_SLUG = "dual_bundle";
 
 const SKILL_KEYS = ["listening", "reading", "writing", "speaking"] as const;
 
@@ -156,6 +158,31 @@ export function canAccessPersonalizedDashboard(
 
 export const WRITING_SKILL_ONBOARDING_PATH = "/practice/writing/onboarding";
 export const WRITING_PRACTICE_PATH = "/practice/writing";
+export const SPEAKING_PRACTICE_PATH = "/practice/speaking";
+
+function planSlugInSubscription(
+  sub: Subscription | null | undefined,
+  slug: string,
+): boolean {
+  const ent = resolveEntitlementsFromSubscription(sub);
+  if (ent.plans.includes(slug)) return true;
+  if (!sub?.is_active) return false;
+  return (sub.plan_slug ?? "").toLowerCase() === slug;
+}
+
+/** Active Speaking Skill pack SKU (not FSP). */
+export function hasSpeakingSkillPlan(
+  sub: Subscription | null | undefined,
+): boolean {
+  return planSlugInSubscription(sub, SPEAKING_SKILL_SLUG);
+}
+
+/** Active Dual Bundle SKU (not FSP). */
+export function hasDualBundlePlan(
+  sub: Subscription | null | undefined,
+): boolean {
+  return planSlugInSubscription(sub, DUAL_BUNDLE_SLUG);
+}
 
 /**
  * Where to send the user after checkout unlock succeeds.
@@ -170,18 +197,26 @@ export function postCheckoutDestination(
     return "/dashboard?activating=1";
   }
   const receiptSlug = (opts?.receiptPlanSlug ?? "").toLowerCase();
-  if (
-    hasWritingSkillPlan(sub) ||
-    receiptSlug === WRITING_SKILL_SLUG
-  ) {
-    return WRITING_SKILL_ONBOARDING_PATH;
+  if (hasDualBundlePlan(sub) || receiptSlug === DUAL_BUNDLE_SLUG) {
+    return WRITING_PRACTICE_PATH;
+  }
+  if (hasWritingSkillPlan(sub) || receiptSlug === WRITING_SKILL_SLUG) {
+    return WRITING_PRACTICE_PATH;
+  }
+  if (hasSpeakingSkillPlan(sub) || receiptSlug === SPEAKING_SKILL_SLUG) {
+    return SPEAKING_PRACTICE_PATH;
   }
   return "/pricing";
 }
 
-/** Subscription is “unlocked” for checkout success (FSP or Writing Skill). */
+/** Subscription is “unlocked” for checkout success (any sellable diagnostic SKU). */
 export function subscriptionUnlocksAfterCheckout(
   sub: Subscription | null | undefined,
 ): boolean {
-  return hasFullSkillProgram(sub) || hasWritingSkillPlan(sub);
+  return (
+    hasFullSkillProgram(sub) ||
+    hasWritingSkillPlan(sub) ||
+    hasSpeakingSkillPlan(sub) ||
+    hasDualBundlePlan(sub)
+  );
 }

@@ -41,7 +41,7 @@ export type DiagnosticLead = {
   examDate: string;
   /** Onboarding step 3 — high-level purpose category. */
   purpose?: DiagnosticPurposeId;
-  /** Onboarding — explicit Writing module (Academic vs General Training). */
+  /** Derived from purpose: university → academic, else general_training. */
   examModule?: DiagnosticExamModule;
   /** Onboarding step 4 — test date flexibility. */
   testDateOption?: DiagnosticTestDateOption;
@@ -175,22 +175,27 @@ export function purposeDefaultBand(purpose: DiagnosticPurposeId): number {
 }
 
 /**
- * Soft Writing-module recommendation from purpose.
- * Never an irreversible assignment — user may still pick either track.
+ * Writing-module from purpose (no extra onboarding step).
+ * University → Academic. Every other known purpose → General Training.
  */
 export function recommendExamModule(
   purpose: DiagnosticPurposeId | string | null | undefined,
 ): DiagnosticExamModule | null {
   if (purpose === "university") return "academic";
-  if (purpose === "immigration") return "general_training";
+  if (
+    purpose === "immigration" ||
+    purpose === "professional" ||
+    purpose === "general"
+  ) {
+    return "general_training";
+  }
   return null;
 }
 
-/** professional / general (and unknown) — show both options with no “correct” hint. */
+/** Unknown / missing purpose — no “correct” hint. Known purposes always recommend. */
 export function requiresExplicitExamModuleChoice(
   purpose: DiagnosticPurposeId | string | null | undefined,
 ): boolean {
-  if (purpose === "professional" || purpose === "general") return true;
   if (!purpose) return true;
   return recommendExamModule(purpose) === null;
 }

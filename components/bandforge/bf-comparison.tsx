@@ -7,7 +7,7 @@ const traditional = [
 
 const bandforge = [
   "Free 15-minute diagnostic first — section-wise bands",
-  "Targeted Full Skill Program (Rs. 2999) — all four skills until exam day",
+  "Targeted Full Skill Program (Rs. 2499) — all four skills until exam day",
   "AI instantly plus Band 9 human review within 48 hours",
   "12 tasks over 90 days, mock on completion, Completion Guarantee",
 ] as const;

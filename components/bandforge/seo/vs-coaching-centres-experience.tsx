@@ -73,7 +73,7 @@ export function VsCoachingCentresExperience() {
             <BfSeoLeadAnswer>
               It depends on your schedule and budget — BandForge suits students
               who want a free diagnostic first, faster feedback, and the Full Skill
-              Program at Rs. 2999 without a long classroom commitment.
+              Program at Rs. 2499 without a long classroom commitment.
             </BfSeoLeadAnswer>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-muted sm:text-[0.9375rem]">

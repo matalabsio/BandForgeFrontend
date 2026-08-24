@@ -42,20 +42,23 @@ export function DashboardProfileSync({
     const purpose = lead?.purpose;
     const goal = lead?.goal;
     const leadModule = lead?.examModule;
-    const needsPurpose = !ieltsPurpose && Boolean(purpose);
-    const needsGoal = !ieltsGoal && Boolean(goal);
-    const needsExamModule =
-      examModule !== "academic" &&
-      examModule !== "general_training" &&
-      (leadModule === "academic" || leadModule === "general_training");
-    if (!needsPurpose && !needsGoal && !needsExamModule) return;
-
-    const fullName = (lead?.fullName ?? "").trim();
-    backfillStarted.current = true;
-
+    const leadExam = lead?.examDate?.slice(0, 10) || null;
     void (async () => {
       const user = await getMe().catch(() => null);
       if (!user || user.role === "guest") return;
+      const needsPurpose = !ieltsPurpose && Boolean(purpose);
+      const needsGoal = !ieltsGoal && Boolean(goal);
+      const needsExamModule =
+        examModule !== "academic" &&
+        examModule !== "general_training" &&
+        (leadModule === "academic" || leadModule === "general_training");
+      const needsExamDate = !user.exam_date && Boolean(leadExam);
+      if (!needsPurpose && !needsGoal && !needsExamModule && !needsExamDate) {
+        return;
+      }
+
+      const fullName = (lead?.fullName ?? "").trim();
+      backfillStarted.current = true;
       const name = (user.full_name ?? fullName).trim();
       if (!name) return;
       // Re-check profile module so we never overwrite an existing selection.
@@ -68,7 +71,7 @@ export function DashboardProfileSync({
         full_name: name,
         phone: user.phone ?? lead?.phone ?? null,
         target_band: user.target_band ?? lead?.targetBand ?? null,
-        exam_date: lead?.examDate ?? null,
+        exam_date: user.exam_date ?? leadExam,
         ...(needsPurpose && purpose ? { ielts_purpose: purpose } : {}),
         ...(needsGoal && goal ? { ielts_goal: goal } : {}),
         ...(writeModule && leadModule ? { exam_module: leadModule } : {}),

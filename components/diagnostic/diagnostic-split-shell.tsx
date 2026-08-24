@@ -982,14 +982,14 @@ export function DiagnosticSplitShell({
   const [railCollapsed, setRailCollapsed] = useState(false);
 
   useEffect(() => {
-    // Lock page to viewport for every diagnostic shell (onboarding + exam)
-    const prevHtml = document.documentElement.style.overflow;
-    const prevBody = document.body.style.overflow;
+    // Lock page to viewport for every diagnostic shell (onboarding + exam).
+    // Always clear on unmount — restoring a nested "hidden" leaves /profile
+    // and other app routes unable to scroll after leaving diagnostic.
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     return () => {
-      document.documentElement.style.overflow = prevHtml;
-      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
     };
   }, []);
 

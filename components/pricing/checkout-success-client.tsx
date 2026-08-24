@@ -8,7 +8,9 @@ import { ApiError } from "@/lib/api";
 import { getMe } from "@/lib/auth";
 import { DASHBOARD_AFTER_CHECKOUT_PATH } from "@/lib/checkout-navigate";
 import {
+  hasDualBundlePlan,
   hasFullSkillProgram,
+  hasSpeakingSkillPlan,
   hasWritingSkillPlan,
   postCheckoutDestination,
   subscriptionUnlocksAfterCheckout,
@@ -369,9 +371,11 @@ export function CheckoutSuccessClient() {
       >
         {hasFullSkillProgram(subscription)
           ? "Go to dashboard"
-          : hasWritingSkillPlan(subscription)
-            ? "Continue to Writing Skill"
-            : "Continue"}
+          : hasWritingSkillPlan(subscription) || hasDualBundlePlan(subscription)
+            ? "Continue to Writing practice"
+            : hasSpeakingSkillPlan(subscription)
+              ? "Continue to Speaking practice"
+              : "Continue"}
       </button>
 
       <p className="mt-3 font-mono text-[11px] text-muted-light">

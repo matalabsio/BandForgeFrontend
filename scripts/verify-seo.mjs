@@ -35,7 +35,7 @@ const FORBIDDEN = [
 
 const REQUIRED_ON_MARKETING = [
   "15-minute",
-  "2999",
+  "2499",
   "48 hours",
 ];
 

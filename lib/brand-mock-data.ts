@@ -148,7 +148,7 @@ export const BRAND_PRICING_TIERS: {
   {
     id: "full-skill-program",
     name: "Full Skill Program",
-    price: "Rs. 2999",
+    price: "Rs. 2499",
     period: "one-time",
     description:
       "All four skills — 48 practice hubs, personalised plan until your exam, AI plus Band 9 human review within 48 hours.",
@@ -280,7 +280,7 @@ export const BRAND_PLAN_PAGE_TIERS = [
   {
     id: "full-skill-program" as const,
     name: "Full Skill Program",
-    price: "Rs. 2999",
+    price: "Rs. 2499",
     period: "one-time",
     description: "All four IELTS skills — personalised plan until your exam date.",
     features: [
