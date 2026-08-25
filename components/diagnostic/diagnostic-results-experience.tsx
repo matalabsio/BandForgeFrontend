@@ -25,6 +25,9 @@ import {
   readDiagnosticResults,
   type DiagnosticResultsSnapshot,
 } from "@/lib/diagnostic-session";
+import { retryDiagnosticCompleteSyncAndReconcile } from "@/lib/diagnostic-results-sync";
+import { ensureSession, getMe } from "@/lib/auth";
+import { isFullAccountUser } from "@/lib/diagnostic-lead-sync";
 import { shouldResumeDiagnosticCheckout, ensureDiagnosticCheckoutQueryIfPending } from "@/lib/checkout-resume";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 
@@ -162,14 +165,44 @@ export function DiagnosticResultsExperience() {
   }, []);
 
   useEffect(() => {
-    const cached = readDiagnosticResults();
-    if (cached) {
-      setSnapshot(cached);
-      setLoading(false);
-    } else {
-      setError("missing_results");
-      setLoading(false);
+    let cancelled = false;
+
+    async function bootResults() {
+      const cached = readDiagnosticResults();
+      if (!cached) {
+        if (!cancelled) {
+          setError("missing_results");
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (!cancelled) {
+        setSnapshot(cached);
+        setLoading(false);
+      }
+
+      try {
+        const session = await ensureSession({
+          logoutOnUnauthorized: false,
+        }).catch(() => null);
+        const user = session ? await getMe().catch(() => null) : null;
+        if (cancelled || !session || !isFullAccountUser(user?.role)) return;
+
+        const reconciled = await retryDiagnosticCompleteSyncAndReconcile(cached);
+        if (!cancelled) setSnapshot(reconciled);
+      } catch (e) {
+        console.warn(
+          "[diagnostic] Results sync/reconcile failed; local results kept.",
+          e,
+        );
+      }
     }
+
+    void bootResults();
+    return () => {
+      cancelled = true;
+    };
   }, []);
   useEffect(() => {
     if (loading || error || !snapshot || checkoutResumeGate) return;

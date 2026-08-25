@@ -38,6 +38,7 @@ import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
 import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
 import {
+  destinationWhenPaidOnResultsNow,
   navigateAfterCheckoutVerify,
   shouldSkipPaidBootstrapRedirectNow,
 } from "@/lib/checkout-navigate-client";
@@ -226,7 +227,7 @@ export function DiagnosticPlanRevealExperience() {
             checkoutInFlight: checkoutInFlightRef.current,
           })
         ) {
-          router.replace("/dashboard");
+          router.replace(destinationWhenPaidOnResultsNow());
           return;
         }
 

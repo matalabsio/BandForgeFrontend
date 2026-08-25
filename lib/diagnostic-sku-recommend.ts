@@ -2,7 +2,7 @@
  * Diagnostic → Multi-SKU recommendation (Phase 1).
  *
  * Pure / deterministic — no API, no side effects.
- * See docs/diagnostic-sku-recommendation-plan.md §3–§4.
+ * See docs/diagnostic-to-personalized-plan.md §5.
  *
  * Slug string constants are defined here (same literals as payments / entitlements)
  * so Node unit tests can import this module without resolving the `@/` alias.

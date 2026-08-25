@@ -8,6 +8,7 @@ import { DIAGNOSTIC_EXAM_STEPS, examStepIndex } from "@/components/diagnostic/di
 import { DiagnosticPassageText } from "@/components/diagnostic/diagnostic-exam-shell";
 import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-module-footer";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
+import { DiagnosticWaitState } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import { DIAGNOSTIC_READING_TIMER_SEC } from "@/lib/diagnostic-catalog";
 import { RichText } from "@/components/rich-text";
 import {
@@ -349,9 +350,7 @@ export function DiagnosticReadingExperience() {
           ) : null}
 
           {loading ? (
-            <div className="flex flex-1 items-center justify-center p-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" role="status" aria-label="Loading" />
-            </div>
+            <DiagnosticWaitState />
           ) : (
             <>
               <div

@@ -71,7 +71,6 @@ export function DiagnosticListeningPrepExperience() {
           remaining={remaining}
           totalSec={DIAGNOSTIC_LISTENING_PREP_SEC}
           countdownLabel="Listening begins in"
-          loader="ring"
           badge={<Headphones className="size-7" strokeWidth={1.75} aria-hidden />}
           tips={tips}
         />

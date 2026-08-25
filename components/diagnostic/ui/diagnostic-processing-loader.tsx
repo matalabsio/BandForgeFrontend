@@ -213,3 +213,23 @@ export function DiagnosticProcessingLoader({
     </div>
   );
 }
+
+/** Centered pack-load / guard wait — same BandForge bars as processing. */
+export function DiagnosticWaitState({
+  label = "Loading",
+  className,
+}: {
+  label?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 items-center justify-center p-8",
+        className,
+      )}
+    >
+      <DiagnosticProcessingLoader size="sm" label={label} />
+    </div>
+  );
+}

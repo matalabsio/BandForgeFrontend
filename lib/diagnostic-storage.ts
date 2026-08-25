@@ -307,10 +307,29 @@ export function applyWritingEvaluationResult(
   return next;
 }
 
-export function completeDiagnostic(
+export type CompleteDiagnosticResult = {
+  progress: DiagnosticProgress;
+  /** True when POST /api/diagnostic/complete succeeded for a full account. */
+  synced: boolean;
+};
+
+type CompleteDiagnosticOptions = {
+  /** Test seam — defaults to syncDiagnosticToServer. */
+  sync?: (
+    snapshot: DiagnosticResultsSnapshot,
+    startedAt?: string,
+  ) => Promise<boolean>;
+};
+
+/**
+ * Mark the diagnostic complete locally, then await server persistence.
+ * Local results are always kept even when sync fails.
+ */
+export async function completeDiagnostic(
   scores: DiagnosticModuleScores,
   review?: DiagnosticProgress["review"],
-): DiagnosticProgress | null {
+  options?: CompleteDiagnosticOptions,
+): Promise<CompleteDiagnosticResult | null> {
   const progress = readDiagnosticProgress();
   if (!progress) return null;
 
@@ -338,11 +357,18 @@ export function completeDiagnostic(
     writingEvaluation: progress.writingEvaluation,
   };
   persistDiagnosticResults(snapshot);
-  void syncDiagnosticToServer(snapshot, progress.startedAt);
+
+  const sync = options?.sync ?? syncDiagnosticToServer;
+  let synced = false;
+  try {
+    synced = await sync(snapshot, progress.startedAt);
+  } catch {
+    synced = false;
+  }
 
   const lead = readDiagnosticLead();
   if (lead) {
     submitDiagnosticForReview(lead, finalProgress, snapshot);
   }
-  return finalProgress;
+  return { progress: finalProgress, synced };
 }

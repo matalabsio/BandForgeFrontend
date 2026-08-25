@@ -15,12 +15,22 @@ export function shouldNavigateToCheckoutSuccess(opts: {
 }
 
 /**
- * Paid diagnostic bootstrap must not race verify → /checkout/success.
- * Skip dashboard redirect while checkout is in flight or a receipt was just saved.
+ * Paid diagnostic bootstrap must not race an in-flight checkout (Razorpay /
+ * verify). Receipt alone must NOT keep the user stuck on results — send them
+ * to success or dashboard instead.
  */
 export function shouldSkipPaidBootstrapRedirect(opts: {
   checkoutInFlight?: boolean;
-  hasReceipt?: boolean;
 }): boolean {
-  return Boolean(opts.checkoutInFlight) || Boolean(opts.hasReceipt);
+  return Boolean(opts.checkoutInFlight);
+}
+
+/**
+ * Where to send an already-paid student who lands on diagnostic results.
+ * Receipt → sticky success page; otherwise dashboard activating.
+ */
+export function destinationWhenPaidOnResults(opts: {
+  hasReceipt?: boolean;
+}): string {
+  return opts.hasReceipt ? CHECKOUT_SUCCESS_PATH : DASHBOARD_AFTER_CHECKOUT_PATH;
 }

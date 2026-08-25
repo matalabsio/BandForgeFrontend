@@ -12,6 +12,7 @@ import { getLearningProfile } from "@/lib/learning-api";
 import { getSubscription } from "@/lib/payments";
 import { resetCheckoutResumeForPostAuth } from "@/lib/checkout-resume";
 import {
+  postLoginNeedsServerLookup,
   resolvePostLoginDestination,
   safePostLoginPath,
 } from "@/lib/post-login-destination";
@@ -20,6 +21,7 @@ function PostLoginContinueInner() {
   const searchParams = useSearchParams();
   const requestedPath = safePostLoginPath(searchParams.get("next"));
   const wantsCheckout = requestedPath.includes("checkout=1");
+  const needsServerLookup = postLoginNeedsServerLookup(requestedPath);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,12 +30,18 @@ function PostLoginContinueInner() {
       const snapshot = readDiagnosticResults();
       const lead = readDiagnosticLead();
 
-      // Never block checkout return on lead/diagnostic sync
-      if (snapshot && lead && !wantsCheckout) {
-        await syncDiagnosticLeadAfterAuth(snapshot, lead).catch(() => undefined);
-      } else if (snapshot && lead && wantsCheckout) {
-        // Results page opens Razorpay immediately and syncs in the background
+      // Never block navigation on lead/diagnostic sync (includes getMe).
+      if (snapshot && lead) {
         void syncDiagnosticLeadAfterAuth(snapshot, lead).catch(() => undefined);
+      }
+
+      // Mid-auth / explicit deep links (e.g. /diagnostic/writing): redirect now.
+      if (!needsServerLookup) {
+        if (cancelled) return;
+        window.location.replace(
+          resolvePostLoginDestination(requestedPath, Boolean(snapshot)),
+        );
+        return;
       }
 
       let hasServerDiagnostic = Boolean(snapshot);
@@ -89,7 +97,7 @@ function PostLoginContinueInner() {
     return () => {
       cancelled = true;
     };
-  }, [requestedPath, wantsCheckout]);
+  }, [requestedPath, wantsCheckout, needsServerLookup]);
 
   if (wantsCheckout) {
     return <ProcessingOverlay variant="creating" />;

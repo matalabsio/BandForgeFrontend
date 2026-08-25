@@ -23,6 +23,8 @@ gsap.registerPlugin(useGSAP);
 
 const WRITING_POLL_MS = 2000;
 const WRITING_WAIT_TIMEOUT_MS = 45_000;
+/** Brief dwell for status animation — do not force the full processing countdown. */
+const MIN_PROCESSING_DWELL_SEC = 2;
 
 type WritingLineState = "pending" | "active" | "done" | "failed";
 
@@ -115,10 +117,11 @@ export function DiagnosticProcessingExperience() {
   }, [elapsed]);
 
   useEffect(() => {
-    if (remaining > 0) return;
     if (!writingReady) return;
+    // Leave as soon as scoring is ready (plus a short dwell), not after a fixed 12s.
+    if (elapsed < MIN_PROCESSING_DWELL_SEC && remaining > 0) return;
     router.replace(diagnosticPaths.results);
-  }, [remaining, writingReady, router]);
+  }, [remaining, writingReady, elapsed, router]);
 
   useGSAP(
     () => {
@@ -202,7 +205,7 @@ export function DiagnosticProcessingExperience() {
             data-proc-reveal
             className="mt-2 text-center text-[14px] text-[#64748B]"
           >
-            Hang tight — this usually takes under a minute.
+            Hang tight — almost done.
           </p>
 
           <ul className="mt-7 space-y-3">

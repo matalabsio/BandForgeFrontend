@@ -46,6 +46,12 @@ export type PendingCheckoutResume = {
 /** Module claim — survives Strict Mode remount; cleared on soft-fail / dismiss. */
 let checkoutResumeClaimed = false;
 
+/**
+ * Live checkout attempt — survives remount while create-order / Razorpay / verify
+ * still run on the previous instance. Prevents a second executeCheckout → login bounce.
+ */
+let checkoutAttemptLive = false;
+
 export function isCheckoutResumeClaimed(): boolean {
   return checkoutResumeClaimed;
 }
@@ -58,9 +64,22 @@ export function clearCheckoutResumeClaimed(): void {
   checkoutResumeClaimed = false;
 }
 
-/** Test-only reset for claim. */
+export function isCheckoutAttemptLive(): boolean {
+  return checkoutAttemptLive;
+}
+
+export function markCheckoutAttemptLive(): void {
+  checkoutAttemptLive = true;
+}
+
+export function clearCheckoutAttemptLive(): void {
+  checkoutAttemptLive = false;
+}
+
+/** Test-only reset for claim + live attempt. */
 export function resetCheckoutResumeStateForTests(): void {
   checkoutResumeClaimed = false;
+  checkoutAttemptLive = false;
 }
 
 function sanitizePendingCheckoutResume(
@@ -166,27 +185,26 @@ export function isCheckoutOpeningLockHeld(): boolean {
 export function shouldResumeDiagnosticCheckout(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    // Only auto-resume when the URL explicitly asks for checkout. A stale
-    // pending flag alone must not blank /diagnostic/results after speaking.
+    // Require both URL intent and pending payload. Pending-only must not blank
+    // results after speaking; URL-only after abandon must not re-open Razorpay.
     const params = new URLSearchParams(window.location.search);
-    return params.get("checkout") === "1";
+    if (params.get("checkout") !== "1") return false;
+    return Boolean(peekPendingCheckoutResume());
   } catch {
     return false;
   }
 }
 
 /**
- * If pending checkout exists but the query was dropped (OAuth/continue edge),
- * rewrite to ?checkout=1 once. Does not blank results when there is no pending.
+ * Formerly rewrote the URL with history.replaceState (?checkout=1), which
+ * triggered Next ACTION_RESTORE remount storms. Resume is driven by pending +
+ * existing ?checkout=1 from login next=…; no client URL mutation.
  */
 export function ensureDiagnosticCheckoutQueryIfPending(): boolean {
   if (typeof window === "undefined") return false;
   try {
     if (window.location.pathname !== DIAGNOSTIC_RESULTS_PATH) return false;
-    if (shouldResumeDiagnosticCheckout()) return false;
-    if (!peekPendingCheckoutResume()) return false;
-    window.history.replaceState(null, "", DIAGNOSTIC_CHECKOUT_RETURN_PATH);
-    return true;
+    return shouldResumeDiagnosticCheckout();
   } catch {
     return false;
   }
@@ -243,6 +261,7 @@ export function abandonCheckoutResume(): void {
   clearPendingCheckoutResume();
   releaseCheckoutOpeningLock();
   clearCheckoutResumeClaimed();
+  clearCheckoutAttemptLive();
   clearCheckoutResumeSoftFailModal();
   clearCheckoutResumeAutoOpenSuppress();
 }
@@ -286,19 +305,20 @@ export function clearCheckoutResumeAutoOpenSuppress(): void {
   }
 }
 
+/**
+ * No-op: bare history.replaceState caused Next remount storms. After abandon,
+ * shouldResumeDiagnosticCheckout is false without pending even if ?checkout=1
+ * remains; success navigation uses router.replace to leave results entirely.
+ */
 export function stripCheckoutQueryFromResultsUrl(): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.history.replaceState(null, "", DIAGNOSTIC_RESULTS_PATH);
-  } catch {
-    /* ignore */
-  }
+  /* intentionally empty — see shouldResumeDiagnosticCheckout */
 }
 
 export type CheckoutResumeSoftFailModal =
   | "cancelled"
   | "verify_failed"
   | "payments_disabled"
+  | "provider_misconfigured"
   | "checkout_unavailable"
   | "payment_failed";
 

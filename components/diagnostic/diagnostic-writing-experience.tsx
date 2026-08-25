@@ -11,7 +11,12 @@ import {
 } from "@/components/diagnostic/diagnostic-exam-shell";
 import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-module-footer";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
-import { DIAGNOSTIC_WRITING_TIMER_SEC } from "@/lib/diagnostic-catalog";
+import { DiagnosticWaitState } from "@/components/diagnostic/ui/diagnostic-processing-loader";
+import {
+  DIAGNOSTIC_WRITING_TIMER_SEC,
+  diagnosticPaths,
+} from "@/lib/diagnostic-catalog";
+import { loginPathWithNext } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import {
   loadDiagnosticPack,
@@ -247,6 +252,10 @@ export function DiagnosticWritingExperience() {
       }
       router.replace(diagnosticTransitionPath("writing-speaking"));
     } catch (e: unknown) {
+      if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+        router.replace(loginPathWithNext(diagnosticPaths.writing));
+        return;
+      }
       if (e instanceof ApiError && e.status === 429) {
         setError("Too many evaluations. Please wait an hour and try again.");
       } else if (e instanceof ApiError && e.status === 503) {
@@ -293,9 +302,7 @@ export function DiagnosticWritingExperience() {
           ) : null}
 
           {loading ? (
-            <div className="flex flex-1 items-center justify-center p-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" role="status" aria-label="Loading" />
-            </div>
+            <DiagnosticWaitState />
           ) : activeTask ? (
             <>
               <DiagnosticExamScroll>

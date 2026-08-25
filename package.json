@@ -24,6 +24,8 @@
     "test:diagnostic-sku-recommend": "node --experimental-strip-types lib/diagnostic-sku-recommend.test.mjs",
     "test:diagnostic-sku-offer": "node --experimental-strip-types lib/diagnostic-sku-offer.test.mjs",
     "test:diagnostic-checkout": "node --experimental-strip-types lib/diagnostic-checkout.test.mjs",
+    "test:diagnostic-complete-persist": "node --experimental-strip-types lib/diagnostic-complete-persist.test.mjs",
+    "test:diagnostic-checkout-auth": "node --experimental-strip-types lib/diagnostic-checkout-auth.test.mjs",
     "test:checkout-resume": "node --experimental-strip-types lib/checkout-resume.test.mjs",
     "test:plan-preview": "node lib/plan-preview.test.mjs",
     "test:entitlement": "node lib/entitlement.test.mjs",

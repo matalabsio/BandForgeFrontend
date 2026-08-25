@@ -6,6 +6,7 @@ import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-s
 import { DIAGNOSTIC_EXAM_STEPS, examStepIndex } from "@/components/diagnostic/diagnostic-exam-steps";
 import { DiagnosticModuleGuard } from "@/components/diagnostic/diagnostic-module-guard";
 import { DiagnosticTimerPill } from "@/components/diagnostic/ui/diagnostic-timer-pill";
+import { DiagnosticWaitState } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import {
   SpeakingExamFlow,
   type SpeakingFlowMeta,
@@ -127,7 +128,7 @@ export function DiagnosticSpeakingExperience() {
   );
 
   const handleExamComplete = useCallback(
-    (recordings: SpeakingSessionRecording[]) => {
+    async (recordings: SpeakingSessionRecording[]) => {
       if (!pack || submitting) return;
       const expectedQuestionIds = [
         ...pack.speaking.part1.questions.map((question) => question.id),
@@ -146,7 +147,11 @@ export function DiagnosticSpeakingExperience() {
       );
 
       const progress = readDiagnosticProgress();
-      if (!progress) return;
+      if (!progress) {
+        setSubmitting(false);
+        setError("Diagnostic session expired. Please start again.");
+        return;
+      }
 
       const finalAnswers: DiagnosticSpeakingAnswers = { ...speakingAnswers };
       for (const rec of recordings) {
@@ -177,7 +182,25 @@ export function DiagnosticSpeakingExperience() {
         answers: { ...progress.answers, speaking: finalAnswers },
       });
 
-      completeDiagnostic(scores, review);
+      try {
+        const result = await completeDiagnostic(scores, review);
+        if (!result) {
+          setSubmitting(false);
+          setError("Diagnostic session expired. Please start again.");
+          return;
+        }
+        if (!result.synced) {
+          console.warn(
+            "[diagnostic] Server sync failed after completion; local results kept.",
+          );
+        }
+      } catch (e) {
+        console.warn(
+          "[diagnostic] Completion sync error; local results kept.",
+          e,
+        );
+      }
+
       const wake = wakeLockRef.current;
       wakeLockRef.current = null;
       if (wake) void wake.release();
@@ -247,9 +270,7 @@ export function DiagnosticSpeakingExperience() {
               totalMinutes={12}
             />
           ) : !pack ? (
-            <div className="flex flex-1 items-center justify-center p-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" role="status" aria-label="Loading" />
-            </div>
+            <DiagnosticWaitState />
           ) : (
             <SpeakingExamFlow
               variant="diagnostic"

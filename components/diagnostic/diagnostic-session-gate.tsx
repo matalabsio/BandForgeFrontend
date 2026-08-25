@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { DiagnosticWaitState } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import { ensureDiagnosticGuestSession } from "@/lib/diagnostic-session";
 
 type Props = {
@@ -40,8 +41,8 @@ export function DiagnosticSessionGate({ children }: Props) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" />
+      <div className="flex min-h-dvh flex-col">
+        <DiagnosticWaitState label="Starting session" />
       </div>
     );
   }

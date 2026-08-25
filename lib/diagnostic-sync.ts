@@ -20,6 +20,10 @@ type JwtPayload = {
   role?: string;
 };
 
+/** In-flight + success memo so remounts do not spam POST /diagnostic/complete. */
+const completeInFlight = new Map<string, Promise<boolean>>();
+const completeSucceeded = new Set<string>();
+
 function decodeJwtPayload(token: string): JwtPayload | null {
   try {
     const part = token.split(".")[1];
@@ -71,26 +75,20 @@ async function postComplete(body: DiagnosticCompleteBody): Promise<Response> {
   });
 }
 
-/**
- * Sync diagnostic bands when a logged-in student completes the funnel.
- * Skips guests (backend rejects them). Retries once after refresh on 401.
- */
-export async function syncDiagnosticToServer(
+async function syncDiagnosticToServerOnce(
   snapshot: DiagnosticResultsSnapshot,
   startedAt?: string,
 ): Promise<boolean> {
-  if (typeof window === "undefined") return false;
-
   let access = getAccessToken();
   if (!isLikelyFullAccountToken(access)) {
     // Stale/missing access — try cookie refresh before deciding guest.
     if (!hasSessionHintCookie() && !access) return false;
     try {
       await refreshSession();
-      access = getAccessToken();
     } catch {
       return false;
     }
+    access = getAccessToken();
     if (!isLikelyFullAccountToken(access)) return false;
   }
 
@@ -124,4 +122,44 @@ export async function syncDiagnosticToServer(
     /* non-blocking — local results remain in localStorage */
     return false;
   }
+}
+
+/**
+ * Sync diagnostic bands when a logged-in student completes the funnel.
+ * Skips guests (backend rejects them). Retries once after refresh on 401.
+ * Dedupes concurrent / remount callers by client_attempt_id.
+ */
+export async function syncDiagnosticToServer(
+  snapshot: DiagnosticResultsSnapshot,
+  startedAt?: string,
+): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  const attemptId = snapshot.mock_attempt_id?.trim();
+  if (!attemptId) return false;
+
+  if (completeSucceeded.has(attemptId)) return true;
+
+  const existing = completeInFlight.get(attemptId);
+  if (existing) return existing;
+
+  const pending = syncDiagnosticToServerOnce(snapshot, startedAt).then(
+    (ok) => {
+      completeInFlight.delete(attemptId);
+      if (ok) completeSucceeded.add(attemptId);
+      return ok;
+    },
+    (err) => {
+      completeInFlight.delete(attemptId);
+      throw err;
+    },
+  );
+  completeInFlight.set(attemptId, pending);
+  return pending;
+}
+
+/** Test-only: clear complete dedupe memo. */
+export function resetDiagnosticCompleteDedupeForTests(): void {
+  completeInFlight.clear();
+  completeSucceeded.clear();
 }

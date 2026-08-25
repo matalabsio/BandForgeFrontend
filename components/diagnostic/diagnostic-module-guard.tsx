@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DiagnosticWaitState } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import {
   readDiagnosticProgress,
@@ -33,8 +34,8 @@ export function DiagnosticModuleGuard({ module, children }: Props) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" />
+      <div className="flex min-h-dvh flex-col">
+        <DiagnosticWaitState />
       </div>
     );
   }

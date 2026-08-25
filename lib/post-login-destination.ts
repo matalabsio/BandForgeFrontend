@@ -47,6 +47,21 @@ function isLegacyPlanPath(path: string): boolean {
 }
 
 /**
+ * True when destination depends on subscription / learning-profile lookups.
+ * Explicit deep links (e.g. `/diagnostic/writing`) do not — redirect immediately.
+ */
+export function postLoginNeedsServerLookup(
+  requestedPath: string | null | undefined,
+): boolean {
+  const safePath = safePostLoginPath(requestedPath);
+  return (
+    isDefaultEntryPath(safePath) ||
+    isDiagnosticResultsPath(safePath) ||
+    isLegacyPlanPath(safePath)
+  );
+}
+
+/**
  * Resolve where to send a user after login / OAuth continue.
  *
  * - Paid → `/dashboard` for default entries / results checkout
