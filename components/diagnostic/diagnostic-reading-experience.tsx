@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { DiagnosticModuleGuard } from "@/components/diagnostic/diagnostic-module-guard";
@@ -24,13 +24,17 @@ import {
 } from "@/lib/diagnostic-storage";
 import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
 import { DiagnosticReadingMatchingHeadings } from "@/components/diagnostic/diagnostic-reading-matching-headings";
+import { ReadingAnswerSheet } from "@/modules/reading/components/reading-answer-sheet";
+import {
+  ReadingExamWorkspace,
+  scrollToReadingQuestion,
+  type ReadingWorkspaceTab,
+} from "@/modules/reading/components/reading-exam-workspace";
 import { ReadingQuestionInput } from "@/modules/reading/components/reading-question-input";
 import { SentenceInlineBlank } from "@/modules/listening/components/listening-inline-answer";
 import { splitPromptBlank } from "@/modules/reading/lib/reading-inline-blank";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import { cn } from "@/lib/utils";
-
-type Tab = "passage" | "questions";
 
 type ReadingQuestionBlock =
   | { kind: "single"; q: ReadingQuestion; index: number }
@@ -133,7 +137,7 @@ function PassageContent({ pack }: { pack: DiagnosticPack }) {
   const title = pack.reading.title ?? "Reading Passage";
   const passage = stripLeadingPassageTitle(pack.reading.passage, title);
   return (
-    <>
+    <div className="px-6 py-[18px] lg:px-11 lg:py-8">
       <p className="mb-2 font-mono text-[11px] tracking-wider text-teal uppercase lg:mb-2.5">
         Passage 1
       </p>
@@ -141,7 +145,7 @@ function PassageContent({ pack }: { pack: DiagnosticPack }) {
         {title}
       </h2>
       <DiagnosticPassageText text={passage} />
-    </>
+    </div>
   );
 }
 
@@ -150,62 +154,6 @@ function stripLeadingPassageTitle(passage: string, title: string): string {
   const trimmed = passage.trimStart();
   if (!title || !trimmed.startsWith(title)) return passage;
   return trimmed.slice(title.length).replace(/^\s*\n+/, "");
-}
-
-function ReadingAnswerSheet({
-  questions,
-  answers,
-  currentQuestionId,
-  onJump,
-}: {
-  questions: ReturnType<typeof packToReadingQuestions>;
-  answers: Record<string, string>;
-  currentQuestionId: string | null;
-  onJump: (id: string) => void;
-}) {
-  return (
-    <div className="shrink-0 border-b border-navy/10 bg-white px-3 py-3 sm:px-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-bold tracking-[0.16em] text-cyan uppercase">
-          Answer sheet
-        </p>
-        <p className="rounded-full bg-navy/[0.04] px-2.5 py-0.5 text-[11px] font-bold text-navy tabular-nums">
-          1-{questions.length}
-        </p>
-      </div>
-      <div
-        className="mt-2.5 grid grid-cols-5 gap-1.5 sm:grid-cols-10"
-        role="tablist"
-        aria-label="Question navigation"
-      >
-        {questions.map((q) => {
-          const answered = Boolean((answers[q.id] ?? "").trim());
-          const isCurrent = currentQuestionId === q.id;
-          const num = q.display_number ?? q.question_number;
-          return (
-            <button
-              key={q.id}
-              type="button"
-              role="tab"
-              onClick={() => onJump(q.id)}
-              className={cn(
-                "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center justify-self-center rounded-full border text-[12px] font-bold tabular-nums",
-                isCurrent
-                  ? "border-transparent bg-cyan text-white"
-                  : answered
-                    ? "border-cyan/50 bg-cyan/10 text-cyan"
-                    : "border-navy/14 bg-white text-[#5A6B82] hover:border-navy/30",
-              )}
-              aria-label={`Question ${num}${answered ? ", answered" : ""}`}
-              aria-selected={isCurrent}
-            >
-              {num}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 function QuestionsContent({
@@ -261,7 +209,7 @@ export function DiagnosticReadingExperience() {
     () => readDiagnosticProgress()?.answers.reading ?? {},
   );
   const [submitting, setSubmitting] = useState(false);
-  const [tab, setTab] = useState<Tab>("passage");
+  const [tab, setTab] = useState<ReadingWorkspaceTab>("passage");
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -273,6 +221,15 @@ export function DiagnosticReadingExperience() {
   }, []);
 
   const questions = pack ? packToReadingQuestions(pack) : [];
+
+  const answerSheetItems = useMemo(
+    () =>
+      questions.map((q) => ({
+        id: q.id,
+        number: q.display_number ?? q.question_number,
+      })),
+    [questions],
+  );
 
   const handleAnswer = useCallback((id: string, value: string) => {
     setCurrentQuestionId(id);
@@ -286,10 +243,7 @@ export function DiagnosticReadingExperience() {
   const handleJump = useCallback((id: string) => {
     setCurrentQuestionId(id);
     setTab("questions");
-    window.requestAnimationFrame(() => {
-      const el = document.getElementById(`reading-q-${id}`);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    scrollToReadingQuestion(id);
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -354,63 +308,33 @@ export function DiagnosticReadingExperience() {
           ) : (
             <>
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row"
+                className="flex min-h-0 flex-1 flex-col overflow-hidden"
                 style={readingThemeVars}
               >
-                {/* Mobile tabs */}
-                <div className="flex shrink-0 gap-1.5 px-4 pt-3 sm:px-6 lg:hidden">
-                  {(["passage", "questions"] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTab(t)}
-                      className={cn(
-                        "flex-1 cursor-pointer py-2.5 text-center text-sm font-medium capitalize transition-colors",
-                        tab === t
-                          ? "rounded-t-[11px] border border-b-0 border-navy/10 bg-navy/[0.05] font-semibold text-navy"
-                          : "text-[#6E83A0]",
-                      )}
-                    >
-                      {t === "passage" ? "Passage" : "Questions"}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:contents">
-                  {/* Passage panel */}
-                  <div
-                    className={cn(
-                      "min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-navy/10 bg-navy/[0.03] px-6 py-[18px] lg:w-[60%] lg:flex-none lg:border-r lg:px-11 lg:py-8",
-                      tab !== "passage" && "hidden lg:block",
-                    )}
-                  >
-                    <PassageContent pack={pack} />
-                  </div>
-
-                  {/* Questions panel */}
-                  <div
-                    className={cn(
-                      "flex min-h-0 flex-1 flex-col overflow-hidden border-t border-navy/10 bg-navy/[0.03] lg:w-[40%] lg:flex-none lg:border-t-0",
-                      tab !== "questions" && "hidden lg:flex",
-                    )}
-                  >
+                <ReadingExamWorkspace
+                  tab={tab}
+                  onTabChange={setTab}
+                  tone="diagnostic"
+                  passage={<PassageContent pack={pack} />}
+                  questionsHeader={
                     <ReadingAnswerSheet
-                      questions={questions}
+                      questions={answerSheetItems}
                       answers={answers}
                       currentQuestionId={currentQuestionId}
                       onJump={handleJump}
+                      tone="diagnostic"
                     />
-                    <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-                      <QuestionsContent
-                        questions={questions}
-                        answers={answers}
-                        currentQuestionId={currentQuestionId}
-                        onAnswer={handleAnswer}
-                        onFocus={setCurrentQuestionId}
-                      />
-                    </div>
-                  </div>
-                </div>
+                  }
+                  questions={
+                    <QuestionsContent
+                      questions={questions}
+                      answers={answers}
+                      currentQuestionId={currentQuestionId}
+                      onAnswer={handleAnswer}
+                      onFocus={setCurrentQuestionId}
+                    />
+                  }
+                />
               </div>
               <DiagnosticModuleFooter
                 label="Submit reading"
