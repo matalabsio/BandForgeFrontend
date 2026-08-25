@@ -6,9 +6,14 @@ import { getMe } from "@/lib/auth";
 
 /** Profile lead sync memo — one PATCH per attempt per session. */
 const leadProfileSynced = new Set<string>();
-const leadProfileInFlight = new Set<string>();
+/** In-flight profile sync promises so concurrent callers can await the same write. */
+const leadProfileInFlight = new Map<string, Promise<void>>();
 
-/** After full-account login: persist diagnostic + lead fields server-side (non-blocking). */
+/**
+ * After full-account login: persist diagnostic + lead fields server-side.
+ * Diagnostic attempt sync stays non-blocking; profile exam_date write is awaited
+ * so plan generation after payment sees the date.
+ */
 export async function syncDiagnosticLeadAfterAuth(
   snapshot: DiagnosticResultsSnapshot,
   lead: DiagnosticLead,
@@ -25,32 +30,60 @@ export async function syncDiagnosticLeadAfterAuth(
     user.exam_module !== "academic" &&
     user.exam_module !== "general_training";
 
-  // Never block checkout / navigation on these writes
+  // Never block checkout / navigation on diagnostic attempt sync
   void syncDiagnosticToServer(snapshot, startedAt);
 
-  if (!attemptId || leadProfileSynced.has(attemptId) || leadProfileInFlight.has(attemptId)) {
+  if (!attemptId) {
+    // Still persist exam_date / profile fields when attempt id is missing.
+    try {
+      await updateProfile({
+        full_name: lead.fullName,
+        phone: lead.phone,
+        target_band: lead.targetBand,
+        exam_date: lead.examDate,
+        ...(lead.purpose ? { ielts_purpose: lead.purpose } : {}),
+        ...(lead.goal ? { ielts_goal: lead.goal } : {}),
+        ...(shouldWriteExamModule && lead.examModule
+          ? { exam_module: lead.examModule }
+          : {}),
+      });
+    } catch {
+      /* best-effort */
+    }
     return;
   }
 
-  leadProfileInFlight.add(attemptId);
-  void updateProfile({
-    full_name: lead.fullName,
-    phone: lead.phone,
-    target_band: lead.targetBand,
-    exam_date: lead.examDate,
-    ...(lead.purpose ? { ielts_purpose: lead.purpose } : {}),
-    ...(lead.goal ? { ielts_goal: lead.goal } : {}),
-    ...(shouldWriteExamModule && lead.examModule
-      ? { exam_module: lead.examModule }
-      : {}),
-  })
-    .then(() => {
+  if (leadProfileSynced.has(attemptId)) return;
+
+  const existing = leadProfileInFlight.get(attemptId);
+  if (existing) {
+    await existing;
+    return;
+  }
+
+  const write = (async () => {
+    try {
+      await updateProfile({
+        full_name: lead.fullName,
+        phone: lead.phone,
+        target_band: lead.targetBand,
+        exam_date: lead.examDate,
+        ...(lead.purpose ? { ielts_purpose: lead.purpose } : {}),
+        ...(lead.goal ? { ielts_goal: lead.goal } : {}),
+        ...(shouldWriteExamModule && lead.examModule
+          ? { exam_module: lead.examModule }
+          : {}),
+      });
       leadProfileSynced.add(attemptId);
-    })
-    .catch(() => undefined)
-    .finally(() => {
+    } catch {
+      /* best-effort — backend plan gen has its own exam_date default */
+    } finally {
       leadProfileInFlight.delete(attemptId);
-    });
+    }
+  })();
+
+  leadProfileInFlight.set(attemptId, write);
+  await write;
 }
 
 export function isFullAccountUser(role: string | undefined): boolean {

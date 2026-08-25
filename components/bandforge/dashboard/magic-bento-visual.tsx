@@ -336,6 +336,22 @@ export function MagicBentoCardVisual({
       return <WeekVisual visual={visual} />;
     }
 
+    case "writing":
+      return (
+        <HeroMetric
+          value={`${visual.completed}/${visual.total}`}
+          pct={visual.pct}
+          caption={
+            visual.mockUnlocked
+              ? "Mock unlocked"
+              : visual.completed > 0
+                ? `${visual.pct}% complete`
+                : "Hubs not started"
+          }
+          title={title}
+        />
+      );
+
     default:
       return null;
   }

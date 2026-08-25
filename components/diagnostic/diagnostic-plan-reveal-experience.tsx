@@ -172,7 +172,11 @@ export function DiagnosticPlanRevealExperience() {
   const [hasSubscription, setHasSubscription] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planPrice, setPlanPrice] = useState("—");
+  const [planAmountPaise, setPlanAmountPaise] = useState<number | undefined>();
   const [overlay, setOverlay] = useState<OverlayState>(null);
+  const [overlayAmountPaise, setOverlayAmountPaise] = useState<
+    number | undefined
+  >();
   const [statusModal, setStatusModal] = useState<StatusModal>(null);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(
     null,
@@ -217,7 +221,10 @@ export function DiagnosticPlanRevealExperience() {
           const program = plansRes.plans.find(
             (p) => p.slug === FULL_SKILL_PROGRAM_SLUG,
           );
-          if (program) setPlanPrice(formatPlanPriceInr(program.amount));
+          if (program) {
+            setPlanPrice(formatPlanPriceInr(program.amount));
+            setPlanAmountPaise(program.amount);
+          }
         }
         const subscribed = hasFullSkillProgram(sub);
         setHasSubscription(subscribed);
@@ -251,6 +258,7 @@ export function DiagnosticPlanRevealExperience() {
     if (checkoutInFlightRef.current || checkoutBusy || hasSubscription) return;
     checkoutInFlightRef.current = true;
     setCheckoutBusy(true);
+    setOverlayAmountPaise(planAmountPaise);
     setOverlay("creating");
 
     const clearBusy = () => {
@@ -345,7 +353,7 @@ export function DiagnosticPlanRevealExperience() {
         setStatusModal("verify_failed");
       }
     }
-  }, [checkoutBusy, hasSubscription, lead, router, snapshot]);
+  }, [checkoutBusy, hasSubscription, lead, planAmountPaise, router, snapshot]);
 
   const handleVerifyRetry = useCallback(async () => {
     const pending = readCheckoutReceiptContext();
@@ -473,7 +481,9 @@ export function DiagnosticPlanRevealExperience() {
         )}
       </div>
 
-      {overlay ? <ProcessingOverlay variant={overlay} /> : null}
+      {overlay ? (
+        <ProcessingOverlay variant={overlay} amountPaise={overlayAmountPaise} />
+      ) : null}
       {statusModal ? (
         <PaymentStatusModal
           variant={statusModal}

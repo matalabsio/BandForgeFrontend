@@ -69,6 +69,14 @@ export type MagicBentoVisual =
       nextMilestone: number;
       monthLabel: string;
       days: MagicBentoHeatDay[];
+    }
+  | {
+      kind: "writing";
+      completed: number;
+      total: number;
+      /** 0–100 hub completion */
+      pct: number;
+      mockUnlocked: boolean;
     };
 
 export type MagicBentoCardIcon =
@@ -77,7 +85,8 @@ export type MagicBentoCardIcon =
   | "skills"
   | "focus"
   | "hubs"
-  | "streak";
+  | "streak"
+  | "writing";
 
 export type MagicBentoCardData = {
   label: string;

@@ -1,13 +1,19 @@
 /**
- * Client cache of today's plan tasks for day-level next/prev without
+ * Client cache of plan-day tasks for day-level next/prev without
  * fetching the learning profile mid-exam.
+ *
+ * Bucket is keyed by local calendar day written (`cachedOn`) so tomorrow /
+ * catch-up tasks stay valid while practicing ahead on the same local day.
+ * `planDate` is the study-plan day those tasks belong to.
  */
 
 import {
   resolveTodayTaskHref,
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
+import type { LearningProfile, LearningStudyTask } from "@/lib/learning-types";
 import type { PracticeSkill } from "@/lib/practice-types";
+import { findPlanDay } from "@/lib/study-plan-calendar";
 
 export type PlanDayTaskCacheRow = {
   id: string;
@@ -35,8 +41,13 @@ function notifyPlanDayTasksUpdated(): void {
 }
 
 type DayBucket = {
-  date: string;
+  /** Local calendar day when the bucket was written. */
+  cachedOn: string;
+  /** Study-plan day the tasks belong to (today, tomorrow, or catch-up). */
+  planDate: string;
   tasks: PlanDayTaskCacheRow[];
+  /** @deprecated legacy field — treated as cachedOn when present */
+  date?: string;
 };
 
 const MODULE_LABEL: Record<string, string> = {
@@ -68,8 +79,43 @@ function localDateKey(date: Date = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
+/** Parse plan day from task ids like `t-2026-08-26-listening-practice-s1`. */
+export function planDateFromTaskId(
+  taskId: string | null | undefined,
+): string | null {
+  if (!taskId) return null;
+  const m = /^t-(\d{4}-\d{2}-\d{2})-/.exec(taskId);
+  return m?.[1] ?? null;
+}
+
+/** Tasks for a plan day: calendar today uses todays_tasks; else study_plan day. */
+export function tasksForPlanDate(
+  profile: Pick<LearningProfile, "todays_tasks" | "study_plan">,
+  planDate: string,
+  today: string = localDateKey(),
+): LearningStudyTask[] {
+  if (planDate === today) {
+    return profile.todays_tasks ?? [];
+  }
+  const day = findPlanDay(profile.study_plan?.weeks ?? [], planDate);
+  return day?.tasks ?? [];
+}
+
 function emptyBucket(): DayBucket {
-  return { date: localDateKey(), tasks: [] };
+  const today = localDateKey();
+  return { cachedOn: today, planDate: today, tasks: [] };
+}
+
+function normalizeBucket(parsed: DayBucket): DayBucket | null {
+  if (!parsed || !Array.isArray(parsed.tasks)) return null;
+  const today = localDateKey();
+  const cachedOn = parsed.cachedOn || parsed.date;
+  if (!cachedOn || cachedOn !== today) return null;
+  return {
+    cachedOn,
+    planDate: parsed.planDate || cachedOn,
+    tasks: parsed.tasks,
+  };
 }
 
 function readBucket(): DayBucket {
@@ -78,14 +124,7 @@ function readBucket(): DayBucket {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyBucket();
     const parsed = JSON.parse(raw) as DayBucket;
-    if (
-      !parsed ||
-      parsed.date !== localDateKey() ||
-      !Array.isArray(parsed.tasks)
-    ) {
-      return emptyBucket();
-    }
-    return parsed;
+    return normalizeBucket(parsed) ?? emptyBucket();
   } catch {
     return emptyBucket();
   }
@@ -94,7 +133,14 @@ function readBucket(): DayBucket {
 function writeBucket(bucket: DayBucket): void {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(bucket));
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        cachedOn: bucket.cachedOn,
+        planDate: bucket.planDate,
+        tasks: bucket.tasks,
+      }),
+    );
     notifyPlanDayTasksUpdated();
   } catch {
     /* ignore quota */
@@ -110,9 +156,13 @@ export function cachePlanDayTasks(
     href?: string | null;
     status: "pending" | "done" | "skipped";
   }>,
+  opts?: { planDate?: string | null },
 ): void {
+  const today = localDateKey();
+  const planDate = opts?.planDate?.trim() || today;
   writeBucket({
-    date: localDateKey(),
+    cachedOn: today,
+    planDate,
     tasks: tasks.map((t) => ({
       id: t.id,
       module: t.module,
@@ -126,6 +176,10 @@ export function cachePlanDayTasks(
 
 export function readPlanDayTasks(): PlanDayTaskCacheRow[] {
   return readBucket().tasks;
+}
+
+export function readCachedPlanDate(): string {
+  return readBucket().planDate;
 }
 
 export function markCachedPlanTaskDone(taskId: string | null | undefined): void {
@@ -291,7 +345,7 @@ export function nextPendingPlanDayTask(
 }
 
 /**
- * Refresh day-task cache from learning today/profile.
+ * Refresh day-task cache from learning profile for the active plan day.
  * Always prefer a network refresh on results so Continue sees real pending work.
  * Marks current task (+ same-hub practice siblings) done locally so Continue skips
  * them even when the server PATCH 404s from task-id churn.
@@ -306,15 +360,21 @@ export async function ensurePlanDayTasksCached(
   const existing = readPlanDayTasks();
   const hasCurrent =
     !currentTaskId || existing.some((t) => t.id === currentTaskId);
+  const planDate =
+    planDateFromTaskId(currentTaskId) ??
+    readBucket().planDate ??
+    localDateKey();
 
   if (force || existing.length === 0 || !hasCurrent) {
     try {
       const { getLearningProfile } = await import("@/lib/learning-api");
       const profile = await getLearningProfile();
-      const incoming = profile.todays_tasks ?? [];
+      const incoming = tasksForPlanDate(profile, planDate);
       if (incoming.length > 0) {
         // Preserve local done marks across id/status churn from profile refresh.
-        cachePlanDayTasks(mergePlanDayStatusesIntoTasks(incoming));
+        cachePlanDayTasks(mergePlanDayStatusesIntoTasks(incoming), {
+          planDate,
+        });
       }
     } catch {
       /* keep existing cache */

@@ -14,6 +14,7 @@ type Props = {
   avatarUrl?: string | null;
   showPremiumCta?: boolean;
   mockUnlocked?: boolean;
+  showWritingNav?: boolean;
 };
 
 export function DashboardSidebarNav({
@@ -22,6 +23,7 @@ export function DashboardSidebarNav({
   avatarUrl = null,
   showPremiumCta = true,
   mockUnlocked = false,
+  showWritingNav = false,
 }: Props) {
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
 
@@ -32,7 +34,7 @@ export function DashboardSidebarNav({
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto" aria-label="Main">
-        {getDashboardNav({ mockUnlocked }).map((group, groupIndex) => (
+        {getDashboardNav({ mockUnlocked, showWritingNav }).map((group, groupIndex) => (
           <div key={group.title || `untitled-${groupIndex}`}>
             {group.title ? (
               <p className="mb-2 px-3 font-roboto-condensed text-[10px] font-bold uppercase tracking-[0.14em] text-ink/35">

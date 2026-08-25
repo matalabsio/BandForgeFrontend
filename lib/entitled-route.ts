@@ -34,7 +34,8 @@ type PracticeArgs = Args & {
 };
 
 /**
- * Practice hub routes: FSP for all skills; Writing Skill pack for writing only.
+ * Practice hub routes: FSP for all skills; Writing / Speaking / Dual packs
+ * for their respective skills only.
  */
 export function resolvePracticeEntitledRoute({
   learning,

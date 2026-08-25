@@ -30,6 +30,7 @@ import { ensureSession, getMe } from "@/lib/auth";
 import { isFullAccountUser } from "@/lib/diagnostic-lead-sync";
 import { shouldResumeDiagnosticCheckout, ensureDiagnosticCheckoutQueryIfPending } from "@/lib/checkout-resume";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
+import { readCheckoutReceiptContext } from "@/lib/payments";
 
 function aggregatePartialBand(snapshot: DiagnosticResultsSnapshot): number {
   const partial = aggregateBand(
@@ -292,7 +293,12 @@ export function DiagnosticResultsExperience() {
   }
 
   if (checkoutResumeGate && loading) {
-    return <ProcessingOverlay variant="creating" />;
+    return (
+      <ProcessingOverlay
+        variant="creating"
+        amountPaise={readCheckoutReceiptContext()?.amount}
+      />
+    );
   }
 
   return (

@@ -145,6 +145,9 @@ export function DiagnosticPlanCheckoutSection({
   const multiSkuEnabled = isDiagnosticMultiSkuRecommendEnabled();
   // Start null/false so SSR matches hydration; resume effect sets these after mount.
   const [overlay, setOverlay] = useState<OverlayState>(null);
+  const [overlayAmountPaise, setOverlayAmountPaise] = useState<
+    number | undefined
+  >();
   const [statusModal, setStatusModal] = useState<StatusModal>(null);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(
     null,
@@ -425,6 +428,10 @@ export function DiagnosticPlanCheckoutSection({
       checkoutInFlightRef.current = true;
       markCheckoutAttemptLive();
       setCheckoutBusy(true);
+      const planAmount = activePlansRef.current.find(
+        (p) => p.slug === checkoutSlug,
+      )?.amount;
+      setOverlayAmountPaise(planAmount);
       setOverlay("creating");
 
       const clearBusy = () => {
@@ -470,7 +477,8 @@ export function DiagnosticPlanCheckoutSection({
 
         const currentLead = readDiagnosticLead();
         if (currentLead) {
-          void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
+          // Await exam_date on profile before payment so FSP plan gen sees it.
+          await syncDiagnosticLeadAfterAuth(snapshot, currentLead);
         }
 
         const existingSub = await getSubscription().catch(() => null);
@@ -798,10 +806,18 @@ export function DiagnosticPlanCheckoutSection({
   const checkoutChrome = (
     <>
       {overlay ? (
-        <ProcessingOverlay variant={overlay} />
+        <ProcessingOverlay variant={overlay} amountPaise={overlayAmountPaise} />
       ) : resumeGate && !razorpayOpenRef.current ? (
         // Solid loader while resume is opening checkout — not while Razorpay is open.
-        <ProcessingOverlay variant="creating" />
+        <ProcessingOverlay
+          variant="creating"
+          amountPaise={
+            overlayAmountPaise ??
+            activePlans.find(
+              (p) => p.slug === selectedCheckoutSlugRef.current,
+            )?.amount
+          }
+        />
       ) : null}
       {statusModal ? (
         <PaymentStatusModal

@@ -4,6 +4,7 @@ import {
   Crosshair,
   Flame,
   LayoutGrid,
+  Pencil,
   Play,
   Target,
   BarChart3,
@@ -21,6 +22,7 @@ const ICON_MAP: Record<
   focus: Crosshair,
   hubs: LayoutGrid,
   streak: Flame,
+  writing: Pencil,
 };
 
 export function MagicBentoCalendarIcon({ className }: { className?: string }) {
