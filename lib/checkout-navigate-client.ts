@@ -1,9 +1,12 @@
 import {
+  abandonCheckoutResume,
   clearPendingCheckoutResume,
+  isCheckoutAttemptLive,
   releaseCheckoutOpeningLock,
 } from "@/lib/checkout-resume";
 import {
   CHECKOUT_SUCCESS_PATH,
+  destinationWhenPaidOnResults,
   shouldNavigateToCheckoutSuccess,
   shouldSkipPaidBootstrapRedirect,
 } from "@/lib/checkout-navigate";
@@ -38,23 +41,35 @@ export function navigateAfterCheckoutVerify(opts: {
   ) {
     return false;
   }
+  abandonCheckoutResume();
   clearCheckoutResumeState();
   opts.router.replace(CHECKOUT_SUCCESS_PATH);
   return true;
 }
 
-/** Client wrapper: reads session receipt so remounts after Razorpay still skip dashboard. */
+/**
+ * Skip paid bootstrap redirect only while a checkout attempt is live
+ * (instance ref or module-level live flag across remounts).
+ */
 export function shouldSkipPaidBootstrapRedirectNow(opts?: {
   checkoutInFlight?: boolean;
 }): boolean {
   return shouldSkipPaidBootstrapRedirect({
-    checkoutInFlight: opts?.checkoutInFlight,
+    checkoutInFlight:
+      Boolean(opts?.checkoutInFlight) || isCheckoutAttemptLive(),
+  });
+}
+
+/** Paid on results: success if receipt exists, else dashboard activating. */
+export function destinationWhenPaidOnResultsNow(): string {
+  return destinationWhenPaidOnResults({
     hasReceipt: Boolean(readCheckoutReceiptContext()),
   });
 }
 
 export {
   CHECKOUT_SUCCESS_PATH,
+  destinationWhenPaidOnResults,
   shouldNavigateToCheckoutSuccess,
   shouldSkipPaidBootstrapRedirect,
 };

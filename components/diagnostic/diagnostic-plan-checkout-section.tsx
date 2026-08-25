@@ -38,6 +38,7 @@ import { buildPlanPreview } from "@/lib/plan-preview";
 import { ApiError } from "@/lib/api";
 import { ensureSession, ensureSessionForCheckout, getMe, loginPathWithNext } from "@/lib/auth";
 import {
+  destinationWhenPaidOnResultsNow,
   navigateAfterCheckoutVerify,
   shouldSkipPaidBootstrapRedirectNow,
 } from "@/lib/checkout-navigate-client";
@@ -52,9 +53,11 @@ import {
   userAlreadyEntitledToPlanSlug,
   type DiagnosticCheckoutSlug,
 } from "@/lib/diagnostic-checkout";
+import { decideDiagnosticCheckoutAuthGate } from "@/lib/diagnostic-checkout-auth";
 import {
   DIAGNOSTIC_CHECKOUT_RETURN_PATH,
   abandonCheckoutResume,
+  clearCheckoutAttemptLive,
   clearCheckoutResumeClaimed,
   clearCheckoutResumeAutoOpenSuppress,
   clearPendingCheckoutResume,
@@ -63,8 +66,10 @@ import {
   consumePendingCheckoutResume,
   decideCheckoutResumeStart,
   ensureDiagnosticCheckoutQueryIfPending,
+  isCheckoutAttemptLive,
   isCheckoutResumeAutoOpenSuppressed,
   isCheckoutResumeClaimed,
+  markCheckoutAttemptLive,
   markCheckoutResumeClaimed,
   prepareCheckoutResumeRetry,
   releaseCheckoutOpeningLock,
@@ -113,6 +118,15 @@ type Props = {
   onResumeSettled?: () => void;
 };
 
+function isRazorpayAuthMisconfig(error: ApiError): boolean {
+  return (
+    error.status === 503 &&
+    /authentication failed|razorpay api authentication|api key has expired/i.test(
+      error.message,
+    )
+  );
+}
+
 /**
  * Gap → skills → blurred plan → offer → trust + in-page Razorpay checkout.
  * Mounted on `/diagnostic/results` as one seamless SPA.
@@ -126,7 +140,6 @@ export function DiagnosticPlanCheckoutSection({
   const router = useRouter();
   const [bootstrapping, setBootstrapping] = useState(true);
   const [hasSubscription, setHasSubscription] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planPrice, setPlanPrice] = useState("—");
   const [activePlans, setActivePlans] = useState<ActivePlanAmount[]>([]);
   const multiSkuEnabled = isDiagnosticMultiSkuRecommendEnabled();
@@ -160,8 +173,9 @@ export function DiagnosticPlanCheckoutSection({
     activePlansRef.current = activePlans;
   }, [activePlans]);
 
+  /** Session-expiry fallback only — never the normal mid-auth checkout path. */
   const redirectToLoginForCheckout = useCallback(
-    (sessionExpired = false, planSlug?: string) => {
+    (planSlug?: string) => {
       const slug = resolveDiagnosticCheckoutSlug({
         requestedSlug: planSlug ?? selectedCheckoutSlugRef.current,
         multiSkuEnabled,
@@ -172,7 +186,7 @@ export function DiagnosticPlanCheckoutSection({
         returnTo: DIAGNOSTIC_CHECKOUT_RETURN_PATH,
       });
       router.push(
-        loginPathWithNext(DIAGNOSTIC_CHECKOUT_RETURN_PATH, sessionExpired),
+        loginPathWithNext(DIAGNOSTIC_CHECKOUT_RETURN_PATH, true),
       );
     },
     [multiSkuEnabled, router],
@@ -230,6 +244,8 @@ export function DiagnosticPlanCheckoutSection({
     });
   }, [multiSkuEnabled, skuRecommendation, skillBands, activePlans]);
 
+  const attemptId = snapshot.mock_attempt_id;
+
   useEffect(() => {
     const currentLead = readDiagnosticLead();
     let cancelled = false;
@@ -260,7 +276,7 @@ export function DiagnosticPlanCheckoutSection({
             checkoutInFlight: checkoutInFlightRef.current,
           })
         ) {
-          router.replace("/dashboard");
+          router.replace(destinationWhenPaidOnResultsNow());
           return;
         }
 
@@ -268,7 +284,6 @@ export function DiagnosticPlanCheckoutSection({
           const user = await getMe().catch(() => null);
           if (cancelled) return;
           const full = isFullAccountUser(user?.role);
-          setIsLoggedIn(full);
           // Continue already kicked off lead sync on the checkout fast path.
           if (full && currentLead && !resumeGate && !isCheckoutResumeClaimed()) {
             void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
@@ -282,7 +297,10 @@ export function DiagnosticPlanCheckoutSection({
     return () => {
       cancelled = true;
     };
-  }, [resumeGate, router, snapshot]);
+    // Stabilize on attempt id — full snapshot identity changes after reconcile
+    // and must not re-fire plans/sub/lead sync.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot via attemptId
+  }, [resumeGate, router, attemptId]);
 
   /**
    * Drop the fullscreen resume gate. Soft fails keep ?checkout=1, restore
@@ -359,10 +377,9 @@ export function DiagnosticPlanCheckoutSection({
       wasPrimary?: boolean;
       resumeMode?: boolean;
     }) => {
-      // Only the in-flight ref is authoritative. `checkoutBusy` React state can
-      // stay true from the resume-gate spinner during bootstrap and must not
-      // abort auto-open (that left users on "Preparing secure checkout" forever).
-      if (checkoutInFlightRef.current) {
+      // Instance + module live flags: remount must not start a second attempt
+      // while create-order / Razorpay / verify still run on the prior instance.
+      if (checkoutInFlightRef.current || isCheckoutAttemptLive()) {
         return;
       }
       if (hasSubscription) {
@@ -406,11 +423,13 @@ export function DiagnosticPlanCheckoutSection({
       }
 
       checkoutInFlightRef.current = true;
+      markCheckoutAttemptLive();
       setCheckoutBusy(true);
       setOverlay("creating");
 
       const clearBusy = () => {
         checkoutInFlightRef.current = false;
+        clearCheckoutAttemptLive();
         setCheckoutBusy(false);
         releaseCheckoutOpeningLock();
       };
@@ -435,15 +454,17 @@ export function DiagnosticPlanCheckoutSection({
       try {
         const session = await ensureSessionForCheckout();
         const user = session ? await getMe().catch(() => null) : null;
-        if (!session || !isFullAccountUser(user?.role)) {
+        const authGate = decideDiagnosticCheckoutAuthGate({
+          hasSession: Boolean(session),
+          role: user?.role,
+        });
+        if (authGate.kind === "session_expired") {
           setOverlay(null);
           clearBusy();
-          // Pre-Razorpay: restore pending without suppress/card so post-login can auto-open.
-          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: false });
-          redirectToLoginForCheckout(false, checkoutSlug);
-          if (opts.resumeMode) {
-            onResumeSettled?.();
-          }
+          // Suppress auto-open until login owns the flow; do not settle the
+          // resume gate here or a remount will re-open checkout before navigate.
+          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: true });
+          redirectToLoginForCheckout(checkoutSlug);
           return;
         }
 
@@ -487,7 +508,7 @@ export function DiagnosticPlanCheckoutSection({
               await verifyPayment(response);
               logDiagnosticSkuPurchased(checkoutSlug);
               razorpayOpenRef.current = false;
-              abandonCheckoutResume();
+              // navigateAfterCheckoutVerify abandons resume + replaces success.
               navigateAfterCheckoutVerify({ router, verifyOk: true });
             } catch (e) {
               razorpayOpenRef.current = false;
@@ -543,19 +564,19 @@ export function DiagnosticPlanCheckoutSection({
         setOverlay(null);
         clearBusy();
         if (e instanceof ApiError && e.status === 401) {
-          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: false });
-          redirectToLoginForCheckout(true, checkoutSlug);
-          if (opts.resumeMode) {
-            onResumeSettled?.();
-          }
+          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: true });
+          redirectToLoginForCheckout(checkoutSlug);
         } else if (e instanceof ApiError && e.status === 503) {
+          const modal = isRazorpayAuthMisconfig(e)
+            ? "provider_misconfigured"
+            : "payments_disabled";
           if (opts.resumeMode) {
             finishResumeGate({
               restorePendingSlug: checkoutSlug,
-              modal: "payments_disabled",
+              modal,
             });
           } else {
-            setStatusModal("payments_disabled");
+            setStatusModal(modal);
           }
         } else if (e instanceof CheckoutPlanNotPurchasableError) {
           if (opts.resumeMode) {
@@ -587,7 +608,6 @@ export function DiagnosticPlanCheckoutSection({
       forceLockThenRefresh,
       hasSubscription,
       multiSkuEnabled,
-      onResumeSettled,
       redirectToLoginForCheckout,
       router,
       snapshot,
@@ -619,7 +639,8 @@ export function DiagnosticPlanCheckoutSection({
     if (shouldResume && resumeGate) {
       clearStaleCheckoutAutoOpenSuppress();
       releaseStaleCheckoutOpeningLockIfIdle({
-        checkoutInFlight: checkoutInFlightRef.current,
+        checkoutInFlight:
+          checkoutInFlightRef.current || isCheckoutAttemptLive(),
         razorpayOpen: razorpayOpenRef.current,
       });
     }
@@ -640,18 +661,20 @@ export function DiagnosticPlanCheckoutSection({
       return;
     }
 
-    // Only treat in-flight / Razorpay-open as live. A leftover sessionStorage
-    // opening lock must not hang the spinner for the full lock TTL.
+    // Instance refs reset on remount; module-live survives create-order / Razorpay.
     const processLive =
-      checkoutInFlightRef.current || razorpayOpenRef.current;
+      checkoutInFlightRef.current ||
+      razorpayOpenRef.current ||
+      isCheckoutAttemptLive();
     const claimed = isCheckoutResumeClaimed() || autoCheckoutStartedRef.current;
 
-    if (claimed && processLive) {
+    // Never start a second attempt while any prior attempt is live.
+    if (processLive) {
       return;
     }
 
     // Stale module claim with nothing live → recover so auto-open can run.
-    if (claimed && !processLive) {
+    if (claimed) {
       clearCheckoutResumeClaimed();
       autoCheckoutStartedRef.current = false;
     }
@@ -707,7 +730,13 @@ export function DiagnosticPlanCheckoutSection({
   useEffect(() => {
     if (!resumeGate) return;
     const t = window.setTimeout(() => {
-      if (razorpayOpenRef.current || checkoutInFlightRef.current) return;
+      if (
+        razorpayOpenRef.current ||
+        checkoutInFlightRef.current ||
+        isCheckoutAttemptLive()
+      ) {
+        return;
+      }
       prepareCheckoutResumeRetry(selectedCheckoutSlugRef.current, {
         suppressAutoOpen: true,
       });
@@ -734,6 +763,7 @@ export function DiagnosticPlanCheckoutSection({
     setPaymentFailureMessage(null);
     setStatusModal(null);
     checkoutInFlightRef.current = true;
+    markCheckoutAttemptLive();
     setCheckoutBusy(true);
     setOverlay("verifying");
     try {
@@ -760,6 +790,7 @@ export function DiagnosticPlanCheckoutSection({
       }
     } finally {
       checkoutInFlightRef.current = false;
+      clearCheckoutAttemptLive();
       setCheckoutBusy(false);
     }
   }, [router]);
@@ -905,30 +936,6 @@ export function DiagnosticPlanCheckoutSection({
           id="plan-unlock"
           className="scroll-mt-4 space-y-4 sm:scroll-mt-6 sm:space-y-5"
         >
-          {!isLoggedIn ? (
-            <div className="rounded-xl border border-[#B6E9F0] bg-[#E6F7FA] px-4 py-3 text-sm text-[#0E6E78]">
-              <Link
-                href={loginPathWithNext(DIAGNOSTIC_CHECKOUT_RETURN_PATH)}
-                onClick={() => {
-                  const slug =
-                    multiSkuEnabled && multiSkuOffer
-                      ? multiSkuOffer.primary.isActive
-                        ? multiSkuOffer.displayPrimary
-                        : FULL_SKILL_PROGRAM_SLUG
-                      : FULL_SKILL_PROGRAM_SLUG;
-                  setPendingCheckoutResume({
-                    planSlug: slug,
-                    returnTo: DIAGNOSTIC_CHECKOUT_RETURN_PATH,
-                  });
-                }}
-                className="cursor-pointer font-semibold text-[#0097A7] underline-offset-2 hover:underline"
-              >
-                Sign in
-              </Link>{" "}
-              to save your diagnostic scores and unlock checkout.
-            </div>
-          ) : null}
-
           {multiSkuEnabled && multiSkuOffer ? (
             <DiagnosticMultiSkuOffer
               offer={multiSkuOffer}

@@ -6,6 +6,7 @@ import { RichText } from "@/components/rich-text";
 import type { DiagnosticModule } from "@/lib/diagnostic-storage";
 import { DiagnosticExamTopBar } from "@/components/diagnostic/ui/diagnostic-exam-top-bar";
 import { DiagnosticModuleFooter } from "@/components/diagnostic/diagnostic-module-footer";
+import { DiagnosticWaitState } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 
 export const DIAGNOSTIC_EXAM_COLUMN_CLASS =
   "mx-auto w-full max-w-[760px] px-6 py-[18px] lg:px-10 lg:py-8";
@@ -68,13 +69,7 @@ export function DiagnosticExamShell({
       ) : null}
 
       {loading ? (
-        <div className="flex flex-1 items-center justify-center p-8">
-          <div
-            className="h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent"
-            role="status"
-            aria-label="Loading"
-          />
-        </div>
+        <DiagnosticWaitState />
       ) : (
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

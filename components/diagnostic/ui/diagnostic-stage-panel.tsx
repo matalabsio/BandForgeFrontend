@@ -7,7 +7,6 @@ import {
   bfPrimaryCtaDiagClass,
   bfPrimaryCtaDiagInnerClass,
 } from "@/components/bandforge/bf-primary-cta-styles";
-import { DiagnosticBookLoader } from "@/components/diagnostic/ui/diagnostic-book-loader";
 import { DiagnosticProcessingLoader } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import { TextType } from "@/components/ui/text-type";
 import { planTimedTextType } from "@/lib/timed-text-type";
@@ -38,12 +37,6 @@ type Props = {
    * still finish inside `totalSec` — included only in the typing budget.
    */
   typeBudgetExtraTexts?: string[];
-  /**
-   * `brand` — BandForge bars (analyzing screen).
-   * `ring` — circular countdown (prep).
-   * `book` — flipping book (legacy).
-   */
-  loader?: "brand" | "ring" | "book";
 };
 
 export function DiagnosticStagePanel({
@@ -60,7 +53,6 @@ export function DiagnosticStagePanel({
   alwaysShowCta = false,
   badge,
   typeBudgetExtraTexts,
-  loader = "brand",
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const progressPct = Math.min(
@@ -68,10 +60,6 @@ export function DiagnosticStagePanel({
     Math.max(0, ((totalSec - remaining) / Math.max(1, totalSec)) * 100),
   );
   const showCta = Boolean(ctaLabel && (alwaysShowCta || remaining === 0));
-  const circumference = 2 * Math.PI * 54;
-  const dashOffset = circumference * (1 - progressPct / 100);
-  const useBook = loader === "book";
-  const useBrand = loader === "brand";
 
   const tipTexts = tips?.map((t) => t.text) ?? [];
   const tipTextsKey = tipTexts.join("\0");
@@ -114,22 +102,6 @@ export function DiagnosticStagePanel({
     { scope: rootRef },
   );
 
-  useGSAP(
-    () => {
-      if (useBook || useBrand) return;
-      const el = rootRef.current?.querySelector<HTMLElement>("[data-countdown-num]");
-      if (!el) return;
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduce) return;
-      gsap.fromTo(
-        el,
-        { scale: 1.08 },
-        { scale: 1, duration: 0.35, ease: "power2.out" },
-      );
-    },
-    { scope: rootRef, dependencies: [remaining, useBook, useBrand] },
-  );
-
   const countdownCaption = (
     <>
       {countdownLabel}{" "}
@@ -146,81 +118,17 @@ export function DiagnosticStagePanel({
     >
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-5 py-8 sm:px-8 sm:py-10">
         <div data-stage-reveal className="mx-auto flex flex-col items-center">
-          {useBrand ? (
-            <>
-              <DiagnosticProcessingLoader
-                size="lg"
-                label={countdownCaption}
-                labelKey={remaining}
-              />
-              <div className="mt-3 h-1 w-40 overflow-hidden rounded-full bg-[#E2E8F0] sm:w-48">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#0097a7_0%,#00bcd4_50%,#0097a7_100%)] transition-[width] duration-1000 ease-linear"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-            </>
-          ) : useBook ? (
-            <DiagnosticBookLoader label={countdownCaption} />
-          ) : (
-            <>
-              <div className="relative size-[132px] sm:size-[148px]">
-                <svg
-                  className="size-full -rotate-90"
-                  viewBox="0 0 120 120"
-                  aria-hidden
-                >
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="54"
-                    fill="none"
-                    stroke="#E2E8F0"
-                    strokeWidth="6"
-                    strokeDasharray="2 6"
-                  />
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="54"
-                    fill="none"
-                    stroke="url(#diag-ring-grad)"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={dashOffset}
-                    className="transition-[stroke-dashoffset] duration-1000 ease-linear"
-                  />
-                  <defs>
-                    <linearGradient id="diag-ring-grad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#4DD0E1" />
-                      <stop offset="100%" stopColor="#00838F" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span
-                    data-countdown-num
-                    className="font-mono text-[36px] leading-none font-bold tracking-tight text-navy sm:text-[42px]"
-                  >
-                    {remaining}
-                  </span>
-                  <span className="mt-1 font-mono text-[11px] tracking-[0.14em] text-[#94A3B8] uppercase">
-                    sec
-                  </span>
-                </div>
-              </div>
-              <p className="mt-4 text-center text-[13px] text-[#64748B] sm:text-[14px]">
-                {countdownCaption}
-              </p>
-              <div className="mt-3 h-1 w-40 overflow-hidden rounded-full bg-[#E2E8F0] sm:w-48">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#0097a7_0%,#00bcd4_50%,#0097a7_100%)] transition-[width] duration-1000 ease-linear"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-            </>
-          )}
+          <DiagnosticProcessingLoader
+            size="lg"
+            label={countdownCaption}
+            labelKey={remaining}
+          />
+          <div className="mt-3 h-1 w-40 overflow-hidden rounded-full bg-[#E2E8F0] sm:w-48">
+            <div
+              className="h-full rounded-full bg-[linear-gradient(90deg,#0097a7_0%,#00bcd4_50%,#0097a7_100%)] transition-[width] duration-1000 ease-linear"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
         </div>
 
         <div

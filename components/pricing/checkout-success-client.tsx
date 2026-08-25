@@ -28,6 +28,8 @@ import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 
 const ACTIVATION_POLL_ATTEMPTS = 10;
 const ACTIVATION_POLL_MS = 2000;
+/** After unlock, auto-leave success unless the user clicks Continue first. */
+const AUTO_CONTINUE_MS = 3000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -126,6 +128,8 @@ export function CheckoutSuccessClient() {
   const [receiptDownloaded, setReceiptDownloaded] = useState(false);
   const downloadedRef = useRef(false);
   const reverifyAttemptedRef = useRef(false);
+  const autoContinueTimerRef = useRef<number | undefined>(undefined);
+  const navigatedRef = useRef(false);
 
   const doDownloadReceipt = useCallback(
     (
@@ -143,9 +147,34 @@ export function CheckoutSuccessClient() {
     [],
   );
 
+  const clearAutoContinueTimer = useCallback(() => {
+    if (autoContinueTimerRef.current !== undefined) {
+      window.clearTimeout(autoContinueTimerRef.current);
+      autoContinueTimerRef.current = undefined;
+    }
+  }, []);
+
+  const goToPostCheckout = useCallback(
+    (sub: Subscription | null | undefined) => {
+      if (navigatedRef.current) return;
+      if (!subscriptionUnlocksAfterCheckout(sub)) return;
+      navigatedRef.current = true;
+      clearAutoContinueTimer();
+      const receipt = readCheckoutReceiptContext();
+      router.replace(
+        postCheckoutDestination(sub, {
+          receiptPlanSlug: receipt?.plan_slug ?? null,
+        }),
+      );
+    },
+    [clearAutoContinueTimer, router],
+  );
+
   useEffect(() => {
     let active = true;
     let receiptTimer: number | undefined;
+    navigatedRef.current = false;
+    clearAutoContinueTimer();
 
     (async () => {
       try {
@@ -244,6 +273,11 @@ export function CheckoutSuccessClient() {
         receiptTimer = window.setTimeout(() => {
           if (active) doDownloadReceipt(sub, latestPaid, name, email);
         }, 800);
+
+        // Auto-continue after a short success dwell; CTA can leave earlier.
+        autoContinueTimerRef.current = window.setTimeout(() => {
+          if (active) goToPostCheckout(sub);
+        }, AUTO_CONTINUE_MS);
       } catch {
         if (active) router.replace("/pricing");
       } finally {
@@ -254,8 +288,15 @@ export function CheckoutSuccessClient() {
     return () => {
       active = false;
       if (receiptTimer !== undefined) window.clearTimeout(receiptTimer);
+      clearAutoContinueTimer();
     };
-  }, [router, doDownloadReceipt, activationRetry]);
+  }, [
+    router,
+    doDownloadReceipt,
+    activationRetry,
+    clearAutoContinueTimer,
+    goToPostCheckout,
+  ]);
 
   if (loading) {
     return <ProcessingOverlay variant="verifying" />;
@@ -358,14 +399,7 @@ export function CheckoutSuccessClient() {
 
       <button
         type="button"
-        onClick={() => {
-          const receipt = readCheckoutReceiptContext();
-          router.replace(
-            postCheckoutDestination(subscription, {
-              receiptPlanSlug: receipt?.plan_slug ?? null,
-            }),
-          );
-        }}
+        onClick={() => goToPostCheckout(subscription)}
         disabled={!subscriptionUnlocksAfterCheckout(subscription)}
         className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-navy-deep disabled:opacity-50"
       >
@@ -378,7 +412,10 @@ export function CheckoutSuccessClient() {
               : "Continue"}
       </button>
 
-      <p className="mt-3 font-mono text-[11px] text-muted-light">
+      <p className="mt-3 text-[13px] text-muted">
+        Continuing in a few seconds…
+      </p>
+      <p className="mt-1 font-mono text-[11px] text-muted-light">
         Receipt auto-downloaded. You can re-download from payment history anytime.
       </p>
     </div>
