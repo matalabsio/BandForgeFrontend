@@ -686,7 +686,9 @@ export function TodaysPlanPanel({
         onClick: () => {
           if (!studyPlan?.weeks?.length || !catchUpTarget) return;
           const day = findPlanDay(studyPlan.weeks, catchUpTarget.date);
-          if (day?.tasks?.length) cachePlanDayTasks(day.tasks);
+          if (day?.tasks?.length) {
+            cachePlanDayTasks(day.tasks, { planDate: catchUpTarget.date });
+          }
         },
       };
     }
@@ -699,7 +701,9 @@ export function TodaysPlanPanel({
         onClick: () => {
           if (!studyPlan?.weeks?.length) return;
           const day = findPlanDay(studyPlan.weeks, aheadTarget.date);
-          if (day?.tasks?.length) cachePlanDayTasks(day.tasks);
+          if (day?.tasks?.length) {
+            cachePlanDayTasks(day.tasks, { planDate: aheadTarget.date });
+          }
         },
       };
     }

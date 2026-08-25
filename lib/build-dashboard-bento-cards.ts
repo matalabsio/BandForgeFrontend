@@ -319,6 +319,19 @@ export function buildDashboardBentoCards({
   const examMeta = progressExamMeta(examTimeline);
   const todayPct = todayTaskProgress(learning.todays_tasks);
 
+  const writingHub = learning.hub_progress?.writing;
+  const writingCompleted = writingHub?.completed_count ?? 0;
+  const writingTotal = writingHub?.total_count ?? 12;
+  const writingPct =
+    writingTotal > 0
+      ? Math.min(100, Math.round((writingCompleted / writingTotal) * 100))
+      : 0;
+  const writingMockUnlocked = writingHub?.mock_unlocked ?? false;
+  const writingTitle =
+    writingCompleted > 0
+      ? `${writingCompleted} of ${writingTotal} hubs`
+      : "Writing hubs";
+
   const startCard: MagicBentoCardData = startNow
     ? {
         label: "Practice",
@@ -341,24 +354,45 @@ export function buildDashboardBentoCards({
         visual: { kind: "cta", progress: 100, ready: false },
       };
 
+  const progressCard: MagicBentoCardData = {
+    label: "Progress",
+    title: "Band progress",
+    description: gapDesc,
+    color: CARD_BG,
+    icon: "progress",
+    examLabel: examMeta.examLabel,
+    metaLabel: examMeta.metaLabel,
+    visual: {
+      kind: "gap",
+      current: bandGap.currentBand,
+      target: bandGap.targetBand,
+      pct: gapPct,
+      gap: bandGap.gap,
+    },
+  };
+
+  const writingCard: MagicBentoCardData = {
+    label: "Writing",
+    title: writingTitle,
+    description: writingMockUnlocked
+      ? "Mock unlocked — keep practising"
+      : "Task 1 and Task 2 practice",
+    color: CARD_BG,
+    icon: "writing",
+    href: "/practice/writing",
+    ctaLabel: "Open Writing",
+    visual: {
+      kind: "writing",
+      completed: writingCompleted,
+      total: writingTotal,
+      pct: writingPct,
+      mockUnlocked: writingMockUnlocked,
+    },
+  };
+
   return [
     startCard,
-    {
-      label: "Progress",
-      title: "Band progress",
-      description: gapDesc,
-      color: CARD_BG,
-      icon: "progress",
-      examLabel: examMeta.examLabel,
-      metaLabel: examMeta.metaLabel,
-      visual: {
-        kind: "gap",
-        current: bandGap.currentBand,
-        target: bandGap.targetBand,
-        pct: gapPct,
-        gap: bandGap.gap,
-      },
-    },
+    writingCard,
     {
       label: "Skills",
       title: skillTitle,
@@ -399,6 +433,8 @@ export function buildDashboardBentoCards({
           : "Finish hubs to unlock mocks",
       color: CARD_BG,
       icon: "hubs",
+      href: "/practice",
+      ctaLabel: "Open hubs",
       visual: {
         kind: "hubs",
         bars: hubs.bars,
@@ -406,12 +442,6 @@ export function buildDashboardBentoCards({
         total: hubs.total,
       },
     },
-    {
-      label: "",
-      title: "",
-      description: "",
-      color: CARD_BG,
-      empty: true,
-    },
+    progressCard,
   ];
 }

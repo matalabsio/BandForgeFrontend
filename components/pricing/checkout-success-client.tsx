@@ -299,7 +299,12 @@ export function CheckoutSuccessClient() {
   ]);
 
   if (loading) {
-    return <ProcessingOverlay variant="verifying" />;
+    return (
+      <ProcessingOverlay
+        variant="verifying"
+        amountPaise={readCheckoutReceiptContext()?.amount}
+      />
+    );
   }
 
   if (loadError) {

@@ -8,7 +8,12 @@ export const DUAL_BUNDLE_SLUG = "dual_bundle";
 
 const SKILL_KEYS = ["listening", "reading", "writing", "speaking"] as const;
 
-export type PracticeAccessKind = "fsp" | "writing_skill" | "none";
+export type PracticeAccessKind =
+  | "fsp"
+  | "writing_skill"
+  | "speaking_skill"
+  | "dual_bundle"
+  | "none";
 
 export function emptyEntitlements(): Entitlements {
   return {
@@ -92,6 +97,7 @@ export function hasWritingAccess(
 /**
  * Practice access mode. FSP wins for behavior when both exist;
  * entitlements still report both flags as true.
+ * Priority: FSP → writing_skill → speaking_skill → dual_bundle → none.
  */
 export function resolvePracticeAccessKind(
   sub: Subscription | null | undefined,
@@ -99,17 +105,54 @@ export function resolvePracticeAccessKind(
   const ent = resolveEntitlementsFromSubscription(sub);
   if (ent.full_skill_program) return "fsp";
   if (ent.writing_skill) return "writing_skill";
+  if (hasSpeakingSkillPlan(sub)) return "speaking_skill";
+  if (hasDualBundlePlan(sub)) return "dual_bundle";
   return "none";
 }
 
+/**
+ * Per-skill practice gate. Pack checks are independent so Writing + Speaking
+ * singles (or Dual) unlock the right skills even when kind priority prefers writing.
+ */
 export function canAccessPracticeSkill(
   sub: Subscription | null | undefined,
   skill: string,
 ): boolean {
-  const kind = resolvePracticeAccessKind(sub);
-  if (kind === "fsp") return true;
-  if (kind === "writing_skill") return skill === "writing";
+  if (hasFullSkillProgram(sub)) return true;
+  if (skill === "writing") {
+    return hasWritingSkillPlan(sub) || hasDualBundlePlan(sub);
+  }
+  if (skill === "speaking") {
+    return hasSpeakingSkillPlan(sub) || hasDualBundlePlan(sub);
+  }
   return false;
+}
+
+/** Skill-pack card unlocks on `/practice` (non-FSP index). */
+export function isWritingPackUnlocked(
+  sub: Subscription | null | undefined,
+): boolean {
+  return (
+    hasFullSkillProgram(sub) ||
+    hasWritingSkillPlan(sub) ||
+    hasDualBundlePlan(sub)
+  );
+}
+
+export function isSpeakingPackUnlocked(
+  sub: Subscription | null | undefined,
+): boolean {
+  return (
+    hasFullSkillProgram(sub) ||
+    hasSpeakingSkillPlan(sub) ||
+    hasDualBundlePlan(sub)
+  );
+}
+
+export function isDualPackUnlocked(
+  sub: Subscription | null | undefined,
+): boolean {
+  return hasFullSkillProgram(sub) || hasDualBundlePlan(sub);
 }
 
 export function hasModuleSummaryBands(profile: LearningProfile): boolean {

@@ -235,15 +235,28 @@ export function resolveExamModuleSelection(opts: {
   return null;
 }
 
-/** Generate a fallback exam date for non-booked options. */
+/**
+ * Fallback exam date when the user did not pick a booked date.
+ * Plan length is always prep_start → exam_date, so these drive timeline:
+ * - undecided     → +90 days (~3-month plan; daily "Today's plan" still applies)
+ * - 1-3_months    → ~2 months out (mid of the 1–3 month window)
+ * - booked        → not used; callers pass the real date instead
+ */
 export function fallbackExamDate(option: DiagnosticTestDateOption): string {
   const d = new Date();
+  d.setHours(0, 0, 0, 0);
   if (option === "1-3_months") {
     d.setMonth(d.getMonth() + 2);
+  } else if (option === "undecided") {
+    d.setDate(d.getDate() + 90);
   } else {
-    d.setMonth(d.getMonth() + 3);
+    // booked should not reach here; keep a safe mid-range default.
+    d.setMonth(d.getMonth() + 2);
   }
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function parseStoredLead(): (DiagnosticLead & { goal?: string }) | null {

@@ -15,7 +15,10 @@ import {
   isFullPracticePlanComplete,
   overallPlanPercent,
 } from "@/lib/dashboard-plan-math";
-import { hasFullSkillProgram } from "@/lib/entitlement";
+import {
+  canAccessPracticeSkill,
+  hasFullSkillProgram,
+} from "@/lib/entitlement";
 import { fetchLearningProfile } from "@/lib/learning-server";
 import { fetchSubscriptionResult } from "@/lib/payments-server";
 import { getCachedCookieHeader, getCachedServerSession } from "@/lib/server-cache";
@@ -53,6 +56,10 @@ export default async function BandforgeAppLayout({
   const shellAvatarUrl = user.avatar_display_url ?? null;
   const showPremiumCta =
     subResult.known && !hasFullSkillProgram(subResult.subscription);
+  const showWritingNav = canAccessPracticeSkill(
+    subResult.subscription,
+    "writing",
+  );
   const mockUnlocked = isFullPracticePlanComplete(
     learning?.hub_progress,
     learning?.study_plan,
@@ -86,6 +93,7 @@ export default async function BandforgeAppLayout({
               avatarUrl={user.avatar_display_url}
               showPremiumCta={showPremiumCta}
               mockUnlocked={mockUnlocked}
+              showWritingNav={showWritingNav}
             />
           }
         >

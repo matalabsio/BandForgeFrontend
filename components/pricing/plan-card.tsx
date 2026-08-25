@@ -1,212 +1,128 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { type Plan, formatInr } from "@/lib/payments";
+import { Check, ChevronRight } from "lucide-react";
+import { formatInr } from "@/lib/payments";
+import type { PricingDisplayPlan } from "@/lib/pricing-catalog";
+import { PlanCheckoutStrip } from "@/components/pricing/plan-checkout-strip";
 import { cn } from "@/lib/utils";
 
-export type PlanCardCopy = {
-  tagline: string;
-  features: string[];
-  cta: string;
-  badge?: "Most popular" | "Best value";
-};
-
-export const PLAN_COPY: Record<string, PlanCardCopy> = {
-  "writing-sprint": {
-    tagline: "Fix the IELTS Writing section that's costing you marks.",
-    features: [
-      "12 structured Writing tasks over 90 days",
-      "AI evaluation instantly on every task",
-      "Band 9-trained human review within 48 hours",
-      "1 full mock test unlocked on completion",
-      "Completion Guarantee — extend free if no improvement",
-    ],
-    cta: "Buy Writing Sprint",
-  },
-  "speaking-sprint": {
-    tagline: "Real cue-card answers with AI plus human band-descriptor feedback.",
-    features: [
-      "12 recorded Speaking tasks over 90 days",
-      "AI analysis of fluency, grammar, and pronunciation",
-      "Band 9-trained human review within 48 hours",
-      "1 full mock test unlocked on completion",
-      "Completion Guarantee — extend free if no improvement",
-    ],
-    cta: "Buy Speaking Sprint",
-  },
-  "dual-sprint": {
-    tagline: "Writing and Speaking together — the two skills coaches can't batch-test.",
-    features: [
-      "12 tasks across Writing and Speaking over 90 days",
-      "AI evaluation instantly on every task",
-      "Band 9-trained human review within 48 hours",
-      "1 full mock test unlocked on completion",
-      "Completion Guarantee — extend free if no improvement",
-    ],
-    cta: "Buy Dual Sprint",
-    badge: "Most popular",
-  },
-  "full_skill_program": {
-    tagline: "Listening, Reading, Writing, and Speaking in one focused program.",
-    features: [
-      "48 practice hubs (12 per skill)",
-      "Personalised daily plan until your exam date",
-      "4 full mocks (unlock after 12/12 per skill)",
-      "AI + examiner-reviewed Writing & Speaking",
-      "Completion Guarantee — extend free if no improvement",
-    ],
-    cta: "Buy Full Skill Program",
-    badge: "Best value",
-  },
-  writing_skill: {
-    tagline: "Master IELTS Writing with a focused Academic or General Training track.",
-    features: [
-      "12 Writing practice hubs (Task 1 + Task 2)",
-      "Hard sequential unlock — finish one set to open the next",
-      "Academic or General Training track (you choose)",
-      "1 full Writing mock after course completion",
-      "180 days access · AI + examiner-style feedback",
-    ],
-    cta: "Buy Writing Skill",
-  },
-  starter_monthly: {
-    tagline: "Get started with focused mock practice.",
-    features: [
-      "Selected mock test access",
-      "Listening & Reading instant scoring",
-      "Basic score dashboard",
-    ],
-    cta: "Buy Starter",
-  },
-  premium_monthly: {
-    tagline: "The complete IELTS prep experience.",
-    features: [
-      "Full mock test access",
-      "Writing human review",
-      "Speaking human review",
-      "Detailed score reports",
-      "Progress dashboard",
-    ],
-    cta: "Buy Premium",
-    badge: "Most popular",
-  },
-  premium_yearly: {
-    tagline: "A full year at the best per-month price.",
-    features: [
-      "Everything in Premium Monthly",
-      "12 months access",
-      "Best per-month price",
-    ],
-    cta: "Buy Annual",
-    badge: "Best value",
-  },
-};
+function planBadge(slug: string): "Popular" | "Best value" | null {
+  if (slug === "dual_bundle") return "Popular";
+  if (slug === "full_skill_program") return "Best value";
+  return null;
+}
 
 type PlanCardProps = {
-  plan: Plan;
+  plan: PricingDisplayPlan;
+  isSelected: boolean;
   isCurrent: boolean;
-  disabled: boolean;
   loading: boolean;
-  checkoutUnavailable?: boolean;
-  onBuy: (slug: string) => void;
+  checkoutUnavailable: boolean;
+  onSelect: (slug: string) => void;
+  onCheckout: (slug: string) => void;
 };
 
 export function PlanCard({
   plan,
+  isSelected,
   isCurrent,
-  disabled,
   loading,
-  checkoutUnavailable = false,
-  onBuy,
+  checkoutUnavailable,
+  onSelect,
+  onCheckout,
 }: PlanCardProps) {
-  const copy = PLAN_COPY[plan.slug] ?? {
-    tagline: plan.description ?? "",
-    features: [],
-    cta: `Buy ${plan.name}`,
-  };
-  const featured = copy.badge === "Most popular";
-  const durationLabel = `${plan.duration_days} days`;
+  const badge = planBadge(plan.slug);
+  const highlighted = badge === "Popular";
+  const previewFeatures = plan.features.slice(0, 3);
+  const canCheckout = plan.isActive && !checkoutUnavailable && !isCurrent;
+  const stripDisabled =
+    isCurrent || plan.comingSoon || loading || !canCheckout;
+
+  const checkoutLabel = isCurrent
+    ? "Current plan"
+    : plan.comingSoon
+      ? "Coming soon"
+      : loading
+        ? "Opening…"
+        : checkoutUnavailable
+          ? "Unavailable"
+          : plan.cta;
 
   return (
     <article
+      id={`plan-${plan.slug}`}
       className={cn(
-        "relative flex h-full flex-col rounded-[1.25rem] border bg-white p-5 transition-[border-color,box-shadow] duration-200 sm:p-6 lg:p-7",
-        featured
-          ? "border-cyan shadow-[0_18px_40px_-20px_rgb(0_188_212/0.45)] ring-1 ring-cyan/20"
-          : "border-border-soft shadow-[0_10px_28px_-22px_rgb(13_31_60/0.35)] hover:border-cyan/30 hover:shadow-[0_14px_32px_-22px_rgb(13_31_60/0.4)]",
+        "relative flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_10px_28px_-18px_rgb(13_31_60/0.28)] transition-[box-shadow,border-color,transform] duration-200",
+        "hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-20px_rgb(13_31_60/0.32)] motion-reduce:transform-none motion-reduce:hover:translate-y-0",
+        highlighted ? "border-cyan/45" : "border-border-soft",
+        isSelected && "border-cyan ring-1 ring-cyan/20",
+        plan.comingSoon && "opacity-90",
       )}
     >
-      {copy.badge ? (
-        <span
-          className={cn(
-            "absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-mono text-[0.625rem] font-bold tracking-[0.12em] uppercase",
-            copy.badge === "Most popular"
-              ? "bg-cyan text-white"
-              : "bg-navy text-white",
-          )}
+      <div className="flex flex-1 flex-col p-6 sm:p-7 lg:p-8">
+        {badge ? (
+          <span
+            className={cn(
+              "mb-3 inline-flex w-fit rounded-md px-2.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide uppercase",
+              badge === "Popular" ? "bg-cyan/10 text-cyan" : "bg-navy/8 text-navy",
+            )}
+          >
+            {badge}
+          </span>
+        ) : (
+          <span className="mb-3 block h-[1.375rem]" aria-hidden />
+        )}
+
+        <h3 className="font-display text-lg font-bold tracking-tight text-navy sm:text-[1.125rem]">
+          {plan.name}
+        </h3>
+        <p className="mt-1.5 text-[0.8125rem] leading-snug text-muted sm:text-[0.875rem]">
+          {plan.subtitle}
+        </p>
+
+        <div className="mt-5 flex items-baseline gap-1.5">
+          <span className="font-display text-[1.875rem] font-bold tracking-tight text-navy sm:text-[2rem]">
+            {formatInr(plan.amount)}
+          </span>
+          <span className="text-xs text-muted-light">one-time</span>
+        </div>
+
+        <ul className="mt-5 flex flex-1 flex-col gap-2">
+          {previewFeatures.map((feature) => (
+            <li
+              key={feature}
+              className="flex items-start gap-2.5 text-[0.8125rem] leading-snug text-muted"
+            >
+              <Check
+                className="mt-0.5 size-3.5 shrink-0 text-cyan/80"
+                strokeWidth={2.5}
+                aria-hidden
+              />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          type="button"
+          onClick={() => onSelect(plan.slug)}
+          aria-expanded={isSelected}
+          aria-haspopup="dialog"
+          className="mt-5 inline-flex min-h-8 cursor-pointer items-center gap-1 self-start py-1 text-sm font-semibold text-cyan transition-colors hover:text-brand-sky-hover focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40"
         >
-          {copy.badge}
-        </span>
-      ) : null}
-
-      <h3 className="font-display text-lg font-bold tracking-tight text-navy sm:text-[1.125rem]">
-        {plan.name}
-      </h3>
-      <p className="mt-1.5 min-h-[2.75rem] text-[0.8125rem] leading-snug text-muted sm:text-[0.84375rem]">
-        {copy.tagline}
-      </p>
-
-      <div className="mt-5 flex items-baseline gap-1.5">
-        <span className="font-display text-[2rem] leading-none font-extrabold tracking-[-0.03em] text-navy sm:text-[2.125rem]">
-          {formatInr(plan.amount)}
-        </span>
-        <span className="font-mono text-[0.6875rem] text-muted-light sm:text-xs">
-          / {durationLabel}
-        </span>
+          View details
+          <ChevronRight className="size-3.5" strokeWidth={2.25} aria-hidden />
+        </button>
       </div>
 
-      <ul className="mt-6 flex flex-1 flex-col gap-2.5">
-        {copy.features.map((feature) => (
-          <li
-            key={feature}
-            className="flex items-start gap-2.5 text-[0.8125rem] leading-snug text-[#3f4f63] sm:text-[0.84375rem]"
-          >
-            <Check
-              className="mt-0.5 size-4 shrink-0 text-cyan"
-              strokeWidth={2.5}
-              aria-hidden
-            />
-            <span>{feature}</span>
-          </li>
-        ))}
-      </ul>
-
-      <button
-        type="button"
-        disabled={disabled || isCurrent}
-        onClick={() => onBuy(plan.slug)}
-        className={cn(
-          "mt-7 inline-flex h-11 w-full items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/40 focus-visible:ring-offset-2",
-          isCurrent
-            ? "cursor-default border border-border-soft bg-surface text-muted"
-            : featured
-              ? "cursor-pointer bg-cyan text-white hover:bg-brand-sky-hover"
-              : "cursor-pointer bg-navy text-white hover:bg-navy-deep",
-          disabled && !isCurrent ? "cursor-not-allowed opacity-50" : "",
-        )}
-      >
-        {isCurrent
-          ? "Current plan"
-          : loading
-            ? "Opening secure checkout…"
-            : checkoutUnavailable
-              ? "Checkout unavailable"
-              : copy.cta}
-      </button>
-
-      <p className="mt-2.5 text-center font-mono text-[0.625rem] text-muted-light">
-        Prices in INR · Secure Razorpay checkout
-      </p>
+      <div className="mt-auto border-t border-border-soft">
+        <PlanCheckoutStrip
+          amountPaise={plan.amount}
+          label={checkoutLabel}
+          disabled={stripDisabled}
+          onCheckout={() => onCheckout(plan.slug)}
+        />
+      </div>
     </article>
   );
 }

@@ -45,10 +45,10 @@ export const PAGE_SEO_COPY = {
       "Fluent with friends, Band 6 with examiners? The gap is scored criteria — fluency, vocabulary, grammar, pronunciation — not confidence. The Speaking Sprint has you record real answers across Parts 1, 2 and 3: AI transcribes and evaluates instantly; a Band 9-trained specialist reviews within 48 hours and tells you exactly what to change. 12 tasks, 90 days of access, mock test on completion, Completion Guarantee. Built around the errors Telugu and Urdu speakers actually make.",
   },
   pricing: {
-    title: "BandForge Pricing — Full Skill Program Rs. 2499",
+    title: "BandForge Pricing — Writing, Speaking, Dual & Full Skill Program",
     description:
-      "Full Skill Program — Rs. 2499 one-time. All four IELTS skills, personalised plan until your exam. Free diagnostic first, always. No lock-ins.",
-    h1: "Simple pricing. Diagnostic always free.",
+      "Four one-time plans from Rs. 899 — Writing Skill, Speaking Skill, Dual Bundle, and Full Skill Program (Rs. 2499). Free diagnostic first, always. Secure Razorpay checkout.",
+    h1: "Pricing",
   },
   telugu: {
     title: "IELTS for Telugu Speakers — Coaching Built for You",

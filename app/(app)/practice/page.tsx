@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   BookIcon,
   HeadphonesIcon,
@@ -7,13 +6,10 @@ import {
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
 import { EntitledRouteGate } from "@/components/bandforge/dashboard/entitled-route-gate";
+import { PracticeSkillPackCards } from "@/components/bandforge/practice/practice-skill-pack-cards";
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import { fetchEntitlementGate } from "@/lib/entitled-route-server";
-import {
-  hasFullSkillProgram,
-  hasWritingSkillPlan,
-  WRITING_PRACTICE_PATH,
-} from "@/lib/entitlement";
+import { hasFullSkillProgram } from "@/lib/entitlement";
 import { PRACTICE_SKILLS, practiceSkillLabel } from "@/lib/practice-types";
 import {
   getCachedCookieHeader,
@@ -50,12 +46,9 @@ export default async function PracticeIndexPage() {
     user!.id,
   );
 
-  // Writing Skill-only: course home, not the four-skill practice index.
-  if (
-    hasWritingSkillPlan(subscription) &&
-    !hasFullSkillProgram(subscription)
-  ) {
-    redirect(WRITING_PRACTICE_PATH);
+  // Non-FSP: one page with Writing / Speaking / Dual locks — not the 4-skill index.
+  if (!hasFullSkillProgram(subscription)) {
+    return <PracticeSkillPackCards subscription={subscription} />;
   }
 
   return (

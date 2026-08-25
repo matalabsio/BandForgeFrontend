@@ -224,6 +224,40 @@ function cardModel(
   };
 }
 
+/** Fixed display order for the public pricing page. */
+export const PRICING_SKU_ORDER: readonly RecommendableSlug[] = [
+  WRITING_SKILL_SLUG,
+  SPEAKING_SKILL_SLUG,
+  DUAL_BUNDLE_SLUG,
+  FULL_SKILL_PROGRAM_SLUG,
+];
+
+const SKU_DURATION_DAYS: Record<RecommendableSlug, number> = {
+  [WRITING_SKILL_SLUG]: 180,
+  [SPEAKING_SKILL_SLUG]: 180,
+  [DUAL_BUNDLE_SLUG]: 180,
+  [FULL_SKILL_PROGRAM_SLUG]: 365,
+};
+
+export type PricingCatalogRow = SkuOfferCardModel & {
+  amountPaise: number;
+  durationDays: number;
+};
+
+/** Build all four pricing-page rows, merging live API amounts when present. */
+export function buildPricingCatalogRows(
+  activePlans: ReadonlyArray<ActivePlanAmount>,
+): PricingCatalogRow[] {
+  return PRICING_SKU_ORDER.map((slug) => {
+    const card = cardModel(slug, activePlans);
+    return {
+      ...card,
+      amountPaise: resolveSkuPricePaise(slug, activePlans),
+      durationDays: SKU_DURATION_DAYS[slug],
+    };
+  });
+}
+
 export function buildMultiSkuOfferView(input: {
   recommendation: SkuRecommendation;
   bands: SkillBands;

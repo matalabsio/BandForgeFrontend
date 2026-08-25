@@ -10,6 +10,7 @@ import {
   Receipt,
   Scale,
   Shield,
+  Tag,
 } from "lucide-react";
 
 // Temporarily hidden — product routes
@@ -23,6 +24,7 @@ export type BfFooterLink = {
 
 /** SEO / audience landing pages. */
 export const BF_FOOTER_RESOURCES: readonly BfFooterLink[] = [
+  { href: "/pricing", label: "Pricing", icon: Tag },
   { href: "/telugu", label: "Telugu speakers", icon: Languages },
   { href: "/urdu", label: "Urdu speakers", icon: Languages },
   { href: "/hyderabad", label: "Hyderabad", icon: MapPin },

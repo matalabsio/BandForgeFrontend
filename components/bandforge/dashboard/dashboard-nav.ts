@@ -5,6 +5,7 @@ import {
   ClipboardIcon,
   FileTextIcon,
   HomeIcon,
+  PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -30,37 +31,48 @@ export type NavGroup = {
 type NavOptions = {
   /** Full mocks unlock after the personalized practice plan is complete. */
   mockUnlocked?: boolean;
+  /** Show Writing when the user has writing practice access (FSP or Writing Skill). */
+  showWritingNav?: boolean;
 };
 
 /** Sidebar — primary routes. Complete Mock unlocks after the practice plan. */
 export function getDashboardNav({
   mockUnlocked = false,
+  showWritingNav = false,
 }: NavOptions = {}): NavGroup[] {
-  return [
-    {
-      title: "",
-      items: [
-        { label: "Today", href: "/dashboard", Icon: HomeIcon },
-        { label: "Full plan", href: "/study-plan", Icon: CalendarIcon },
-        {
-          label: "Complete Mock",
-          shortLabel: "Mock",
-          href: "/test",
-          Icon: FileTextIcon,
-          disabled: !mockUnlocked,
-          disabledHint: "Finish your personalized practice plan to unlock mocks",
-        },
-        { label: "Library", href: "/content-library", Icon: BookIcon },
-      ],
-    },
+  const items: NavLink[] = [
+    { label: "Today", href: "/dashboard", Icon: HomeIcon },
+    { label: "Full plan", href: "/study-plan", Icon: CalendarIcon },
   ];
+  if (showWritingNav) {
+    items.push({
+      label: "Writing",
+      href: "/practice/writing",
+      Icon: PencilIcon,
+    });
+  }
+  items.push(
+    {
+      label: "Complete Mock",
+      shortLabel: "Mock",
+      href: "/test",
+      Icon: FileTextIcon,
+      disabled: !mockUnlocked,
+      disabledHint: "Finish your personalized practice plan to unlock mocks",
+    },
+    { label: "Library", href: "/content-library", Icon: BookIcon },
+  );
+  return [{ title: "", items }];
 }
 
-/** Mobile / tablet tab bar — primary routes plus Report (no sidebar below lg). */
+/** Mobile / tablet tab bar — primary routes plus Report (no Writing; use dashboard card). */
 export function getMobileBottomNav({
   mockUnlocked = false,
 }: NavOptions = {}): NavLink[] {
-  const items = [...(getDashboardNav({ mockUnlocked })[0]?.items ?? [])];
+  const items = [
+    ...(getDashboardNav({ mockUnlocked, showWritingNav: false })[0]?.items ??
+      []),
+  ];
   items.push({
     label: "Report card",
     shortLabel: "Report",
@@ -84,6 +96,12 @@ export function isNavItemActive(pathname: string, href: string): boolean {
     return (
       pathname === "/content-library" ||
       pathname.startsWith("/content-library/")
+    );
+  }
+  if (href === "/practice/writing") {
+    return (
+      pathname === "/practice/writing" ||
+      pathname.startsWith("/practice/writing/")
     );
   }
   if (href !== "/dashboard" && href !== "/profile") {

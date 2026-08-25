@@ -200,7 +200,9 @@ function CardInner({ card }: { card: MagicBentoCardData }) {
     return <div className="magic-bento-card__body" aria-hidden />;
   }
   const titleInVisual =
-    card.visual?.kind === "cta" || card.visual?.kind === "gap";
+    card.visual?.kind === "cta" ||
+    card.visual?.kind === "gap" ||
+    card.visual?.kind === "writing";
   const hideTitle =
     titleInVisual ||
     card.visual?.kind === "streak";
@@ -263,9 +265,9 @@ function CardInner({ card }: { card: MagicBentoCardData }) {
               .join(" ")}
           >
             <span className="magic-bento-card__cta-label">
-              {card.icon === "practice" ? (
+              {card.icon === "practice" || card.icon === "writing" ? (
                 <MagicBentoIcon
-                  name="practice"
+                  name={card.icon}
                   className="magic-bento-card__cta-icon"
                 />
               ) : null}
