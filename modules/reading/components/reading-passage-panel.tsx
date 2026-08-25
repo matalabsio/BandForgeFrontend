@@ -2,16 +2,29 @@
 
 import { parsePassageBlocks } from "@/modules/reading/lib/passage-format";
 import { RichText } from "@/components/rich-text";
+import { cn } from "@/lib/utils";
 
 type Props = {
   passageText: string;
+  /** Parent owns scrolling (e.g. ReadingExamWorkspace). */
+  embedInScrollParent?: boolean;
 };
 
-export function ReadingPassagePanel({ passageText }: Props) {
+export function ReadingPassagePanel({
+  passageText,
+  embedInScrollParent = false,
+}: Props) {
   const blocks = parsePassageBlocks(passageText);
 
   return (
-    <div className="reading-passage-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] bg-[var(--reading-paper)] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+    <div
+      className={cn(
+        "reading-passage-scroll bg-[var(--reading-paper)] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8",
+        embedInScrollParent
+          ? "min-h-0"
+          : "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]",
+      )}
+    >
       <div className="mx-auto w-full max-w-prose">
         {blocks.length > 0 ? (
           <div className="space-y-6">

@@ -1,10 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { IeltsExamToolbar } from "@/components/exam/ielts-exam-toolbar";
 import { IELTS_EXAM_VARS } from "@/components/exam/ielts-exam-theme";
 import { bankExerciseToReadingQuestions } from "@/lib/bank-exercise-to-exam";
 import type { BankExerciseStart } from "@/lib/practice-api";
+import { ReadingAnswerSheet } from "@/modules/reading/components/reading-answer-sheet";
+import {
+  ReadingExamWorkspace,
+  scrollToReadingQuestion,
+  type ReadingWorkspaceTab,
+} from "@/modules/reading/components/reading-exam-workspace";
 import { ReadingPassagePanel } from "@/modules/reading/components/reading-passage-panel";
 import { ReadingQuestionSection } from "@/modules/reading/components/reading-question-section";
 import { groupReadingQuestions } from "@/modules/reading/lib/question-groups";
@@ -55,6 +61,10 @@ export function PracticeReadingExam({
     [questions, exercise.part],
   );
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [tab, setTab] = useState<ReadingWorkspaceTab>("passage");
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(
+    null,
+  );
   const passage =
     exercise.section.passage_text?.trim() ||
     exercise.section.instructions?.trim() ||
@@ -63,6 +73,21 @@ export function PracticeReadingExam({
   const answeredCount = questions.filter((q) =>
     (answers[q.id] ?? "").trim(),
   ).length;
+
+  const answerSheetItems = useMemo(
+    () =>
+      questions.map((q) => ({
+        id: q.id,
+        number: q.display_number ?? q.question_number,
+      })),
+    [questions],
+  );
+
+  const handleJump = useCallback((id: string) => {
+    setCurrentQuestionId(id);
+    setTab("questions");
+    scrollToReadingQuestion(id);
+  }, []);
 
   return (
     <div
@@ -91,32 +116,45 @@ export function PracticeReadingExam({
           {error}
         </p>
       ) : null}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        <div className="flex min-h-[38vh] max-h-[46vh] min-w-0 flex-col overflow-hidden border-b border-[var(--reading-border)] lg:max-h-none lg:min-h-0 lg:w-[56%] lg:flex-1 lg:border-b-0 lg:border-r">
-          <ReadingPassagePanel passageText={passage} />
-        </div>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 py-5 lg:w-[min(44%,560px)] lg:max-w-[560px] lg:shrink-0">
-          <div className="space-y-8">
-          {groups.map((group) => (
-            <ReadingQuestionSection
-              key={group.id}
-              group={group}
-              sectionId={asSectionId(group.id)}
-              layout="stack"
+      <ReadingExamWorkspace
+        tab={tab}
+        onTabChange={setTab}
+        tone="exam"
+        passage={<ReadingPassagePanel passageText={passage} embedInScrollParent />}
+        questionsHeader={
+          questions.length > 0 ? (
+            <ReadingAnswerSheet
+              questions={answerSheetItems}
               answers={answers}
-              onAnswer={(id, value) =>
-                setAnswers((prev) => ({ ...prev, [id]: value }))
-              }
+              currentQuestionId={currentQuestionId}
+              onJump={handleJump}
+              tone="exam"
             />
-          ))}
+          ) : null
+        }
+        questions={
+          <div className="space-y-8">
+            {groups.map((group) => (
+              <ReadingQuestionSection
+                key={group.id}
+                group={group}
+                sectionId={asSectionId(group.id)}
+                layout="stack"
+                answers={answers}
+                onAnswer={(id, value) => {
+                  setCurrentQuestionId(id);
+                  setAnswers((prev) => ({ ...prev, [id]: value }));
+                }}
+              />
+            ))}
+            {groups.length === 0 ? (
+              <p className="px-4 py-5 text-sm text-[var(--reading-ink-muted)]">
+                No questions in this set.
+              </p>
+            ) : null}
           </div>
-          {groups.length === 0 ? (
-            <p className="text-sm text-[var(--reading-ink-muted)]">
-              No questions in this set.
-            </p>
-          ) : null}
-        </div>
-      </div>
+        }
+      />
     </div>
   );
 }

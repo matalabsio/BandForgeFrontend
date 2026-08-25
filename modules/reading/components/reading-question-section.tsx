@@ -128,8 +128,9 @@ export function ReadingQuestionSection({
             const useInline = shouldUseReadingInlineBlank(q);
             return (
               <article
+                id={`reading-q-${q.id}`}
                 key={q.id}
-                className="rounded-lg border border-[var(--reading-border)] bg-white p-3 shadow-sm sm:p-4"
+                className="scroll-mt-3 rounded-lg border border-[var(--reading-border)] bg-white p-3 shadow-sm sm:p-4"
               >
                 {useInline ? (
                   <ReadingSentenceInline
@@ -164,7 +165,9 @@ export function ReadingQuestionSection({
 
   if (stacked) {
     return (
-      <div className="shrink-0 bg-[var(--reading-surface)]">{body}</div>
+      <div className="shrink-0 bg-[var(--reading-surface)] px-4 py-5 sm:px-6">
+        <div className="mx-auto max-w-2xl">{body}</div>
+      </div>
     );
   }
 

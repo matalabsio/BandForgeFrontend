@@ -56,6 +56,12 @@ import {
   submitWithExamSession,
 } from "@/modules/shared/lib/submit-with-exam-session";
 import { ExamTimeWarningDialog } from "@/components/exam/exam-time-warning-dialog";
+import { ReadingAnswerSheet } from "@/modules/reading/components/reading-answer-sheet";
+import {
+  ReadingExamWorkspace,
+  scrollToReadingQuestion,
+  type ReadingWorkspaceTab,
+} from "@/modules/reading/components/reading-exam-workspace";
 import { ReadingExamToolbar } from "@/modules/reading/components/reading-exam-toolbar";
 import { ReadingIntroOverlay } from "@/modules/reading/components/reading-intro-overlay";
 import { ReadingPassagePanel } from "@/modules/reading/components/reading-passage-panel";
@@ -191,6 +197,11 @@ export function ReadingPage({
   const [examPhase, setExamPhase] = useState<ReadingExamPhase>("intro");
   const [questionSection, setQuestionSection] =
     useState<QuestionSectionId>("tfng");
+  const [workspaceTab, setWorkspaceTab] =
+    useState<ReadingWorkspaceTab>("passage");
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(
+    null,
+  );
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const attemptIdRef = useRef<string | null>(null);
@@ -307,6 +318,7 @@ export function ReadingPage({
 
   const setAnswer = useCallback(
     (id: string, value: string) => {
+      setCurrentQuestionId(id);
       setAnswers((prev) => {
         const next = { ...prev, [id]: value };
         persistFlow(examPhase, questionSection, next, attemptId);
@@ -1053,6 +1065,39 @@ export function ReadingPage({
     [attemptId, answers, persistFlow],
   );
 
+  const handleAnswerSheetJump = useCallback(
+    (id: string) => {
+      setCurrentQuestionId(id);
+      const group = questionGroups.find((g) =>
+        g.questions.some((q) => q.id === id),
+      );
+      if (
+        group &&
+        QUESTION_SECTION_ORDER.includes(group.id as QuestionSectionId)
+      ) {
+        const section = group.id as QuestionSectionId;
+        setQuestionSection(section);
+        if (attemptId) {
+          persistFlow("questions", section, answers, attemptId);
+        }
+      }
+      setWorkspaceTab("questions");
+      window.requestAnimationFrame(() => {
+        scrollToReadingQuestion(id);
+      });
+    },
+    [questionGroups, attemptId, answers, persistFlow],
+  );
+
+  const answerSheetItems = useMemo(
+    () =>
+      questions.map((q) => ({
+        id: q.id,
+        number: q.display_number ?? q.question_number,
+      })),
+    [questions],
+  );
+
   useEffect(() => {
     if (attemptId && examPhase !== "intro") {
       persistFlow(examPhase, questionSection, answers, attemptId);
@@ -1231,71 +1276,91 @@ export function ReadingPage({
           ) : null}
 
           {examPhase === "questions" ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-              <div className="flex min-h-[38vh] max-h-[46vh] min-w-0 flex-col overflow-hidden border-b border-[var(--reading-border)] sm:min-h-[40vh] lg:max-h-[calc(100dvh-3rem)] lg:min-h-0 lg:w-[56%] lg:flex-1 lg:border-b-0 lg:border-r">
-                <ReadingPassagePanel passageText={passageText} />
-              </div>
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:w-[min(44%,560px)] lg:max-w-[560px] lg:shrink-0 lg:max-h-[calc(100dvh-3rem)]">
-                <ReadingSectionStepper
-                  current={activeQuestionSection}
-                  onSelect={handleStepperSelect}
-                  labels={{
-                    tfng: `${sectionQuestionRanges.tfng} · ${
-                      mockSlug === "m02" && passage === 3
-                        ? "Yes / No / Not Given"
-                        : "TFNG"
-                    }`,
-                    matching_headings: `${sectionQuestionRanges.matching_headings} · Headings`,
-                    sentence_completion: `${sectionQuestionRanges.sentence_completion} · Completion`,
-                  }}
-                  onBack={handleSectionBack}
-                  onContinue={handleSectionContinue}
-                  onSubmit={() => void submitAll()}
-                  busy={busy}
-                  isLastSection={isLastQuestionSection}
-                  continueLabel={continueLabel}
+            <ReadingExamWorkspace
+              tab={workspaceTab}
+              onTabChange={setWorkspaceTab}
+              tone="exam"
+              passage={
+                <ReadingPassagePanel
+                  passageText={passageText}
+                  embedInScrollParent
                 />
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  {currentGroup ? (
-                    <ReadingQuestionSection
-                      group={currentGroup}
-                      sectionId={activeQuestionSection}
-                      answers={answers}
-                      onAnswer={setAnswer}
-                    />
-                  ) : (
-                    <div className="flex flex-1 items-center justify-center px-6 py-10 text-center">
-                      <div className="max-w-md space-y-2">
-                        <p className="text-[14px] font-semibold text-[var(--reading-ink)]">
-                          No questions in this section
-                        </p>
-                        <p className="text-[13px] text-[var(--reading-ink)]/70">
-                          {isLastQuestionSection
-                            ? "This is the final section for this passage. You can submit now."
-                            : "This section has no questions for this test. Continue to the next section."}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  <ExamPartFooter
-                    variant="reading"
-                    label={
-                      isLastQuestionSection
-                        ? "Submit passage"
-                        : continueLabel
-                    }
-                    busy={busy}
-                    onAction={() => {
-                      if (isLastQuestionSection) {
-                        void submitAll();
-                      } else {
-                        handleSectionContinue();
-                      }
+              }
+              questionsHeader={
+                <>
+                  <ReadingSectionStepper
+                    current={activeQuestionSection}
+                    onSelect={handleStepperSelect}
+                    labels={{
+                      tfng: `${sectionQuestionRanges.tfng} · ${
+                        mockSlug === "m02" && passage === 3
+                          ? "Yes / No / Not Given"
+                          : "TFNG"
+                      }`,
+                      matching_headings: `${sectionQuestionRanges.matching_headings} · Headings`,
+                      sentence_completion: `${sectionQuestionRanges.sentence_completion} · Completion`,
                     }}
+                    onBack={handleSectionBack}
+                    onContinue={handleSectionContinue}
+                    onSubmit={() => void submitAll()}
+                    busy={busy}
+                    isLastSection={isLastQuestionSection}
+                    continueLabel={continueLabel}
                   />
-                </div>
-              </div>
-            </div>
+                  {answerSheetItems.length > 0 ? (
+                    <ReadingAnswerSheet
+                      questions={answerSheetItems}
+                      answers={answers}
+                      currentQuestionId={currentQuestionId}
+                      onJump={handleAnswerSheetJump}
+                      tone="exam"
+                    />
+                  ) : null}
+                </>
+              }
+              questions={
+                currentGroup ? (
+                  <ReadingQuestionSection
+                    group={currentGroup}
+                    sectionId={activeQuestionSection}
+                    layout="stack"
+                    answers={answers}
+                    onAnswer={setAnswer}
+                  />
+                ) : (
+                  <div className="flex flex-1 items-center justify-center px-6 py-10 text-center">
+                    <div className="max-w-md space-y-2">
+                      <p className="text-[14px] font-semibold text-[var(--reading-ink)]">
+                        No questions in this section
+                      </p>
+                      <p className="text-[13px] text-[var(--reading-ink)]/70">
+                        {isLastQuestionSection
+                          ? "This is the final section for this passage. You can submit now."
+                          : "This section has no questions for this test. Continue to the next section."}
+                      </p>
+                    </div>
+                  </div>
+                )
+              }
+              questionsFooter={
+                <ExamPartFooter
+                  variant="reading"
+                  label={
+                    isLastQuestionSection
+                      ? "Submit passage"
+                      : continueLabel
+                  }
+                  busy={busy}
+                  onAction={() => {
+                    if (isLastQuestionSection) {
+                      void submitAll();
+                    } else {
+                      handleSectionContinue();
+                    }
+                  }}
+                />
+              }
+            />
           ) : null}
         </>
       ) : null}

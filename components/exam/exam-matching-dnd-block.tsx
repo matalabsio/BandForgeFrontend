@@ -296,8 +296,9 @@ function QuestionSlot({
 
   return (
     <li
+      id={`reading-q-${q.id}`}
       className={cn(
-        "flex flex-col gap-2 border-b border-dashed py-3.5 last:border-b-0",
+        "scroll-mt-3 flex flex-col gap-2 border-b border-dashed py-3.5 last:border-b-0",
         theme.border,
         isActive && "rounded-[10px] border border-cyan/40 px-2 -mx-1",
       )}
