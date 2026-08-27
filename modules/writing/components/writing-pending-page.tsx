@@ -108,24 +108,47 @@ export function WritingPendingPage({
   const showTaskList = sortedTasks.length > 1;
 
   useEffect(() => {
-    if (sessionTasks.length < 2) return;
-    const sorted = [...sessionTasks].toSorted((a, b) => a.part - b.part);
-    const allReady = sorted.every(
-      (task) => task.human_band != null || aiReady(task.ai_status),
-    );
-    if (!allReady) return;
-    const preferred = sorted.find((task) => task.part === 2) ?? sorted[0];
-    if (!preferred) return;
-    router.replace(
-      appendPlanResultParams(
-        shortModuleWritingResultsPath(testNumber, preferred.attempt_id, {
-          mockAttemptId,
-          part: preferred.part,
-        }),
-        planCtx,
-      ),
-    );
-  }, [mockAttemptId, planCtx, router, sessionTasks, testNumber]);
+    // Multi-task mock session: wait until all parts ready, then open preferred part.
+    if (sessionTasks.length >= 2) {
+      const sorted = [...sessionTasks].toSorted((a, b) => a.part - b.part);
+      const allReady = sorted.every(
+        (task) => task.human_band != null || aiReady(task.ai_status),
+      );
+      if (!allReady) return;
+      const preferred = sorted.find((task) => task.part === 2) ?? sorted[0];
+      if (!preferred) return;
+      router.replace(
+        appendPlanResultParams(
+          shortModuleWritingResultsPath(testNumber, preferred.attempt_id, {
+            mockAttemptId,
+            part: preferred.part,
+          }),
+          planCtx,
+        ),
+      );
+      return;
+    }
+    // Single task (solo / plan): auto-open full feedback when AI is ready.
+    if (feedbackReady && !analyzing) {
+      router.replace(
+        appendPlanResultParams(
+          shortModuleWritingResultsPath(testNumber, attemptId, {
+            mockAttemptId,
+          }),
+          planCtx,
+        ),
+      );
+    }
+  }, [
+    analyzing,
+    attemptId,
+    feedbackReady,
+    mockAttemptId,
+    planCtx,
+    router,
+    sessionTasks,
+    testNumber,
+  ]);
 
   const title = scored
     ? `Your Writing band is ${humanBand!.toFixed(1)}`

@@ -40,6 +40,7 @@ export type Entitlements = {
   plans: string[];
   skills: SkillEntitlements;
   writing_skill: boolean;
+  speaking_skill: boolean;
   full_skill_program: boolean;
 };
 

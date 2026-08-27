@@ -136,6 +136,52 @@ export function bankExerciseToReadingQuestions(
   }));
 }
 
+/** Resolve IELTS Task 1 vs 2 for bank writing (section.part is often always 1). */
+export function resolveIeltsWritingPart(opts: {
+  questionType?: string | null;
+  sectionPart?: number | null;
+  title?: string | null;
+}): 1 | 2 {
+  const qtype = (opts.questionType || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[-\s]+/g, "_");
+  if (qtype) {
+    if (qtype.includes("task2") || qtype === "task_2" || qtype === "t2") {
+      return 2;
+    }
+    if (qtype.includes("task1") || qtype === "task_1" || qtype === "t1") {
+      return 1;
+    }
+  }
+
+  const title = (opts.title || "").trim().toLowerCase();
+  if (title) {
+    if (
+      title.includes("_t2") ||
+      title.endsWith("t2") ||
+      title.includes("task 2") ||
+      title.includes("task2") ||
+      title.includes("wt_t2")
+    ) {
+      return 2;
+    }
+    if (
+      title.includes("_t1") ||
+      title.endsWith("t1") ||
+      title.includes("task 1") ||
+      title.includes("task1") ||
+      title.includes("wt_t1")
+    ) {
+      return 1;
+    }
+  }
+
+  const sp = Number(opts.sectionPart);
+  if (Number.isFinite(sp) && sp >= 2) return 2;
+  return 1;
+}
+
 export function bankExerciseWritingPrompt(exercise: BankExerciseStart): {
   title: string;
   prompt: string;
@@ -148,7 +194,11 @@ export function bankExerciseWritingPrompt(exercise: BankExerciseStart): {
     (section.passage_text || "").trim() ||
     (first?.prompt || "").trim() ||
     "Write your response below.";
-  const part = (section.part >= 2 ? 2 : 1) as 1 | 2;
+  const part = resolveIeltsWritingPart({
+    questionType: first?.question_type,
+    sectionPart: section.part,
+    title: section.title,
+  });
   return {
     title: section.title?.trim() || `Writing Task ${part}`,
     prompt,

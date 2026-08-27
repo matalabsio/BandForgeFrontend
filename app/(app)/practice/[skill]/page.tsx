@@ -1,11 +1,13 @@
 import { notFound, redirect } from "next/navigation";
 import { PracticeHubListExperience } from "@/components/bandforge/practice/practice-hub-list-experience";
+import { SpeakingSkillCourseHome } from "@/components/bandforge/practice/speaking-skill-course-home";
 import { WritingSkillCourseHome } from "@/components/bandforge/practice/writing-skill-course-home";
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import { fetchEntitlementGate } from "@/lib/entitled-route-server";
 import { EntitledRouteGate } from "@/components/bandforge/dashboard/entitled-route-gate";
 import {
   hasFullSkillProgram,
+  hasSpeakingSkillPlan,
   hasWritingSkillPlan,
   WRITING_SKILL_ONBOARDING_PATH,
 } from "@/lib/entitlement";
@@ -92,6 +94,40 @@ export default async function PracticeSkillPage({
         practiceSkill={skill}
       >
         <WritingSkillCourseHome
+          hubs={visibleHubs}
+          mockUnlock={mockUnlock}
+          mockLockedMessage={mockLockedMessage}
+          hubLockedMessage={hubLockedMessage}
+        />
+      </EntitledRouteGate>
+    );
+  }
+
+  // Speaking Skill pack — sequential course home (no track onboarding).
+  if (
+    skill === "speaking" &&
+    hasSpeakingSkillPlan(subscription) &&
+    !hasFullSkillProgram(subscription)
+  ) {
+    const [hubs, mockUnlock] = await Promise.all([
+      fetchPracticeHubs(cookieHeader, skill),
+      fetchMockUnlock(cookieHeader, skill),
+    ]);
+    const visibleHubs = unlockAllForTesting
+      ? (hubs ?? []).map((hub) => ({
+          ...hub,
+          accessible: true,
+          locked_reason: null,
+        }))
+      : (hubs ?? []);
+
+    return (
+      <EntitledRouteGate
+        learning={profile}
+        subscription={subscription}
+        practiceSkill={skill}
+      >
+        <SpeakingSkillCourseHome
           hubs={visibleHubs}
           mockUnlock={mockUnlock}
           mockLockedMessage={mockLockedMessage}

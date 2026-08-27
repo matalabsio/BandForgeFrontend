@@ -25,6 +25,7 @@ export function emptyEntitlements(): Entitlements {
       speaking: false,
     },
     writing_skill: false,
+    speaking_skill: false,
     full_skill_program: false,
   };
 }
@@ -46,6 +47,7 @@ export function resolveEntitlementsFromSubscription(
         speaking: Boolean(sub.entitlements.skills?.speaking),
       },
       writing_skill: Boolean(sub.entitlements.writing_skill),
+      speaking_skill: Boolean(sub.entitlements.speaking_skill),
       full_skill_program: Boolean(sub.entitlements.full_skill_program),
     };
   }
@@ -67,6 +69,11 @@ export function resolveEntitlementsFromSubscription(
     if (!out.plans.includes(WRITING_SKILL_SLUG)) out.plans.push(WRITING_SKILL_SLUG);
     out.writing_skill = true;
     out.skills.writing = true;
+  }
+  if (slug === SPEAKING_SKILL_SLUG || name.includes("speaking skill")) {
+    if (!out.plans.includes(SPEAKING_SKILL_SLUG)) out.plans.push(SPEAKING_SKILL_SLUG);
+    out.speaking_skill = true;
+    out.skills.speaking = true;
   }
   return out;
 }
@@ -105,7 +112,7 @@ export function resolvePracticeAccessKind(
   const ent = resolveEntitlementsFromSubscription(sub);
   if (ent.full_skill_program) return "fsp";
   if (ent.writing_skill) return "writing_skill";
-  if (hasSpeakingSkillPlan(sub)) return "speaking_skill";
+  if (ent.speaking_skill) return "speaking_skill";
   if (hasDualBundlePlan(sub)) return "dual_bundle";
   return "none";
 }
@@ -217,7 +224,7 @@ function planSlugInSubscription(
 export function hasSpeakingSkillPlan(
   sub: Subscription | null | undefined,
 ): boolean {
-  return planSlugInSubscription(sub, SPEAKING_SKILL_SLUG);
+  return resolveEntitlementsFromSubscription(sub).speaking_skill;
 }
 
 /** Active Dual Bundle SKU (not FSP). */

@@ -72,8 +72,59 @@ export type BankExerciseStart = {
 export type BankExerciseSubmitResult = {
   attempt_id: string;
   status: "completed";
-  score: { correct: number; total: number; percent: number } | null;
+  /** Objective L/R score, or writing_ai pending payload. */
+  score: Record<string, unknown> | null;
   hub_completed: boolean;
+  writing_ai_pending?: boolean;
+  writing_part?: number | null;
+};
+
+export type PracticeWritingReview = {
+  attempt_id: string;
+  hub_id: string;
+  status: string;
+  module: string;
+  part: number;
+  test_title: string | null;
+  question_type: string;
+  prompt: string;
+  user_answer: string;
+  word_count: number;
+  band: number | null;
+  ai_band?: number | null;
+  ai_available?: boolean;
+  ai_status?: string | null;
+  band_source?: string;
+  human_verified?: boolean;
+  reviewer_notes?: string | null;
+  ai_criteria?: Record<string, number>;
+  ai_strengths?: string[];
+  ai_improvements?: string[];
+  ai_model_name?: string | null;
+  ai_provider?: string | null;
+  spelling_mistakes?: Array<{
+    original: string;
+    correction: string;
+    context?: string;
+  }>;
+  grammar_mistakes?: Array<{
+    original: string;
+    correction: string;
+    issue?: string;
+  }>;
+  next_band_advice?: string;
+  confidence?: number | null;
+  vocabulary_highlights?: Array<{
+    word: string;
+    polarity: "strong" | "weak";
+    alternatives?: string[];
+  }>;
+  strong_spans?: Array<{ text: string; reason?: string }>;
+  min_words: number;
+  submitted_at: string | null;
+  saved_for_review: boolean;
+  error?: string | null;
+  word_count_estimate?: number | null;
 };
 
 export function startPracticeExercise(
@@ -99,6 +150,15 @@ export function submitPracticeExercise(
       method: "POST",
       body: JSON.stringify({ answers }),
     },
+  );
+}
+
+export function getPracticeWritingReview(
+  hubId: string,
+  attemptId: string,
+): Promise<PracticeWritingReview> {
+  return examApiCall<PracticeWritingReview>(
+    `/api/practice/hubs/${encodeURIComponent(hubId)}/exercise/${encodeURIComponent(attemptId)}/writing-review`,
   );
 }
 

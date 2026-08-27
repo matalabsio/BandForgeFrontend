@@ -140,9 +140,31 @@ export function PracticeExerciseExperience({
           currentTaskId: planTaskId,
           completeHub: false,
         }) ?? nextHref;
-      if (res.score) {
+
+      // Writing bank: production AI eval (v5) → full feedback page (same as mocks).
+      if (skill === "writing" && res.writing_ai_pending) {
+        const q = new URLSearchParams({ attempt: res.attempt_id });
+        if (fromPlan) {
+          q.set("from", "plan");
+          if (planTaskId) q.set("taskId", planTaskId);
+          if (currentTask) q.set("task", currentTask);
+        }
+        router.push(
+          `/practice/writing/${hubId}/exercise/results?${q.toString()}`,
+        );
+        return;
+      }
+
+      const objective = res.score as
+        | { correct?: number; total?: number; percent?: number }
+        | null;
+      if (
+        objective &&
+        typeof objective.correct === "number" &&
+        typeof objective.total === "number"
+      ) {
         setResult(
-          `Scored ${res.score.correct}/${res.score.total} (${res.score.percent}%). Hub marked complete.`,
+          `Scored ${objective.correct}/${objective.total} (${objective.percent}%). Hub marked complete.`,
         );
       } else {
         setResult("Submitted. Hub marked complete.");
