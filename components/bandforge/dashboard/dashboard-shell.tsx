@@ -31,8 +31,10 @@ type Props = {
   hideChrome?: boolean;
   /** Exam-style pages (bank speaking) — no padded max-width wrapper. */
   fullBleed?: boolean;
-  /** Full mocks unlocked after the personalized practice plan. */
-  mockUnlocked?: boolean;
+  /** Show Writing tab in mobile nav when entitled. */
+  showWritingNav?: boolean;
+  /** Show Speaking tab in mobile nav when entitled. */
+  showSpeakingNav?: boolean;
   /** Daily growth report — opened from the header (lg+) or mobile nav. */
   report?: {
     studentName: string;
@@ -53,7 +55,8 @@ export function DashboardShell({
   hideHeader = false,
   hideChrome = false,
   fullBleed = false,
-  mockUnlocked = false,
+  showWritingNav = false,
+  showSpeakingNav = false,
   report,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -89,13 +92,15 @@ export function DashboardShell({
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
   const isDashboard = pathname === "/dashboard";
   const showDevMockFooter = SHOW_DEV_MOCK_FOOTER && !isDashboard;
-  const mobileNav = getMobileBottomNav({ mockUnlocked });
+  const mobileNav = getMobileBottomNav({ showWritingNav, showSpeakingNav });
   const bottomNavCols =
-    mobileNav.length >= 5
-      ? "grid-cols-5"
-      : mobileNav.length === 4
-        ? "grid-cols-4"
-        : "grid-cols-3";
+    mobileNav.length >= 6
+      ? "grid-cols-6"
+      : mobileNav.length >= 5
+        ? "grid-cols-5"
+        : mobileNav.length === 4
+          ? "grid-cols-4"
+          : "grid-cols-3";
 
   if (hideChrome) {
     if (fullBleed) {

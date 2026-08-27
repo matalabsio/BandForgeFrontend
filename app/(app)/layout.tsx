@@ -79,7 +79,8 @@ export default async function BandforgeAppLayout({
           hideHeader={hideHeader}
           hideChrome={quietChrome}
           fullBleed={speakingExam}
-          mockUnlocked={mockUnlocked}
+          showWritingNav={showWritingNav}
+          showSpeakingNav={showSpeakingNav}
           report={{
             studentName: shellDisplayName,
             tasks: learning?.todays_tasks ?? [],
