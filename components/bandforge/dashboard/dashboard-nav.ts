@@ -76,21 +76,39 @@ export function getDashboardNav({
   return [{ title: "", items }];
 }
 
-/** Mobile / tablet tab bar — primary routes plus Report (no Writing; use dashboard card). */
+/** Mobile / tablet tab bar — Writing/Speaking when entitled; no Complete Mock. */
 export function getMobileBottomNav({
-  mockUnlocked = false,
+  showWritingNav = false,
+  showSpeakingNav = false,
 }: NavOptions = {}): NavLink[] {
-  const items = [
-    ...(getDashboardNav({ mockUnlocked, showWritingNav: false })[0]?.items ??
-      []),
+  const items: NavLink[] = [
+    { label: "Today", href: "/dashboard", Icon: HomeIcon },
+    { label: "Full plan", href: "/study-plan", Icon: CalendarIcon },
   ];
-  items.push({
-    label: "Report card",
-    shortLabel: "Report",
-    href: "#report",
-    Icon: ClipboardIcon,
-    action: "open-report",
-  });
+  if (showWritingNav) {
+    items.push({
+      label: "Writing",
+      href: "/practice/writing",
+      Icon: PencilIcon,
+    });
+  }
+  if (showSpeakingNav) {
+    items.push({
+      label: "Speaking",
+      href: "/practice/speaking",
+      Icon: MicIcon,
+    });
+  }
+  items.push(
+    { label: "Library", href: "/content-library", Icon: BookIcon },
+    {
+      label: "Report card",
+      shortLabel: "Report",
+      href: "#report",
+      Icon: ClipboardIcon,
+      action: "open-report",
+    },
+  );
   return items;
 }
 
