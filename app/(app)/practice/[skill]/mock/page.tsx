@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { DashboardPlanPaywall } from "@/components/bandforge/dashboard/dashboard-plan-paywall";
+import { SpeakingSkillMockLaunch } from "@/components/bandforge/practice/speaking-skill-mock-launch";
 import { WritingSkillMockLaunch } from "@/components/bandforge/practice/writing-skill-mock-launch";
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/lib/entitled-route";
 import {
   hasFullSkillProgram,
+  hasSpeakingSkillPlan,
   hasWritingSkillPlan,
 } from "@/lib/entitlement";
 import { shortModuleExamPath } from "@/lib/mock-catalog";
@@ -75,6 +77,27 @@ export default async function PracticeSkillMockPage({ params }: PageProps) {
       redirect("/practice/writing?mock=locked");
     }
     return <WritingSkillMockLaunch mockTestId={mockUnlock.mock_test_id} />;
+  }
+
+  // Speaking Skill-only: practice gate + allotted mock (never generic premium mock).
+  if (
+    skill === "speaking" &&
+    hasSpeakingSkillPlan(subscription) &&
+    !hasFullSkillProgram(subscription)
+  ) {
+    const entitled = resolvePracticeEntitledRoute({
+      learning: profile,
+      subscription,
+      skill: "speaking",
+    });
+    if (entitled.kind === "redirect") redirect(entitled.path);
+    if (entitled.kind === "paywall") return <DashboardPlanPaywall />;
+
+    const mockUnlock = await fetchMockUnlock(cookieHeader, skill);
+    if (!mockUnlock?.unlocked || !mockUnlock.mock_test_id) {
+      redirect("/practice/speaking?mock=locked");
+    }
+    return <SpeakingSkillMockLaunch mockTestId={mockUnlock.mock_test_id} />;
   }
 
   // FSP (and dual-SKU FSP-first): existing mock shortcut.

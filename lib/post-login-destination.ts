@@ -18,6 +18,11 @@ export type PostLoginDestinationOptions = {
   hasServerDiagnostic?: boolean;
   /** Active Full Skill Program subscription. */
   hasPaidFullSkillProgram?: boolean;
+  /**
+   * Active skill-pack course home (e.g. `/practice/speaking`) when the user
+   * has Speaking/Writing Skill but not FSP.
+   */
+  paidSkillCoursePath?: string | null;
 };
 
 export function safePostLoginPath(raw: string | null | undefined): string {
@@ -77,21 +82,34 @@ export function resolvePostLoginDestination(
   const safePath = safePostLoginPath(requestedPath);
   const hasServerDiagnostic = Boolean(options.hasServerDiagnostic);
   const hasPaid = Boolean(options.hasPaidFullSkillProgram);
+  const skillCourse =
+    typeof options.paidSkillCoursePath === "string" &&
+    options.paidSkillCoursePath.startsWith("/") &&
+    !options.paidSkillCoursePath.startsWith("//")
+      ? options.paidSkillCoursePath
+      : null;
   const hasDiagnostic = hasLocalDiagnosticResults || hasServerDiagnostic;
 
   // Legacy plan URL → results checkout resume
   if (isLegacyPlanPath(safePath)) {
-    return hasPaid ? DASHBOARD_PATH : DIAGNOSTIC_CHECKOUT_RETURN_PATH;
+    if (hasPaid) return DASHBOARD_PATH;
+    if (skillCourse) return skillCourse;
+    return DIAGNOSTIC_CHECKOUT_RETURN_PATH;
   }
 
   // Explicit results / checkout return — preserve when unpaid; dashboard when paid
   if (isDiagnosticResultsPath(safePath)) {
-    return hasPaid ? DASHBOARD_PATH : safePath;
+    if (hasPaid) return DASHBOARD_PATH;
+    if (skillCourse) return skillCourse;
+    return safePath;
   }
 
   if (isDefaultEntryPath(safePath)) {
     if (hasPaid) {
       return DASHBOARD_PATH;
+    }
+    if (skillCourse) {
+      return skillCourse;
     }
     if (!hasDiagnostic) {
       return DIAGNOSTIC_LANDING_PATH;

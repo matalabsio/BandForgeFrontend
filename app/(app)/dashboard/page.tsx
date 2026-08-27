@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { ProductionAuthConfigError } from "@/components/auth/production-auth-config-error";
 import { DashboardGate } from "@/components/bandforge/dashboard/dashboard-gate";
 import { DashboardProfileSync } from "@/components/bandforge/dashboard/dashboard-profile-sync";
@@ -11,7 +12,14 @@ import {
   redirectIfUnauthenticated,
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
-import { hasFullSkillProgram, isDiagnosticComplete } from "@/lib/entitlement";
+import {
+  hasFullSkillProgram,
+  hasSpeakingSkillPlan,
+  hasWritingSkillPlan,
+  isDiagnosticComplete,
+  SPEAKING_PRACTICE_PATH,
+  WRITING_PRACTICE_PATH,
+} from "@/lib/entitlement";
 import {
   emptyLearningProfile,
   fetchLearningProfile,
@@ -55,9 +63,16 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
   const subscription = subResult.subscription;
   const profile = learning ?? emptyLearningProfile(userId);
 
-  // Stay on dashboard: unpaid users see the plan paywall (start vs unlock).
-  // Post-login continue routes unpaid users into diagnostic/checkout instead.
+  // Skill-pack buyers skip the FSP paywall and land on their course home.
   if (!hasFullSkillProgram(subscription)) {
+    if (hasSpeakingSkillPlan(subscription)) {
+      redirect(SPEAKING_PRACTICE_PATH);
+    }
+    if (hasWritingSkillPlan(subscription)) {
+      redirect(WRITING_PRACTICE_PATH);
+    }
+    // Stay on dashboard: unpaid users see the plan paywall (start vs unlock).
+    // Post-login continue routes unpaid users into diagnostic/checkout instead.
     return (
       <>
         <DashboardTopHeader

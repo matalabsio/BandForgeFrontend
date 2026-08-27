@@ -25,6 +25,7 @@ export function emptySubscription(): Subscription {
         speaking: false,
       },
       writing_skill: false,
+      speaking_skill: false,
       full_skill_program: false,
     },
   };

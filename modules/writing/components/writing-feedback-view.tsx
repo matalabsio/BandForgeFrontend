@@ -124,7 +124,7 @@ export function WritingFeedbackView({
   return (
     <div className="min-h-dvh bg-surface-alt text-ink">
       <header className="sticky top-0 z-20 border-b border-border-soft bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
           <button
             type="button"
             onClick={handleBack}
@@ -150,8 +150,8 @@ export function WritingFeedbackView({
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-start lg:gap-8">
+      <main className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
+        <div className="grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
           <div className="min-w-0 space-y-5">
             <ScoreHero
               part={review.part}
@@ -262,7 +262,7 @@ export function WritingFeedbackView({
             />
           </div>
 
-          <aside className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[4.5rem] lg:max-h-[calc(100dvh-5.5rem)]">
+          <aside className="flex w-full min-w-0 flex-col gap-4 lg:sticky lg:top-[4.5rem] lg:max-h-[calc(100dvh-5.5rem)]">
             {showVerified && feedback.human_verified ? (
               <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm sm:p-6">
                 <div className="flex items-center gap-2">
@@ -278,21 +278,23 @@ export function WritingFeedbackView({
               </section>
             ) : null}
 
-            <section className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm">
+            <section className="w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm">
               <div className="border-b border-[#E2E8F0] px-4 py-3 sm:px-5">
                 <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
                   Task question
                 </h2>
               </div>
-              <div className="max-h-[min(42vh,420px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+              <div className="max-h-[min(50vh,480px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
                 <WritingFeedbackPrompt review={review} />
               </div>
             </section>
 
-            <AnnotatedEssay
-              text={review.user_answer}
-              highlights={feedback.highlights}
-            />
+            <div className="flex min-h-[280px] w-full min-w-0 flex-1 flex-col lg:min-h-[360px]">
+              <AnnotatedEssay
+                text={review.user_answer}
+                highlights={feedback.highlights}
+              />
+            </div>
 
             {isDiagnostic ? (
               <FeedbackCtaFooter
