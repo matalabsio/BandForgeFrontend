@@ -56,8 +56,9 @@ export function PracticeSpeakingExam({
   );
   const sequenceByQuestion = useMemo(() => {
     const map = new Map<string, number>();
-    for (const item of manifest) {
-      map.set(item.id, item.sequence);
+    for (let i = 0; i < manifest.length; i++) {
+      const item = manifest[i];
+      map.set(item.id, item.sequence ?? i + 1);
     }
     return map;
   }, [manifest]);
