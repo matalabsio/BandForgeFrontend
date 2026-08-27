@@ -1,6 +1,9 @@
 import type { LearningProfile } from "@/lib/learning-types";
 import type { Entitlements, Subscription } from "@/lib/payments";
 import { FULL_SKILL_PROGRAM_SLUG } from "@/lib/plan-preview";
+import { isAllowedSkillCoursePath } from "./post-login-destination";
+
+export { isAllowedSkillCoursePath } from "./post-login-destination";
 
 export const WRITING_SKILL_SLUG = "writing_skill";
 export const SPEAKING_SKILL_SLUG = "speaking_skill";
@@ -38,7 +41,7 @@ export function resolveEntitlementsFromSubscription(
   sub: Subscription | null | undefined,
 ): Entitlements {
   if (sub?.entitlements) {
-    return {
+    const out: Entitlements = {
       plans: [...(sub.entitlements.plans ?? [])],
       skills: {
         listening: Boolean(sub.entitlements.skills?.listening),
@@ -50,6 +53,18 @@ export function resolveEntitlementsFromSubscription(
       speaking_skill: Boolean(sub.entitlements.speaking_skill),
       full_skill_program: Boolean(sub.entitlements.full_skill_program),
     };
+    // Dual Bundle composes Writing + Speaking pack access at the entitlement layer.
+    if (
+      out.plans.includes(DUAL_BUNDLE_SLUG) ||
+      (sub.is_active && (sub.plan_slug ?? "").toLowerCase() === DUAL_BUNDLE_SLUG)
+    ) {
+      if (!out.plans.includes(DUAL_BUNDLE_SLUG)) out.plans.push(DUAL_BUNDLE_SLUG);
+      out.writing_skill = true;
+      out.speaking_skill = true;
+      out.skills.writing = true;
+      out.skills.speaking = true;
+    }
+    return out;
   }
 
   // Legacy single-row fallback (order-dependent — avoid once entitlements ship).
@@ -73,6 +88,13 @@ export function resolveEntitlementsFromSubscription(
   if (slug === SPEAKING_SKILL_SLUG || name.includes("speaking skill")) {
     if (!out.plans.includes(SPEAKING_SKILL_SLUG)) out.plans.push(SPEAKING_SKILL_SLUG);
     out.speaking_skill = true;
+    out.skills.speaking = true;
+  }
+  if (slug === DUAL_BUNDLE_SLUG || name.includes("dual bundle")) {
+    if (!out.plans.includes(DUAL_BUNDLE_SLUG)) out.plans.push(DUAL_BUNDLE_SLUG);
+    out.writing_skill = true;
+    out.speaking_skill = true;
+    out.skills.writing = true;
     out.skills.speaking = true;
   }
   return out;
@@ -104,16 +126,16 @@ export function hasWritingAccess(
 /**
  * Practice access mode. FSP wins for behavior when both exist;
  * entitlements still report both flags as true.
- * Priority: FSP → writing_skill → speaking_skill → dual_bundle → none.
+ * Priority: FSP → dual_bundle → writing_skill → speaking_skill → none.
  */
 export function resolvePracticeAccessKind(
   sub: Subscription | null | undefined,
 ): PracticeAccessKind {
   const ent = resolveEntitlementsFromSubscription(sub);
   if (ent.full_skill_program) return "fsp";
+  if (hasDualBundlePlan(sub)) return "dual_bundle";
   if (ent.writing_skill) return "writing_skill";
   if (ent.speaking_skill) return "speaking_skill";
-  if (hasDualBundlePlan(sub)) return "dual_bundle";
   return "none";
 }
 
@@ -127,10 +149,10 @@ export function canAccessPracticeSkill(
 ): boolean {
   if (hasFullSkillProgram(sub)) return true;
   if (skill === "writing") {
-    return hasWritingSkillPlan(sub) || hasDualBundlePlan(sub);
+    return hasWritingSkillPlan(sub);
   }
   if (skill === "speaking") {
-    return hasSpeakingSkillPlan(sub) || hasDualBundlePlan(sub);
+    return hasSpeakingSkillPlan(sub);
   }
   return false;
 }
@@ -139,21 +161,13 @@ export function canAccessPracticeSkill(
 export function isWritingPackUnlocked(
   sub: Subscription | null | undefined,
 ): boolean {
-  return (
-    hasFullSkillProgram(sub) ||
-    hasWritingSkillPlan(sub) ||
-    hasDualBundlePlan(sub)
-  );
+  return hasFullSkillProgram(sub) || hasWritingSkillPlan(sub);
 }
 
 export function isSpeakingPackUnlocked(
   sub: Subscription | null | undefined,
 ): boolean {
-  return (
-    hasFullSkillProgram(sub) ||
-    hasSpeakingSkillPlan(sub) ||
-    hasDualBundlePlan(sub)
-  );
+  return hasFullSkillProgram(sub) || hasSpeakingSkillPlan(sub);
 }
 
 export function isDualPackUnlocked(
@@ -209,6 +223,8 @@ export function canAccessPersonalizedDashboard(
 export const WRITING_SKILL_ONBOARDING_PATH = "/practice/writing/onboarding";
 export const WRITING_PRACTICE_PATH = "/practice/writing";
 export const SPEAKING_PRACTICE_PATH = "/practice/speaking";
+/** Dual Bundle course chooser (Writing + Speaking cards). */
+export const PRACTICE_PATH = "/practice";
 
 function planSlugInSubscription(
   sub: Subscription | null | undefined,
@@ -236,8 +252,9 @@ export function hasDualBundlePlan(
 
 /**
  * Where to send the user after checkout unlock succeeds.
- * FSP → dashboard activating. Writing Skill only → track onboarding.
- * Dual SKU: FSP-first (dashboard), without losing Writing Skill entitlement flags.
+ * FSP → dashboard activating.
+ * Dual → /practice (Writing + Speaking course cards).
+ * Writing / Speaking singles → their course homes.
  */
 export function postCheckoutDestination(
   sub: Subscription | null | undefined,
@@ -248,7 +265,7 @@ export function postCheckoutDestination(
   }
   const receiptSlug = (opts?.receiptPlanSlug ?? "").toLowerCase();
   if (hasDualBundlePlan(sub) || receiptSlug === DUAL_BUNDLE_SLUG) {
-    return WRITING_PRACTICE_PATH;
+    return PRACTICE_PATH;
   }
   if (hasWritingSkillPlan(sub) || receiptSlug === WRITING_SKILL_SLUG) {
     return WRITING_PRACTICE_PATH;
@@ -257,6 +274,21 @@ export function postCheckoutDestination(
     return SPEAKING_PRACTICE_PATH;
   }
   return "/pricing";
+}
+
+/**
+ * Post-login / checkout-resume course destination for skill-pack buyers.
+ * FSP (including FSP + Dual) → null (caller uses FSP dashboard path).
+ * Dual → `/practice`; Writing/Speaking singles → their course homes.
+ * Allowlist is shared with resolvePostLoginDestination (isAllowedSkillCoursePath).
+ */
+export function skillCoursePathForSubscription(
+  sub: Subscription | null | undefined,
+): string | null {
+  if (!sub || hasFullSkillProgram(sub)) return null;
+  if (!hasSpeakingSkillPlan(sub) && !hasWritingSkillPlan(sub)) return null;
+  const dest = postCheckoutDestination(sub);
+  return isAllowedSkillCoursePath(dest) ? dest : null;
 }
 
 /** Subscription is “unlocked” for checkout success (any sellable diagnostic SKU). */

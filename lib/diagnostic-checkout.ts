@@ -10,6 +10,7 @@ import {
   hasFullSkillProgram,
   hasSpeakingSkillPlan,
   hasWritingSkillPlan,
+  PRACTICE_PATH,
   SPEAKING_PRACTICE_PATH,
   WRITING_PRACTICE_PATH,
 } from "@/lib/entitlement";
@@ -124,8 +125,7 @@ export function destinationForEntitledPlanSlug(
     case SPEAKING_SKILL_SLUG:
       return SPEAKING_PRACTICE_PATH;
     case DUAL_BUNDLE_SLUG:
-      // No dedicated dual route — writing home is the established W+S entry.
-      return WRITING_PRACTICE_PATH;
+      return PRACTICE_PATH;
     default:
       return "/pricing";
   }

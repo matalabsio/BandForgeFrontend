@@ -5,6 +5,25 @@ const DIAGNOSTIC_RESULTS_PATH = "/diagnostic/results";
 const DIAGNOSTIC_CHECKOUT_RETURN_PATH = "/diagnostic/results?checkout=1";
 const ONBOARDING_PATH = "/onboarding";
 
+/** Dual chooser + Writing/Speaking course homes only (no open redirect). */
+const ALLOWED_SKILL_COURSE_PATHS = new Set([
+  "/practice",
+  "/practice/writing",
+  "/practice/speaking",
+]);
+
+/**
+ * True only for known course homes: `/practice`, `/practice/writing`,
+ * `/practice/speaking`. Rejects open redirects and unrelated paths.
+ */
+export function isAllowedSkillCoursePath(
+  path: string | null | undefined,
+): boolean {
+  if (!path || !path.startsWith("/") || path.startsWith("//")) return false;
+  const base = path.split(/[?#]/, 1)[0] || path;
+  return ALLOWED_SKILL_COURSE_PATHS.has(base);
+}
+
 /** App entry paths that should follow diagnostic-first routing. */
 const DEFAULT_ENTRY_PATHS = new Set([
   DASHBOARD_PATH,
@@ -19,8 +38,9 @@ export type PostLoginDestinationOptions = {
   /** Active Full Skill Program subscription. */
   hasPaidFullSkillProgram?: boolean;
   /**
-   * Active skill-pack course home (e.g. `/practice/speaking`) when the user
-   * has Speaking/Writing Skill but not FSP.
+   * Active skill-pack course home when the user has Writing/Speaking/Dual
+   * but not FSP. Must be an allowlisted path (`/practice`, `/practice/writing`,
+   * `/practice/speaking`).
    */
   paidSkillCoursePath?: string | null;
 };
@@ -82,12 +102,9 @@ export function resolvePostLoginDestination(
   const safePath = safePostLoginPath(requestedPath);
   const hasServerDiagnostic = Boolean(options.hasServerDiagnostic);
   const hasPaid = Boolean(options.hasPaidFullSkillProgram);
-  const skillCourse =
-    typeof options.paidSkillCoursePath === "string" &&
-    options.paidSkillCoursePath.startsWith("/") &&
-    !options.paidSkillCoursePath.startsWith("//")
-      ? options.paidSkillCoursePath
-      : null;
+  const skillCourse = isAllowedSkillCoursePath(options.paidSkillCoursePath)
+    ? (options.paidSkillCoursePath as string).split(/[?#]/, 1)[0]
+    : null;
   const hasDiagnostic = hasLocalDiagnosticResults || hasServerDiagnostic;
 
   // Legacy plan URL → results checkout resume

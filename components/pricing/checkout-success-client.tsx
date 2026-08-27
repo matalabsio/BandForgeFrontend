@@ -410,11 +410,13 @@ export function CheckoutSuccessClient() {
       >
         {hasFullSkillProgram(subscription)
           ? "Go to dashboard"
-          : hasWritingSkillPlan(subscription) || hasDualBundlePlan(subscription)
-            ? "Continue to Writing practice"
-            : hasSpeakingSkillPlan(subscription)
-              ? "Continue to Speaking practice"
-              : "Continue"}
+          : hasDualBundlePlan(subscription)
+            ? "Continue to your courses"
+            : hasWritingSkillPlan(subscription)
+              ? "Continue to Writing practice"
+              : hasSpeakingSkillPlan(subscription)
+                ? "Continue to Speaking practice"
+                : "Continue"}
       </button>
 
       <p className="mt-3 text-[13px] text-muted">

@@ -13,10 +13,12 @@ import {
   resolveSessionUser,
 } from "@/lib/auth-guard-server";
 import {
+  hasDualBundlePlan,
   hasFullSkillProgram,
   hasSpeakingSkillPlan,
   hasWritingSkillPlan,
   isDiagnosticComplete,
+  PRACTICE_PATH,
   SPEAKING_PRACTICE_PATH,
   WRITING_PRACTICE_PATH,
 } from "@/lib/entitlement";
@@ -64,12 +66,16 @@ async function DashboardBody({ cookieHeader, user, userId }: DashboardBodyProps)
   const profile = learning ?? emptyLearningProfile(userId);
 
   // Skill-pack buyers skip the FSP paywall and land on their course home.
+  // Dual → /practice (Writing + Speaking cards); singles → their skill course.
   if (!hasFullSkillProgram(subscription)) {
-    if (hasSpeakingSkillPlan(subscription)) {
-      redirect(SPEAKING_PRACTICE_PATH);
+    if (hasDualBundlePlan(subscription)) {
+      redirect(PRACTICE_PATH);
     }
     if (hasWritingSkillPlan(subscription)) {
       redirect(WRITING_PRACTICE_PATH);
+    }
+    if (hasSpeakingSkillPlan(subscription)) {
+      redirect(SPEAKING_PRACTICE_PATH);
     }
     // Stay on dashboard: unpaid users see the plan paywall (start vs unlock).
     // Post-login continue routes unpaid users into diagnostic/checkout instead.
