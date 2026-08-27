@@ -8,6 +8,7 @@ import {
   MicIcon,
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
+import { PRACTICE_PATH } from "@/lib/entitlement";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -36,6 +37,8 @@ type NavOptions = {
   showWritingNav?: boolean;
   /** Show Speaking when the user has speaking practice access (FSP or Speaking Skill). */
   showSpeakingNav?: boolean;
+  /** Dual Bundle: Complete Mock opens the /practice course chooser. */
+  isDualBundle?: boolean;
 };
 
 /** Sidebar — primary routes. Complete Mock unlocks after the practice plan. */
@@ -43,6 +46,7 @@ export function getDashboardNav({
   mockUnlocked = false,
   showWritingNav = false,
   showSpeakingNav = false,
+  isDualBundle = false,
 }: NavOptions = {}): NavGroup[] {
   const items: NavLink[] = [
     { label: "Today", href: "/dashboard", Icon: HomeIcon },
@@ -63,14 +67,22 @@ export function getDashboardNav({
     });
   }
   items.push(
-    {
-      label: "Complete Mock",
-      shortLabel: "Mock",
-      href: "/test",
-      Icon: FileTextIcon,
-      disabled: !mockUnlocked,
-      disabledHint: "Finish your personalized practice plan to unlock mocks",
-    },
+    isDualBundle
+      ? {
+          label: "Complete Mock",
+          shortLabel: "Mock",
+          href: PRACTICE_PATH,
+          Icon: FileTextIcon,
+          disabled: false,
+        }
+      : {
+          label: "Complete Mock",
+          shortLabel: "Mock",
+          href: "/test",
+          Icon: FileTextIcon,
+          disabled: !mockUnlocked,
+          disabledHint: "Finish your personalized practice plan to unlock mocks",
+        },
     { label: "Library", href: "/content-library", Icon: BookIcon },
   );
   return [{ title: "", items }];
@@ -138,6 +150,10 @@ export function isNavItemActive(pathname: string, href: string): boolean {
       pathname === "/practice/speaking" ||
       pathname.startsWith("/practice/speaking/")
     );
+  }
+  // Dual Complete Mock → /practice: exact only (not Writing/Speaking courses).
+  if (href === PRACTICE_PATH || href === "/practice") {
+    return pathname === "/practice" || pathname === "/practice/";
   }
   if (href !== "/dashboard" && href !== "/profile") {
     return pathname.startsWith(href);

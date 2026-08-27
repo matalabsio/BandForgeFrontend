@@ -17,6 +17,9 @@ const TRACKS: Array<{
   title: string;
   subtitle: string;
   points: string[];
+  /** No GT PCI inventory yet — keep selectable Academic only. */
+  available: boolean;
+  comingSoonHint?: string;
 }> = [
   {
     id: "academic",
@@ -27,6 +30,7 @@ const TRACKS: Array<{
       "Task 2 academic-style essays",
       "Matched to university and professional study goals",
     ],
+    available: true,
   },
   {
     id: "general_training",
@@ -37,6 +41,8 @@ const TRACKS: Array<{
       "Task 2 essays for general training",
       "Matched to visa, work, and migration goals",
     ],
+    available: false,
+    comingSoonHint: "Coming soon — GT practice sets are not available yet",
   },
 ];
 
@@ -73,6 +79,9 @@ export function WritingSkillOnboardingClient() {
 
   const onSelect = useCallback(
     async (examModule: WritingSkillExamModule) => {
+      const track = TRACKS.find((t) => t.id === examModule);
+      if (!track?.available) return;
+
       setError(null);
       setBusy(examModule);
       try {
@@ -108,31 +117,44 @@ export function WritingSkillOnboardingClient() {
           Choose your exam track
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-          Academic and General Training use different Writing Task 1 content.
-          Pick the track that matches your IELTS goal — this cannot be changed
-          after you start practising.
+          Academic Writing sets are ready now. General Training will unlock when
+          its practice inventory ships — pick Academic to start practising.
         </p>
       </header>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {TRACKS.map((track) => {
           const selectedBusy = busy === track.id;
+          const disabled = !track.available || busy !== null;
           return (
             <button
               key={track.id}
               type="button"
-              disabled={busy !== null}
+              disabled={disabled}
               onClick={() => void onSelect(track.id)}
+              title={
+                !track.available ? track.comingSoonHint : undefined
+              }
               className={cn(
                 "rounded-2xl border border-border-soft bg-white p-6 text-left shadow-soft transition",
-                "hover:border-cyan/40 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
-                "disabled:cursor-wait disabled:opacity-70",
+                track.available &&
+                  "hover:border-cyan/40 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
+                track.available
+                  ? "disabled:cursor-wait disabled:opacity-70"
+                  : "cursor-not-allowed opacity-55",
                 selectedBusy && "border-cyan ring-1 ring-cyan/30",
               )}
             >
-              <h2 className="font-display text-xl font-bold text-navy">
-                {track.title}
-              </h2>
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="font-display text-xl font-bold text-navy">
+                  {track.title}
+                </h2>
+                {!track.available ? (
+                  <span className="shrink-0 rounded-full bg-[#F1F4F8] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#5A6B82]">
+                    Coming soon
+                  </span>
+                ) : null}
+              </div>
               <p className="mt-1 text-sm font-medium text-cyan">{track.subtitle}</p>
               <ul className="mt-4 space-y-2">
                 {track.points.map((point) => (
@@ -145,7 +167,11 @@ export function WritingSkillOnboardingClient() {
                 ))}
               </ul>
               <span className="mt-6 inline-flex text-sm font-semibold text-navy">
-                {selectedBusy ? "Saving…" : `Continue with ${track.title}`}
+                {!track.available
+                  ? track.comingSoonHint
+                  : selectedBusy
+                    ? "Saving…"
+                    : `Continue with ${track.title}`}
               </span>
             </button>
           );

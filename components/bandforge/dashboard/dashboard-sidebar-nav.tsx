@@ -16,6 +16,7 @@ type Props = {
   mockUnlocked?: boolean;
   showWritingNav?: boolean;
   showSpeakingNav?: boolean;
+  isDualBundle?: boolean;
 };
 
 export function DashboardSidebarNav({
@@ -26,6 +27,7 @@ export function DashboardSidebarNav({
   mockUnlocked = false,
   showWritingNav = false,
   showSpeakingNav = false,
+  isDualBundle = false,
 }: Props) {
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
 
@@ -36,7 +38,12 @@ export function DashboardSidebarNav({
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto" aria-label="Main">
-        {getDashboardNav({ mockUnlocked, showWritingNav, showSpeakingNav }).map((group, groupIndex) => (
+        {getDashboardNav({
+          mockUnlocked,
+          showWritingNav,
+          showSpeakingNav,
+          isDualBundle,
+        }).map((group, groupIndex) => (
           <div key={group.title || `untitled-${groupIndex}`}>
             {group.title ? (
               <p className="mb-2 px-3 font-roboto-condensed text-[10px] font-bold uppercase tracking-[0.14em] text-ink/35">

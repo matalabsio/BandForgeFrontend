@@ -17,6 +17,7 @@ import {
 } from "@/lib/dashboard-plan-math";
 import {
   canAccessPracticeSkill,
+  hasDualBundlePlan,
   hasFullSkillProgram,
 } from "@/lib/entitlement";
 import { fetchLearningProfile } from "@/lib/learning-server";
@@ -68,6 +69,9 @@ export default async function BandforgeAppLayout({
     learning?.hub_progress,
     learning?.study_plan,
   );
+  const isDualBundle =
+    !hasFullSkillProgram(subResult.subscription) &&
+    hasDualBundlePlan(subResult.subscription);
 
   return (
     <AppFontsShell>
@@ -100,6 +104,7 @@ export default async function BandforgeAppLayout({
               mockUnlocked={mockUnlocked}
               showWritingNav={showWritingNav}
               showSpeakingNav={showSpeakingNav}
+              isDualBundle={isDualBundle}
             />
           }
         >
