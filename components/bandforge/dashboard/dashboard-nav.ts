@@ -5,6 +5,7 @@ import {
   ClipboardIcon,
   FileTextIcon,
   HomeIcon,
+  MicIcon,
   PencilIcon,
 } from "@/components/bandforge/dashboard/icons";
 
@@ -33,12 +34,15 @@ type NavOptions = {
   mockUnlocked?: boolean;
   /** Show Writing when the user has writing practice access (FSP or Writing Skill). */
   showWritingNav?: boolean;
+  /** Show Speaking when the user has speaking practice access (FSP or Speaking Skill). */
+  showSpeakingNav?: boolean;
 };
 
 /** Sidebar — primary routes. Complete Mock unlocks after the practice plan. */
 export function getDashboardNav({
   mockUnlocked = false,
   showWritingNav = false,
+  showSpeakingNav = false,
 }: NavOptions = {}): NavGroup[] {
   const items: NavLink[] = [
     { label: "Today", href: "/dashboard", Icon: HomeIcon },
@@ -49,6 +53,13 @@ export function getDashboardNav({
       label: "Writing",
       href: "/practice/writing",
       Icon: PencilIcon,
+    });
+  }
+  if (showSpeakingNav) {
+    items.push({
+      label: "Speaking",
+      href: "/practice/speaking",
+      Icon: MicIcon,
     });
   }
   items.push(
@@ -102,6 +113,12 @@ export function isNavItemActive(pathname: string, href: string): boolean {
     return (
       pathname === "/practice/writing" ||
       pathname.startsWith("/practice/writing/")
+    );
+  }
+  if (href === "/practice/speaking") {
+    return (
+      pathname === "/practice/speaking" ||
+      pathname.startsWith("/practice/speaking/")
     );
   }
   if (href !== "/dashboard" && href !== "/profile") {

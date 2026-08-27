@@ -7,7 +7,13 @@ import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
 import { syncDiagnosticLeadAfterAuth } from "@/lib/diagnostic-lead-sync";
 import { readDiagnosticResults } from "@/lib/diagnostic-session";
-import { isDiagnosticComplete, hasFullSkillProgram } from "@/lib/entitlement";
+import {
+  hasFullSkillProgram,
+  hasSpeakingSkillPlan,
+  hasWritingSkillPlan,
+  isDiagnosticComplete,
+  postCheckoutDestination,
+} from "@/lib/entitlement";
 import { getLearningProfile } from "@/lib/learning-api";
 import { getSubscription } from "@/lib/payments";
 import { resetCheckoutResumeForPostAuth } from "@/lib/checkout-resume";
@@ -16,6 +22,17 @@ import {
   resolvePostLoginDestination,
   safePostLoginPath,
 } from "@/lib/post-login-destination";
+
+function skillCoursePathForSubscription(
+  subscription: Awaited<ReturnType<typeof getSubscription>> | null,
+): string | null {
+  if (!subscription || hasFullSkillProgram(subscription)) return null;
+  if (hasSpeakingSkillPlan(subscription) || hasWritingSkillPlan(subscription)) {
+    const dest = postCheckoutDestination(subscription);
+    return dest.startsWith("/practice/") ? dest : null;
+  }
+  return null;
+}
 
 function PostLoginContinueInner() {
   const searchParams = useSearchParams();
@@ -46,14 +63,17 @@ function PostLoginContinueInner() {
 
       let hasServerDiagnostic = Boolean(snapshot);
       let hasPaidFullSkillProgram = false;
+      let paidSkillCoursePath: string | null = null;
 
       if (wantsCheckout) {
         // Fast path: one subscription check so already-paid users skip Razorpay.
         try {
           const subscription = await getSubscription();
           hasPaidFullSkillProgram = hasFullSkillProgram(subscription);
+          paidSkillCoursePath = skillCoursePathForSubscription(subscription);
         } catch {
           hasPaidFullSkillProgram = false;
+          paidSkillCoursePath = null;
         }
         if (cancelled) return;
         // New Google/auth return: drop sticky claim/suppress from earlier attempts.
@@ -62,6 +82,7 @@ function PostLoginContinueInner() {
           resolvePostLoginDestination(requestedPath, Boolean(snapshot), {
             hasServerDiagnostic,
             hasPaidFullSkillProgram,
+            paidSkillCoursePath,
           }),
         );
         return;
@@ -77,6 +98,7 @@ function PostLoginContinueInner() {
         }
         if (subscription) {
           hasPaidFullSkillProgram = hasFullSkillProgram(subscription);
+          paidSkillCoursePath = skillCoursePathForSubscription(subscription);
         }
       } catch {
         /* offline / API — fall back to local diagnostic only */
@@ -87,7 +109,11 @@ function PostLoginContinueInner() {
       const destination = resolvePostLoginDestination(
         requestedPath,
         Boolean(snapshot),
-        { hasServerDiagnostic, hasPaidFullSkillProgram },
+        {
+          hasServerDiagnostic,
+          hasPaidFullSkillProgram,
+          paidSkillCoursePath,
+        },
       );
 
       window.location.replace(destination);

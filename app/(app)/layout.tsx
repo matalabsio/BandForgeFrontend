@@ -60,6 +60,10 @@ export default async function BandforgeAppLayout({
     subResult.subscription,
     "writing",
   );
+  const showSpeakingNav = canAccessPracticeSkill(
+    subResult.subscription,
+    "speaking",
+  );
   const mockUnlocked = isFullPracticePlanComplete(
     learning?.hub_progress,
     learning?.study_plan,
@@ -94,6 +98,7 @@ export default async function BandforgeAppLayout({
               showPremiumCta={showPremiumCta}
               mockUnlocked={mockUnlocked}
               showWritingNav={showWritingNav}
+              showSpeakingNav={showSpeakingNav}
             />
           }
         >

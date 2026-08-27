@@ -12,7 +12,9 @@ import {
 } from "@/lib/payments";
 import {
   hasFullSkillProgram,
+  hasSpeakingSkillPlan,
   hasWritingSkillPlan,
+  SPEAKING_PRACTICE_PATH,
   WRITING_PRACTICE_PATH,
 } from "@/lib/entitlement";
 
@@ -105,6 +107,19 @@ export function BillingClient() {
                     className="text-sm font-semibold text-teal hover:underline"
                   >
                     Open Writing Skill course →
+                  </Link>
+                </div>
+              </>
+            ) : null}
+            {hasSpeakingSkillPlan(subscription) && !hasFullSkillProgram(subscription) ? (
+              <>
+                <Row label="Course" value="Speaking Skill" />
+                <div className="pt-1">
+                  <Link
+                    href={SPEAKING_PRACTICE_PATH}
+                    className="text-sm font-semibold text-teal hover:underline"
+                  >
+                    Open Speaking Skill course →
                   </Link>
                 </div>
               </>

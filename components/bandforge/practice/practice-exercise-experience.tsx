@@ -155,6 +155,20 @@ export function PracticeExerciseExperience({
         return;
       }
 
+      // Speaking bank: ASR + Claude eval → provisional AI feedback page.
+      if (skill === "speaking" && res.speaking_ai_pending) {
+        const q = new URLSearchParams({ attempt: res.attempt_id });
+        if (fromPlan) {
+          q.set("from", "plan");
+          if (planTaskId) q.set("taskId", planTaskId);
+          if (currentTask) q.set("task", currentTask);
+        }
+        router.push(
+          `/practice/speaking/${hubId}/exercise/results?${q.toString()}`,
+        );
+        return;
+      }
+
       const objective = res.score as
         | { correct?: number; total?: number; percent?: number }
         | null;

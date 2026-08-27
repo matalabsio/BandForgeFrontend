@@ -67,16 +67,21 @@ export type BankExerciseStart = {
       video_url?: string | null;
     }>;
   };
+  /** Speaking bank: linked speaking attempt for R2 upload + ASR. */
+  speaking_attempt_id?: string | null;
+  speaking_manifest_hash?: string | null;
 };
 
 export type BankExerciseSubmitResult = {
   attempt_id: string;
   status: "completed";
-  /** Objective L/R score, or writing_ai pending payload. */
+  /** Objective L/R score, or writing_ai / speaking_ai pending payload. */
   score: Record<string, unknown> | null;
   hub_completed: boolean;
   writing_ai_pending?: boolean;
   writing_part?: number | null;
+  speaking_ai_pending?: boolean;
+  speaking_attempt_id?: string | null;
 };
 
 export type PracticeWritingReview = {
@@ -159,6 +164,51 @@ export function getPracticeWritingReview(
 ): Promise<PracticeWritingReview> {
   return examApiCall<PracticeWritingReview>(
     `/api/practice/hubs/${encodeURIComponent(hubId)}/exercise/${encodeURIComponent(attemptId)}/writing-review`,
+  );
+}
+
+export type PracticeSpeakingReview = {
+  attempt_id: string;
+  hub_id: string;
+  speaking_attempt_id?: string | null;
+  status: string;
+  module: string;
+  test_title?: string | null;
+  ai_available?: boolean;
+  ai_status?: string | null;
+  ai_band?: number | null;
+  band_source?: string;
+  ai_criteria?: Record<string, number>;
+  ai_strengths?: string[];
+  ai_improvements?: string[];
+  next_band_advice?: string | null;
+  ai_parts?: Array<{ part: number; note: string; band_estimate: number }>;
+  ai_evidence?: Array<Record<string, unknown>>;
+  ai_patterns?: Array<Record<string, unknown>>;
+  ai_fluency?: Record<string, unknown>;
+  responses?: Array<{
+    id: string;
+    question_id: string;
+    part: number;
+    sequence: number;
+    prompt: string;
+    duration_sec: number;
+    transcription_status: string;
+    transcript: string;
+  }>;
+  ai_model_name?: string | null;
+  ai_provider?: string | null;
+  submitted_at?: string | null;
+  error?: string | null;
+  evaluation_status?: string | null;
+};
+
+export function getPracticeSpeakingReview(
+  hubId: string,
+  attemptId: string,
+): Promise<PracticeSpeakingReview> {
+  return examApiCall<PracticeSpeakingReview>(
+    `/api/practice/hubs/${encodeURIComponent(hubId)}/exercise/${encodeURIComponent(attemptId)}/speaking-review`,
   );
 }
 
