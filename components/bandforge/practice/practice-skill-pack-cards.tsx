@@ -3,6 +3,7 @@ import { Check, Lock, Mic, Pencil, Sparkles } from "lucide-react";
 
 import {
   DUAL_BUNDLE_SLUG,
+  hasDualBundlePlan,
   isDualPackUnlocked,
   isSpeakingPackUnlocked,
   isWritingPackUnlocked,
@@ -30,58 +31,86 @@ type PackCard = {
 };
 
 /**
- * Non-FSP `/practice` index: Writing, Speaking, Dual — locked per plan.
+ * Non-FSP `/practice` index.
+ * Dual owners: Writing + Speaking course cards only (Dual header).
+ * Others: Writing / Speaking / Dual locked catalog.
  */
 export function PracticeSkillPackCards({ subscription }: Props) {
-  const cards: PackCard[] = [
-    {
-      id: "writing",
-      name: "Writing Skill",
-      subtitle: "Task 1 + Task 2 · Academic or GT",
-      blurb: "12 sequential hubs and 1 Writing mock after the course.",
-      unlockLabel: "Unlock Writing",
-      pricingSlug: WRITING_SKILL_SLUG,
-      unlocked: isWritingPackUnlocked(subscription),
-      Icon: Pencil,
-    },
-    {
-      id: "speaking",
-      name: "Speaking Skill",
-      subtitle: "Part 1 · Part 2 · Part 3",
-      blurb: "Record, AI feedback, and 1 Speaking mock after the course.",
-      unlockLabel: "Unlock Speaking",
-      pricingSlug: SPEAKING_SKILL_SLUG,
-      unlocked: isSpeakingPackUnlocked(subscription),
-      Icon: Mic,
-    },
-    {
-      id: "dual",
-      name: "Writing + Speaking",
-      subtitle: "Dual Bundle",
-      blurb: "Both production skills in one purchase — two skill mocks.",
-      unlockLabel: "Unlock Dual Bundle",
-      pricingSlug: DUAL_BUNDLE_SLUG,
-      unlocked: isDualPackUnlocked(subscription),
-      Icon: Sparkles,
-    },
-  ];
+  const dualHome = hasDualBundlePlan(subscription);
+
+  const writingCard: PackCard = {
+    id: "writing",
+    name: "Writing Skill",
+    subtitle: "Task 1 + Task 2 · Academic or GT",
+    blurb: "12 sequential hubs and 1 Writing mock after the course.",
+    unlockLabel: "Unlock Writing",
+    pricingSlug: WRITING_SKILL_SLUG,
+    unlocked: isWritingPackUnlocked(subscription),
+    Icon: Pencil,
+  };
+  const speakingCard: PackCard = {
+    id: "speaking",
+    name: "Speaking Skill",
+    subtitle: "Part 1 · Part 2 · Part 3",
+    blurb: "Record, AI feedback, and 1 Speaking mock after the course.",
+    unlockLabel: "Unlock Speaking",
+    pricingSlug: SPEAKING_SKILL_SLUG,
+    unlocked: isSpeakingPackUnlocked(subscription),
+    Icon: Mic,
+  };
+  const dualCard: PackCard = {
+    id: "dual",
+    name: "Writing + Speaking",
+    subtitle: "Dual Bundle",
+    blurb: "Both production skills in one purchase — two skill mocks.",
+    unlockLabel: "Unlock Dual Bundle",
+    pricingSlug: DUAL_BUNDLE_SLUG,
+    unlocked: isDualPackUnlocked(subscription),
+    Icon: Sparkles,
+  };
+
+  const cards: PackCard[] = dualHome
+    ? [writingCard, speakingCard]
+    : [writingCard, speakingCard, dualCard];
 
   return (
     <div className="space-y-6 pb-2">
       <header>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
-          Your skill packs
-        </p>
-        <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-ink sm:text-[1.75rem]">
-          Practice
-        </h1>
-        <p className="mt-1.5 max-w-xl text-[14px] leading-relaxed text-muted">
-          Unlock Writing, Speaking, or both. Each pack opens its own practice
-          path when your plan includes it.
-        </p>
+        {dualHome ? (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
+              Dual Bundle
+            </p>
+            <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-ink sm:text-[1.75rem]">
+              Your courses
+            </h1>
+            <p className="mt-1.5 max-w-xl text-[14px] leading-relaxed text-muted">
+              Writing + Speaking together. Open either course — each has its
+              own hubs and mock after you finish the sets.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
+              Your skill packs
+            </p>
+            <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-ink sm:text-[1.75rem]">
+              Practice
+            </h1>
+            <p className="mt-1.5 max-w-xl text-[14px] leading-relaxed text-muted">
+              Unlock Writing, Speaking, or both. Each pack opens its own practice
+              path when your plan includes it.
+            </p>
+          </>
+        )}
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div
+        className={cn(
+          "grid gap-3",
+          dualHome ? "sm:grid-cols-2" : "sm:grid-cols-3",
+        )}
+      >
         {cards.map((card) => (
           <SkillPackCard key={card.id} card={card} />
         ))}

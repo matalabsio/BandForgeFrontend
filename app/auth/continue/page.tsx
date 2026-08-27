@@ -9,10 +9,8 @@ import { syncDiagnosticLeadAfterAuth } from "@/lib/diagnostic-lead-sync";
 import { readDiagnosticResults } from "@/lib/diagnostic-session";
 import {
   hasFullSkillProgram,
-  hasSpeakingSkillPlan,
-  hasWritingSkillPlan,
   isDiagnosticComplete,
-  postCheckoutDestination,
+  skillCoursePathForSubscription,
 } from "@/lib/entitlement";
 import { getLearningProfile } from "@/lib/learning-api";
 import { getSubscription } from "@/lib/payments";
@@ -22,17 +20,6 @@ import {
   resolvePostLoginDestination,
   safePostLoginPath,
 } from "@/lib/post-login-destination";
-
-function skillCoursePathForSubscription(
-  subscription: Awaited<ReturnType<typeof getSubscription>> | null,
-): string | null {
-  if (!subscription || hasFullSkillProgram(subscription)) return null;
-  if (hasSpeakingSkillPlan(subscription) || hasWritingSkillPlan(subscription)) {
-    const dest = postCheckoutDestination(subscription);
-    return dest.startsWith("/practice/") ? dest : null;
-  }
-  return null;
-}
 
 function PostLoginContinueInner() {
   const searchParams = useSearchParams();

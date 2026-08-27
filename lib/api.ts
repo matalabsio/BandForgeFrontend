@@ -9,18 +9,54 @@ const LEGACY_RAILWAY_API_HOSTS = new Set([
   "adequate-surprise-production-96bc.up.railway.app",
 ]);
 
-/** Current Railway API. Override with API_URL on Vercel (no redeploy). */
+/** Current production Railway API. Production-only fallback — never for staging. */
 export const DEFAULT_RAILWAY_API_URL =
   "https://backend-production-a813.up.railway.app";
+
+export const PRODUCTION_RAILWAY_API_HOST = "backend-production-a813.up.railway.app";
+
+/** Explicit staging marker — set on the staging Vercel project / Preview env. */
+export function isStagingAppEnv(): boolean {
+  return (process.env.NEXT_PUBLIC_APP_ENV || "").trim().toLowerCase() === "staging";
+}
+
+function hostnameOf(url: string): string {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function isProductionRailwayHost(host: string): boolean {
+  return (
+    host === PRODUCTION_RAILWAY_API_HOST || LEGACY_RAILWAY_API_HOSTS.has(host)
+  );
+}
 
 function normalizeApiUrl(url: string): string {
   if (!url) return url;
   try {
-    if (LEGACY_RAILWAY_API_HOSTS.has(new URL(url).hostname)) {
+    const host = hostnameOf(url);
+    if (isStagingAppEnv() && isProductionRailwayHost(host)) {
+      throw new Error(
+        `Staging refuses production Railway API host (${host}). ` +
+          "Set API_URL / NEXT_PUBLIC_API_URL to the staging Railway service.",
+      );
+    }
+    if (LEGACY_RAILWAY_API_HOSTS.has(host)) {
+      if (isStagingAppEnv()) {
+        throw new Error(
+          "Staging must not rewrite legacy Railway hosts to production. " +
+            "Set API_URL to the staging API host explicitly.",
+        );
+      }
       return DEFAULT_RAILWAY_API_URL;
     }
-  } catch {
-    /* ignore invalid URL */
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("Staging")) {
+      throw err;
+    }
   }
   return stripTrailingSlash(url);
 }
@@ -40,29 +76,45 @@ export function isApiUrlConfiguredForVercel(): { ok: true } | { ok: false; detai
     return { ok: true };
   }
 
-  const resolved = normalizeApiUrl(
-    process.env.API_URL?.trim() ||
-      process.env.NEXT_PUBLIC_API_URL?.trim() ||
-      "",
-  );
+  try {
+    const resolved = normalizeApiUrl(
+      process.env.API_URL?.trim() ||
+        process.env.NEXT_PUBLIC_API_URL?.trim() ||
+        "",
+    );
 
-  if (!resolved) {
+    if (!resolved) {
+      return {
+        ok: false,
+        detail: isStagingAppEnv()
+          ? "Staging requires API_URL / NEXT_PUBLIC_API_URL pointing at the staging Railway API (no production fallback)."
+          : "API_URL / NEXT_PUBLIC_API_URL is missing on Vercel. Set API_URL to your Railway URL (works without redeploy).",
+      };
+    }
+
+    if (isLocalhostUrl(resolved)) {
+      return {
+        ok: false,
+        detail:
+          "API URL points at localhost on Vercel. Set API_URL to your Railway public URL.",
+      };
+    }
+
+    if (isStagingAppEnv() && isProductionRailwayHost(hostnameOf(resolved))) {
+      return {
+        ok: false,
+        detail:
+          "Staging NEXT_PUBLIC_APP_ENV=staging must not use the production Railway API.",
+      };
+    }
+
+    return { ok: true };
+  } catch (err) {
     return {
       ok: false,
-      detail:
-        "API_URL / NEXT_PUBLIC_API_URL is missing on Vercel. Set API_URL to your Railway URL (works without redeploy).",
+      detail: err instanceof Error ? err.message : "Invalid API URL configuration.",
     };
   }
-
-  if (isLocalhostUrl(resolved)) {
-    return {
-      ok: false,
-      detail:
-        "API URL points at localhost on Vercel. Set API_URL to your Railway public URL.",
-    };
-  }
-
-  return { ok: true };
 }
 
 /** Backend base URL — single resolver for BFF proxies and server fetches. */
@@ -73,6 +125,17 @@ export function getApiUrl(): string {
   const apiUrl = process.env.API_URL
     ? stripTrailingSlash(process.env.API_URL)
     : "";
+
+  if (isStagingAppEnv()) {
+    const resolved = normalizeApiUrl(apiUrl || publicUrl || "");
+    if (!resolved) {
+      throw new Error(
+        "Staging requires API_URL or NEXT_PUBLIC_API_URL (staging Railway). " +
+          "Refusing silent fallback to production.",
+      );
+    }
+    return resolved;
+  }
 
   if (process.env.VERCEL === "1") {
     // API_URL is runtime on Vercel — prefer it over baked NEXT_PUBLIC_* (fixes without redeploy).
