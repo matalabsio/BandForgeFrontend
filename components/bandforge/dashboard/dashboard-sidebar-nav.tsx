@@ -98,36 +98,6 @@ export function DashboardSidebarNav({
 
       <div className="mt-6 space-y-4 border-t border-ink/8 pt-5">
         {showPremiumCta ? <PremiumCta /> : null}
-        {process.env.NODE_ENV === "development" ? (
-          <div className="rounded-xl border border-cyan/25 bg-navy px-3 py-3 text-white">
-            <p className="px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan">
-              Dev · Mock tests
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <Link
-                href="/test/1/listening"
-                prefetch
-                className="inline-flex min-h-8 items-center rounded-full border border-white/15 bg-white/5 px-2.5 text-[11px] font-semibold text-white/90 hover:border-cyan/50 hover:bg-cyan/15"
-              >
-                MT1
-              </Link>
-              <Link
-                href="/test/2/listening"
-                prefetch
-                className="inline-flex min-h-8 items-center rounded-full border border-white/15 bg-white/5 px-2.5 text-[11px] font-semibold text-white/90 hover:border-cyan/50 hover:bg-cyan/15"
-              >
-                MT2
-              </Link>
-              <Link
-                href="/diagnostic"
-                prefetch
-                className="inline-flex min-h-8 items-center rounded-full border border-white/15 bg-white/5 px-2.5 text-[11px] font-semibold text-white/90 hover:border-cyan/50 hover:bg-cyan/15"
-              >
-                Diagnostic
-              </Link>
-            </div>
-          </div>
-        ) : null}
         <Link
           href="/profile"
           className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-ink/5"

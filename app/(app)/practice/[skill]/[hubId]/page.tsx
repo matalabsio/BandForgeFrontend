@@ -13,6 +13,7 @@ import {
   isHubLockedError,
 } from "@/lib/practice-server";
 import { isPracticeSkill, practiceSkillLabel } from "@/lib/practice-types";
+import { writingHubExerciseHref } from "@/lib/writing-skill-course";
 import {
   getCachedCookieHeader,
   getCachedServerSession,
@@ -88,6 +89,16 @@ export default async function PracticeHubDetailPage({
   }
 
   if (!hub || hub.skill !== skill) notFound();
+
+  if (skill === "writing" && planTask !== "watch") {
+    redirect(
+      writingHubExerciseHref(hubId, {
+        fromPlan,
+        task: planTask,
+        taskId: planTaskId,
+      }),
+    );
+  }
 
   return (
     <EntitledRouteGate

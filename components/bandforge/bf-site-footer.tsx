@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import {
   BF_FOOTER_COLUMNS,
@@ -7,12 +7,6 @@ import {
   type BfFooterLink,
 } from "@/components/bandforge/bf-footer-links";
 import { cn } from "@/lib/utils";
-
-const DEV_MOCK_FOOTER_LINKS = [
-  { href: "/test/1/listening", label: "Mock Test 1" },
-  { href: "/test/2/listening", label: "Mock Test 2" },
-  { href: "/diagnostic", label: "Diagnostic" },
-] as const;
 
 /** Short footer blurb — not the full SEO entity description. */
 const FOOTER_BLURB =
@@ -99,36 +93,6 @@ export function BandForgeSiteFooter({ className, embedded = false }: Props) {
             })}
           </div>
         </div>
-
-        {process.env.NODE_ENV === "development" ? (
-          <div className="mt-8 rounded-xl border border-cyan/25 bg-white/[0.04] px-4 py-3.5 sm:px-5">
-            <div className="mb-2 flex items-center gap-2">
-              <ClipboardList
-                className="size-3.5 shrink-0 text-cyan"
-                strokeWidth={2}
-                aria-hidden
-              />
-              <p className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-cyan">
-                Dev · Mock tests
-              </p>
-            </div>
-            <nav
-              className="flex flex-wrap gap-2"
-              aria-label="Developer mock test shortcuts"
-            >
-              {DEV_MOCK_FOOTER_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  prefetch
-                  className="inline-flex min-h-9 items-center rounded-full border border-white/15 bg-white/5 px-3.5 text-[0.8125rem] font-semibold text-white/90 no-underline transition-colors hover:border-cyan/45 hover:bg-cyan/15 hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        ) : null}
 
         <div className="mt-9 flex flex-col gap-2 border-t border-white/[0.08] pt-5 sm:mt-10 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <p className="text-[0.6875rem] text-[#64748B] sm:text-xs">

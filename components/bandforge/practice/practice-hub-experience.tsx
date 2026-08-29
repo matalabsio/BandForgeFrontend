@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Clock, Loader2, Play } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Clock, Loader2, Play } from "lucide-react";
 import { BfSectionEyebrow, BfSectionHeading } from "@/components/bandforge/ui";
 import { PlanOpeningSkeleton } from "@/components/bandforge/plan/plan-skeletons";
 import { completePracticeHub } from "@/lib/practice-api";
@@ -24,6 +24,12 @@ import {
 } from "@/lib/practice-submit";
 import type { MockUnlock, PracticeHubDetail, PracticeSkill } from "@/lib/practice-types";
 import { practiceSkillLabel } from "@/lib/practice-types";
+import { speakingHubDisplayTitle, speakingHubPartLabel } from "@/lib/speaking-skill-course";
+import {
+  writingHubDisplayTitle,
+  writingHubTaskLabel,
+  writingHubTitleLooksLikeSlug,
+} from "@/lib/writing-skill-course";
 import { cn } from "@/lib/utils";
 
 export type { PlanTaskKind };
@@ -149,6 +155,33 @@ function appendPlanParams(
   if (planTask) url.searchParams.set("task", planTask);
   if (planTaskId) url.searchParams.set("taskId", planTaskId);
   return `${url.pathname}${url.search}`;
+}
+
+function resolveHubDisplayTitle(skill: PracticeSkill, hub: PracticeHubDetail): string {
+  const position = hub.set_number > 0 ? hub.set_number : 1;
+  if (skill === "writing") return writingHubDisplayTitle(hub, position);
+  if (skill === "speaking") return speakingHubDisplayTitle(hub, position);
+  const raw = (hub.title || "").trim();
+  if (
+    !raw ||
+    writingHubTitleLooksLikeSlug(raw) ||
+    (/^[a-z0-9_-]{8,}$/i.test(raw) && (raw.includes("-") || raw.includes("_")))
+  ) {
+    return hub.set_number > 0 ? `Set ${hub.set_number}` : "Practice set";
+  }
+  return raw;
+}
+
+function resolveHubTaskBadge(skill: PracticeSkill, hub: PracticeHubDetail): string | null {
+  if (skill === "writing") return writingHubTaskLabel(hub);
+  if (skill === "speaking") return speakingHubPartLabel(hub);
+  return null;
+}
+
+function practiceCtaLabel(status: PracticeHubDetail["status"]): string {
+  if (status === "completed") return "Review exercise";
+  if (status === "in_progress") return "Continue practice";
+  return "Start practice";
 }
 
 export function PracticeHubExperience({
@@ -368,6 +401,14 @@ export function PracticeHubExperience({
 
   const activeVideo = videos[videoIndex];
   const nextAfterWatch = nextPlanTask("watch", skill);
+  const displayTitle = resolveHubDisplayTitle(skill, hub);
+  const taskBadge = resolveHubTaskBadge(skill, hub);
+  const practicePrompt = hub.practice_prompt?.trim() ?? "";
+  const hasVideos = videos.length > 0;
+  const mockProgress =
+    mockUnlock && mockUnlock.required > 0
+      ? { completed: mockUnlock.completed, required: mockUnlock.required }
+      : null;
 
   // Brief skeleton while redirecting plan module steps to real test session.
   if (
@@ -389,45 +430,116 @@ export function PracticeHubExperience({
   }
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-3">
+    <div className="space-y-6">
+      <header className="space-y-4">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-cyan hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-cyan transition-colors hover:text-cyan/80"
         >
           <ArrowLeft className="size-4" strokeWidth={2} />
           {backLabel}
         </Link>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <BfSectionEyebrow>
-              {fromPlan && focus
-                ? `Today’s plan · ${PLAN_TASK_LABEL[focus]}`
-                : `Bank ${hub.bank_number} · Set ${setIndex} of ${totalSets}`}
-            </BfSectionEyebrow>
-            <BfSectionHeading className="mt-2">{hub.title}</BfSectionHeading>
-            <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
-              <Clock className="size-3.5" strokeWidth={2} />
-              ~{hub.estimated_min} min
-            </p>
+
+        {fromPlan ? (
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <BfSectionEyebrow>
+                {focus ? `Today’s plan · ${PLAN_TASK_LABEL[focus]}` : "Today’s plan"}
+              </BfSectionEyebrow>
+              <BfSectionHeading className="mt-2">{displayTitle}</BfSectionHeading>
+              <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
+                <Clock className="size-3.5" strokeWidth={2} />
+                ~{hub.estimated_min} min
+              </p>
+            </div>
           </div>
-          {!fromPlan ? (
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                STATUS_STYLE[status],
-              )}
-            >
-              {status === "completed" ? (
-                <Check className="size-3" strokeWidth={2.5} />
-              ) : null}
-              {STATUS_LABEL[status]}
-            </span>
-          ) : null}
-        </div>
+        ) : (
+          <div className="overflow-hidden rounded-[28px] border border-navy/10 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
+            <div className="border-b border-ink/[0.05] bg-gradient-to-br from-navy/[0.03] to-transparent px-5 py-5 sm:px-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <BfSectionEyebrow>
+                    Bank {hub.bank_number} · Set {setIndex} of {totalSets}
+                  </BfSectionEyebrow>
+                  <BfSectionHeading className="mt-2">{displayTitle}</BfSectionHeading>
+                  <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock className="size-3.5" strokeWidth={2} />
+                      ~{hub.estimated_min} min
+                    </span>
+                    {taskBadge ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span>{taskBadge}</span>
+                      </>
+                    ) : null}
+                    {mockProgress ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span>
+                          {mockProgress.completed} of {mockProgress.required} sets done
+                        </span>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                    STATUS_STYLE[status],
+                  )}
+                >
+                  {status === "completed" ? (
+                    <Check className="size-3" strokeWidth={2.5} />
+                  ) : null}
+                  {STATUS_LABEL[status]}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <p className="text-sm text-muted">
+                {status === "completed"
+                  ? "You’ve finished this set. Review your work or continue to the next hub."
+                  : "Complete the exercise for this set, then mark it done to track your course progress."}
+              </p>
+              <div className="flex flex-col gap-2 sm:items-end">
+                <Link
+                  href={practiceCtaHref}
+                  className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-cyan px-5 text-sm font-bold text-navy transition-colors hover:bg-brand-sky-hover"
+                >
+                  {practiceCtaLabel(status)}
+                  <ArrowRight className="size-4" strokeWidth={2.5} />
+                </Link>
+                {status !== "completed" ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleComplete()}
+                    disabled={completing}
+                    className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-border-soft bg-white px-4 text-sm font-semibold text-navy transition-colors hover:bg-ink/[0.02] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {completing ? <Loader2 className="size-4 animate-spin" /> : null}
+                    Mark complete
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            {progressMsg || error ? (
+              <div className="border-t border-ink/[0.05] px-5 py-3 sm:px-6">
+                {progressMsg ? (
+                  <p className="text-sm font-semibold text-emerald-700">{progressMsg}</p>
+                ) : null}
+                {error ? (
+                  <p className="text-sm font-semibold text-red-600">{error}</p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        )}
       </header>
 
-      {(!fromPlan || focus === "watch") && (
+      {(!fromPlan || focus === "watch") && hasVideos ? (
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-lg font-bold text-navy">Videos</h2>
@@ -437,12 +549,7 @@ export function PracticeHubExperience({
               </span>
             ) : null}
           </div>
-          {videos.length === 0 ? (
-            <p className="rounded-2xl border border-border-soft bg-white px-5 py-4 text-sm text-muted">
-              Video content for this set is on the way. Use the practice prompt below
-              while we finish production.
-            </p>
-          ) : activeVideo ? (
+          {activeVideo ? (
             <div className="space-y-2">
               <p className="text-sm font-semibold text-navy">{activeVideo.title}</p>
               <VideoBlock
@@ -503,17 +610,30 @@ export function PracticeHubExperience({
             </div>
           ) : null}
         </section>
-      )}
+      ) : null}
 
-      {(!fromPlan || focus === "practice" || focus === "submit") && (
+      {(fromPlan && (focus === "practice" || focus === "submit")) ||
+      (!fromPlan && practicePrompt) ? (
         <section className="space-y-3">
-          <h2 className="font-display text-lg font-bold text-navy">
-            {focus === "submit" ? "Submit" : "Practice"}
-          </h2>
+          {fromPlan ? (
+            <h2 className="font-display text-lg font-bold text-navy">
+              {focus === "submit" ? "Submit" : "Practice"}
+            </h2>
+          ) : (
+            <h2 className="font-display text-lg font-bold text-navy">Instructions</h2>
+          )}
           <div className="rounded-2xl border border-border-soft bg-white px-5 py-5">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
-              {hub.practice_prompt || "Practice instructions will appear here."}
-            </p>
+            {practicePrompt ? (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
+                {practicePrompt}
+              </p>
+            ) : fromPlan ? (
+              <p className="text-sm text-muted">
+                {focus === "submit"
+                  ? "Confirm today’s submit for this set when you’re ready."
+                  : "Work through today’s practice for this set."}
+              </p>
+            ) : null}
             {fromPlan && focus === "submit" ? (
               <>
                 <p className="mt-3 text-sm text-muted">
@@ -560,59 +680,6 @@ export function PracticeHubExperience({
             ) : null}
           </div>
         </section>
-      )}
-
-      {!fromPlan ? (
-        <>
-          <section className="space-y-3">
-            <h2 className="font-display text-lg font-bold text-navy">Submit</h2>
-            <div className="rounded-2xl border border-border-soft bg-white px-5 py-5">
-              <p className="text-sm text-muted">
-                When you are ready, complete the module exercise for this set.
-              </p>
-              <Link
-                href={submitHref}
-                className="mt-4 inline-flex rounded-full bg-cyan px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-sky-hover"
-              >
-                Start practice
-              </Link>
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="font-display text-lg font-bold text-navy">Complete</h2>
-            <div className="rounded-2xl border border-border-soft bg-white px-5 py-5">
-              <p className="text-sm text-muted">
-                Finished watching and practicing? Mark this set complete to track progress
-                toward your skill mock unlock.
-              </p>
-              {progressMsg ? (
-                <p className="mt-2 text-sm font-semibold text-emerald-700">{progressMsg}</p>
-              ) : null}
-              {error ? (
-                <p className="mt-2 text-sm font-semibold text-red-600">{error}</p>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => void handleComplete()}
-                disabled={status === "completed" || completing}
-                className={cn(
-                  "mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold",
-                  status === "completed"
-                    ? "cursor-default bg-emerald-100 text-emerald-800"
-                    : "bg-navy text-white hover:bg-navy/90 disabled:opacity-60",
-                )}
-              >
-                {completing ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : status === "completed" ? (
-                  <Check className="size-4" strokeWidth={2.5} />
-                ) : null}
-                {status === "completed" ? "Set complete" : "Mark complete"}
-              </button>
-            </div>
-          </section>
-        </>
       ) : null}
     </div>
   );

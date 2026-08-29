@@ -4,7 +4,8 @@ import { isAuthEnabled } from "@/lib/flags";
 import type { MockUnlock, PracticeHub, PracticeHubDetail } from "@/lib/practice-types";
 import { serverAuthHeaders } from "@/lib/server-auth-headers";
 
-const FETCH_MS = 10_000;
+/** Skill-pack hubs hit Supabase per-hub; local/prod often exceeds 10s. */
+const FETCH_MS = 45_000;
 
 export async function fetchPracticeHubs(
   cookieHeader: string,

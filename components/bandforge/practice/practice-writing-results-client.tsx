@@ -74,7 +74,7 @@ export function PracticeWritingResultsClient({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const backHref = fromPlan ? "/study-plan/today" : `/practice/writing/${hubId}`;
+  const backHref = fromPlan ? "/study-plan/today" : "/practice/writing";
   const continueHref = useMemo(() => {
     if (!fromPlan) return "/practice/writing";
     return afterPlanStepHref({

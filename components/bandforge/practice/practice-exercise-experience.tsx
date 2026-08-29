@@ -79,8 +79,15 @@ export function PracticeExerciseExperience({
   const currentTask = parsePlanTask(planTask) ?? "practice";
   const backHref = fromPlan
     ? "/study-plan/today"
-    : `/practice/${skill}/${hubId}`;
-  const backLabel = fromPlan ? "← Today’s plan" : "← Back to hub";
+    : skill === "writing"
+      ? "/practice/writing"
+      : `/practice/${skill}/${hubId}`;
+  const backLabel =
+    fromPlan
+      ? "← Today’s plan"
+      : skill === "writing"
+        ? "← Back to Writing hubs"
+        : "← Back to hub";
   const nextHref = fromPlan
     ? afterPlanStepHref({
         skill,
