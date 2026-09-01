@@ -60,7 +60,9 @@ export function speakingStatusPath(
     : speakingPendingPath(testNumber, attemptId);
 }
 
-export function speakingReportIsAvailable(status: SpeakingReviewStatus): boolean {
+export function speakingReportIsAvailable(
+  status: SpeakingReviewStatus | SpeakingPendingLike,
+): boolean {
   if ("release" in status) {
     return status.release.state === "released";
   }
