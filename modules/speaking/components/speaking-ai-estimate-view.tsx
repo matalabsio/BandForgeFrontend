@@ -10,6 +10,10 @@ import {
   groupSpeakingTranscripts,
   speakingTranscriptStatus,
 } from "@/modules/speaking/lib/speaking-transcript-groups";
+import {
+  displayTranscript,
+  isInsufficientSpeechPayload,
+} from "@/modules/speaking/lib/meaningful-speech";
 import { ieltsDescriptor } from "@/modules/speaking/lib/build-speaking-feedback";
 import { SpeakingMockFooterCta } from "@/modules/speaking/components/report/speaking-mock-footer-cta";
 import { CriteriaVsTargetBars } from "@/modules/speaking/components/report/criteria-vs-target-bars";
@@ -87,6 +91,10 @@ export function SpeakingAiEstimateView({
   backLabel,
   fallbackHref,
 }: Props) {
+  if (isInsufficientSpeechPayload(payload)) {
+    return null;
+  }
+
   const target = targetBand && targetBand > 0 ? targetBand : 7;
   const band = payload.ai_band ?? 0;
   const signature =
@@ -370,7 +378,9 @@ export function SpeakingAiEstimateView({
                         const transcriptState = speakingTranscriptStatus(
                           response.transcription_status,
                         );
-                        const transcript = response.transcript.trim();
+                        const transcript = displayTranscript(
+                          response.transcript.trim(),
+                        );
                         return (
                           <article
                             key={response.id}

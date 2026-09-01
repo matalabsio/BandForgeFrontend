@@ -23,7 +23,8 @@ export function SpeakingRetryDialog({ open, onRetry }: Props) {
           We didn&apos;t catch a response — try again?
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-[#5A6B82]">
-          Your answer was too short or too quiet. Record again before moving on.
+          We didn&apos;t detect speech. Check your mic and record again before
+          moving on.
         </p>
         <div className="mt-5">
           <Button variant="primary" className="w-full" onClick={onRetry}>

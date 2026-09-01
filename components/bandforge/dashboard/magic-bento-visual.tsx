@@ -364,6 +364,7 @@ function WeekVisual({
 }) {
   const reduce = useReducedMotion();
   const [ready, setReady] = useState(Boolean(reduce));
+  const weekPct = useAnimatedPct(visual.pct ?? 0);
 
   useEffect(() => {
     if (reduce) {
@@ -373,10 +374,13 @@ function WeekVisual({
     setReady(false);
     const id = window.setTimeout(() => setReady(true), 60);
     return () => window.clearTimeout(id);
-  }, [reduce, visual.bars]);
+  }, [reduce, visual.bars, visual.pct]);
 
   return (
     <div className="magic-bento-visual magic-bento-visual--week">
+      <div className="magic-bento-visual__bar-slot">
+        <ProgressTrack pct={weekPct} />
+      </div>
       <div className="magic-bento-visual__week-grid" role="list">
         {visual.bars.map((bar, i) => (
           <div
@@ -388,9 +392,7 @@ function WeekVisual({
               <div
                 className="magic-bento-visual__week-fill"
                 style={{
-                  height: ready
-                    ? `${bar.pct > 0 ? Math.max(bar.pct, 12) : 0}%`
-                    : "0%",
+                  height: ready ? `${Math.max(0, Math.min(100, bar.pct))}%` : "0%",
                   transitionDelay: reduce ? "0ms" : `${i * 45}ms`,
                 }}
               />

@@ -76,6 +76,8 @@ export async function DashboardPersonalizedSection({
     examTimeline,
     overallPlanPct: planPct,
   });
+  const skillDifficulty =
+    learning.skill_difficulty ?? studyPlan.skill_difficulty ?? null;
 
   return (
     <DashPageMotion className="flex min-h-0 flex-1 flex-col gap-[var(--bf-dash-gutter)]">
@@ -95,7 +97,15 @@ export async function DashboardPersonalizedSection({
 
       <DashPageItem className="flex min-h-0 flex-1 flex-col">
         <Suspense fallback={<BentoSkeleton />}>
-          <DashboardMagicBentoClient cards={cards} />
+          <DashboardMagicBentoClient
+            cards={cards}
+            focusInput={{
+              studyPlan: learning.study_plan,
+              weeklyFocus: studyPlan.weekly_focus,
+              skillDifficulty: skillDifficulty,
+              weeklyHubCompletions: learning.weekly_hub_completions ?? [],
+            }}
+          />
         </Suspense>
       </DashPageItem>
     </DashPageMotion>

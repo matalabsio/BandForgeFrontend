@@ -53,6 +53,8 @@ export type MagicBentoVisual =
       bars: MagicBentoWeekBar[];
       done: number;
       total: number;
+      /** Overall week completion 0–100 */
+      pct: number;
     }
   | {
       kind: "hubs";

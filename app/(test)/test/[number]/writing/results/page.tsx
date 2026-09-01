@@ -21,7 +21,6 @@ type PageProps = {
     attempt?: string;
     part?: string;
     mock_attempt?: string;
-    coach?: string;
     from?: string;
     task?: string;
     taskId?: string;
@@ -56,7 +55,6 @@ export default async function WritingResultsPage({ params, searchParams }: PageP
   const mockAttemptId = sp.mock_attempt?.trim() ?? null;
   const part = Number.parseInt(sp.part ?? "1", 10);
   const resolvedPart = Number.isFinite(part) && part >= 1 ? part : 1;
-  const coachOpen = sp.coach === "1";
   const plan = parsePlanResultSearchParams(sp);
 
   const resolved = await resolveCatalogSlotServer(cookieHeader, testNumber);
@@ -87,7 +85,6 @@ export default async function WritingResultsPage({ params, searchParams }: PageP
       mockTestId={resolved.mockTestId}
       attemptFromQuery={sp.attempt}
       targetBand={user.target_band ?? null}
-      coachOpen={coachOpen}
       plan={plan}
     />
   );

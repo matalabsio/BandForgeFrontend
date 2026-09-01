@@ -2,13 +2,16 @@ import type {
   MagicBentoCardData,
   MagicBentoHubBar,
   MagicBentoSkillBar,
-  MagicBentoWeekBar,
 } from "@/components/bandforge/dashboard/magic-bento-types";
 import type { SkillBands } from "@/lib/diagnostic-performance";
+import {
+  localIsoToday,
+  presentWeeklyFocusHeadline,
+  weekFocusBars,
+} from "@/lib/focus-week-progress";
 import type {
   LearningProfile,
   LearningStudyPlan,
-  SkillHubProgress,
 } from "@/lib/learning-types";
 import type { ExamTimeline } from "@/lib/dashboard-plan-math";
 import type { DashboardStartNow } from "@/lib/plan-start-task";
@@ -20,17 +23,10 @@ const SKILL_LABEL: Record<(typeof SKILL_ORDER)[number], string> = {
   writing: "Writing",
   speaking: "Speaking",
 };
-const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
-
-/** Light card surface — BandForge dashboard paper */
-const CARD_BG = "#ffffff";
 
 /** Server-safe local calendar date (avoids importing client-only plan-step-completion). */
-function localIsoToday(date: Date = new Date()): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+function localIsoTodayLegacy(date: Date = new Date()): string {
+  return localIsoToday(date);
 }
 
 type BandGapInput = {
@@ -42,115 +38,8 @@ type BandGapInput = {
   bands: SkillBands;
 };
 
-function presentWeeklyFocusHeadline(
-  weeklyFocus: string | null | undefined,
-  skillDifficulty: Record<string, string> | null | undefined,
-): { headline: string; support: string; skillKeys: string[] } {
-  if (!weeklyFocus?.trim()) {
-    return {
-      headline: "Stay consistent",
-      support: "Your weekly focus unlocks after plan setup.",
-      skillKeys: [],
-    };
-  }
-
-  const raw = weeklyFocus.trim().replace(/^Focus:\s*/i, "").trim();
-  const skillKeys = SKILL_ORDER.filter((key) => {
-    const label = SKILL_LABEL[key];
-    return new RegExp(`\\b${label}\\b`, "i").test(raw);
-  });
-
-  const bareSkillList =
-    skillKeys.length > 0 &&
-    raw
-      .replace(/\s*&\s*/g, " ")
-      .replace(/,/g, " ")
-      .split(/\s+/)
-      .filter(Boolean)
-      .every((token) =>
-        SKILL_ORDER.some(
-          (k) => SKILL_LABEL[k].toLowerCase() === token.toLowerCase(),
-        ),
-      );
-
-  let headline = raw;
-  if (skillKeys.length === 1) {
-    headline = SKILL_LABEL[skillKeys[0]];
-  } else if (bareSkillList) {
-    headline = skillKeys.map((k) => SKILL_LABEL[k]).join(" & ");
-  }
-
-  const hardFocus = skillKeys.filter((k) => skillDifficulty?.[k] === "hard");
-  let support = "Today’s work is built around this focus.";
-  if (hardFocus.length === 1 && skillKeys.length === 1) {
-    support = "Highest priority this week.";
-  } else if (hardFocus.length > 0) {
-    support = `${hardFocus.map((k) => SKILL_LABEL[k]).join(" & ")} marked hard.`;
-  } else if (skillKeys.length === 1) {
-    support = "Primary focus this week.";
-  }
-
-  return { headline, support, skillKeys: [...skillKeys] };
-}
-
-function weekFocusBars(
-  plan: LearningStudyPlan | null | undefined,
-  focusSkillKeys: string[],
-): { bars: MagicBentoWeekBar[]; done: number; total: number } {
-  const todayIso = localIsoToday();
-  const d = new Date(`${todayIso}T12:00:00`);
-  const day = d.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + mondayOffset);
-  const dates = Array.from({ length: 7 }, (_, i) => {
-    const x = new Date(d);
-    x.setDate(d.getDate() + i);
-    const y = x.getFullYear();
-    const m = String(x.getMonth() + 1).padStart(2, "0");
-    const dd = String(x.getDate()).padStart(2, "0");
-    return `${y}-${m}-${dd}`;
-  });
-
-  const byDate = new Map<
-    string,
-    LearningStudyPlan["weeks"][number]["days"][number]
-  >();
-  for (const week of plan?.weeks ?? []) {
-    for (const dayRow of week.days) {
-      byDate.set(dayRow.date, dayRow);
-    }
-  }
-
-  const skillFilter =
-    focusSkillKeys.length > 0
-      ? new Set(focusSkillKeys.map((k) => k.toLowerCase()))
-      : null;
-
-  let done = 0;
-  let total = 0;
-  const bars: MagicBentoWeekBar[] = dates.map((date, i) => {
-    const tasks = (byDate.get(date)?.tasks ?? []).filter(
-      (t) => t.status !== "skipped",
-    );
-    const filtered = tasks.filter((t) => {
-      if (!skillFilter) return true;
-      return skillFilter.has((t.module || "").toLowerCase());
-    });
-    const dayTotal = filtered.length;
-    const dayDone = filtered.filter((t) => t.status === "done").length;
-    if (date <= todayIso) {
-      total += dayTotal;
-      done += dayDone;
-    }
-    return {
-      letter: WEEKDAY_LETTERS[i],
-      pct: dayTotal > 0 ? Math.round((dayDone / dayTotal) * 100) : 0,
-      isToday: date === todayIso,
-    };
-  });
-
-  return { bars, done, total };
-}
+/** Light card surface — BandForge dashboard paper */
+const CARD_BG = "#ffffff";
 
 function skillBars(bands: SkillBands): MagicBentoSkillBar[] {
   return SKILL_ORDER.map((key) => {
@@ -240,7 +129,7 @@ function progressExamMeta(examTimeline: ExamTimeline): {
     };
   }
   if (remaining === 0 && examTimeline.examDate) {
-    const passed = examTimeline.examDate < localIsoToday();
+    const passed = examTimeline.examDate < localIsoTodayLegacy();
     return {
       examLabel: examLabel ? `Exam · ${examLabel}` : "Exam date",
       metaLabel: passed ? "Update date" : "Exam day",
@@ -275,6 +164,47 @@ export type BuildDashboardBentoCardsInput = {
   overallPlanPct: number;
 };
 
+export type DashboardFocusRecomputeInput = {
+  studyPlan: LearningStudyPlan;
+  weeklyFocus: string;
+  skillDifficulty: Record<string, string> | null | undefined;
+  weeklyHubCompletions: LearningProfile["weekly_hub_completions"];
+};
+
+/** Recompute Focus card visual/description after client plan cache merge. */
+export function recomputeFocusBentoCard(
+  card: MagicBentoCardData,
+  input: DashboardFocusRecomputeInput,
+): MagicBentoCardData {
+  if (card.label !== "Focus" || card.visual?.kind !== "week") return card;
+
+  const focus = presentWeeklyFocusHeadline(
+    input.weeklyFocus,
+    input.skillDifficulty ?? null,
+  );
+  const weekProg = weekFocusBars(
+    input.studyPlan,
+    focus.skillKeys,
+    input.weeklyHubCompletions ?? [],
+  );
+
+  return {
+    ...card,
+    title: focus.headline,
+    description:
+      weekProg.total > 0
+        ? `${weekProg.done} of ${weekProg.total} tasks this week`
+        : focus.support,
+    visual: {
+      kind: "week",
+      bars: weekProg.bars,
+      done: weekProg.done,
+      total: weekProg.total,
+      pct: weekProg.pct,
+    },
+  };
+}
+
 /** Build the 6 MagicBento cards for the personalized dashboard. */
 export function buildDashboardBentoCards({
   learning,
@@ -290,7 +220,11 @@ export function buildDashboardBentoCards({
     studyPlan.weekly_focus,
     skillDifficulty,
   );
-  const weekProg = weekFocusBars(studyPlan, focus.skillKeys);
+  const weekProg = weekFocusBars(
+    studyPlan,
+    focus.skillKeys,
+    learning.weekly_hub_completions ?? [],
+  );
 
   const gapDesc =
     bandGap.scoredCount === 0
@@ -419,6 +353,7 @@ export function buildDashboardBentoCards({
         bars: weekProg.bars,
         done: weekProg.done,
         total: weekProg.total,
+        pct: weekProg.pct,
       },
     },
     {

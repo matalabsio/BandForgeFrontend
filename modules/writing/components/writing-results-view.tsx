@@ -17,7 +17,6 @@ type Props = {
   dashboardHref?: string;
   onBack?: () => void;
   targetBand?: number | null;
-  coachOpen?: boolean;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
@@ -35,7 +34,6 @@ export function WritingResultsView({
   dashboardHref = "/dashboard",
   onBack,
   targetBand = null,
-  coachOpen = false,
   primaryActionLabel,
   onPrimaryAction,
   secondaryActionLabel,
@@ -55,7 +53,6 @@ export function WritingResultsView({
       backHref={backHref}
       dashboardHref={dashboardHref}
       onBack={onBack}
-      coachOpen={coachOpen}
       primaryActionLabel={primaryActionLabel}
       onPrimaryAction={onPrimaryAction}
       secondaryActionLabel={secondaryActionLabel}

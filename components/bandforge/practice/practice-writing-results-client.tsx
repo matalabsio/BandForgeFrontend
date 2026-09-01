@@ -102,6 +102,18 @@ export function PracticeWritingResultsClient({
   }, [load]);
 
   useEffect(() => {
+    if (!fromPlan) return;
+    void import("@/lib/plan-step-completion").then(({ markPlanStepDone }) => {
+      markPlanStepDone({
+        fromPlan: true,
+        hubId,
+        currentTaskId: planTaskId,
+        completeHub: false,
+      });
+    });
+  }, [fromPlan, hubId, planTaskId]);
+
+  useEffect(() => {
     if (!review) return;
     if (aiReady(review.ai_status) || review.ai_status === "ai_failed") return;
     const timer = window.setInterval(() => {

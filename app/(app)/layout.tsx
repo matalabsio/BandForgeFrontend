@@ -8,6 +8,7 @@ import {
   bandforgeHideShellHeader,
   bandforgeQuietCheckoutChrome,
   bandforgeQuietSpeakingExerciseChrome,
+  bandforgeQuietWritingExerciseChrome,
   getBandforgePathname,
 } from "@/lib/bandforge-pathname";
 import { authGuardRedirectPath } from "@/lib/auth";
@@ -50,8 +51,10 @@ export default async function BandforgeAppLayout({
     redirect(authGuardRedirectPath(pathname, cookieHeader));
   }
 
-  const speakingExam = bandforgeQuietSpeakingExerciseChrome(pathname);
-  const quietChrome = bandforgeQuietCheckoutChrome(pathname) || speakingExam;
+  const practiceExamChrome =
+    bandforgeQuietSpeakingExerciseChrome(pathname) ||
+    bandforgeQuietWritingExerciseChrome(pathname);
+  const quietChrome = bandforgeQuietCheckoutChrome(pathname) || practiceExamChrome;
   const hideHeader = bandforgeHideShellHeader(pathname) || quietChrome;
   const shellDisplayName = formatUserDisplayName(user);
   const shellAvatarUrl = user.avatar_display_url ?? null;
@@ -82,7 +85,7 @@ export default async function BandforgeAppLayout({
           pathname={pathname}
           hideHeader={hideHeader}
           hideChrome={quietChrome}
-          fullBleed={speakingExam}
+          fullBleed={practiceExamChrome}
           showWritingNav={showWritingNav}
           showSpeakingNav={showSpeakingNav}
           report={{

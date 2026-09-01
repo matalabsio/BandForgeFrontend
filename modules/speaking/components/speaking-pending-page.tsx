@@ -33,7 +33,7 @@ import { TestShell } from "@/modules/shared";
 import { SectionResultsCtaBar } from "@/modules/shared/components/section-results";
 
 const POLL_MS = 30_000;
-const AI_READY_STATUSES = new Set(["ai_complete", "ai_stub"]);
+const AI_READY_STATUSES = new Set(["ai_complete", "ai_stub", "insufficient_speech"]);
 const AI_FAILED_STATUSES = new Set([
   "ai_failed",
   "evaluation_failed",
@@ -214,10 +214,14 @@ export function SpeakingPendingPage({
       (transcription?.completed ?? 0) > 0 ||
       (transcription?.failed ?? 0) > 0);
   const aiStatus = payload?.ai_status ?? "";
+  const aiInsufficient =
+    aiStatus === "insufficient_speech" ||
+    payload?.score_source === "insufficient_speech";
   const aiReady =
-    AI_READY_STATUSES.has(aiStatus) &&
-    payload?.score_source === "ai_estimate" &&
-    payload.ai_band != null;
+    aiInsufficient ||
+    (AI_READY_STATUSES.has(aiStatus) &&
+      payload?.score_source === "ai_estimate" &&
+      payload.ai_band != null);
   const aiFailed = AI_FAILED_STATUSES.has(aiStatus);
   const timeline = payload
     ? [
@@ -437,7 +441,7 @@ export function SpeakingPendingPage({
                   )}
                   className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
                 >
-                  View provisional AI result
+                  {aiInsufficient ? "View result" : "View provisional AI result"}
                 </Link>
               ) : null}
 

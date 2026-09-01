@@ -200,6 +200,7 @@ export type PracticeSpeakingReview = {
   ai_provider?: string | null;
   submitted_at?: string | null;
   error?: string | null;
+  message?: string | null;
   evaluation_status?: string | null;
 };
 

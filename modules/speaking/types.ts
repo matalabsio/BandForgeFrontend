@@ -140,7 +140,8 @@ export type SpeakingPendingPayload = {
     | "ai_estimate"
     | "processing"
     | "failed"
-    | "unavailable";
+    | "unavailable"
+    | "insufficient_speech";
   ai_band: number | null;
   ai_criteria: Record<string, number>;
   ai_strengths: string[];

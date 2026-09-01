@@ -34,7 +34,7 @@ function latestWritingCoachHref(
   );
   if (!writing) return null;
   const testNumber = testNumberForMockId(writing.mock_test.id);
-  return `${shortModuleWritingResultsPath(testNumber, writing.id)}&coach=1`;
+  return shortModuleWritingResultsPath(testNumber, writing.id);
 }
 
 export async function DashboardMocksActivitySection({ cookieHeader }: Props) {
