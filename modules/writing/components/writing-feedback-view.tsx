@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
-import { ChevronLeft, Share2, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
+import { ChevronLeft, ShieldCheck } from "lucide-react";
 import type { WritingFeedback, WritingReview } from "@/modules/writing/types";
 import {
   writingTaskPath,
@@ -11,7 +11,6 @@ import {
 import { testNumberForMockId, mockApiId } from "@/lib/mock-catalog";
 import { mockResultsPathForTest } from "@/lib/module-review-paths";
 import { WritingFeedbackPrompt } from "@/modules/writing/components/writing-feedback-prompt";
-import { TutorChatPanel } from "@/modules/writing/components/tutor-chat-panel";
 import {
   AnnotatedEssay,
   CriteriaGrid,
@@ -36,7 +35,6 @@ type Props = {
   dashboardHref?: string;
   /** Prefer over backHref for SPA shells (e.g. diagnostic results). */
   onBack?: () => void;
-  coachOpen?: boolean;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
@@ -55,7 +53,6 @@ export function WritingFeedbackView({
   backHref,
   dashboardHref = "/dashboard",
   onBack,
-  coachOpen = false,
   primaryActionLabel,
   onPrimaryAction,
   secondaryActionLabel,
@@ -63,11 +60,16 @@ export function WritingFeedbackView({
   titleOverride = null,
 }: Props) {
   const router = useRouter();
+  const scrollRef = useRef<HTMLElement>(null);
   const isDiagnostic = mode === "diagnostic";
   const showVerified = !isDiagnostic;
   const showExaminerNotes = !isDiagnostic;
-  const showCoach = !isDiagnostic;
-  const [tutorSelection, setTutorSelection] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+    scrollRef.current?.scrollTo({ top: 0, left: 0 });
+  }, []);
 
   const taskTitle =
     titleOverride?.trim() ||
@@ -107,23 +109,9 @@ export function WritingFeedbackView({
     router.push(resolvedBack);
   }, [onBack, resolvedBack, router]);
 
-  const handleShare = useCallback(async () => {
-    const url = window.location.href;
-    const title = `Writing Feedback — Task ${review.part}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title, url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-    } catch {
-      /* user cancelled or clipboard denied */
-    }
-  }, [review.part]);
-
   return (
-    <div className="min-h-dvh bg-surface-alt text-ink">
-      <header className="sticky top-0 z-20 border-b border-border-soft bg-white/95 backdrop-blur-sm">
+    <div className="writing-feedback flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-surface-alt text-ink">
+      <header className="shrink-0 border-b border-border-soft bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
           <button
             type="button"
@@ -138,193 +126,152 @@ export function WritingFeedbackView({
             Writing Feedback
           </h1>
 
-          <button
-            type="button"
-            onClick={() => void handleShare()}
-            className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 text-[14px] font-semibold text-[#334155] transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
-            aria-label="Share feedback"
-          >
-            <Share2 className="size-[18px]" aria-hidden />
-            <span className="hidden sm:inline">Share</span>
-          </button>
+          <span className="size-11 shrink-0" aria-hidden />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
-        <div className="grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
-          <div className="min-w-0 space-y-5">
-            <ScoreHero
-              part={review.part}
-              taskTitle={taskTitle}
-              feedback={feedback}
-              showVerifiedBadge={showVerified}
-            />
+      <main
+        ref={scrollRef}
+        className="writing-feedback-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
+      >
+        <div className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
+          <div className="grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+            <div className="min-w-0 space-y-5">
+              <ScoreHero
+                part={review.part}
+                taskTitle={taskTitle}
+                feedback={feedback}
+                showVerifiedBadge={showVerified}
+              />
 
-            <CriteriaGrid criteria={feedback.criteria} />
+              <CriteriaGrid criteria={feedback.criteria} />
 
-            <section className="grid gap-4 sm:grid-cols-2">
-              <StrengthPanel items={feedback.strengths} />
-              <ImprovementPanel items={feedback.improvements} />
-            </section>
-
-            {feedback.spelling_mistakes.length > 0 ? (
-              <section className="rounded-2xl border border-[#FECACA] border-l-4 border-l-[#EF4444] bg-[#FEF2F2] p-5 shadow-sm sm:p-6">
-                <h3 className="text-[14px] font-bold text-ink">
-                  Spelling mistakes ({feedback.spelling_mistakes.length})
-                </h3>
-                <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-[#334155]">
-                  {feedback.spelling_mistakes.map((item) => (
-                    <li
-                      key={`${item.original}-${item.correction}`}
-                      className="flex flex-wrap gap-2"
-                    >
-                      <span className="font-medium text-[#DC2626] line-through">
-                        {item.original}
-                      </span>
-                      <span className="text-[#94A3B8]" aria-hidden>
-                        →
-                      </span>
-                      <span className="font-semibold text-[#0D1F3C]">
-                        {item.correction}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+              <section className="grid gap-4 sm:grid-cols-2">
+                <StrengthPanel items={feedback.strengths} />
+                <ImprovementPanel items={feedback.improvements} />
               </section>
-            ) : null}
 
-            {feedback.grammar_mistakes.length > 0 ? (
-              <section className="rounded-2xl border border-[#FDE68A] border-l-4 border-l-[#F59E0B] bg-[#FFFBEB] p-5 shadow-sm sm:p-6">
-                <h3 className="text-[14px] font-bold text-ink">
-                  Grammar issues ({feedback.grammar_mistakes.length})
-                </h3>
-                <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-[#334155]">
-                  {feedback.grammar_mistakes.map((item) => (
-                    <li key={`${item.original}-${item.correction}`}>
-                      {showCoach ? (
-                        <button
-                          type="button"
-                          className="w-full text-left transition hover:opacity-80"
-                          onClick={() => setTutorSelection(item.original)}
-                        >
-                          <span className="font-medium text-[#B45309]">
-                            {item.original}
-                          </span>
-                          <span className="text-[#94A3B8]" aria-hidden>
-                            {" "}
-                            →{" "}
-                          </span>
-                          <span className="font-semibold text-[#0D1F3C]">
-                            {item.correction}
-                          </span>
-                          {item.issue ? (
-                            <span className="text-[#64748B]"> · {item.issue}</span>
-                          ) : null}
-                          <span className="mt-0.5 block text-[11px] font-semibold text-cyan">
-                            Ask coach about this
-                          </span>
-                        </button>
-                      ) : (
-                        <div>
-                          <span className="font-medium text-[#B45309]">
-                            {item.original}
-                          </span>
-                          <span className="text-[#94A3B8]" aria-hidden>
-                            {" "}
-                            →{" "}
-                          </span>
-                          <span className="font-semibold text-[#0D1F3C]">
-                            {item.correction}
-                          </span>
-                          {item.issue ? (
-                            <span className="text-[#64748B]"> · {item.issue}</span>
-                          ) : null}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
+              {feedback.spelling_mistakes.length > 0 ? (
+                <section className="rounded-2xl border border-[#FECACA] border-l-4 border-l-[#EF4444] bg-[#FEF2F2] p-5 shadow-sm sm:p-6">
+                  <h3 className="text-[14px] font-bold text-ink">
+                    Spelling mistakes ({feedback.spelling_mistakes.length})
+                  </h3>
+                  <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-[#334155]">
+                    {feedback.spelling_mistakes.map((item) => (
+                      <li
+                        key={`${item.original}-${item.correction}`}
+                        className="flex flex-wrap gap-2"
+                      >
+                        <span className="font-medium text-[#DC2626] line-through">
+                          {item.original}
+                        </span>
+                        <span className="text-[#94A3B8]" aria-hidden>
+                          →
+                        </span>
+                        <span className="font-semibold text-[#0D1F3C]">
+                          {item.correction}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
 
-            <NextBandAdvice
-              advice={feedback.next_band_advice}
-              reviewerNotes={feedback.reviewer_notes}
-              showExaminerNotes={showExaminerNotes}
-            />
+              {feedback.grammar_mistakes.length > 0 ? (
+                <section className="rounded-2xl border border-[#FDE68A] border-l-4 border-l-[#F59E0B] bg-[#FFFBEB] p-5 shadow-sm sm:p-6">
+                  <h3 className="text-[14px] font-bold text-ink">
+                    Grammar issues ({feedback.grammar_mistakes.length})
+                  </h3>
+                  <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-[#334155]">
+                    {feedback.grammar_mistakes.map((item) => (
+                      <li key={`${item.original}-${item.correction}`}>
+                        <span className="font-medium text-[#B45309]">
+                          {item.original}
+                        </span>
+                        <span className="text-[#94A3B8]" aria-hidden>
+                          {" "}
+                          →{" "}
+                        </span>
+                        <span className="font-semibold text-[#0D1F3C]">
+                          {item.correction}
+                        </span>
+                        {item.issue ? (
+                          <span className="text-[#64748B]"> · {item.issue}</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
 
-            <VocabularyHighlights
-              strongWords={feedback.strong_words}
-              weakWords={feedback.weak_words}
-              onWeakWordClick={
-                showCoach ? (word) => setTutorSelection(word) : undefined
-              }
-            />
-          </div>
+              <NextBandAdvice
+                advice={feedback.next_band_advice}
+                reviewerNotes={feedback.reviewer_notes}
+                showExaminerNotes={showExaminerNotes}
+              />
 
-          <aside className="flex w-full min-w-0 flex-col gap-4 lg:sticky lg:top-[4.5rem] lg:max-h-[calc(100dvh-5.5rem)]">
-            {showVerified && feedback.human_verified ? (
-              <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm sm:p-6">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="size-4 text-teal" aria-hidden />
-                  <p className="text-[12px] font-semibold text-teal">
-                    Verified by trainer
-                  </p>
-                </div>
-                <p className="mt-2 text-[13px] text-[#475569]">
-                  Your overall band is human-verified. Criterion detail and
-                  essay insights use AI evaluation where available.
-                </p>
-              </section>
-            ) : null}
-
-            <section className="w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm">
-              <div className="border-b border-[#E2E8F0] px-4 py-3 sm:px-5">
-                <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
-                  Task question
-                </h2>
-              </div>
-              <div className="max-h-[min(50vh,480px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-                <WritingFeedbackPrompt review={review} />
-              </div>
-            </section>
-
-            <div className="flex min-h-[280px] w-full min-w-0 flex-1 flex-col lg:min-h-[360px]">
-              <AnnotatedEssay
-                text={review.user_answer}
-                highlights={feedback.highlights}
+              <VocabularyHighlights
+                strongWords={feedback.strong_words}
+                weakWords={feedback.weak_words}
               />
             </div>
 
-            {isDiagnostic ? (
-              <FeedbackCtaFooter
-                primaryHref={resolvedBack}
-                primaryLabel="Back to scores"
-                secondaryHref={dashboardHref}
-                secondaryLabel="Back to Dashboard"
-                onPrimaryClick={onBack}
-              />
-            ) : (
-              <FeedbackCtaFooter
-                primaryHref={nextHref}
-                primaryLabel={primaryActionLabel ?? nextLabel}
-                secondaryHref={dashboardHref}
-                secondaryLabel={secondaryActionLabel ?? "Back to Dashboard"}
-                onPrimaryClick={onPrimaryAction}
-                onSecondaryClick={onSecondaryAction}
-              />
-            )}
-          </aside>
+            <aside className="flex w-full min-w-0 flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-4rem)]">
+              {showVerified && feedback.human_verified ? (
+                <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm sm:p-6">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="size-4 text-teal" aria-hidden />
+                    <p className="text-[12px] font-semibold text-teal">
+                      Verified by trainer
+                    </p>
+                  </div>
+                  <p className="mt-2 text-[13px] text-[#475569]">
+                    Your overall band is human-verified. Criterion detail and
+                    essay insights use AI evaluation where available.
+                  </p>
+                </section>
+              ) : null}
+
+              <section className="w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm">
+                <div className="border-b border-[#E2E8F0] px-4 py-3 sm:px-5">
+                  <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
+                    Task question
+                  </h2>
+                </div>
+                <div className="max-h-[min(50vh,480px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+                  <WritingFeedbackPrompt review={review} />
+                </div>
+              </section>
+
+              <div className="flex min-h-[280px] w-full min-w-0 flex-1 flex-col lg:min-h-[360px]">
+                <AnnotatedEssay
+                  text={review.user_answer}
+                  highlights={feedback.highlights}
+                />
+              </div>
+
+              {isDiagnostic ? (
+                <FeedbackCtaFooter
+                  primaryHref={resolvedBack}
+                  primaryLabel="Back to scores"
+                  secondaryHref={dashboardHref}
+                  secondaryLabel="Back to Dashboard"
+                  onPrimaryClick={onBack}
+                />
+              ) : (
+                <FeedbackCtaFooter
+                  primaryHref={nextHref}
+                  primaryLabel={primaryActionLabel ?? nextLabel}
+                  secondaryHref={dashboardHref}
+                  secondaryLabel={secondaryActionLabel ?? "Back to Dashboard"}
+                  onPrimaryClick={onPrimaryAction}
+                  onSecondaryClick={onSecondaryAction}
+                />
+              )}
+            </aside>
+          </div>
         </div>
       </main>
-      {showCoach ? (
-        <TutorChatPanel
-          attemptId={review.attempt_id}
-          selection={tutorSelection}
-          onClearSelection={() => setTutorSelection(null)}
-          defaultOpen={coachOpen || Boolean(tutorSelection)}
-        />
-      ) : null}
     </div>
   );
 }

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
-import { DevMockTestFooter } from "@/components/bandforge/dev-mock-test-footer";
 import { DashboardDailyReportHost } from "@/components/bandforge/dashboard/dashboard-daily-report-host";
 import { requestOpenDailyReport } from "@/components/bandforge/dashboard/dashboard-top-header";
 import { PanelIcon } from "@/components/bandforge/dashboard/icons";
@@ -14,8 +13,6 @@ import {
 } from "@/components/bandforge/dashboard/dashboard-nav";
 import type { LearningStudyTask, SkillHubProgress } from "@/lib/learning-types";
 import { cn } from "@/lib/utils";
-
-const SHOW_DEV_MOCK_FOOTER = process.env.NODE_ENV === "development";
 
 const SIDEBAR_KEY = "bf-dashboard-sidebar";
 
@@ -91,7 +88,6 @@ export function DashboardShell({
 
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
   const isDashboard = pathname === "/dashboard";
-  const showDevMockFooter = SHOW_DEV_MOCK_FOOTER && !isDashboard;
   const mobileNav = getMobileBottomNav({ showWritingNav, showSpeakingNav });
   const bottomNavCols =
     mobileNav.length >= 6
@@ -197,15 +193,11 @@ export function DashboardShell({
                 ? "pt-[var(--bf-dash-gutter)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-[var(--bf-dash-gutter)]"
                 : "pt-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-6"
               : "py-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:py-8 lg:pb-10",
-            showDevMockFooter &&
-              "pb-[calc(7.25rem+env(safe-area-inset-bottom))] lg:pb-16",
           )}
         >
           {children}
         </main>
       </div>
-
-      {showDevMockFooter ? <DevMockTestFooter aboveMobileNav /> : null}
 
       <nav
         className={cn(

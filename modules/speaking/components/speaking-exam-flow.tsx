@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { isShortOrSilentResponse } from "@/modules/speaking/lib/detect-short-response";
+import { isUnusableRecording } from "@/modules/speaking/lib/detect-short-response";
 import { flattenExamSteps } from "@/modules/speaking/lib/speaking-question-manifest";
 import { useSpeakingRecorder } from "@/modules/speaking/hooks/use-speaking-recorder";
 import { SpeakingQuestionPlayer } from "@/modules/speaking/components/speaking-question-player";
@@ -277,7 +277,7 @@ export function SpeakingExamFlow({
   const stopAndValidate = useCallback(async (): Promise<boolean> => {
     const result = await recorder.stopRecording();
     if (!result) return false;
-    if (isShortOrSilentResponse(result.durationSec, result.blob)) {
+    if (await isUnusableRecording(result.durationSec, result.blob)) {
       setShowRetry(true);
       dispatchFlow({ type: "retry", isPart2 });
       autoStartedRef.current = false;
@@ -322,7 +322,7 @@ export function SpeakingExamFlow({
     part2AutoStopRef.current = true;
 
     const result = await recorder.stopRecording();
-    if (!result || isShortOrSilentResponse(result.durationSec, result.blob)) {
+    if (!result || (await isUnusableRecording(result.durationSec, result.blob))) {
       if (isPart2) {
         setShowRetry(true);
         dispatchFlow({ type: "retry", isPart2: true });

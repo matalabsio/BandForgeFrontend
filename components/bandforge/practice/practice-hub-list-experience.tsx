@@ -26,6 +26,7 @@ import { DASH_EASE } from "@/components/bandforge/dashboard/motion";
 import type { MockUnlock, PracticeHub, PracticeSkill } from "@/lib/practice-types";
 import { PRACTICE_SKILLS, practiceSkillLabel } from "@/lib/practice-types";
 import { skillMockPath } from "@/lib/practice-submit";
+import { writingHubExerciseHref } from "@/lib/writing-skill-course";
 import { cn } from "@/lib/utils";
 import { PrefetchHrefs } from "@/components/bandforge/prefetch-hrefs";
 
@@ -53,6 +54,11 @@ const STATUS_LABEL: Record<PracticeHub["status"], string> = {
   in_progress: "In progress",
   completed: "Completed",
 };
+
+function hubOpenHref(skill: PracticeSkill, hubId: string): string {
+  if (skill === "writing") return writingHubExerciseHref(hubId);
+  return `/practice/${skill}/${hubId}`;
+}
 
 function isHubAccessible(hub: PracticeHub): boolean {
   return hub.accessible !== false;
@@ -108,10 +114,10 @@ export function PracticeHubListExperience({
   const banks = useMemo(() => groupByBank(hubs), [hubs]);
   const prefetchHrefs = useMemo(() => {
     const hrefs: string[] = [];
-    if (currentHub) hrefs.push(`/practice/${skill}/${currentHub.id}`);
+    if (currentHub) hrefs.push(hubOpenHref(skill, currentHub.id));
     for (const h of hubs) {
       if (isHubAccessible(h) && h.status !== "completed") {
-        hrefs.push(`/practice/${skill}/${h.id}`);
+        hrefs.push(hubOpenHref(skill, h.id));
         if (hrefs.length >= 4) break;
       }
     }
@@ -272,7 +278,7 @@ export function PracticeHubListExperience({
           transition={{ duration: 0.4, ease: DASH_EASE }}
         >
           <Link
-            href={`/practice/${skill}/${currentHub.id}`}
+            href={hubOpenHref(skill, currentHub.id)}
             className="group relative flex cursor-pointer flex-col gap-4 overflow-hidden rounded-[28px] border border-navy/15 bg-navy p-5 text-white shadow-[0_16px_40px_rgba(15,23,42,0.22)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:flex-row sm:items-center sm:justify-between sm:p-6"
           >
             <div
@@ -454,7 +460,7 @@ export function PracticeHubListExperience({
                       <li key={hub.id} className="min-h-0">
                         {accessible ? (
                           <Link
-                            href={`/practice/${skill}/${hub.id}`}
+                            href={hubOpenHref(skill, hub.id)}
                             ref={(node) => {
                               if (highlighted) highlightRef.current = node;
                             }}

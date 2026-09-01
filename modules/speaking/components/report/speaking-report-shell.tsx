@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
@@ -28,7 +28,14 @@ export function SpeakingReportShell({
   fallbackHref = "/scores",
 }: Props) {
   const router = useRouter();
+  const scrollRef = useRef<HTMLElement>(null);
   const canGoBack = Boolean(onBack || backHref || fallbackHref);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+    scrollRef.current?.scrollTo({ top: 0, left: 0 });
+  }, []);
 
   const handleBack = () => {
     if (onBack) {
@@ -45,8 +52,8 @@ export function SpeakingReportShell({
   };
 
   return (
-    <div className="speaking-report min-h-dvh overflow-x-hidden bg-[#F4F7FB] text-ink">
-      <header className="border-b border-border-soft bg-white">
+    <div className="speaking-report flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-[#F4F7FB] text-ink">
+      <header className="shrink-0 border-b border-border-soft bg-white">
         <div className="mx-auto flex min-h-[70px] w-full max-w-[1240px] flex-col justify-center gap-2 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between md:px-8 lg:px-10">
           <div className="flex items-center gap-3">
             {canGoBack ? (
@@ -69,13 +76,20 @@ export function SpeakingReportShell({
         </div>
       </header>
 
-      <SpeakingReportActions />
+      <div className="shrink-0">
+        <SpeakingReportActions />
+      </div>
 
-      <main>{children}</main>
+      <main
+        ref={scrollRef}
+        className="speaking-report-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
+      >
+        {children}
+      </main>
 
       {footer ? (
         <div
-          className="sticky bottom-0 border-t border-border-soft bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90"
+          className="speaking-report-footer shrink-0 border-t border-border-soft bg-white/95 shadow-[0_-4px_24px_rgba(15,23,42,0.08)] backdrop-blur supports-[backdrop-filter]:bg-white/90"
           style={{ paddingBottom: "max(0.875rem, env(safe-area-inset-bottom))" }}
         >
           <div className="mx-auto w-full max-w-[1240px] px-4 py-3.5 sm:px-6 lg:px-10">

@@ -10,6 +10,8 @@ import {
   type PracticeSpeakingReview,
 } from "@/lib/practice-api";
 import { SpeakingAiEstimateView } from "@/modules/speaking/components/speaking-ai-estimate-view";
+import { SpeakingInsufficientSpeechView } from "@/modules/speaking/components/speaking-insufficient-speech-view";
+import { isInsufficientSpeechPayload } from "@/modules/speaking/lib/meaningful-speech";
 import type { SpeakingPendingPayload } from "@/modules/speaking/types";
 
 const POLL_MS = 4_000;
@@ -23,7 +25,11 @@ type Props = {
 };
 
 function aiReady(status: string | null | undefined): boolean {
-  return status === "ai_complete" || status === "ai_stub";
+  return (
+    status === "ai_complete" ||
+    status === "ai_stub" ||
+    status === "insufficient_speech"
+  );
 }
 
 function toPendingPayload(data: PracticeSpeakingReview): SpeakingPendingPayload {
@@ -69,7 +75,10 @@ function toPendingPayload(data: PracticeSpeakingReview): SpeakingPendingPayload 
     human_band: null,
     ai_status: data.ai_status,
     evaluation_status: data.evaluation_status,
-    score_source: "ai_estimate",
+    score_source:
+      data.ai_status === "insufficient_speech"
+        ? "insufficient_speech"
+        : "ai_estimate",
     ai_band: data.ai_band ?? null,
     ai_criteria: data.ai_criteria ?? {},
     ai_strengths: data.ai_strengths ?? [],
@@ -83,7 +92,9 @@ function toPendingPayload(data: PracticeSpeakingReview): SpeakingPendingPayload 
     responses,
     submitted_at: data.submitted_at ?? null,
     student_name: null,
-    message: "Provisional AI Speaking estimate for this practice set.",
+    message:
+      data.message ||
+      "We couldn't detect enough speech to score this attempt.",
     transcription_progress: null,
     release_state: "awaiting_examiner",
     report_available: false,
@@ -218,10 +229,31 @@ export function PracticeSpeakingResultsClient({
     );
   }
 
+  const payload = toPendingPayload(review);
+
+  if (isInsufficientSpeechPayload(payload)) {
+    return (
+      <SpeakingInsufficientSpeechView
+        testNumber={0}
+        payload={payload}
+        reRecordHref={`/practice/speaking/${hubId}/exercise`}
+        primaryActionLabel={fromPlan ? "Continue plan" : "Back to Speaking hubs"}
+        onPrimaryAction={() => router.push(continueHref)}
+        secondaryActionLabel={fromPlan ? undefined : "Back to this set"}
+        onSecondaryAction={
+          fromPlan ? undefined : () => router.push(backHref)
+        }
+        backHref={backHref}
+        backLabel={fromPlan ? "Today's plan" : "Back to set"}
+        fallbackHref="/practice/speaking"
+      />
+    );
+  }
+
   return (
     <SpeakingAiEstimateView
       testNumber={0}
-      payload={toPendingPayload(review)}
+      payload={payload}
       primaryActionLabel={fromPlan ? "Continue plan" : "Back to Speaking hubs"}
       onPrimaryAction={() => router.push(continueHref)}
       secondaryActionLabel={fromPlan ? undefined : "Back to this set"}

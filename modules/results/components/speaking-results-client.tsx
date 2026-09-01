@@ -17,6 +17,8 @@ import {
 import { speakingApi } from "@/modules/speaking/services/speaking-api";
 import { SpeakingFeedbackView } from "@/modules/speaking/components/speaking-feedback-view";
 import { SpeakingAiEstimateView } from "@/modules/speaking/components/speaking-ai-estimate-view";
+import { SpeakingInsufficientSpeechView } from "@/modules/speaking/components/speaking-insufficient-speech-view";
+import { isInsufficientSpeechPayload } from "@/modules/speaking/lib/meaningful-speech";
 import {
   buildSpeakingFeedback,
   SpeakingReportContractError,
@@ -207,6 +209,22 @@ export function SpeakingResultsClient({
   }
 
   if (!speakingReportIsAvailable(pending) || !report) {
+    if (isInsufficientSpeechPayload(pending)) {
+      return (
+        <SpeakingInsufficientSpeechView
+          testNumber={testNumber}
+          payload={pending}
+          reRecordHref={`/test/${testNumber}/speaking`}
+          primaryActionLabel={primaryActionLabel}
+          onPrimaryAction={onPrimaryAction}
+          secondaryActionLabel={secondaryActionLabel}
+          onSecondaryAction={onSecondaryAction}
+          backHref={backNav.href}
+          backLabel={backNav.label}
+          fallbackHref={fallbackHref}
+        />
+      );
+    }
     if (pending.score_source === "ai_estimate" && pending.ai_band != null) {
       return (
         <SpeakingAiEstimateView

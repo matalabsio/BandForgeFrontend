@@ -71,6 +71,12 @@ export type LearningWeakness = {
   evidence_count: number;
 };
 
+export type WeeklyHubCompletion = {
+  date: string;
+  skill: string;
+  hub_id: string;
+};
+
 export type LearningProfile = {
   user_id: string;
   current_band: number | null;
@@ -115,4 +121,5 @@ export type LearningProfile = {
   days_remaining?: number | null;
   skill_difficulty?: Record<string, string>;
   hub_progress?: Record<string, SkillHubProgress>;
+  weekly_hub_completions?: WeeklyHubCompletion[];
 };

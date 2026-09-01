@@ -70,7 +70,8 @@ export type SpeakingModuleReviewPayload = {
     | "ai_estimate"
     | "processing"
     | "failed"
-    | "unavailable";
+    | "unavailable"
+    | "insufficient_speech";
   ai_status: string | null;
   evaluation_status: string | null;
   criteria: Record<string, number>;

@@ -488,8 +488,10 @@ export function MockSectionResultsClient({
       speakingReview.score_source === "human" &&
       speakingReview.overall_band != null;
     const aiReady =
-      speakingReview.score_source === "ai_estimate" &&
-      speakingReview.ai_band != null;
+      (speakingReview.score_source === "ai_estimate" &&
+        speakingReview.ai_band != null) ||
+      speakingReview.score_source === "insufficient_speech" ||
+      speakingReview.ai_status === "insufficient_speech";
 
     if (released || aiReady) {
       return (

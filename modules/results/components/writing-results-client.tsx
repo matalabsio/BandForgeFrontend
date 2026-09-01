@@ -19,7 +19,6 @@ type Props = {
   mockTestId: string;
   attemptFromQuery?: string;
   targetBand?: number | null;
-  coachOpen?: boolean;
   plan?: PlanResultContext | null;
 };
 
@@ -28,7 +27,6 @@ export function WritingResultsClient({
   mockTestId,
   attemptFromQuery,
   targetBand = null,
-  coachOpen = false,
   plan = null,
 }: Props) {
   const router = useRouter();
@@ -151,7 +149,6 @@ export function WritingResultsClient({
         mockAttemptId={mockAttemptId}
         showContinueTask2={showContinueTask2}
         targetBand={targetBand}
-        coachOpen={coachOpen}
         backHref={planNav?.todayHref ?? backNav.href}
         dashboardHref={planNav?.todayHref ?? "/dashboard"}
         primaryActionLabel={planNav?.continueLabel}

@@ -11,6 +11,7 @@ import {
   hasWritingSkillPlan,
   WRITING_SKILL_ONBOARDING_PATH,
 } from "@/lib/entitlement";
+import { writingHubExerciseHref } from "@/lib/writing-skill-course";
 import {
   fetchMockUnlock,
   fetchPracticeHubs,
@@ -50,7 +51,11 @@ export default async function PracticeSkillPage({
   const sp = await searchParams;
   const hubParam = sp.hub?.trim() || null;
   if (hubParam && isUuid(hubParam)) {
-    redirect(`/practice/${skill}/${hubParam}`);
+    redirect(
+      skill === "writing"
+        ? writingHubExerciseHref(hubParam)
+        : `/practice/${skill}/${hubParam}`,
+    );
   }
   const mockLockedMessage = sp.mock === "locked";
   const hubLockedMessage = hubParam === "locked";
@@ -72,13 +77,15 @@ export default async function PracticeSkillPage({
     hasWritingSkillPlan(subscription) &&
     !hasFullSkillProgram(subscription)
   ) {
-    const hubsStatus = await fetchPracticeHubsStatus(cookieHeader, skill);
+    const [hubsStatus, mockUnlock] = await Promise.all([
+      fetchPracticeHubsStatus(cookieHeader, skill),
+      fetchMockUnlock(cookieHeader, skill),
+    ]);
     if (hubsStatus.status === "needs_track") {
       redirect(WRITING_SKILL_ONBOARDING_PATH);
     }
     const hubs =
       hubsStatus.status === "ok" ? hubsStatus.hubs : [];
-    const mockUnlock = await fetchMockUnlock(cookieHeader, skill);
     const visibleHubs = unlockAllForTesting
       ? hubs.map((hub) => ({
           ...hub,

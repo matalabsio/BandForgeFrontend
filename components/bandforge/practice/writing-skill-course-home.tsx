@@ -25,6 +25,7 @@ import {
   writingCourseProgress,
   writingHubCtaLabel,
   writingHubDisplayTitle,
+  writingHubExerciseHref,
   writingHubTaskLabel,
   writingHubUiState,
   writingMockLockedCopy,
@@ -69,10 +70,10 @@ export function WritingSkillCourseHome({
 
   const prefetchHrefs = useMemo(() => {
     const hrefs: string[] = [];
-    if (currentHub) hrefs.push(`/practice/writing/${currentHub.id}`);
+    if (currentHub) hrefs.push(writingHubExerciseHref(currentHub.id));
     for (const h of hubs) {
       if (isWritingHubAccessible(h) && h.status !== "completed") {
-        hrefs.push(`/practice/writing/${h.id}`);
+        hrefs.push(writingHubExerciseHref(h.id));
         if (hrefs.length >= 4) break;
       }
     }
@@ -223,7 +224,7 @@ export function WritingSkillCourseHome({
           transition={{ duration: 0.4, ease: DASH_EASE }}
         >
           <Link
-            href={`/practice/writing/${currentHub.id}`}
+            href={writingHubExerciseHref(currentHub.id)}
             data-testid="writing-course-continue-cta"
             className="group relative flex cursor-pointer flex-col gap-4 overflow-hidden rounded-[28px] border border-navy/15 bg-navy p-5 text-white shadow-[0_16px_40px_rgba(15,23,42,0.22)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:flex-row sm:items-center sm:justify-between sm:p-6"
           >
@@ -396,7 +397,7 @@ export function WritingSkillCourseHome({
                 >
                   {accessible ? (
                     <Link
-                      href={`/practice/writing/${hub.id}`}
+                      href={writingHubExerciseHref(hub.id)}
                       ref={(node) => {
                         if (highlighted) highlightRef.current = node;
                       }}

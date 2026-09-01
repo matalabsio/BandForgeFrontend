@@ -74,7 +74,7 @@ export function PracticeWritingResultsClient({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const backHref = fromPlan ? "/study-plan/today" : `/practice/writing/${hubId}`;
+  const backHref = fromPlan ? "/study-plan/today" : "/practice/writing";
   const continueHref = useMemo(() => {
     if (!fromPlan) return "/practice/writing";
     return afterPlanStepHref({
@@ -100,6 +100,18 @@ export function PracticeWritingResultsClient({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!fromPlan) return;
+    void import("@/lib/plan-step-completion").then(({ markPlanStepDone }) => {
+      markPlanStepDone({
+        fromPlan: true,
+        hubId,
+        currentTaskId: planTaskId,
+        completeHub: false,
+      });
+    });
+  }, [fromPlan, hubId, planTaskId]);
 
   useEffect(() => {
     if (!review) return;

@@ -2,6 +2,7 @@
  * Writing Skill course-home helpers — render server state only.
  * Do not unlock hubs/mocks from completed counts in the frontend.
  */
+import type { PlanTaskKind } from "@/lib/plan-task-flow";
 import type { MockUnlock, PracticeHub } from "@/lib/practice-types";
 
 export type WritingTrack = "academic" | "general_training";
@@ -92,18 +93,46 @@ export function writingHubCtaLabel(state: WritingHubUiState): string {
 /** Task label from title/content metadata only — no position→task mapping. */
 export function writingHubTaskLabel(hub: PracticeHub): string | null {
   const raw = (hub.title || "").trim();
-  if (/task\s*1\b/i.test(raw)) return "Task 1";
-  if (/task\s*2\b/i.test(raw)) return "Task 2";
+  if (/task\s*1\b/i.test(raw) || /[-_]t1([-_]|$)/i.test(raw)) return "Task 1";
+  if (/task\s*2\b/i.test(raw) || /[-_]t2([-_]|$)/i.test(raw)) return "Task 2";
   return null;
+}
+
+export function writingHubTitleLooksLikeSlug(title: string): boolean {
+  const raw = title.trim();
+  return (
+    !raw ||
+    /^MT\d+_[A-Z]+_T\d+$/i.test(raw) ||
+    /^[a-z]+-(b\d+-s\d+|custom-)/i.test(raw) ||
+    (/^[a-z0-9_-]{8,}$/i.test(raw) && (raw.includes("-") || raw.includes("_")))
+  );
+}
+
+/** Direct exercise URL — skips the hub landing page for Writing Skill. */
+export function writingHubExerciseHref(
+  hubId: string,
+  opts?: {
+    fromPlan?: boolean;
+    task?: PlanTaskKind | null;
+    taskId?: string | null;
+  },
+): string {
+  const base = `/practice/writing/${hubId}/exercise`;
+  if (!opts?.fromPlan && !opts?.task && !opts?.taskId) return base;
+  const q = new URLSearchParams();
+  if (opts.fromPlan) q.set("from", "plan");
+  if (opts.task) q.set("task", opts.task);
+  if (opts.taskId) q.set("taskId", opts.taskId);
+  const qs = q.toString();
+  return qs ? `${base}?${qs}` : base;
 }
 
 export function writingHubDisplayTitle(hub: PracticeHub, position: number): string {
   const raw = (hub.title || "").trim();
-  const looksLikeSlug =
-    !raw ||
-    /^[a-z]+-(b\d+-s\d+|custom-)/i.test(raw) ||
-    (/^[a-z0-9-]{10,}$/i.test(raw) && raw.includes("-"));
-  if (looksLikeSlug) {
+  if (writingHubTitleLooksLikeSlug(raw)) {
+    const task = writingHubTaskLabel(hub);
+    if (task && hub.set_number > 0) return `${task} · Set ${hub.set_number}`;
+    if (task) return task;
     if (hub.set_number > 0) return `Set ${hub.set_number}`;
     return `Hub ${position}`;
   }

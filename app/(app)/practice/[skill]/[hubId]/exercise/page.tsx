@@ -13,7 +13,7 @@ import {
   isModuleSubmitTarget,
   moduleHrefFromSubmitConfig,
 } from "@/lib/practice-submit";
-import { fetchPracticeHub } from "@/lib/practice-server";
+import { fetchPracticeHub, isHubLockedError } from "@/lib/practice-server";
 import { isPracticeSkill, practiceSkillLabel } from "@/lib/practice-types";
 import {
   getCachedCookieHeader,
@@ -70,7 +70,21 @@ export default async function PracticeExercisePage({
     cookieHeader,
   );
 
-  const hub = await fetchPracticeHub(cookieHeader, hubId);
+  let hub: Awaited<ReturnType<typeof fetchPracticeHub>>;
+  let profile: Awaited<ReturnType<typeof fetchEntitlementGate>>["profile"];
+  let subscription: Awaited<ReturnType<typeof fetchEntitlementGate>>["subscription"];
+  try {
+    [hub, { profile, subscription }] = await Promise.all([
+      fetchPracticeHub(cookieHeader, hubId),
+      fetchEntitlementGate(cookieHeader, user!.id),
+    ]);
+  } catch (e) {
+    if (isHubLockedError(e)) {
+      redirect(fromPlan ? "/study-plan/today" : `/practice/${skill}?hub=locked`);
+    }
+    throw e;
+  }
+
   const submitConfig = (hub?.submit_config ?? {}) as {
     type?: string;
     catalog_number?: number;
@@ -97,11 +111,6 @@ export default async function PracticeExercisePage({
     const moduleHref = moduleHrefFromSubmitConfig(submitConfig, skill);
     if (moduleHref) redirect(moduleHref);
   }
-
-  const { profile, subscription } = await fetchEntitlementGate(
-    cookieHeader,
-    user!.id,
-  );
 
   return (
     <EntitledRouteGate

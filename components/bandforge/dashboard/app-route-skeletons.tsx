@@ -189,3 +189,82 @@ export function TestHubContentSkeleton() {
     </div>
   );
 }
+
+/** Writing / Speaking skill course home — progress, continue card, hub grid. */
+export function PracticeSkillCourseSkeleton({
+  label = "Loading course",
+}: {
+  label?: string;
+} = {}) {
+  return (
+    <div className="space-y-6 pb-2 sm:space-y-8" aria-busy="true" aria-label={label}>
+      <div className="overflow-hidden rounded-[28px] border border-white/60 bg-white/55 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className={`h-2.5 w-20 rounded ${PULSE}`} />
+            <div className={`h-8 w-48 max-w-full rounded-lg ${PULSE}`} />
+            <div className={`h-4 w-64 max-w-full rounded ${PULSE}`} />
+          </div>
+          <div className={`h-9 w-24 rounded-full ${PULSE}`} />
+        </div>
+        <div className={`mt-4 h-2 w-full rounded-full ${PULSE}`} />
+      </div>
+      <Pulse className="h-[7.5rem] w-full rounded-[28px] sm:h-28" />
+      <div className="overflow-hidden rounded-[28px] border border-white/60 bg-white/50 p-4 sm:p-5">
+        <div className={`mb-4 h-5 w-32 rounded ${PULSE}`} />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => (
+            <Pulse key={i} className="h-[148px] w-full rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** /practice/.../exercise — full-screen writing exam shape while RSC + API load. */
+export function PracticeExerciseSkeleton({
+  label = "Opening writing task…",
+}: {
+  label?: string;
+} = {}) {
+  return (
+    <div
+      className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-surface text-ink"
+      aria-busy="true"
+      aria-label={label}
+    >
+      <header className="z-30 shrink-0 border-b border-[#E2E8F0] bg-white/95 px-4 md:px-6">
+        <div className="flex h-14 items-center justify-between gap-3 md:h-[3.75rem]">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className={`size-9 shrink-0 rounded-xl ${PULSE}`} />
+            <div className="min-w-0 space-y-1.5">
+              <div className={`h-4 w-32 rounded ${PULSE}`} />
+              <div className={`hidden h-3 w-24 rounded sm:block ${PULSE}`} />
+            </div>
+          </div>
+          <div className={`h-8 w-28 shrink-0 rounded-full ${PULSE}`} />
+        </div>
+      </header>
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="hidden min-h-0 w-full shrink-0 border-b border-[#E2E8F0] bg-white p-5 md:flex md:w-[42%] md:flex-col md:border-b-0 md:border-r lg:w-[45%]">
+          <div className={`mb-3 h-4 w-24 rounded ${PULSE}`} />
+          <div className="space-y-2">
+            <div className={`h-3 w-full rounded ${PULSE}`} />
+            <div className={`h-3 w-[92%] rounded ${PULSE}`} />
+            <div className={`h-3 w-[85%] rounded ${PULSE}`} />
+            <div className={`mt-4 h-40 w-full rounded-lg ${PULSE}`} />
+          </div>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col bg-white p-4 md:p-6">
+          <div className={`mb-3 h-4 w-20 rounded md:hidden ${PULSE}`} />
+          <div className={`min-h-[12rem] flex-1 rounded-xl border border-[#E2E8F0] ${PULSE} md:min-h-0`} />
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <div className={`h-4 w-24 rounded ${PULSE}`} />
+            <div className={`h-10 w-28 rounded-full ${PULSE}`} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -923,6 +923,8 @@ html {
 
 @media print {
   .speaking-report {
+    height: auto !important;
+    max-height: none !important;
     min-height: auto !important;
     overflow: visible !important;
     padding: 0.35in;
@@ -935,7 +937,8 @@ html {
   .speaking-report .speaking-report-actions,
   .speaking-report .speaking-report-audio,
   .speaking-report .speaking-report-interactive-hint,
-  .speaking-report .speaking-report-screen-analysis {
+  .speaking-report .speaking-report-screen-analysis,
+  .speaking-report .speaking-report-footer {
     display: none !important;
   }
 
@@ -961,6 +964,7 @@ html {
   }
 
   .speaking-report .speaking-report-transcript,
+  .speaking-report .speaking-report-scroll,
   .speaking-report main {
     max-height: none !important;
     overflow: visible !important;
