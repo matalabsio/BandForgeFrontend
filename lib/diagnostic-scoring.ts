@@ -4,6 +4,8 @@ import type {
   DiagnosticReviewItem,
 } from "@/lib/diagnostic-session";
 import type { DiagnosticSpeakingAnswers } from "@/lib/diagnostic-storage";
+import type { ModuleReviewQuestion } from "@/lib/module-review-types";
+import { buildObjectiveExplanation } from "@/lib/objective-explanation";
 
 const LISTENING_BAND_TABLE: ReadonlyArray<readonly [number, number]> = [
   [39, 9.0],
@@ -204,6 +206,33 @@ export function scoreWritingTasks(
   return { words: totalWords, band };
 }
 
+export function diagnosticPackToModuleReview(
+  questions: DiagnosticPackQuestion[],
+  answers: Record<string, string>,
+): ModuleReviewQuestion[] {
+  return questions
+    .map((q) => {
+      const userAnswer = answers[q.id] ?? "";
+      const isCorrect = isAnswerCorrect(userAnswer, q.answer);
+      return {
+        question_id: q.id,
+        question_number: q.number,
+        question_type: q.type,
+        prompt: q.prompt,
+        user_answer: userAnswer,
+        correct_answer: q.answer,
+        is_correct: isCorrect,
+        explanation: buildObjectiveExplanation({
+          prompt: q.prompt,
+          userAnswer,
+          correctAnswer: q.answer,
+          isCorrect,
+        }),
+      };
+    })
+    .sort((a, b) => a.question_number - b.question_number);
+}
+
 export function buildModuleReview(
   questions: DiagnosticPackQuestion[],
   answers: Record<string, string>,
@@ -230,7 +259,11 @@ export function buildModuleReview(
     }
   }
 
-  return { wrong, bySkill };
+  return {
+    wrong,
+    bySkill,
+    questions: diagnosticPackToModuleReview(questions, answers),
+  };
 }
 
 export type SpeakingScoreInput = {

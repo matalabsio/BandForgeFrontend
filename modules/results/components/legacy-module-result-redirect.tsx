@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { ResultModule } from "@/lib/exam-session-storage";
-import { shortModuleResultsPath } from "@/lib/module-results-path";
+import { listeningResultsPath } from "@/lib/listening-test";
+import { readingResultsPath } from "@/lib/reading-test";
 
 type Props = {
   attemptId: string;
@@ -12,7 +12,7 @@ type Props = {
   module: ResultModule;
 };
 
-/** Legacy `/test/{module}/results/{uuid}` → short `/test/{n}/{module}/results`. */
+/** Legacy `/test/{module}/results/{uuid}` → short `/test/{n}/{module}/results?attempt=uuid`. */
 export function LegacyModuleResultRedirect({
   attemptId,
   testNumber,
@@ -21,8 +21,13 @@ export function LegacyModuleResultRedirect({
   const router = useRouter();
 
   useEffect(() => {
-    persistModuleResultAttempt(testNumber, module, attemptId);
-    router.replace(shortModuleResultsPath(testNumber, module));
+    const dest =
+      module === "reading"
+        ? readingResultsPath(testNumber, attemptId)
+        : module === "listening"
+          ? listeningResultsPath(testNumber, attemptId)
+          : `/test/${testNumber}/${module}/results?attempt=${encodeURIComponent(attemptId)}`;
+    router.replace(dest);
   }, [attemptId, testNumber, module, router]);
 
   return (

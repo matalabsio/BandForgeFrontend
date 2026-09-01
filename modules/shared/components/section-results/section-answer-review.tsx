@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type RefObject } from "react";
+import { scrollElementIntoView } from "@/lib/use-unlock-page-scroll";
+import { useSectionResultsScroll } from "./section-results-scroll-context";
 import type { SectionReviewQuestion } from "./section-results-types";
 import { SectionAnswerRow } from "./section-answer-row";
 
@@ -18,6 +20,7 @@ export function SectionAnswerReview({
   onHighlightConsumed,
 }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
+  const scrollCtx = useSectionResultsScroll();
 
   const incorrectCount = useMemo(
     () => questions.filter((q) => q.status === "incorrect").length,
@@ -26,13 +29,15 @@ export function SectionAnswerReview({
 
   const visible = useMemo(() => {
     if (filter === "incorrect") {
-      return questions.filter((q) => q.status === "incorrect" || q.status === "skipped");
+      return questions.filter(
+        (q) => q.status === "incorrect" || q.status === "skipped",
+      );
     }
     return questions;
   }, [filter, questions]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex flex-col">
       <div className="mb-4 flex shrink-0 gap-2">
         <FilterPill
           active={filter === "all"}
@@ -46,7 +51,7 @@ export function SectionAnswerReview({
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain sm:gap-2.5">
+      <div className="flex flex-col gap-2 sm:gap-2.5">
         {visible.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
             No questions match this filter.
@@ -65,6 +70,7 @@ export function SectionAnswerReview({
       {highlightQuestion != null ? (
         <HighlightScroller
           questionNumber={highlightQuestion}
+          scrollRef={scrollCtx?.scrollRef ?? null}
           onDone={onHighlightConsumed}
         />
       ) : null}
@@ -98,19 +104,27 @@ function FilterPill({
 
 function HighlightScroller({
   questionNumber,
+  scrollRef,
   onDone,
 }: {
   questionNumber: number;
+  scrollRef: RefObject<HTMLDivElement | null> | null;
   onDone?: () => void;
 }) {
   useEffect(() => {
     const id = `section-q-${questionNumber}`;
     const el = document.getElementById(id);
-    if (el) {
+    const container = scrollRef?.current ?? null;
+    if (el && container) {
+      scrollElementIntoView(container, el, {
+        behavior: "smooth",
+        block: "center",
+      });
+    } else if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
     onDone?.();
-  }, [questionNumber, onDone]);
+  }, [questionNumber, scrollRef, onDone]);
 
   return null;
 }

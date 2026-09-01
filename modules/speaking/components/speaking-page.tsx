@@ -27,7 +27,7 @@ import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch
 import { mockApi } from "@/modules/mock/services/mock-api";
 import { SpeakingExamFlow } from "@/modules/speaking/components/speaking-exam-flow";
 import { SpeakingMicCheck } from "@/modules/speaking/components/speaking-mic-check";
-import { speakingPendingPath } from "@/modules/speaking/lib/speaking-status-routing";
+import { speakingReportPath } from "@/modules/speaking/lib/speaking-status-routing";
 import {
   readMicCheckPassed,
   writeMicCheckPassed,
@@ -539,7 +539,7 @@ export function SpeakingPage({
           });
           router.replace(
             appendPlanResultParams(
-              speakingPendingPath(testNumber, resultAttemptId, mockAttemptId),
+              speakingReportPath(testNumber, resultAttemptId, mockAttemptId),
               {
                 task: current,
                 taskId: planTaskId,
@@ -549,9 +549,8 @@ export function SpeakingPage({
           );
           return;
         }
-        // Pending status while AI / human score is processing.
         router.replace(
-          speakingPendingPath(testNumber, resultAttemptId, mockAttemptId),
+          speakingReportPath(testNumber, resultAttemptId, mockAttemptId),
         );
       };
 
@@ -786,7 +785,7 @@ export function SpeakingPage({
           onStepRecorded={handleStepRecorded}
           onExamComplete={(recordings) => void handleExamComplete(recordings)}
           footerBusy={busy}
-          completeLabel="Submit for human review"
+          completeLabel="Submit Speaking Response"
           part2Timing={{ ...part2Timing, serverTime: serverTimeIso }}
         />
 
@@ -797,7 +796,8 @@ export function SpeakingPage({
         ) : null}
 
         <p className="mt-3 shrink-0 text-center text-meta text-ink/55">
-          Your Speaking band will be available within 24 hours after examiner review.
+          Your AI estimate appears on the next page within about 1–2 minutes. A
+          certified examiner verifies the official band within 24 hours.
         </p>
       </main>
 

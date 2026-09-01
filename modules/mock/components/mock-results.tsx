@@ -40,6 +40,7 @@ import {
   type MockAttemptSummary,
   type MockModuleResultSource,
 } from "@/modules/mock/services/mock-api";
+import { ResultPageViewport } from "@/modules/shared/components/result-page-viewport";
 
 const POLL_MS = 30_000;
 
@@ -363,7 +364,10 @@ function MockResultsBody({
   const scoresHref = `/scores?fresh=1&mock=${encodeURIComponent(mockSlug)}`;
 
   return (
-    <div className="min-h-dvh bg-[#F4F7FB] text-ink">
+    <ResultPageViewport
+      unlockKey={`${loading}-${error}-${summary?.completed_at ?? "none"}`}
+      contentClassName="max-w-xl"
+    >
       <a
         href="#mock-results-main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-navy focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
@@ -371,7 +375,6 @@ function MockResultsBody({
         Skip to results
       </a>
 
-      <div className="mx-auto w-full max-w-xl px-4 py-6 sm:px-6 sm:py-10">
         {loading ? (
           <ResultsSkeleton />
         ) : error && !summary ? (
@@ -569,8 +572,7 @@ function MockResultsBody({
             </main>
           </>
         ) : null}
-      </div>
-    </div>
+    </ResultPageViewport>
   );
 }
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { ChevronLeft, ShieldCheck } from "lucide-react";
+import { useUnlockPageScroll } from "@/lib/use-unlock-page-scroll";
 import type { WritingFeedback, WritingReview } from "@/modules/writing/types";
 import {
   writingTaskPath,
@@ -65,11 +66,7 @@ export function WritingFeedbackView({
   const showVerified = !isDiagnostic;
   const showExaminerNotes = !isDiagnostic;
 
-  useEffect(() => {
-    document.documentElement.style.overflow = "";
-    document.body.style.overflow = "";
-    scrollRef.current?.scrollTo({ top: 0, left: 0 });
-  }, []);
+  useUnlockPageScroll(scrollRef, [review.attempt_id, feedback]);
 
   const taskTitle =
     titleOverride?.trim() ||
@@ -110,7 +107,7 @@ export function WritingFeedbackView({
   }, [onBack, resolvedBack, router]);
 
   return (
-    <div className="writing-feedback flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-surface-alt text-ink">
+    <div className="writing-feedback fixed inset-0 z-0 flex min-h-0 flex-col overflow-hidden bg-surface-alt text-ink">
       <header className="shrink-0 border-b border-border-soft bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
           <button

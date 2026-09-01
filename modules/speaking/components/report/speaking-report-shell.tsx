@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import { useUnlockPageScroll } from "@/lib/use-unlock-page-scroll";
 import { BandForgeLogoMark } from "@/components/bandforge/bandforge-logo-link";
 import { SpeakingReportActions } from "@/modules/speaking/components/report/speaking-report-actions";
 
@@ -31,11 +32,7 @@ export function SpeakingReportShell({
   const scrollRef = useRef<HTMLElement>(null);
   const canGoBack = Boolean(onBack || backHref || fallbackHref);
 
-  useEffect(() => {
-    document.documentElement.style.overflow = "";
-    document.body.style.overflow = "";
-    scrollRef.current?.scrollTo({ top: 0, left: 0 });
-  }, []);
+  useUnlockPageScroll(scrollRef, [children, footer, metaLabel]);
 
   const handleBack = () => {
     if (onBack) {
@@ -52,7 +49,7 @@ export function SpeakingReportShell({
   };
 
   return (
-    <div className="speaking-report flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-[#F4F7FB] text-ink">
+    <div className="speaking-report fixed inset-0 z-0 flex min-h-0 flex-col overflow-hidden bg-[#F4F7FB] text-ink">
       <header className="shrink-0 border-b border-border-soft bg-white">
         <div className="mx-auto flex min-h-[70px] w-full max-w-[1240px] flex-col justify-center gap-2 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between md:px-8 lg:px-10">
           <div className="flex items-center gap-3">

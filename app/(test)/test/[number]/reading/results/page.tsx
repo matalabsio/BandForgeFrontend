@@ -91,6 +91,7 @@ export default async function ReadingResultsPage({ params, searchParams }: PageP
             testNumber={testNumber}
             module="reading"
             targetBand={user.target_band ?? null}
+            attemptFromQuery={attemptId ?? undefined}
             plan={plan}
           />
         </RestoreMockAttemptOnResults>
@@ -103,6 +104,7 @@ export default async function ReadingResultsPage({ params, searchParams }: PageP
       testNumber={testNumber}
       module="reading"
       targetBand={user.target_band ?? null}
+      attemptFromQuery={attemptId ?? undefined}
       plan={plan}
     />
   );

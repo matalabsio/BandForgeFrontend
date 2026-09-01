@@ -11,6 +11,8 @@ import {
   resolveTodayTaskHref,
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
+import { listeningResultsPath } from "@/lib/listening-test";
+import { readingResultsPath } from "@/lib/reading-test";
 import type { LearningProfile, LearningStudyTask } from "@/lib/learning-types";
 import type { PracticeSkill } from "@/lib/practice-types";
 import { findPlanDay } from "@/lib/study-plan-calendar";
@@ -454,6 +456,28 @@ export function appendPlanResultParams(
   if (ctx.taskId) url.searchParams.set("taskId", ctx.taskId);
   if (ctx.hubId) url.searchParams.set("hubId", ctx.hubId);
   return `${url.pathname}${url.search}`;
+}
+
+/** Stable module practice results URL with attempt id and optional plan context. */
+export function buildModulePracticeResultHref(opts: {
+  testNumber: number;
+  module: "listening" | "reading";
+  attemptId: string;
+  plan?: PlanResultContext | null;
+  mockAttemptId?: string | null;
+  part?: number | null;
+}): string {
+  const base =
+    opts.module === "listening"
+      ? listeningResultsPath(opts.testNumber, opts.attemptId, {
+          mockAttemptId: opts.mockAttemptId,
+          part: opts.part,
+        })
+      : readingResultsPath(opts.testNumber, opts.attemptId, {
+          mockAttemptId: opts.mockAttemptId,
+          part: opts.part,
+        });
+  return appendPlanResultParams(base, opts.plan);
 }
 
 export function parsePlanResultSearchParams(sp: {

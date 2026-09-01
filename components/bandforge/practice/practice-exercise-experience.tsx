@@ -176,20 +176,20 @@ export function PracticeExerciseExperience({
         return;
       }
 
-      const objective = res.score as
-        | { correct?: number; total?: number; percent?: number }
-        | null;
-      if (
-        objective &&
-        typeof objective.correct === "number" &&
-        typeof objective.total === "number"
-      ) {
-        setResult(
-          `Scored ${objective.correct}/${objective.total} (${objective.percent}%). Hub marked complete.`,
+      if (skill === "listening" || skill === "reading") {
+        const q = new URLSearchParams({ attempt: res.attempt_id });
+        if (fromPlan) {
+          q.set("from", "plan");
+          if (planTaskId) q.set("taskId", planTaskId);
+          if (currentTask) q.set("task", currentTask);
+        }
+        router.push(
+          `/practice/${skill}/${hubId}/exercise/results?${q.toString()}`,
         );
-      } else {
-        setResult("Submitted. Hub marked complete.");
+        return;
       }
+
+      setResult("Submitted. Hub marked complete.");
       router.push(fromPlan ? planNext : nextHref);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Submit failed");

@@ -15,6 +15,10 @@ import {
 import {
   shouldNavigateToSpeakingReport,
   shouldPollSpeakingRelease,
+  isSpeakingAiReady,
+  isSpeakingAnalyzing,
+  isSpeakingAiFailed,
+  shouldPollSpeakingPending,
   speakingPendingPath,
   speakingReportPath,
   speakingStatusPath,
@@ -144,6 +148,48 @@ test("released report navigation is selected exactly once", () => {
     ),
     false,
   );
+});
+
+test("speaking pending poll covers analyzing and awaiting examiner", () => {
+  const analyzing = {
+    score_source: "processing",
+    ai_status: "queued",
+    ai_band: null,
+    release_state: "processing",
+    report_available: false,
+  };
+  assert.equal(isSpeakingAnalyzing(analyzing), true);
+  assert.equal(shouldPollSpeakingPending(analyzing), true);
+
+  const aiReady = {
+    score_source: "ai_estimate",
+    ai_status: "ai_complete",
+    ai_band: 6,
+    release_state: "awaiting_examiner",
+    report_available: false,
+  };
+  assert.equal(isSpeakingAiReady(aiReady), true);
+  assert.equal(isSpeakingAnalyzing(aiReady), false);
+  assert.equal(shouldPollSpeakingPending(aiReady), true);
+
+  const released = {
+    score_source: "human",
+    ai_status: "ai_complete",
+    ai_band: 6,
+    release_state: "released",
+    report_available: true,
+  };
+  assert.equal(shouldPollSpeakingPending(released), false);
+
+  const failed = {
+    score_source: "failed",
+    ai_status: "ai_failed",
+    ai_band: null,
+    release_state: "awaiting_examiner",
+    report_available: false,
+  };
+  assert.equal(isSpeakingAiFailed(failed), true);
+  assert.equal(shouldPollSpeakingPending(failed), false);
 });
 
 test("codec filenames and mic markers are scoped", () => {

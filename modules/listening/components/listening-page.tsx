@@ -16,7 +16,6 @@ import {
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
-  shortModuleResultsPath,
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
@@ -81,7 +80,8 @@ import { fetchMockProgressDeduped } from "@/modules/mock/lib/mock-progress-fetch
 import { persistModuleResultAttempt } from "@/lib/exam-session-storage";
 import type { PracticeSkill } from "@/lib/practice-types";
 import { type PlanTaskKind } from "@/lib/plan-task-flow";
-import { appendPlanResultParams } from "@/lib/plan-day-tasks";
+import { listeningResultsPath } from "@/lib/listening-test";
+import { buildModulePracticeResultHref } from "@/lib/plan-day-tasks";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
 import {
   markPlanStepDone,
@@ -265,7 +265,7 @@ export function ListeningPage({
       }
       const testNumber = resolvedTestNumber;
       persistModuleResultAttempt(testNumber, "listening", _attemptId);
-      push(shortModuleResultsPath(testNumber, "listening"));
+      push(listeningResultsPath(testNumber, _attemptId));
     },
     [replace, push, testId, mockSlug, mockAttemptId, part, isDiagnostic, listeningPartCount, resolvedTestNumber],
   );
@@ -316,14 +316,16 @@ export function ListeningPage({
       });
       persistModuleResultAttempt(resolvedTestNumber, "listening", attemptId);
       push(
-        appendPlanResultParams(
-          shortModuleResultsPath(resolvedTestNumber, "listening"),
-          {
+        buildModulePracticeResultHref({
+          testNumber: resolvedTestNumber,
+          module: "listening",
+          attemptId,
+          plan: {
             task: current,
             taskId: planTaskId,
             hubId: planHubId,
           },
-        ),
+        }),
       );
       return true;
     },
@@ -387,7 +389,7 @@ export function ListeningPage({
         })
       )
         return true;
-      if (mockAttemptId && !isDiagnostic) {
+      if (mockAttemptId) {
         goToMockSectionResults(payload.attempt_id, part);
         return true;
       }
@@ -1045,7 +1047,7 @@ export function ListeningPage({
               })
             )
               return;
-            if (mockAttemptId && !isDiagnostic) {
+            if (mockAttemptId) {
               goToMockSectionResults(payload.attempt_id, part);
               return;
             }

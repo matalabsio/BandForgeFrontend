@@ -11,6 +11,7 @@ import {
 } from "@/lib/practice-api";
 import type { WritingReview } from "@/modules/writing/types";
 import { WritingResultsView } from "@/modules/writing/components/writing-results-view";
+import { ResultPageViewport } from "@/modules/shared/components/result-page-viewport";
 
 const POLL_MS = 4_000;
 
@@ -124,25 +125,28 @@ export function PracticeWritingResultsClient({
 
   if (loading && !review) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center px-4">
-        <p className="inline-flex items-center gap-2 text-sm text-ink/60" aria-busy>
+      <ResultPageViewport centered unlockKey="loading">
+        <p
+          className="inline-flex items-center gap-2 text-sm text-ink/60"
+          aria-busy
+        >
           <Loader2 className="size-4 animate-spin" />
           Loading your writing submission…
         </p>
-      </div>
+      </ResultPageViewport>
     );
   }
 
   if (error && !review) {
     return (
-      <div className="mx-auto max-w-lg space-y-4 px-4 py-16 text-center">
+      <ResultPageViewport centered unlockKey={`error-${error}`}>
         <p className="text-danger" role="alert">
           {error}
         </p>
-        <Link href={backHref} className="font-semibold text-cyan hover:underline">
+        <Link href={backHref} className="mt-4 font-semibold text-cyan hover:underline">
           Back
         </Link>
-      </div>
+      </ResultPageViewport>
     );
   }
 
@@ -151,7 +155,7 @@ export function PracticeWritingResultsClient({
   const analyzing = !aiReady(review.ai_status) && review.ai_status !== "ai_failed";
   if (analyzing) {
     return (
-      <div className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 py-16 text-center">
+      <ResultPageViewport centered unlockKey={`analyzing-${review.ai_status}`} contentClassName="max-w-lg text-center">
         <Loader2 className="size-10 animate-spin text-teal" aria-hidden />
         <p className="mt-6 text-meta font-semibold uppercase tracking-[0.14em] text-teal">
           Writing submitted
@@ -175,13 +179,13 @@ export function PracticeWritingResultsClient({
         >
           Continue without waiting →
         </Link>
-      </div>
+      </ResultPageViewport>
     );
   }
 
   if (review.ai_status === "ai_failed") {
     return (
-      <div className="mx-auto max-w-lg space-y-4 px-4 py-16 text-center">
+      <ResultPageViewport centered unlockKey="ai-failed" contentClassName="max-w-lg text-center">
         <h1 className="font-display text-h2 text-navy">AI analysis unavailable</h1>
         <p className="text-body text-ink/65">
           {review.error ||
@@ -189,11 +193,11 @@ export function PracticeWritingResultsClient({
         </p>
         <Link
           href={continueHref}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal px-5 py-3 font-semibold text-white"
+          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal px-5 py-3 font-semibold text-white"
         >
           Continue
         </Link>
-      </div>
+      </ResultPageViewport>
     );
   }
 

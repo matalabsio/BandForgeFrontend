@@ -11,7 +11,6 @@ import {
 } from "@/lib/mock-catalog";
 import { listeningModuleResultsPath } from "@/lib/listening-test";
 import { readingModuleResultsPath } from "@/lib/reading-test";
-import { shortModuleResultsPath } from "@/lib/module-results-path";
 import { shortSectionResultsPath } from "@/lib/section-results-path";
 
 export type SpeakingReviewState = "none" | "under_review" | "scored";
@@ -123,15 +122,10 @@ export function attemptReportHref(
   if (attempt.module === "writing" && isCompletedAttempt(attempt)) {
     return shortModuleWritingResultsPath(testNumber, attempt.id);
   }
-  if (
-    attempt.module === "speaking" &&
-    attempt.band !== null &&
-    isCompletedAttempt(attempt)
-  ) {
-    return shortModuleResultsPath(testNumber, "speaking");
-  }
   if (attempt.module === "speaking" && isCompletedAttempt(attempt)) {
-    return speakingPendingPath(attempt);
+    return shortSectionResultsPath(testNumber, "speaking", {
+      attempt: attempt.id,
+    });
   }
   return null;
 }

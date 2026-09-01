@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
+import { useUnlockPageScroll } from "@/lib/use-unlock-page-scroll";
+import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { DIAGNOSTIC_EXAM_STEPS } from "@/components/diagnostic/diagnostic-exam-steps";
 import { DiagnosticPlanCheckoutSection } from "@/components/diagnostic/diagnostic-plan-checkout-section";
 import { DiagnosticPerformanceSkillCard } from "@/components/diagnostic/ui/diagnostic-performance-skill-card";
@@ -111,6 +114,14 @@ export function DiagnosticResultsExperience() {
   const [error, setError] = useState<string | null>(null);
   // Must start false so SSR HTML matches the first client render; read URL/storage after mount.
   const [checkoutResumeGate, setCheckoutResumeGate] = useState(false);
+  const diagnosticScrollRef = useRef<HTMLDivElement>(null);
+
+  useUnlockPageScroll(diagnosticScrollRef, [
+    loading,
+    error,
+    snapshot?.review_status,
+    checkoutResumeGate,
+  ]);
 
   const lead = useMemo(() => readDiagnosticLead(), [snapshot]);
   const targetBand = lead?.targetBand ?? 7.0;
@@ -319,7 +330,10 @@ export function DiagnosticResultsExperience() {
       }
       footerNote={error ? "About 45 minutes" : "Diagnostic complete"}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F8FA]">
+      <div
+        ref={diagnosticScrollRef}
+        className="min-h-0 flex-1 overflow-y-auto bg-[#F7F8FA]"
+      >
         <div className="mx-auto w-full max-w-[920px] px-4 py-6 sm:px-8 sm:py-10">
           {loading ? (
             <ResultsSkeleton />
@@ -366,6 +380,27 @@ export function DiagnosticResultsExperience() {
                     </>
                   )}
                 </p>
+                {snapshot.review?.listening?.questions?.length ||
+                snapshot.review?.reading?.questions?.length ? (
+                  <div className="mt-4 flex flex-wrap gap-3 text-sm">
+                    {snapshot.review?.listening?.questions?.length ? (
+                      <Link
+                        href={`${diagnosticPaths.listeningResults}?completed=1`}
+                        className="font-semibold text-[#0F6E56] underline-offset-2 hover:underline"
+                      >
+                        Review Listening answers
+                      </Link>
+                    ) : null}
+                    {snapshot.review?.reading?.questions?.length ? (
+                      <Link
+                        href={`${diagnosticPaths.readingResults}?completed=1`}
+                        className="font-semibold text-[#0F6E56] underline-offset-2 hover:underline"
+                      >
+                        Review Reading answers
+                      </Link>
+                    ) : null}
+                  </div>
+                ) : null}
               </header>
 
               <DiagnosticPlanCheckoutSection

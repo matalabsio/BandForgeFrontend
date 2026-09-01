@@ -22,7 +22,7 @@ import {
   readDiagnosticProgress,
   saveModuleAnswers,
 } from "@/lib/diagnostic-storage";
-import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
+import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { DiagnosticReadingMatchingHeadings } from "@/components/diagnostic/diagnostic-reading-matching-headings";
 import { ReadingAnswerSheet } from "@/modules/reading/components/reading-answer-sheet";
 import {
@@ -97,7 +97,7 @@ function ReadingQuestionRow({
           onClick={onFocus}
           onFocusCapture={onFocus}
         >
-          <p className="mb-2.5 font-mono text-xs text-[#6E83A0]">
+          <p className="mb-2.5 whitespace-nowrap font-mono text-xs text-[#6E83A0]">
             Question {index + 1} of {total}
           </p>
           <SentenceInlineBlank
@@ -122,7 +122,7 @@ function ReadingQuestionRow({
       onClick={onFocus}
       onFocusCapture={onFocus}
     >
-      <p className="mb-2.5 font-mono text-xs text-[#6E83A0]">
+      <p className="mb-2.5 whitespace-nowrap font-mono text-xs text-[#6E83A0]">
         Question {index + 1} of {total}
       </p>
       <div className="mb-4 break-words text-[15.5px] leading-snug font-normal text-navy">
@@ -266,7 +266,7 @@ export function DiagnosticReadingExperience() {
         reading: readingReview,
       },
     });
-    router.replace(diagnosticTransitionPath("reading-writing"));
+    router.replace(diagnosticPaths.readingResults);
   }, [pack, answers, submitting, router]);
 
   const readingThemeVars: CSSProperties = {

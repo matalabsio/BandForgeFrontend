@@ -26,10 +26,10 @@ export function IeltsExamShell({
   if (isReview) {
     return (
       <div
-        className="ielts-exam-theme flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#F4F7FB] text-[var(--exam-ink)]"
+        className="ielts-exam-theme fixed inset-0 z-0 flex flex-col overflow-hidden bg-[#F4F7FB] text-[var(--exam-ink)]"
         style={IELTS_EXAM_VARS}
       >
-        {children}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       </div>
     );
   }

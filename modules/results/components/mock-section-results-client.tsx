@@ -379,7 +379,7 @@ export function MockSectionResultsClient({
 
     if (writingResultReady) {
       return (
-        <div className="h-full min-h-0 overflow-y-auto overscroll-y-contain">
+        <>
           {showCombinedShell ? (
             <div className="border-b border-ink/8 bg-white px-4 py-4 md:px-8">
               <WritingTaskTabs
@@ -398,7 +398,7 @@ export function MockSectionResultsClient({
             primaryActionLabel={continueAction?.label}
             onPrimaryAction={continueAction ? handleContinue : undefined}
           />
-        </div>
+        </>
       );
     }
 
@@ -495,8 +495,7 @@ export function MockSectionResultsClient({
 
     if (released || aiReady) {
       return (
-        <div className="h-full min-h-0 overflow-y-auto overscroll-y-contain">
-          <SpeakingResultsClient
+        <SpeakingResultsClient
             testNumber={testNumber}
             mockTestId={mockTestId}
             attemptFromQuery={speakingReview.attempt_id}
@@ -517,7 +516,6 @@ export function MockSectionResultsClient({
                 : undefined
             }
           />
-        </div>
       );
     }
 

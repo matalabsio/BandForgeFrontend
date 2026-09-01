@@ -1,6 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+
+/** One-row question strip — swipe horizontally on narrow viewports. */
+const QUESTION_STRIP_CLASS =
+  "flex gap-2 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 export type ReadingAnswerSheetItem = {
   id: string;
@@ -24,6 +29,15 @@ export function ReadingAnswerSheet({
   tone = "exam",
 }: Props) {
   const diagnostic = tone === "diagnostic";
+  const currentRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    currentRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [currentQuestionId]);
 
   return (
     <div
@@ -57,7 +71,7 @@ export function ReadingAnswerSheet({
         </p>
       </div>
       <div
-        className="mt-2.5 grid grid-cols-5 gap-2 sm:grid-cols-10"
+        className={cn("mt-2.5", QUESTION_STRIP_CLASS)}
         role="tablist"
         aria-label="Question navigation"
       >
@@ -67,11 +81,12 @@ export function ReadingAnswerSheet({
           return (
             <button
               key={q.id}
+              ref={isCurrent ? currentRef : undefined}
               type="button"
               role="tab"
               onClick={() => onJump(q.id)}
               className={cn(
-                "inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center justify-self-center rounded-full border text-[12px] font-bold tabular-nums transition-colors",
+                "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-full border text-[12px] font-bold tabular-nums transition-colors sm:size-10",
                 diagnostic
                   ? isCurrent
                     ? "border-transparent bg-cyan text-white"

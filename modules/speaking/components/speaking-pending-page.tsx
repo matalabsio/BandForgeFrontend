@@ -23,13 +23,14 @@ import { speakingApi } from "@/modules/speaking/services/speaking-api";
 import {
   shouldNavigateToSpeakingReport,
   shouldPollSpeakingRelease,
+  speakingReportPath,
   speakingStatusPath,
 } from "@/modules/speaking/lib/speaking-status-routing";
 import type {
   SpeakingPendingPayload,
   SpeakingReleaseState,
 } from "@/modules/speaking/types";
-import { TestShell } from "@/modules/shared";
+import { ResultPageViewport } from "@/modules/shared/components/result-page-viewport";
 import { SectionResultsCtaBar } from "@/modules/shared/components/section-results";
 
 const POLL_MS = 30_000;
@@ -45,6 +46,7 @@ type Props = {
   attemptId: string;
   testNumber: number;
   mockTestId: string;
+  mockAttemptId?: string | null;
   planFrom?: string | null;
   planTask?: string | null;
   planTaskId?: string | null;
@@ -55,6 +57,7 @@ export function SpeakingPendingPage({
   attemptId,
   testNumber,
   mockTestId,
+  mockAttemptId = null,
   planFrom,
   planTask,
   planTaskId,
@@ -69,6 +72,14 @@ export function SpeakingPendingPage({
     [planFrom, planTask, planTaskId, planHubId],
   );
   const planNav = usePlanResultsNav(planCtx);
+  const aiResultsHref = useMemo(
+    () =>
+      appendPlanResultParams(
+        speakingReportPath(testNumber, attemptId, mockAttemptId),
+        planCtx,
+      ),
+    [attemptId, mockAttemptId, planCtx, testNumber],
+  );
   const [payload, setPayload] = useState<SpeakingPendingPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -282,9 +293,71 @@ export function SpeakingPendingPage({
       ]
     : [];
 
+  const footerActions =
+    payload && copy ? (
+      <div className="mx-auto flex w-full max-w-sm flex-col gap-2.5">
+        {reportReady ? (
+          <Link
+            href={aiResultsHref}
+            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+          >
+            View Speaking Feedback
+          </Link>
+        ) : aiReady ? (
+          <Link
+            href={aiResultsHref}
+            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+          >
+            {aiInsufficient ? "Back to result" : "Back to AI result"}
+          </Link>
+        ) : null}
+
+        {planNav ? (
+          <SectionResultsCtaBar
+            layout="stack"
+            primaryLabel={planNav.continueLabel}
+            onPrimary={() => router.push(planNav.continueHref)}
+            primaryLoading={planNav.loading}
+            primaryDisabled={planNav.loading}
+            secondaryLabel={
+              planNav.showSecondaryBack ? "Back to Today's plan" : undefined
+            }
+            onSecondary={
+              planNav.showSecondaryBack
+                ? () => router.push(planNav.todayHref)
+                : undefined
+            }
+          />
+        ) : (
+          <>
+            <Link
+              href={testHubPath(mockTestId, null, testNumber)}
+              className={`inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-body font-semibold ${
+                reportReady || aiReady
+                  ? "border border-border bg-surface text-ink hover:bg-cyan-soft/40"
+                  : "bg-teal text-white hover:bg-cyan-light"
+              }`}
+            >
+              Back to test hub
+            </Link>
+            <Link
+              href={mockTestNumberPath(testNumber)}
+              className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-surface px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+            >
+              View all sections
+            </Link>
+          </>
+        )}
+      </div>
+    ) : null;
+
   return (
-    <TestShell>
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-10 md:px-8 md:py-14">
+    <ResultPageViewport
+      centered={(loading && !payload) || Boolean(error && !payload)}
+      footer={footerActions}
+      unlockKey={`${loading}-${error}-${state}`}
+      contentClassName="max-w-3xl"
+    >
         {loading && !payload ? (
           <p className="text-center text-body text-ink/60" aria-busy>
             Loading your submission…
@@ -421,72 +494,8 @@ export function SpeakingPendingPage({
                 </Button>
               </div>
             ) : null}
-
-            <div className="mx-auto mt-8 flex w-full max-w-sm flex-col gap-2.5">
-              {reportReady ? (
-                <Link
-                  href={appendPlanResultParams(
-                    `/test/${testNumber}/speaking/results?attempt=${encodeURIComponent(attemptId)}`,
-                    planCtx,
-                  )}
-                  className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
-                >
-                  View Speaking Feedback
-                </Link>
-              ) : aiReady ? (
-                <Link
-                  href={appendPlanResultParams(
-                    `/test/${testNumber}/speaking/results?attempt=${encodeURIComponent(attemptId)}`,
-                    planCtx,
-                  )}
-                  className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
-                >
-                  {aiInsufficient ? "View result" : "View provisional AI result"}
-                </Link>
-              ) : null}
-
-              {planNav ? (
-                <SectionResultsCtaBar
-                  layout="stack"
-                  primaryLabel={planNav.continueLabel}
-                  onPrimary={() => router.push(planNav.continueHref)}
-                  primaryLoading={planNav.loading}
-                  primaryDisabled={planNav.loading}
-                  secondaryLabel={
-                    planNav.showSecondaryBack
-                      ? "Back to Today's plan"
-                      : undefined
-                  }
-                  onSecondary={
-                    planNav.showSecondaryBack
-                      ? () => router.push(planNav.todayHref)
-                      : undefined
-                  }
-                />
-              ) : (
-                <>
-                  <Link
-                    href={testHubPath(mockTestId, null, testNumber)}
-                    className={`inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-body font-semibold ${
-                      reportReady || aiReady
-                        ? "border border-border bg-surface text-ink hover:bg-cyan-soft/40"
-                        : "bg-teal text-white hover:bg-cyan-light"
-                    }`}
-                  >
-                    Back to test hub
-                  </Link>
-                  <Link
-                    href={mockTestNumberPath(testNumber)}
-                    className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-surface px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
-                  >
-                    View all sections
-                  </Link>
-                </>
-              )}
-            </div>
           </div>
         ) : null}
-      </main>
-    </TestShell>
+    </ResultPageViewport>
   );
 }

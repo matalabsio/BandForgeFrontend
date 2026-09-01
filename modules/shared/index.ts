@@ -3,6 +3,7 @@ export { TestAudioPlayer } from "@/modules/shared/components/test-audio-player";
 export { TestHeader } from "@/modules/shared/components/test-header";
 export { TestProgress } from "@/modules/shared/components/test-progress";
 export { TestShell } from "@/modules/shared/components/test-shell";
+export { ResultPageViewport } from "@/modules/shared/components/result-page-viewport";
 export { TestTimer } from "@/modules/shared/components/test-timer";
 export { WordCounter } from "@/modules/shared/components/word-counter";
 export {

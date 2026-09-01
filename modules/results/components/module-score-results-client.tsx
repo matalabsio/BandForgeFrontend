@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { readModuleResultAttempt } from "@/lib/exam-session-storage";
+import {
+  persistModuleResultAttempt,
+  readModuleResultAttempt,
+} from "@/lib/exam-session-storage";
 import type { ResultModule } from "@/lib/exam-session-storage";
 import { listeningTestHubPath } from "@/lib/listening-test";
 import { readingTestHubPath } from "@/lib/reading-test";
@@ -22,6 +25,7 @@ type Props = {
   testNumber: number;
   module: "listening" | "reading";
   targetBand: number | null;
+  attemptFromQuery?: string;
   plan?: PlanResultContext | null;
 };
 
@@ -34,20 +38,33 @@ export function ModuleScoreResultsClient({
   testNumber,
   module,
   targetBand: _targetBand,
+  attemptFromQuery,
   plan = null,
 }: Props) {
   const planNav = usePlanResultsNav(plan);
-  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const queryAttempt = attemptFromQuery?.trim() || null;
+  const [attemptId, setAttemptId] = useState<string | null>(queryAttempt);
   const [report, setReport] = useState<
     ListeningScoreReport | ReadingScoreReport | null
   >(null);
   const [status, setStatus] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(queryAttempt));
 
   useEffect(() => {
-    const stored = readModuleResultAttempt(testNumber, module);
-    setAttemptId(stored);
-    if (!stored) {
+    const fromSession = readModuleResultAttempt(testNumber, module);
+    const next = queryAttempt || fromSession;
+    setAttemptId(next);
+  }, [queryAttempt, testNumber, module]);
+
+  useEffect(() => {
+    if (attemptId) {
+      persistModuleResultAttempt(testNumber, module, attemptId);
+    }
+  }, [attemptId, testNumber, module]);
+
+  useEffect(() => {
+    if (!attemptId) {
+      setReport(null);
       setLoading(false);
       setStatus(404);
       return;
@@ -59,8 +76,8 @@ export function ModuleScoreResultsClient({
       try {
         const data =
           module === "listening"
-            ? await listeningApi.scoreReport(stored)
-            : await readingApi.scoreReport(stored);
+            ? await listeningApi.scoreReport(attemptId)
+            : await readingApi.scoreReport(attemptId);
         if (cancelled) return;
         setReport(data);
         setStatus(200);
@@ -77,7 +94,7 @@ export function ModuleScoreResultsClient({
     return () => {
       cancelled = true;
     };
-  }, [testNumber, module]);
+  }, [attemptId, module]);
 
   const moduleLabel = module === "listening" ? "Listening" : "Reading";
   const practiceHref = planNav?.todayHref ?? hubPath(module);

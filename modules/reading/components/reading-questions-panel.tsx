@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { ReadingQuestion } from "@/modules/reading/types";
 import {
   groupReadingQuestions,
@@ -74,6 +74,16 @@ export function ReadingQuestionsPanel({
     if (canNext) goTo(qDisplay(sorted[currentIndex + 1]));
   };
 
+  const activeChipRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    activeChipRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [activeNum]);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (
@@ -114,17 +124,18 @@ export function ReadingQuestionsPanel({
             {activeNum} of {total}
           </p>
         </div>
-        <div className="mt-2 grid grid-cols-5 gap-1.5 sm:grid-cols-10">
+        <div className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {sorted.map((q) => {
             const answered = Boolean((answers[q.id] ?? "").trim());
             const active = qDisplay(q) === activeNum;
             return (
               <button
                 key={q.id}
+                ref={active ? activeChipRef : undefined}
                 type="button"
                 onClick={() => goTo(qDisplay(q))}
                 className={cn(
-                  "inline-flex h-8 w-8 justify-self-center items-center justify-center rounded-full border text-[12px] font-bold tabular-nums transition-colors",
+                  "inline-flex size-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full border text-[12px] font-bold tabular-nums transition-colors sm:size-9",
                   active
                     ? "border-transparent bg-[var(--reading-accent)] text-white"
                     : answered

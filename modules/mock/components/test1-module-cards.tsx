@@ -14,7 +14,6 @@ import {
   mockModulePath,
   mockResultsPath,
   shortModuleExamPath,
-  shortModuleSpeakingPendingPath,
   shortModuleWritingPendingPath,
   testNumberForMockId,
   type MockSlug,
@@ -135,8 +134,9 @@ function moduleHref(
     if (!mod.test_attempt_id) return null;
     if (key === "speaking" && mod.band == null) {
       return {
-        href: shortModuleSpeakingPendingPath(testNumber, mod.test_attempt_id, {
-          mockAttemptId,
+        href: shortSectionResultsPath(testNumber, "speaking", {
+          attempt: mod.test_attempt_id,
+          mockAttempt: mockAttemptId,
         }),
         nav: {},
       };

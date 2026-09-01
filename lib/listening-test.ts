@@ -3,6 +3,7 @@ import {
   DEFAULT_MOCK_SLUG,
   isFullMock,
   mockModulePath,
+  shortModuleListeningResultsPath,
   shortModuleResultsPath,
   test1HubPath,
   testNumberForMockId,
@@ -20,17 +21,25 @@ export function listeningTestHubPath(): string {
   return test1HubPath();
 }
 
-/** Short canonical results URL — persist attempt in sessionStorage before navigating. */
-export function listeningResultsPath(testNumber = 1): string {
+/** Short canonical results URL — pass attemptId when opening a specific attempt. */
+export function listeningResultsPath(
+  testNumber = 1,
+  attemptId?: string,
+  opts?: { mockAttemptId?: string | null; part?: number | null },
+): string {
+  if (attemptId) {
+    return shortModuleListeningResultsPath(testNumber, attemptId, opts);
+  }
   return shortModuleResultsPath(testNumber, "listening");
 }
 
 export function listeningModuleResultsPath(
   testId: string,
-  _attemptId: string,
+  attemptId: string,
+  opts?: { mockAttemptId?: string | null; part?: number | null },
 ): string {
   if (isListeningTest(testId)) {
-    return listeningResultsPath(testNumberForMockId(testId));
+    return listeningResultsPath(testNumberForMockId(testId), attemptId, opts);
   }
   return `/mock/${encodeURIComponent(testId)}/listening/results`;
 }
