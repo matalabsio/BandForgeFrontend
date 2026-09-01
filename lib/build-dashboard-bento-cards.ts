@@ -12,6 +12,7 @@ import {
 import type {
   LearningProfile,
   LearningStudyPlan,
+  SkillHubProgress,
 } from "@/lib/learning-types";
 import type { ExamTimeline } from "@/lib/dashboard-plan-math";
 import type { DashboardStartNow } from "@/lib/plan-start-task";
