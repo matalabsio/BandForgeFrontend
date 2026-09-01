@@ -1,11 +1,6 @@
 "use client";
 
 import { memo, useMemo } from "react";
-import {
-  bfExamQBrowseAnsweredClass,
-  bfExamQBrowseCurrentClass,
-  bfExamQBrowseIdleClass,
-} from "@/components/bandforge/bf-primary-cta-styles";
 import { FormCompletionPart } from "@/modules/listening/components/form-completion-part";
 import { ListeningChooseTwoBlock } from "@/modules/listening/components/listening-choose-two-block";
 import { ListeningMatchingBlock } from "@/modules/listening/components/listening-matching-block";
@@ -16,6 +11,7 @@ import { ListeningSentenceCompletionBlock } from "@/modules/listening/components
 import { groupListeningQuestions } from "@/modules/listening/lib/listening-question-groups";
 import type { ListeningPartAudioPhase } from "@/modules/listening/lib/listening-part-intro";
 import type { ListeningPart, ListeningQuestion } from "@/modules/listening/types";
+import { ExamAnswerSheetNav } from "@/modules/shared/components/exam-answer-sheet-nav";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -85,69 +81,16 @@ function ListeningQuestionsPanelBase({
       )}
     >
       {showNav ? (
-        <div
-          className={cn(
-            "shrink-0 border-b bg-white px-3 py-3 sm:px-4",
-            isDiagnostic ? "border-navy/10" : "border-[var(--exam-border)]",
-          )}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <p
-              className={cn(
-                "text-[10px] font-bold uppercase tracking-[0.16em]",
-                isDiagnostic ? "text-cyan" : "text-[var(--exam-accent)]",
-              )}
-            >
-              Answer sheet
-            </p>
-            <p
-              className={cn(
-                "rounded-full px-2.5 py-0.5 text-[11px] font-bold tabular-nums",
-                isDiagnostic
-                  ? "bg-navy/[0.04] text-navy"
-                  : "bg-[var(--exam-paper)] text-[var(--exam-ink)]",
-              )}
-            >
-              1-{sorted.length}
-            </p>
-          </div>
-          <div
-            className="mt-2.5 grid grid-cols-5 gap-1.5 sm:grid-cols-10"
-            role="tablist"
-            aria-label="Question navigation"
-          >
-            {sorted.map((q) => {
-              const answered = Boolean((answers[q.id] ?? "").trim());
-              const isCurrent = currentQuestionId === q.id;
-              return (
-                <button
-                  key={q.id}
-                  type="button"
-                  role="tab"
-                  onClick={() => onFocus(q.id)}
-                  className={cn(
-                    "justify-self-center",
-                    isCurrent
-                      ? isDiagnostic
-                        ? "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent bg-cyan text-[12px] font-bold text-white tabular-nums"
-                        : bfExamQBrowseCurrentClass
-                      : answered
-                        ? isDiagnostic
-                          ? "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-cyan/50 bg-cyan/10 text-[12px] font-bold text-cyan tabular-nums"
-                          : bfExamQBrowseAnsweredClass
-                        : isDiagnostic
-                          ? "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-navy/14 bg-white text-[12px] font-bold text-[#5A6B82] tabular-nums hover:border-navy/30"
-                          : bfExamQBrowseIdleClass,
-                  )}
-                  aria-label={`Question ${qDisplay(q)}${answered ? ", answered" : ""}`}
-                  aria-selected={isCurrent}
-                >
-                  {qDisplay(q)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <ExamAnswerSheetNav
+          questions={sorted.map((q) => ({
+            id: q.id,
+            number: qDisplay(q),
+          }))}
+          answers={answers}
+          currentQuestionId={currentQuestionId}
+          onSelect={onFocus}
+          palette={isDiagnostic ? "diagnostic" : "exam"}
+        />
       ) : null}
 
       <div
