@@ -137,7 +137,7 @@ export function DiagnosticSectionResultsClient({
 
   if (loading) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="loading">
         <p className="font-display text-base font-bold text-navy">Loading your results…</p>
       </SectionResultsShell>
     );
@@ -145,7 +145,7 @@ export function DiagnosticSectionResultsClient({
 
   if (error || !pack || !payload || payload.questions.length === 0) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="error">
         <p className="max-w-sm text-center text-sm text-muted">
           {error ?? "Open this page right after submitting your diagnostic section."}
         </p>

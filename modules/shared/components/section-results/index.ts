@@ -5,6 +5,10 @@ export { SectionQuestionChipGrid, SectionResultsLegend } from "./section-questio
 export { SectionResultsBrandBar } from "./section-results-brand-bar";
 export { SectionResultsCtaBar } from "./section-results-cta-bar";
 export { SectionResultsShell } from "./section-results-shell";
+export {
+  ResultPageViewport,
+  ResultScrollShell,
+} from "@/modules/shared/components/result-page-viewport";
 export { SectionResultsSummary } from "./section-results-summary";
 export { SectionStatCards } from "./section-stat-cards";
 export { SectionSubmissionConfirmation } from "./section-submission-confirmation";

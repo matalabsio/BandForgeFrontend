@@ -72,7 +72,7 @@ export function PracticeObjectiveResultsClient({
 
   if (loading && !review) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="loading">
         <p className="font-display text-base font-bold text-navy">
           Loading your {skillLabel.toLowerCase()} results…
         </p>
@@ -82,7 +82,7 @@ export function PracticeObjectiveResultsClient({
 
   if (error && !review) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="error">
         <p className="max-w-sm text-center text-sm text-muted" role="alert">
           {error}
         </p>
@@ -95,7 +95,7 @@ export function PracticeObjectiveResultsClient({
 
   if (!review || review.questions.length === 0) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="empty">
         <p className="max-w-sm text-center text-sm text-muted">
           Could not load your {skillLabel.toLowerCase()} results.
         </p>

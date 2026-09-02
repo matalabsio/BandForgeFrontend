@@ -258,7 +258,7 @@ export function MockSectionResultsClient({
 
   if (!attemptId || !mockAttemptId) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="missing-context">
         <p className="text-center text-sm text-muted">
           Missing attempt context. Open this page right after submitting a section.
         </p>
@@ -274,7 +274,7 @@ export function MockSectionResultsClient({
 
   if (loading) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="loading">
         <p className="font-display text-base font-bold text-navy">Loading section results…</p>
       </SectionResultsShell>
     );
@@ -282,7 +282,7 @@ export function MockSectionResultsClient({
 
   if (error) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="error">
         <p className="max-w-sm text-center text-sm text-muted">{error}</p>
         <Link
           href={mockTestNumberPath(testNumber)}
@@ -310,6 +310,7 @@ export function MockSectionResultsClient({
     if (view === "review") {
       return (
         <SectionResultsShell
+          scrollResetKey={`${module}-review`}
           headerTitle={reviewHeader}
           onBack={() => {
             setView("summary");
@@ -336,6 +337,7 @@ export function MockSectionResultsClient({
 
     return (
       <SectionResultsShell
+        scrollResetKey={`${module}-summary`}
         backHref={mockTestNumberPath(testNumber)}
         showBrandBar
         logoHref={mockTestNumberPath(testNumber)}
@@ -411,7 +413,7 @@ export function MockSectionResultsClient({
     // "section submitted" confirmation with empty stats.
     if (!writingFailed) {
       return (
-        <SectionResultsShell centered card={false}>
+        <SectionResultsShell centered card={false} scrollResetKey="writing-analyzing">
           <div
             className="flex w-full max-w-md flex-col items-center px-4 text-center"
             aria-busy
@@ -443,6 +445,7 @@ export function MockSectionResultsClient({
     return (
       <SectionResultsShell
         centered
+        scrollResetKey="writing-failed"
         showBrandBar
         logoHref={mockTestNumberPath(testNumber)}
         footer={
@@ -532,6 +535,7 @@ export function MockSectionResultsClient({
     return (
       <SectionResultsShell
         centered
+        scrollResetKey="speaking-pending"
         showBrandBar
         logoHref={mockTestNumberPath(testNumber)}
         footer={
@@ -553,7 +557,7 @@ export function MockSectionResultsClient({
   }
 
   return (
-    <SectionResultsShell centered>
+    <SectionResultsShell centered scrollResetKey="empty">
       <p className="text-sm text-muted">No section data available.</p>
     </SectionResultsShell>
   );

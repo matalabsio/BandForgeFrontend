@@ -24,14 +24,7 @@ export function IeltsExamShell({
   const isLibraryHub = !isExam && !isReview && hubVariant === "library";
 
   if (isReview) {
-    return (
-      <div
-        className="ielts-exam-theme fixed inset-0 z-0 flex flex-col overflow-hidden bg-[#F4F7FB] text-[var(--exam-ink)]"
-        style={IELTS_EXAM_VARS}
-      >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
-      </div>
-    );
+    return <>{children}</>;
   }
 
   return (

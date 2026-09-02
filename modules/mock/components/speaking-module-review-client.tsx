@@ -113,7 +113,7 @@ export function SpeakingModuleReviewClient({ testId, testNumber }: Props) {
 
   if (!payload) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey={error ? "error" : "loading"}>
         <p className="font-display text-base font-bold text-navy">
           {error ?? "Preparing your speaking review…"}
         </p>
@@ -131,6 +131,7 @@ export function SpeakingModuleReviewClient({ testId, testNumber }: Props) {
   return (
     <SectionResultsShell
       centered
+      scrollResetKey="speaking-submitted"
       footer={
         <SectionResultsCtaBar
           primaryLabel={ctaLabel}

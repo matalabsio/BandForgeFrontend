@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useRef } from "react";
 import { ChevronLeft, ShieldCheck } from "lucide-react";
-import { useUnlockPageScroll } from "@/lib/use-unlock-page-scroll";
+import { ResultScrollShell } from "@/modules/shared/components/result-page-viewport";
 import type { WritingFeedback, WritingReview } from "@/modules/writing/types";
 import {
   writingTaskPath,
@@ -61,12 +61,10 @@ export function WritingFeedbackView({
   titleOverride = null,
 }: Props) {
   const router = useRouter();
-  const scrollRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const isDiagnostic = mode === "diagnostic";
   const showVerified = !isDiagnostic;
   const showExaminerNotes = !isDiagnostic;
-
-  useUnlockPageScroll(scrollRef, [review.attempt_id, feedback]);
 
   const taskTitle =
     titleOverride?.trim() ||
@@ -106,33 +104,38 @@ export function WritingFeedbackView({
     router.push(resolvedBack);
   }, [onBack, resolvedBack, router]);
 
+  const header = (
+    <header className="border-b border-border-soft bg-white/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-border-soft bg-surface-alt text-navy transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+          aria-label="Back to scores"
+        >
+          <ChevronLeft className="size-5" aria-hidden />
+        </button>
+
+        <h1 className="font-display truncate text-center text-base font-bold tracking-tight text-navy sm:text-[1.0625rem]">
+          Writing Feedback
+        </h1>
+
+        <span className="size-11 shrink-0" aria-hidden />
+      </div>
+    </header>
+  );
+
   return (
-    <div className="writing-feedback fixed inset-0 z-0 flex min-h-0 flex-col overflow-hidden bg-surface-alt text-ink">
-      <header className="shrink-0 border-b border-border-soft bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-border-soft bg-surface-alt text-navy transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
-            aria-label="Back to scores"
-          >
-            <ChevronLeft className="size-5" aria-hidden />
-          </button>
-
-          <h1 className="font-display truncate text-center text-base font-bold tracking-tight text-navy sm:text-[1.0625rem]">
-            Writing Feedback
-          </h1>
-
-          <span className="size-11 shrink-0" aria-hidden />
-        </div>
-      </header>
-
-      <main
-        ref={scrollRef}
-        className="writing-feedback-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
-      >
-        <div className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
-          <div className="grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+    <ResultScrollShell
+      scrollRef={scrollRef}
+      scrollResetKey={review.attempt_id}
+      header={header}
+      maxWidth="writing"
+      className="writing-feedback z-0 bg-surface-alt"
+      scrollClassName="writing-feedback-scroll"
+      contentClassName="px-3 py-5 sm:px-6 sm:py-8"
+    >
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
             <div className="min-w-0 space-y-5">
               <ScoreHero
                 part={review.part}
@@ -267,8 +270,6 @@ export function WritingFeedbackView({
               )}
             </aside>
           </div>
-        </div>
-      </main>
-    </div>
+    </ResultScrollShell>
   );
 }

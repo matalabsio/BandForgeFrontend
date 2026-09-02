@@ -365,7 +365,7 @@ function MockResultsBody({
 
   return (
     <ResultPageViewport
-      unlockKey={`${loading}-${error}-${summary?.completed_at ?? "none"}`}
+      scrollResetKey={`${loading}-${error}-${summary?.completed_at ?? "none"}`}
       contentClassName="max-w-xl"
     >
       <a

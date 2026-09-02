@@ -102,7 +102,7 @@ export function ModuleScoreResultsClient({
 
   if (loading) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="loading">
         <p className="font-display text-base font-bold text-navy">
           Loading your {moduleLabel.toLowerCase()} result…
         </p>
@@ -112,7 +112,7 @@ export function ModuleScoreResultsClient({
 
   if (!attemptId) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="missing-attempt">
         <p className="max-w-sm text-center text-sm text-muted">
           Open this result from your dashboard or right after you finish a test.
         </p>
@@ -128,7 +128,7 @@ export function ModuleScoreResultsClient({
 
   if (!report || !report.questions?.length) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey={`error-${status}`}>
         <p className="max-w-sm text-center text-sm text-muted">
           {status === 404
             ? "This attempt has not been scored yet."

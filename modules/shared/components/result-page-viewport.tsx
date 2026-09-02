@@ -1,12 +1,28 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useRef, type ReactNode, type RefObject } from "react";
 import { cn } from "@/lib/utils";
-import { useUnlockPageScroll } from "@/lib/use-unlock-page-scroll";
+import { useResultScrollViewport } from "@/lib/use-unlock-page-scroll";
 
 /** Single scroll owner — do not add overflow-y-auto children inside the scroll region. */
 export const RESULT_VIEWPORT_SCROLL_CLASS =
-  "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]";
+  "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch]";
+
+export type ResultScrollMaxWidth = "section" | "report" | "writing" | "full";
+
+const MAX_WIDTH_CLASS: Record<ResultScrollMaxWidth, string> = {
+  section: "max-w-3xl lg:max-w-4xl",
+  report: "max-w-[1240px]",
+  writing: "max-w-7xl",
+  full: "max-w-none",
+};
+
+const FOOTER_MAX_WIDTH_CLASS: Record<ResultScrollMaxWidth, string> = {
+  section: "max-w-3xl lg:max-w-4xl",
+  report: "max-w-[1240px]",
+  writing: "max-w-7xl",
+  full: "max-w-none",
+};
 
 type Props = {
   children: ReactNode;
@@ -17,15 +33,21 @@ type Props = {
   className?: string;
   scrollClassName?: string;
   contentClassName?: string;
-  /** Passed to useUnlockPageScroll so scroll resets when content changes. */
+  /** When this value changes, the scroll region resets to the top. */
+  scrollResetKey?: unknown;
+  /** @deprecated Use scrollResetKey */
   unlockKey?: unknown;
+  maxWidth?: ResultScrollMaxWidth;
+  /** When false, children render directly in the scroll region (no inner content wrapper). */
+  wrapContent?: boolean;
+  /** Optional external ref for the scroll region (e.g. review highlight scrolling). */
+  scrollRef?: RefObject<HTMLDivElement | null>;
 };
 
 /**
- * Full-viewport shell for pending / loading / aggregate result pages.
- * One fixed inset-0 frame with a single scroll region and document unlock on mount.
+ * Full-viewport result shell with a single scroll region and document unlock on mount.
  */
-export function ResultPageViewport({
+export function ResultScrollShell({
   children,
   header,
   footer,
@@ -33,14 +55,25 @@ export function ResultPageViewport({
   className,
   scrollClassName,
   contentClassName,
+  scrollResetKey,
   unlockKey,
+  maxWidth = "section",
+  wrapContent = true,
+  scrollRef: scrollRefProp,
 }: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const internalScrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = scrollRefProp ?? internalScrollRef;
+  const resetKey = scrollResetKey ?? unlockKey;
 
-  useUnlockPageScroll(scrollRef, [unlockKey, header, footer, centered, children]);
+  useResultScrollViewport({ scrollRef, outerRef, resetKey });
+
+  const contentWidthClass = MAX_WIDTH_CLASS[maxWidth];
+  const footerWidthClass = FOOTER_MAX_WIDTH_CLASS[maxWidth];
 
   return (
     <div
+      ref={outerRef}
       className={cn(
         "fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#F4F7FB] text-ink",
         className,
@@ -56,17 +89,22 @@ export function ResultPageViewport({
           scrollClassName,
         )}
       >
-        <div
-          className={cn(
-            "mx-auto w-full max-w-3xl px-4 py-4 sm:px-6 sm:py-6 lg:max-w-4xl",
-            centered &&
-              "flex min-h-min flex-1 flex-col items-center justify-center py-8 sm:py-10",
-            footer ? "pb-6 sm:pb-8" : "",
-            contentClassName,
-          )}
-        >
-          {children}
-        </div>
+        {wrapContent ? (
+          <div
+            className={cn(
+              "mx-auto w-full px-4 py-4 sm:px-6 sm:py-6",
+              contentWidthClass,
+              centered &&
+                "flex min-h-min flex-1 flex-col items-center justify-center py-8 sm:py-10",
+              footer ? "pb-6 sm:pb-8" : "",
+              contentClassName,
+            )}
+          >
+            {children}
+          </div>
+        ) : (
+          children
+        )}
       </div>
 
       {footer ? (
@@ -74,7 +112,12 @@ export function ResultPageViewport({
           className="shrink-0 border-t border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90"
           style={{ paddingBottom: "max(0.875rem, env(safe-area-inset-bottom))" }}
         >
-          <div className="mx-auto w-full max-w-3xl px-4 pt-3.5 sm:px-6 lg:max-w-4xl">
+          <div
+            className={cn(
+              "mx-auto w-full px-4 pt-3.5 sm:px-6",
+              footerWidthClass,
+            )}
+          >
             {footer}
           </div>
         </div>
@@ -82,3 +125,6 @@ export function ResultPageViewport({
     </div>
   );
 }
+
+/** @deprecated Use ResultScrollShell */
+export const ResultPageViewport = ResultScrollShell;
