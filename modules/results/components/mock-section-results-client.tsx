@@ -258,7 +258,7 @@ export function MockSectionResultsClient({
 
   if (!attemptId || !mockAttemptId) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="missing-context">
         <p className="text-center text-sm text-muted">
           Missing attempt context. Open this page right after submitting a section.
         </p>
@@ -274,7 +274,7 @@ export function MockSectionResultsClient({
 
   if (loading) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="loading">
         <p className="font-display text-base font-bold text-navy">Loading section results…</p>
       </SectionResultsShell>
     );
@@ -282,7 +282,7 @@ export function MockSectionResultsClient({
 
   if (error) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey="error">
         <p className="max-w-sm text-center text-sm text-muted">{error}</p>
         <Link
           href={mockTestNumberPath(testNumber)}
@@ -310,6 +310,7 @@ export function MockSectionResultsClient({
     if (view === "review") {
       return (
         <SectionResultsShell
+          scrollResetKey={`${module}-review`}
           headerTitle={reviewHeader}
           onBack={() => {
             setView("summary");
@@ -336,6 +337,7 @@ export function MockSectionResultsClient({
 
     return (
       <SectionResultsShell
+        scrollResetKey={`${module}-summary`}
         backHref={mockTestNumberPath(testNumber)}
         showBrandBar
         logoHref={mockTestNumberPath(testNumber)}
@@ -379,7 +381,7 @@ export function MockSectionResultsClient({
 
     if (writingResultReady) {
       return (
-        <div className="h-full min-h-0 overflow-y-auto overscroll-y-contain">
+        <>
           {showCombinedShell ? (
             <div className="border-b border-ink/8 bg-white px-4 py-4 md:px-8">
               <WritingTaskTabs
@@ -398,7 +400,7 @@ export function MockSectionResultsClient({
             primaryActionLabel={continueAction?.label}
             onPrimaryAction={continueAction ? handleContinue : undefined}
           />
-        </div>
+        </>
       );
     }
 
@@ -411,7 +413,7 @@ export function MockSectionResultsClient({
     // "section submitted" confirmation with empty stats.
     if (!writingFailed) {
       return (
-        <SectionResultsShell centered card={false}>
+        <SectionResultsShell centered card={false} scrollResetKey="writing-analyzing">
           <div
             className="flex w-full max-w-md flex-col items-center px-4 text-center"
             aria-busy
@@ -443,6 +445,7 @@ export function MockSectionResultsClient({
     return (
       <SectionResultsShell
         centered
+        scrollResetKey="writing-failed"
         showBrandBar
         logoHref={mockTestNumberPath(testNumber)}
         footer={
@@ -495,8 +498,7 @@ export function MockSectionResultsClient({
 
     if (released || aiReady) {
       return (
-        <div className="h-full min-h-0 overflow-y-auto overscroll-y-contain">
-          <SpeakingResultsClient
+        <SpeakingResultsClient
             testNumber={testNumber}
             mockTestId={mockTestId}
             attemptFromQuery={speakingReview.attempt_id}
@@ -517,7 +519,6 @@ export function MockSectionResultsClient({
                 : undefined
             }
           />
-        </div>
       );
     }
 
@@ -534,6 +535,7 @@ export function MockSectionResultsClient({
     return (
       <SectionResultsShell
         centered
+        scrollResetKey="speaking-pending"
         showBrandBar
         logoHref={mockTestNumberPath(testNumber)}
         footer={
@@ -555,7 +557,7 @@ export function MockSectionResultsClient({
   }
 
   return (
-    <SectionResultsShell centered>
+    <SectionResultsShell centered scrollResetKey="empty">
       <p className="text-sm text-muted">No section data available.</p>
     </SectionResultsShell>
   );

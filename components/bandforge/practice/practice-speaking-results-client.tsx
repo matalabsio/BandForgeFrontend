@@ -10,6 +10,7 @@ import {
   type PracticeSpeakingReview,
 } from "@/lib/practice-api";
 import { SpeakingAiEstimateView } from "@/modules/speaking/components/speaking-ai-estimate-view";
+import { ResultPageViewport } from "@/modules/shared/components/result-page-viewport";
 import { SpeakingInsufficientSpeechView } from "@/modules/speaking/components/speaking-insufficient-speech-view";
 import { isInsufficientSpeechPayload } from "@/modules/speaking/lib/meaningful-speech";
 import type { SpeakingPendingPayload } from "@/modules/speaking/types";
@@ -158,7 +159,7 @@ export function PracticeSpeakingResultsClient({
 
   if (loading && !review) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center px-4">
+      <ResultPageViewport centered unlockKey="loading">
         <p
           className="inline-flex items-center gap-2 text-sm text-ink/60"
           aria-busy
@@ -166,20 +167,20 @@ export function PracticeSpeakingResultsClient({
           <Loader2 className="size-4 animate-spin" />
           Loading your speaking submission…
         </p>
-      </div>
+      </ResultPageViewport>
     );
   }
 
   if (error && !review) {
     return (
-      <div className="mx-auto max-w-lg space-y-4 px-4 py-16 text-center">
+      <ResultPageViewport centered unlockKey={`error-${error}`}>
         <p className="text-danger" role="alert">
           {error}
         </p>
-        <Link href={backHref} className="font-semibold text-cyan hover:underline">
+        <Link href={backHref} className="mt-4 font-semibold text-cyan hover:underline">
           Back
         </Link>
-      </div>
+      </ResultPageViewport>
     );
   }
 
@@ -189,7 +190,7 @@ export function PracticeSpeakingResultsClient({
     !aiReady(review.ai_status) && review.ai_status !== "ai_failed";
   if (analyzing) {
     return (
-      <div className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 py-16 text-center">
+      <ResultPageViewport centered unlockKey={`analyzing-${review.ai_status}`} contentClassName="max-w-lg text-center">
         <Loader2 className="size-10 animate-spin text-teal" aria-hidden />
         <p className="mt-6 text-meta font-semibold uppercase tracking-[0.14em] text-teal">
           Speaking submitted
@@ -207,13 +208,13 @@ export function PracticeSpeakingResultsClient({
         >
           Continue without waiting →
         </Link>
-      </div>
+      </ResultPageViewport>
     );
   }
 
   if (review.ai_status === "ai_failed") {
     return (
-      <div className="mx-auto max-w-lg space-y-4 px-4 py-16 text-center">
+      <ResultPageViewport centered unlockKey="ai-failed" contentClassName="max-w-lg text-center">
         <h1 className="font-display text-h2 text-navy">AI analysis unavailable</h1>
         <p className="text-body text-ink/65">
           {review.error ||
@@ -221,11 +222,11 @@ export function PracticeSpeakingResultsClient({
         </p>
         <Link
           href={continueHref}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal px-5 py-3 font-semibold text-white"
+          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal px-5 py-3 font-semibold text-white"
         >
           Continue
         </Link>
-      </div>
+      </ResultPageViewport>
     );
   }
 

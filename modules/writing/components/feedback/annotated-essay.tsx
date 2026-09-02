@@ -68,7 +68,7 @@ export function AnnotatedEssay({ text, highlights }: Props) {
           </div>
         </div>
       </div>
-      <div className="min-h-[220px] flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:min-h-[280px] sm:px-5 sm:py-5">
+      <div className="min-h-[220px] flex-1 overflow-x-hidden px-3 py-4 sm:min-h-[280px] sm:px-5 sm:py-5">
         <div className="max-w-none break-words text-[15px] leading-[1.75] sm:text-[16px]">
           <AnnotatedText text={text} annotations={annotations} />
         </div>

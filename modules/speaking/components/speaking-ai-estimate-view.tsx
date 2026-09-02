@@ -31,6 +31,7 @@ type Props = {
   backHref?: string | null;
   backLabel?: string;
   fallbackHref?: string | null;
+  examinerStatusHref?: string;
 };
 
 const CRITERIA = [
@@ -90,6 +91,7 @@ export function SpeakingAiEstimateView({
   backHref,
   backLabel,
   fallbackHref,
+  examinerStatusHref,
 }: Props) {
   if (isInsufficientSpeechPayload(payload)) {
     return null;
@@ -233,7 +235,10 @@ export function SpeakingAiEstimateView({
               approval.
             </p>
             <Link
-              href={`/test/${testNumber}/speaking/pending?attempt=${encodeURIComponent(payload.attempt_id)}`}
+              href={
+                examinerStatusHref ??
+                `/test/${testNumber}/speaking/pending?attempt=${encodeURIComponent(payload.attempt_id)}`
+              }
               className="mt-4 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-border-soft bg-surface-alt px-4 text-sm font-semibold text-navy transition-colors hover:bg-white"
             >
               Examiner review status

@@ -7,6 +7,8 @@ import { AppFontsShell } from "@/components/fonts/app-fonts-shell";
 import {
   bandforgeHideShellHeader,
   bandforgeQuietCheckoutChrome,
+  bandforgeQuietListeningExerciseChrome,
+  bandforgeQuietReadingExerciseChrome,
   bandforgeQuietSpeakingExerciseChrome,
   bandforgeQuietWritingExerciseChrome,
   getBandforgePathname,
@@ -53,7 +55,9 @@ export default async function BandforgeAppLayout({
 
   const practiceExamChrome =
     bandforgeQuietSpeakingExerciseChrome(pathname) ||
-    bandforgeQuietWritingExerciseChrome(pathname);
+    bandforgeQuietWritingExerciseChrome(pathname) ||
+    bandforgeQuietListeningExerciseChrome(pathname) ||
+    bandforgeQuietReadingExerciseChrome(pathname);
   const quietChrome = bandforgeQuietCheckoutChrome(pathname) || practiceExamChrome;
   const hideHeader = bandforgeHideShellHeader(pathname) || quietChrome;
   const shellDisplayName = formatUserDisplayName(user);

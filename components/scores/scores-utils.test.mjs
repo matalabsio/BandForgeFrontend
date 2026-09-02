@@ -20,6 +20,10 @@ function attemptReportHref(attempt) {
     params.set("mock_attempt", mockAttemptId);
     return `/test/${testNumber}/${attempt.module}/results?${params.toString()}`;
   }
+  if (attempt.module === "listening" || attempt.module === "reading") {
+    const params = new URLSearchParams({ attempt: attempt.id });
+    return `/test/${testNumber}/${attempt.module}/results?${params.toString()}`;
+  }
   return `/test/${testNumber}/${attempt.module}/results`;
 }
 
@@ -60,6 +64,41 @@ test("attemptReportHref uses section results path when mock_attempt present", ()
   assert.match(href, /mock_attempt=mock-session-1/);
   assert.match(href, /attempt=attempt-1/);
   assert.match(href, /part=2/);
+});
+
+test("attemptReportHref includes attempt for standalone listening practice", () => {
+  const href = attemptReportHref({
+    id: "attempt-standalone",
+    module: "listening",
+    mock_test: { id: M01 },
+  });
+  assert.match(href, /attempt=attempt-standalone/);
+  assert.doesNotMatch(href, /mock_attempt=/);
+});
+
+test("attemptReportHref uses speaking results for completed under-review speaking", () => {
+  function hrefForSpeaking(attempt) {
+    const testNumber = 1;
+    if (attempt.module === "speaking" && attempt.status === "completed") {
+      const params = new URLSearchParams({ attempt: attempt.id });
+      if (attempt.mock_attempt_id) {
+        params.set("mock_attempt", attempt.mock_attempt_id);
+      }
+      return `/test/${testNumber}/speaking/results?${params.toString()}`;
+    }
+    return null;
+  }
+  const href = hrefForSpeaking({
+    id: "speaking-1",
+    module: "speaking",
+    status: "completed",
+    band: null,
+    mock_test: { id: M01 },
+    mock_attempt_id: "mock-session-1",
+  });
+  assert.match(href, /\/test\/1\/speaking\/results/);
+  assert.match(href, /attempt=speaking-1/);
+  assert.match(href, /mock_attempt=mock-session-1/);
 });
 
 test("dashboardModuleBands always returns four modules", () => {

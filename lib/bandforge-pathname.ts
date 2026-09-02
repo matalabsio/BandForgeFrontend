@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 export {
   bandforgeHideShellHeader,
   bandforgeQuietCheckoutChrome,
+  bandforgeQuietListeningExerciseChrome,
+  bandforgeQuietReadingExerciseChrome,
   bandforgeQuietSpeakingExerciseChrome,
   bandforgeQuietWritingExerciseChrome,
 } from "@/lib/bandforge-chrome-paths";

@@ -115,6 +115,37 @@ export function shortModuleResultsPath(
   return `/test/${testNumber}/${module}/results`;
 }
 
+function shortModuleObjectiveResultsPath(
+  testNumber: number,
+  module: "listening" | "reading",
+  attemptId: string,
+  opts?: { mockAttemptId?: string | null; part?: number | null },
+): string {
+  const params = new URLSearchParams({ attempt: attemptId });
+  const mockAttemptId = opts?.mockAttemptId?.trim();
+  if (mockAttemptId) params.set("mock_attempt", mockAttemptId);
+  if (opts?.part != null && Number.isFinite(opts.part) && opts.part >= 1) {
+    params.set("part", String(opts.part));
+  }
+  return `/test/${testNumber}/${module}/results?${params.toString()}`;
+}
+
+export function shortModuleListeningResultsPath(
+  testNumber: number,
+  attemptId: string,
+  opts?: { mockAttemptId?: string | null; part?: number | null },
+): string {
+  return shortModuleObjectiveResultsPath(testNumber, "listening", attemptId, opts);
+}
+
+export function shortModuleReadingResultsPath(
+  testNumber: number,
+  attemptId: string,
+  opts?: { mockAttemptId?: string | null; part?: number | null },
+): string {
+  return shortModuleObjectiveResultsPath(testNumber, "reading", attemptId, opts);
+}
+
 export function shortModuleWritingResultsPath(
   testNumber: number,
   attemptId: string,

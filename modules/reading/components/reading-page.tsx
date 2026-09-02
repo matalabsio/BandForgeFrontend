@@ -15,7 +15,6 @@ import {
   mockAfterSectionSubmitPath,
   mockHubPath,
   mockPathFromProgress,
-  shortModuleResultsPath,
   testNumberForMockId,
   type MockMeta,
 } from "@/lib/mock-catalog";
@@ -37,7 +36,8 @@ import type { PracticeSkill } from "@/lib/practice-types";
 import {
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
-import { appendPlanResultParams } from "@/lib/plan-day-tasks";
+import { readingResultsPath } from "@/lib/reading-test";
+import { buildModulePracticeResultHref } from "@/lib/plan-day-tasks";
 import { recordPlanDayOutcome } from "@/lib/plan-daily-progress";
 import {
   markPlanStepDone,
@@ -420,7 +420,7 @@ export function ReadingPage({
       }
       const testNumber = resolvedTestNumber;
       persistModuleResultAttempt(testNumber, "reading", id);
-      push(shortModuleResultsPath(testNumber, "reading"));
+      push(readingResultsPath(testNumber, id));
     },
     [replace, push, testId, mockSlug, mockAttemptId, passage, isDiagnostic, readingPassageCount, resolvedTestNumber],
   );
@@ -471,14 +471,16 @@ export function ReadingPage({
       });
       persistModuleResultAttempt(resolvedTestNumber, "reading", attemptId);
       push(
-        appendPlanResultParams(
-          shortModuleResultsPath(resolvedTestNumber, "reading"),
-          {
+        buildModulePracticeResultHref({
+          testNumber: resolvedTestNumber,
+          module: "reading",
+          attemptId,
+          plan: {
             task: current,
             taskId: planTaskId,
             hubId: planHubId,
           },
-        ),
+        }),
       );
       return true;
     },
@@ -562,7 +564,7 @@ export function ReadingPage({
         })
       )
         return true;
-      if (mockAttemptId && !isDiagnostic) {
+      if (mockAttemptId) {
         goToMockSectionResults(result.attempt_id, passage);
         return true;
       }

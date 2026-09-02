@@ -5,6 +5,7 @@ import { parseApiError, parseJsonResponse, type ApiErrorBody } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { mockAttemptStorageKey } from "@/modules/mock/lib/mock-session-storage";
 
+import type { ModuleReviewQuestion } from "@/lib/module-review-types";
 import type { DiagnosticWritingEvaluation } from "@/lib/diagnostic-evaluate-writing";
 
 /** Persist diagnostic band snapshot for /plan upsell. */
@@ -24,6 +25,8 @@ export type DiagnosticReviewItem = {
 export type DiagnosticModuleReview = {
   wrong: DiagnosticReviewItem[];
   bySkill: Record<string, { correct: number; total: number }>;
+  /** Full per-question review for SectionAnswerReview UI. */
+  questions?: ModuleReviewQuestion[];
 };
 
 export type DiagnosticResultsSnapshot = {

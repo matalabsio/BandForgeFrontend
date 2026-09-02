@@ -167,6 +167,42 @@ export function getPracticeWritingReview(
   );
 }
 
+export type PracticeObjectiveReview = {
+  attempt_id: string;
+  hub_id: string;
+  module: "listening" | "reading";
+  raw_score: number;
+  total_questions: number;
+  questions: Array<{
+    question_id: string;
+    question_number: number;
+    question_type: string;
+    prompt: string;
+    user_answer: string;
+    correct_answer: string;
+    is_correct: boolean;
+    explanation: string;
+  }>;
+};
+
+export function getPracticeListeningReview(
+  hubId: string,
+  attemptId: string,
+): Promise<PracticeObjectiveReview> {
+  return examApiCall<PracticeObjectiveReview>(
+    `/api/practice/hubs/${encodeURIComponent(hubId)}/exercise/${encodeURIComponent(attemptId)}/listening-review`,
+  );
+}
+
+export function getPracticeReadingReview(
+  hubId: string,
+  attemptId: string,
+): Promise<PracticeObjectiveReview> {
+  return examApiCall<PracticeObjectiveReview>(
+    `/api/practice/hubs/${encodeURIComponent(hubId)}/exercise/${encodeURIComponent(attemptId)}/reading-review`,
+  );
+}
+
 export type PracticeSpeakingReview = {
   attempt_id: string;
   hub_id: string;

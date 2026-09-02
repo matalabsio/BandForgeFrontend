@@ -17,16 +17,14 @@ type Props = {
 
 export function SectionQuestionChipGrid({
   questions,
-  columns = 5,
+  columns: _columns = 5,
   onQuestionClick,
 }: Props) {
-  const gridClass = columns === 8 ? "grid-cols-4 sm:grid-cols-8" : "grid-cols-5";
-
   return (
-    <div className={`grid ${gridClass} gap-2 sm:gap-2.5`}>
+    <div className="flex gap-2 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5 [&::-webkit-scrollbar]:hidden">
       {questions.map((q) => {
         const clickable = Boolean(onQuestionClick);
-        const className = `flex aspect-square items-center justify-center rounded-[11px] font-mono text-sm font-medium transition-opacity sm:text-[14px] ${CHIP_STYLES[q.status]} ${
+        const className = `flex size-9 shrink-0 items-center justify-center whitespace-nowrap rounded-[11px] font-mono text-sm font-medium tabular-nums transition-opacity sm:size-10 sm:text-[14px] ${CHIP_STYLES[q.status]} ${
           clickable ? "cursor-pointer hover:opacity-90" : ""
         }`;
 

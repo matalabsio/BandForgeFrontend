@@ -61,6 +61,7 @@ export default async function TestSpeakingPendingPage({ params, searchParams }: 
         attemptId={attemptId}
         testNumber={testNumber}
         mockTestId={resolved.mockTestId}
+        mockAttemptId={mockAttemptId}
         planFrom={sp.from}
         planTask={sp.task}
         planTaskId={sp.taskId}

@@ -95,6 +95,7 @@ export function PracticeSectionResultsClient({
   if (view === "review") {
     return (
       <SectionResultsShell
+        scrollResetKey="review"
         headerTitle={reviewTitle}
         onBack={() => {
           setView("summary");
@@ -131,6 +132,7 @@ export function PracticeSectionResultsClient({
 
   return (
     <SectionResultsShell
+      scrollResetKey="summary"
       backHref={backHref}
       showBrandBar
       logoHref={planMode ? "/study-plan/today" : backHref}

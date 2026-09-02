@@ -92,6 +92,7 @@ export default async function ListeningResultsPage({ params, searchParams }: Pag
             testNumber={testNumber}
             module="listening"
             targetBand={user.target_band ?? null}
+            attemptFromQuery={attemptId ?? undefined}
             plan={plan}
           />
         </RestoreMockAttemptOnResults>
@@ -104,6 +105,7 @@ export default async function ListeningResultsPage({ params, searchParams }: Pag
       testNumber={testNumber}
       module="listening"
       targetBand={user.target_band ?? null}
+      attemptFromQuery={attemptId ?? undefined}
       plan={plan}
     />
   );

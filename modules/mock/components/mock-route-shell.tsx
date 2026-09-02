@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { IeltsExamShell } from "@/components/exam/ielts-exam-shell";
 import { IeltsHubSkeleton } from "@/components/exam/ielts-exam-skeleton";
+import { useUnlockPageScroll } from "@/lib/use-unlock-page-scroll";
 import { useExamSessionGuard } from "@/modules/shared/hooks/use-exam-session-refresh";
 
 /** Active L/R/W/S exam surfaces — no content-library chrome (logo / search). */
@@ -47,6 +48,8 @@ function MockRouteInner({ children }: { children: React.ReactNode }) {
   const mockAttemptActive = searchParams.has("mock_attempt");
 
   useExamSessionGuard(isExam || mockAttemptActive || isReview);
+
+  useUnlockPageScroll(undefined, [pathname, isReview]);
 
   const layout = isReview ? "review" : isExam ? "exam" : "hub";
 

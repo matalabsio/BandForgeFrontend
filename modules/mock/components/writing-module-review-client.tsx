@@ -93,7 +93,7 @@ export function WritingModuleReviewClient({ testId, testNumber }: Props) {
 
   if (!payload) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey={error ? "error" : "loading"}>
         <p className="font-display text-base font-bold text-navy">
           {error ?? "Saving your essays…"}
         </p>
@@ -116,6 +116,7 @@ export function WritingModuleReviewClient({ testId, testNumber }: Props) {
   return (
     <SectionResultsShell
       centered
+      scrollResetKey="writing-submitted"
       footer={
         <SectionResultsCtaBar primaryLabel={ctaLabel} onPrimary={handleContinue} />
       }

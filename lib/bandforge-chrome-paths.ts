@@ -21,3 +21,15 @@ export function bandforgeQuietWritingExerciseChrome(pathname: string): boolean {
   const path = pathname.split("?")[0] ?? pathname;
   return /\/practice\/writing\/[^/]+\/exercise(?:\/results)?\/?$/.test(path);
 }
+
+/** Bank listening exercise + results — full-bleed so SectionResultsShell can own scroll. */
+export function bandforgeQuietListeningExerciseChrome(pathname: string): boolean {
+  const path = pathname.split("?")[0] ?? pathname;
+  return /\/practice\/listening\/[^/]+\/exercise(?:\/results)?\/?$/.test(path);
+}
+
+/** Bank reading exercise + results — full-bleed so SectionResultsShell can own scroll. */
+export function bandforgeQuietReadingExerciseChrome(pathname: string): boolean {
+  const path = pathname.split("?")[0] ?? pathname;
+  return /\/practice\/reading\/[^/]+\/exercise(?:\/results)?\/?$/.test(path);
+}

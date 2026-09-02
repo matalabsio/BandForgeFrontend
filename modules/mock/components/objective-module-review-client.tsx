@@ -138,7 +138,7 @@ export function ObjectiveModuleReviewClient({ testId, module, testNumber }: Prop
 
   if (!payload) {
     return (
-      <SectionResultsShell centered>
+      <SectionResultsShell centered scrollResetKey={error ? "error" : "loading"}>
         <p className="font-display text-base font-bold text-navy">
           {error ?? "Loading your review…"}
         </p>
@@ -161,6 +161,7 @@ export function ObjectiveModuleReviewClient({ testId, module, testNumber }: Prop
   if (view === "review") {
     return (
       <SectionResultsShell
+        scrollResetKey={`${module}-review`}
         headerTitle={reviewTitle}
         onBack={() => {
           setView("summary");
@@ -185,6 +186,7 @@ export function ObjectiveModuleReviewClient({ testId, module, testNumber }: Prop
 
   return (
     <SectionResultsShell
+      scrollResetKey={`${module}-summary`}
       backHref={mockTestNumberPath(testNumber)}
       showBrandBar
       logoHref={mockTestNumberPath(testNumber)}

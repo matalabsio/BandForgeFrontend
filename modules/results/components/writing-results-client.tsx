@@ -8,6 +8,7 @@ import { writingApi } from "@/modules/writing/services/writing-api";
 import type { WritingReview } from "@/modules/writing/types";
 import { WritingResultsView } from "@/modules/writing/components/writing-results-view";
 import { WritingTaskTabs } from "@/modules/writing/components/writing-task-tabs";
+import { ResultPageViewport } from "@/modules/shared/components/result-page-viewport";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { resolveSectionResultsBackHref } from "@/lib/section-results-back";
 import type { PlanResultContext } from "@/lib/plan-day-tasks";
@@ -107,15 +108,15 @@ export function WritingResultsClient({
 
   if (loading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center p-8 text-sm text-ink/60">
-        Loading your writing feedback…
-      </div>
+      <ResultPageViewport centered unlockKey="loading">
+        <p className="text-sm text-ink/60">Loading your writing feedback…</p>
+      </ResultPageViewport>
     );
   }
 
   if (!attemptId || !review) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-surface p-8 text-center">
+      <ResultPageViewport centered unlockKey="missing">
         <p className="text-[14px] text-ink/70">
           Open this result from your dashboard or right after you finish a task.
         </p>
@@ -125,7 +126,7 @@ export function WritingResultsClient({
         >
           Back to writing
         </Link>
-      </div>
+      </ResultPageViewport>
     );
   }
 
