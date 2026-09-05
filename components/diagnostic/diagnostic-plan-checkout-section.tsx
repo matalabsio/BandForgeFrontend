@@ -12,6 +12,7 @@ import { DiagnosticPlanTeaserContent } from "@/components/diagnostic/ui/diagnost
 import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-trust-badges";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
+import { CouponCodeField } from "@/components/pricing/coupon-code-field";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { bfPrimaryCtaNavClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ import { ensureSession, ensureSessionForCheckout, getMe, loginPathWithNext } fro
 import {
   destinationWhenPaidOnResultsNow,
   navigateAfterCheckoutVerify,
+  navigateAfterCouponRedeem,
   shouldSkipPaidBootstrapRedirectNow,
 } from "@/lib/checkout-navigate-client";
 import {
@@ -91,6 +93,7 @@ import {
   pendingVerifyPayloadFromReceipt,
   readCheckoutReceiptContext,
   razorpayPaymentFailureDetail,
+  redeemCoupon,
   saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
@@ -153,6 +156,7 @@ export function DiagnosticPlanCheckoutSection({
     null,
   );
   const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const checkoutInFlightRef = useRef(false);
   const autoCheckoutStartedRef = useRef(false);
   const razorpayOpenRef = useRef(false);
@@ -630,6 +634,97 @@ export function DiagnosticPlanCheckoutSection({
     [executeCheckout],
   );
 
+  const handleRedeemCoupon = useCallback(
+    async (code: string) => {
+      if (checkoutInFlightRef.current || checkoutBusy || hasSubscription) return;
+      // Diagnostic coupons always unlock Full Skill Program (personalized plan).
+      const checkoutSlug = FULL_SKILL_PROGRAM_SLUG;
+      selectedCheckoutSlugRef.current = checkoutSlug;
+
+      checkoutInFlightRef.current = true;
+      markCheckoutAttemptLive();
+      setCheckoutBusy(true);
+      setCouponError(null);
+      setOverlay("verifying");
+      setOverlayAmountPaise(0);
+
+      const clearBusy = () => {
+        checkoutInFlightRef.current = false;
+        clearCheckoutAttemptLive();
+        setCheckoutBusy(false);
+      };
+
+      try {
+        const session = await ensureSessionForCheckout();
+        if (!session) {
+          setOverlay(null);
+          clearBusy();
+          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: true });
+          redirectToLoginForCheckout(checkoutSlug);
+          return;
+        }
+        const user = await getMe().catch(() => null);
+        const authDecision = decideDiagnosticCheckoutAuthGate({
+          hasSession: true,
+          isFullAccount: isFullAccountUser(user?.role),
+        });
+        if (authDecision === "login") {
+          setOverlay(null);
+          clearBusy();
+          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: true });
+          redirectToLoginForCheckout(checkoutSlug);
+          return;
+        }
+
+        // Don't block redeem on lead sync / subscription probe — those add seconds.
+        const currentLead = readDiagnosticLead();
+        if (currentLead) {
+          void syncDiagnosticLeadAfterAuth(snapshot, currentLead);
+        }
+
+        const result = await redeemCoupon(checkoutSlug, code);
+        paymentTraceLog("COUPON_REDEEM_SUCCESS", {
+          plan_slug: checkoutSlug,
+        });
+        logDiagnosticSkuPurchased(checkoutSlug);
+        clearPendingCheckoutResume();
+        // Immediate hard nav to dashboard — do not wait on success page or soft router.
+        navigateAfterCouponRedeem({
+          router,
+          subscription: result.subscription,
+          planSlug: checkoutSlug,
+        });
+      } catch (e) {
+        setOverlay(null);
+        if (e instanceof ApiError && e.status === 401) {
+          prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: true });
+          redirectToLoginForCheckout(checkoutSlug);
+        } else if (e instanceof ApiError && e.status === 400) {
+          setCouponError(e.message);
+          clearBusy();
+        } else if (e instanceof ApiError && e.status === 403) {
+          setCouponError(e.message);
+          clearBusy();
+        } else {
+          setCouponError(
+            e instanceof ApiError
+              ? e.message
+              : "Could not apply coupon. Please try again.",
+          );
+          clearBusy();
+        }
+      }
+      // On success, hard navigation unloads the page — skip clearBusy so overlay stays until leave.
+    },
+    [
+      checkoutBusy,
+      hasSubscription,
+      redirectToLoginForCheckout,
+      router,
+      snapshot,
+    ],
+  );
+
   executeCheckoutRef.current = executeCheckout;
 
   useEffect(() => {
@@ -968,6 +1063,15 @@ export function DiagnosticPlanCheckoutSection({
               checkoutLoading={checkoutBusy}
             />
           )}
+
+          {!hasSubscription ? (
+            <CouponCodeField
+              disabled={hasSubscription}
+              busy={checkoutBusy}
+              error={couponError}
+              onRedeem={handleRedeemCoupon}
+            />
+          ) : null}
 
           {hasSubscription ? (
             <div className="text-center">

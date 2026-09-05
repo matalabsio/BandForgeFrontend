@@ -13,6 +13,7 @@ import { DiagnosticStudyPlanLocked } from "@/components/diagnostic/ui/diagnostic
 import { DiagnosticTrustBadges } from "@/components/diagnostic/ui/diagnostic-trust-badges";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
+import { CouponCodeField } from "@/components/pricing/coupon-code-field";
 import { BfEmptyState } from "@/components/bandforge/ui/bf-empty-state";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { readDiagnosticLead } from "@/lib/diagnostic-lead";
@@ -40,6 +41,7 @@ import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
 import {
   destinationWhenPaidOnResultsNow,
   navigateAfterCheckoutVerify,
+  navigateAfterCouponRedeem,
   shouldSkipPaidBootstrapRedirectNow,
 } from "@/lib/checkout-navigate-client";
 import { hasFullSkillProgram } from "@/lib/entitlement";
@@ -52,6 +54,7 @@ import {
   pendingVerifyPayloadFromReceipt,
   readCheckoutReceiptContext,
   razorpayPaymentFailureDetail,
+  redeemCoupon,
   saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
@@ -182,6 +185,7 @@ export function DiagnosticPlanRevealExperience() {
     null,
   );
   const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const checkoutInFlightRef = useRef(false);
 
   const lead = readDiagnosticLead();
@@ -355,6 +359,65 @@ export function DiagnosticPlanRevealExperience() {
     }
   }, [checkoutBusy, hasSubscription, lead, planAmountPaise, router, snapshot]);
 
+  const handleRedeemCoupon = useCallback(
+    async (code: string) => {
+      if (checkoutInFlightRef.current || checkoutBusy || hasSubscription) return;
+      checkoutInFlightRef.current = true;
+      setCheckoutBusy(true);
+      setCouponError(null);
+      setOverlayAmountPaise(0);
+      setOverlay("verifying");
+
+      const clearBusy = () => {
+        checkoutInFlightRef.current = false;
+        setCheckoutBusy(false);
+      };
+
+      try {
+        const session = await ensureSession();
+        const user = session ? await getMe().catch(() => null) : null;
+        if (!session || !isFullAccountUser(user?.role)) {
+          setOverlay(null);
+          clearBusy();
+          router.push(loginPathWithNext(diagnosticPaths.planReveal));
+          return;
+        }
+
+        if (snapshot && lead) {
+          void syncDiagnosticLeadAfterAuth(snapshot, lead);
+        }
+
+        const result = await redeemCoupon(FULL_SKILL_PROGRAM_SLUG, code);
+        paymentTraceLog("COUPON_REDEEM_SUCCESS", {
+          plan_slug: FULL_SKILL_PROGRAM_SLUG,
+        });
+        navigateAfterCouponRedeem({
+          router,
+          subscription: result.subscription,
+          planSlug: FULL_SKILL_PROGRAM_SLUG,
+        });
+        return;
+      } catch (e) {
+        setOverlay(null);
+        if (e instanceof ApiError && e.status === 401) {
+          router.push(loginPathWithNext(diagnosticPaths.planReveal));
+        } else if (e instanceof ApiError && (e.status === 400 || e.status === 403)) {
+          setCouponError(e.message);
+        } else {
+          setCouponError(
+            e instanceof ApiError
+              ? e.message
+              : "Could not apply coupon. Please try again.",
+          );
+        }
+      } finally {
+        // Success uses hard navigation; only clear busy on error path.
+        if (checkoutInFlightRef.current) clearBusy();
+      }
+    },
+    [checkoutBusy, hasSubscription, lead, router, snapshot],
+  );
+
   const handleVerifyRetry = useCallback(async () => {
     const pending = readCheckoutReceiptContext();
     const payload = pending ? pendingVerifyPayloadFromReceipt(pending) : null;
@@ -464,6 +527,15 @@ export function DiagnosticPlanRevealExperience() {
               checkoutDisabled={hasSubscription}
               checkoutLoading={checkoutBusy}
             />
+
+            {!hasSubscription ? (
+              <CouponCodeField
+                disabled={hasSubscription}
+                busy={checkoutBusy}
+                error={couponError}
+                onRedeem={handleRedeemCoupon}
+              />
+            ) : null}
 
             {hasSubscription ? (
               <div className="text-center">
