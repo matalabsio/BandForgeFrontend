@@ -313,21 +313,22 @@ export function SpeakingPendingPage({
         ) : null}
 
         {planNav ? (
-          <SectionResultsCtaBar
-            layout="stack"
-            primaryLabel={planNav.continueLabel}
-            onPrimary={() => router.push(planNav.continueHref)}
-            primaryLoading={planNav.loading}
-            primaryDisabled={planNav.loading}
-            secondaryLabel={
-              planNav.showSecondaryBack ? "Back to Today's plan" : undefined
-            }
-            onSecondary={
-              planNav.showSecondaryBack
-                ? () => router.push(planNav.todayHref)
-                : undefined
-            }
-          />
+          <>
+            <SectionResultsCtaBar
+              layout="stack"
+              primaryLabel={planNav.continueLabel}
+              onPrimary={planNav.onContinue}
+              primaryLoading={planNav.loading}
+              primaryDisabled={planNav.loading}
+              secondaryLabel={
+                planNav.showSecondaryBack ? "Back to Today's plan" : undefined
+              }
+              onSecondary={
+                planNav.showSecondaryBack ? planNav.goToday : undefined
+              }
+            />
+            {planNav.finishModal}
+          </>
         ) : (
           <>
             <Link

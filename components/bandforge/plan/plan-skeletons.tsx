@@ -44,6 +44,37 @@ export function TodaysPlanSkeleton({
   );
 }
 
+/** Full plan calendar–shaped skeleton (header + month grid). */
+export function FullPlanCalendarSkeleton({
+  label = "Loading your full plan",
+}: {
+  label?: string;
+} = {}) {
+  return (
+    <div className="space-y-5 pb-16" aria-busy="true" aria-label={label}>
+      <div className="space-y-2 max-w-xl">
+        <div className={`h-3 w-28 rounded ${PULSE}`} />
+        <div className={`h-8 w-40 max-w-full rounded-lg ${PULSE}`} />
+        <div className={`h-4 w-72 max-w-full rounded ${PULSE}`} />
+      </div>
+      <div className="rounded-[28px] border border-white/60 bg-white/55 p-4 shadow-[0_8px_40px_rgba(8,145,178,0.08)] backdrop-blur-xl sm:p-6">
+        <div className={`mx-auto mb-4 h-5 w-36 rounded ${PULSE}`} />
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+          {Array.from({ length: 7 }, (_, i) => (
+            <div key={`hdr-${i}`} className={`h-3 rounded ${PULSE}`} />
+          ))}
+          {Array.from({ length: 35 }, (_, i) => (
+            <div
+              key={`cell-${i}`}
+              className={`aspect-square rounded-xl border border-border-soft/60 ${PULSE}`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Thin “opening session” strip — no video block, for plan → MT redirects. */
 export function PlanOpeningSkeleton({
   label = "Opening practice…",

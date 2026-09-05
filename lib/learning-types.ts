@@ -77,6 +77,22 @@ export type WeeklyHubCompletion = {
   hub_id: string;
 };
 
+/** Slim Today payload from GET /api/learning/today (no full study_plan.weeks). */
+export type LearningTodayBundle = {
+  user_id: string;
+  todays_tasks: LearningStudyTask[];
+  hub_progress: Record<string, SkillHubProgress>;
+  prep_start: string | null;
+  exam_date: string | null;
+  total_days: number | null;
+  current_day: number | null;
+  days_remaining: number | null;
+  skill_difficulty: Record<string, string>;
+  current_band: number | null;
+  target_band: number | null;
+  gap_to_target: number | null;
+};
+
 export type LearningProfile = {
   user_id: string;
   current_band: number | null;

@@ -184,12 +184,21 @@ export function PracticeWritingResultsClient({
   }
 
   if (review.ai_status === "ai_failed") {
+    const underLimit =
+      Boolean(review.short_response) ||
+      (typeof review.error === "string" &&
+        review.error.toLowerCase().includes("too short")) ||
+      review.word_count < 100;
     return (
       <ResultPageViewport centered unlockKey="ai-failed" contentClassName="max-w-lg text-center">
-        <h1 className="font-display text-h2 text-navy">AI analysis unavailable</h1>
+        <h1 className="font-display text-h2 text-navy">
+          {underLimit ? "Essay under word limit" : "AI analysis unavailable"}
+        </h1>
         <p className="text-body text-ink/65">
-          {review.error ||
-            "We could not score this essay right now. Your submission was saved."}
+          {underLimit
+            ? "Your essay is under the minimum word count for AI evaluation (need at least 100 words). Your submission was saved for examiner review."
+            : review.error ||
+              "We could not score this essay right now. Your submission was saved."}
         </p>
         <Link
           href={continueHref}

@@ -354,12 +354,29 @@ export function resolveTodayTaskHref(opts: {
     }
     return "/study-plan/today";
   }
+  // Legacy Watch tasks open Practice (no video step in FSP plans).
   if (task === "watch") {
-    return planHubHref({
+    const practiceTaskId = swapPlanTaskId(opts.taskId, "practice") ?? opts.taskId;
+    if (isBankSubmitConfig(opts.submitConfig)) {
+      return planExerciseHref({
+        skill,
+        hubId,
+        task: "practice",
+        taskId: practiceTaskId,
+      });
+    }
+    if (opts.fallbackHref && opts.fallbackHref.includes("/test/")) {
+      return opts.fallbackHref.replace(/task=watch/, "task=practice");
+    }
+    return planStepOpenHref({
       skill,
       hubId,
-      task: "watch",
-      taskId: opts.taskId,
+      task: "practice",
+      taskId: practiceTaskId,
+      bankNumber: opts.bankNumber ?? 1,
+      catalogNumber: opts.catalogNumber,
+      part: opts.part,
+      submitConfig: opts.submitConfig,
     });
   }
   if (isBankSubmitConfig(opts.submitConfig)) {

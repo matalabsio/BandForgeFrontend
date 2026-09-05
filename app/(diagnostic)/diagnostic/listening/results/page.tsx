@@ -5,17 +5,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-type PageProps = {
-  searchParams: Promise<{ completed?: string }>;
-};
-
-export default async function DiagnosticListeningResultsPage({
-  searchParams,
-}: PageProps) {
-  const sp = await searchParams;
-  const fromCompleted = sp.completed === "1";
-
-  return (
-    <DiagnosticSectionResultsClient module="listening" fromCompleted={fromCompleted} />
-  );
+/** Legacy bookmark — redirects into the live diagnostic journey (no section scores). */
+export default function DiagnosticListeningResultsPage() {
+  return <DiagnosticSectionResultsClient module="listening" />;
 }

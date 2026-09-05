@@ -222,7 +222,9 @@ function DayPlanPanel({
   const isToday = day.date === today;
   const isPast = day.date < today;
   const tasks = sortPlanTasks(
-    day.tasks.filter((t) => t.status !== "skipped"),
+    day.tasks.filter(
+      (t) => t.status !== "skipped" && t.task_type !== "watch",
+    ),
   );
   const focus = dayFocusSummary(day);
   const incomplete = tasks.filter((t) => t.status !== "done");

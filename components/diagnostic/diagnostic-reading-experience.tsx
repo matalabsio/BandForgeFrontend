@@ -22,7 +22,7 @@ import {
   readDiagnosticProgress,
   saveModuleAnswers,
 } from "@/lib/diagnostic-storage";
-import { diagnosticPaths } from "@/lib/diagnostic-catalog";
+import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
 import { DiagnosticReadingMatchingHeadings } from "@/components/diagnostic/diagnostic-reading-matching-headings";
 import { ReadingAnswerSheet } from "@/modules/reading/components/reading-answer-sheet";
 import {
@@ -266,7 +266,7 @@ export function DiagnosticReadingExperience() {
         reading: readingReview,
       },
     });
-    router.replace(diagnosticPaths.readingResults);
+    router.replace(diagnosticTransitionPath("reading-writing"));
   }, [pack, answers, submitting, router]);
 
   const readingThemeVars: CSSProperties = {

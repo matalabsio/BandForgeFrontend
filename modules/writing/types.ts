@@ -140,6 +140,8 @@ export type WritingPendingPayload = {
   ai_status?: string | null;
   ai_band?: number | null;
   ai_available?: boolean;
+  word_count?: number | null;
+  short_response?: boolean;
   submitted_at: string | null;
   message: string;
   session_tasks?: WritingSessionTask[];

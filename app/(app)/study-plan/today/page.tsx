@@ -1,7 +1,5 @@
 import { BfSectionEyebrow, BfSectionHeading } from "@/components/bandforge/ui";
-import { TodaysPlanPanel } from "@/components/bandforge/dashboard/todays-plan-panel";
-import { fetchEntitledContext } from "@/lib/entitled-route-server";
-import type { LearningStudyPlan } from "@/lib/learning-types";
+import { StudyPlanTodayClient } from "@/components/bandforge/study-plan/study-plan-today-client";
 import {
   getCachedCookieHeader,
   getCachedServerSession,
@@ -13,35 +11,12 @@ export const metadata = {
   title: "Today's Plan · BandForge",
 };
 
-function overallPlanPercent(plan: LearningStudyPlan): number {
-  const skillModules = ["listening", "reading", "writing", "speaking"];
-  const today = new Date().toISOString().slice(0, 10);
-  let done = 0;
-  let total = 0;
-  for (const week of plan.weeks) {
-    for (const day of week.days) {
-      if (day.date > today) continue;
-      for (const task of day.tasks) {
-        if (!skillModules.includes(task.module)) continue;
-        total += 1;
-        if (task.status === "done") done += 1;
-      }
-    }
-  }
-  return total > 0 ? Math.round((done / total) * 100) : 0;
-}
-
-/**
- * Auth + entitlement run in study-plan/layout. Profile is React-cached so
- * this call reuses the layout's fetchEntitledContext result.
- */
+/** Auth + entitlement run in study-plan/layout. Profile loads client-side. */
 export default async function StudyPlanTodayPage() {
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerSession(cookieHeader);
-  const { profile } = await fetchEntitledContext(
-    cookieHeader,
-    user?.id ?? "",
-  );
+  const studentName =
+    user?.full_name ?? user?.email ?? "BandForge Student";
 
   return (
     <div className="space-y-6">
@@ -52,17 +27,9 @@ export default async function StudyPlanTodayPage() {
           Same tasks as your dashboard — skills in suggested order for today.
         </p>
       </header>
-      <TodaysPlanPanel
-        initialTasks={profile.todays_tasks}
+      <StudyPlanTodayClient
         userId={user?.id ?? ""}
-        studentName={user?.full_name ?? user?.email ?? "BandForge Student"}
-        hubProgress={profile.hub_progress}
-        moduleSummary={profile.module_summary}
-        currentBand={profile.current_band}
-        targetBand={profile.target_band}
-        overallPlanPct={overallPlanPercent(profile.study_plan)}
-        studyPlan={profile.study_plan}
-        examDate={profile.exam_date ?? profile.study_plan.exam_date ?? null}
+        studentName={studentName}
       />
     </div>
   );

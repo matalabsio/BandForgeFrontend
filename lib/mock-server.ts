@@ -7,7 +7,12 @@ import {
   slotByNumber,
 } from "@/lib/mock-catalog-api";
 import type { MockMeta } from "@/lib/mock-catalog";
-import { resolveMockMetaFromCatalog } from "@/lib/mock-catalog";
+import {
+  getMockMeta,
+  getMockPanelSlot,
+  mockTestIdForNumber,
+  resolveMockMetaFromCatalog,
+} from "@/lib/mock-catalog";
 import type {
   ListeningBootServer,
   ReadingBootServer,
@@ -75,7 +80,10 @@ export async function resolveMockMetaServer(
   return resolveMockMetaFromCatalog(catalog, slugOrId);
 }
 
-/** Live catalog slot for a test number (available + id), or null if coming soon / missing. */
+/** Live catalog slot for a test number (available + id), or null if coming soon / missing.
+ * Falls back to static M01/M02 when the catalog API is slow/unavailable so post-submit
+ * pending/results pages do not 404 during plan practice.
+ */
 export async function resolveCatalogSlotServer(
   cookieHeader: string,
   testNumber: number,
@@ -89,14 +97,47 @@ export async function resolveCatalogSlotServer(
   const catalog = await fetchMockCatalogServer(cookieHeader);
   const panel = buildCatalogPanel(catalog);
   const slot = slotByNumber(panel, testNumber);
-  if (!slot?.available || !slot.id) return null;
-  return {
-    catalog,
-    panel,
-    slot,
-    mockTestId: slot.id,
-    mockMeta: resolveMockMetaFromCatalog(catalog, slot.id),
-  };
+  if (slot?.available && slot.id) {
+    return {
+      catalog,
+      panel,
+      slot,
+      mockTestId: slot.id,
+      mockMeta: resolveMockMetaFromCatalog(catalog, slot.id),
+    };
+  }
+
+  const staticPanel = getMockPanelSlot(testNumber);
+  if (staticPanel?.available && staticPanel.slug) {
+    const mockTestId = mockTestIdForNumber(testNumber);
+    const fallbackSlot: MockCatalogSlot = {
+      number: staticPanel.number,
+      id: mockTestId,
+      title: staticPanel.examTitle,
+      displayLabel: staticPanel.displayLabel,
+      examTitle: staticPanel.examTitle,
+      available: true,
+      modulesEnabled: ["listening", "reading", "writing", "speaking"],
+      listeningPartCount: 4,
+      readingPassageCount: 3,
+      writingTaskCount: 2,
+      listeningMinutes: 30,
+      readingMinutes: 60,
+      writingMinutes: 60,
+      totalMinutes: 150,
+      flowHint: "",
+      requiresSubscription: testNumber >= 2,
+    };
+    return {
+      catalog,
+      panel: panel.length > 0 ? panel : [fallbackSlot],
+      slot: fallbackSlot,
+      mockTestId,
+      mockMeta: getMockMeta(staticPanel.slug),
+    };
+  }
+
+  return null;
 }
 
 /** Deduped within a single RSC request per mock_test_id. */

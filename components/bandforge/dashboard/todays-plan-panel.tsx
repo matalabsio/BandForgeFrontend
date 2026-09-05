@@ -33,6 +33,10 @@ import { PrefetchHrefs } from "@/components/bandforge/prefetch-hrefs";
 import { DailyGrowthReportModal } from "@/components/bandforge/plan/daily-growth-report-modal";
 import { OPEN_DAILY_REPORT_EVENT } from "@/components/bandforge/dashboard/dashboard-top-header";
 import { CatchUpDaysModal } from "@/components/bandforge/plan/catch-up-days-modal";
+import {
+  PlanDayFinishedModal,
+  type PlanDayFinishOption,
+} from "@/components/bandforge/plan/plan-day-finished-modal";
 import { getLearningProfile } from "@/lib/learning-api";
 import { localPlanDateKey } from "@/lib/plan-step-completion";
 import type {
@@ -55,6 +59,7 @@ import {
   findPlanDay,
   getNextAheadTarget,
   getOldestCatchUpTarget,
+  weeksWithDayMarkedDone,
 } from "@/lib/study-plan-calendar";
 import { cn } from "@/lib/utils";
 import type { ComponentType, SVGProps } from "react";
@@ -117,9 +122,13 @@ function withClientKeys(tasks: LearningStudyTask[]): TaskRow[] {
   return tasks.map((t, i) => ({ ...t, clientKey: `${t.id}__${i}` }));
 }
 
-/** Group by skill in first-seen (session) order; within skill: watch → practice → submit. */
+/** Group by skill in first-seen (session) order; within skill: practice → submit.
+ * Watch rows are hidden — FSP plans no longer use a video step.
+ */
 function stackTasksBySkill(tasks: TaskRow[]): SkillStack[] {
-  const visible = tasks.filter((t) => t.status !== "skipped");
+  const visible = tasks.filter(
+    (t) => t.status !== "skipped" && t.task_type !== "watch",
+  );
   const order: string[] = [];
   const bySkill = new Map<string, TaskRow[]>();
 
@@ -500,9 +509,11 @@ export function TodaysPlanPanel({
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [catchUpOpen, setCatchUpOpen] = useState(false);
+  const [finishOpen, setFinishOpen] = useState(false);
   const wasAllDoneRef = useRef(false);
   const reportShownRef = useRef(false);
   const catchUpOfferedRef = useRef(false);
+  const finishOfferedRef = useRef(false);
   const refreshedOnceRef = useRef(false);
   const reconcileInFlightRef = useRef(false);
   const tasksRef = useRef(tasks);
@@ -594,7 +605,8 @@ export function TodaysPlanPanel({
 
   const stacks = useMemo(() => stacksForSkillGrid(tasks), [tasks]);
   const actionable = useMemo(
-    () => tasks.filter((t) => t.status !== "skipped"),
+    () =>
+      tasks.filter((t) => t.status !== "skipped" && t.task_type !== "watch"),
     [tasks],
   );
   const hasTasks = actionable.length > 0;
@@ -654,12 +666,16 @@ export function TodaysPlanPanel({
     if (!studyPlan?.weeks?.length) return null;
     // Catch-up backlog blocks practice-ahead (strict day-wise progression).
     if (catchUpTarget && catchUpTarget.missed.length > 0) return null;
+    // Local allDone may be ahead of profile — unlock tomorrow for the finish CTA.
+    const weeks = allDone
+      ? weeksWithDayMarkedDone(studyPlan.weeks, localPlanDateKey())
+      : studyPlan.weeks;
     return getNextAheadTarget(
-      studyPlan.weeks,
+      weeks,
       localPlanDateKey(),
       examDate ?? studyPlan.exam_date ?? null,
     );
-  }, [studyPlan, examDate, catchUpTarget]);
+  }, [studyPlan, examDate, catchUpTarget, allDone]);
 
   const aheadHref = useMemo(() => {
     if (!aheadTarget?.task) return null;
@@ -671,6 +687,47 @@ export function TodaysPlanPanel({
       fallbackHref: aheadTarget.task.href,
     });
   }, [aheadTarget]);
+
+  const finishCatchUpOption = useMemo((): PlanDayFinishOption | null => {
+    if (!catchUpTarget?.task) return null;
+    const missed = catchUpTarget.missed.length;
+    return {
+      kind: "catch_up",
+      href: catchUpHref,
+      label:
+        missed === 1
+          ? "Complete previous day"
+          : `Complete ${missed} previous days`,
+      hint:
+        missed === 1
+          ? "Finish your oldest incomplete plan day first."
+          : `You have ${missed} incomplete previous days — start with the oldest.`,
+      onNavigate: () => {
+        if (!studyPlan?.weeks?.length) return;
+        const day = findPlanDay(studyPlan.weeks, catchUpTarget.date);
+        if (day?.tasks?.length) {
+          cachePlanDayTasks(day.tasks, { planDate: catchUpTarget.date });
+        }
+      },
+    };
+  }, [catchUpTarget, catchUpHref, studyPlan]);
+
+  const finishTomorrowOption = useMemo((): PlanDayFinishOption | null => {
+    if (!aheadHref || !aheadTarget) return null;
+    return {
+      kind: "tomorrow",
+      href: aheadHref,
+      label: "Start tomorrow's plan",
+      hint: "Practice tomorrow early to keep advancing toward your full mock.",
+      onNavigate: () => {
+        if (!studyPlan?.weeks?.length) return;
+        const day = findPlanDay(studyPlan.weeks, aheadTarget.date);
+        if (day?.tasks?.length) {
+          cachePlanDayTasks(day.tasks, { planDate: aheadTarget.date });
+        }
+      },
+    };
+  }, [aheadHref, aheadTarget, studyPlan]);
 
   const donePrimaryAction = useMemo(() => {
     const missedCount = catchUpTarget?.missed.length ?? 0;
@@ -732,11 +789,23 @@ export function TodaysPlanPanel({
   const catchUpStorageKey = `bf-catchup-offered:${
     userId || "anon"
   }:${localPlanDateKey()}`;
+  const finishStorageKey = `bf-plan-finish-offered:${
+    userId || "anon"
+  }:${localPlanDateKey()}`;
 
   const markCatchUpOffered = () => {
     catchUpOfferedRef.current = true;
     try {
       sessionStorage.setItem(catchUpStorageKey, "1");
+    } catch {
+      // Ignore storage errors.
+    }
+  };
+
+  const markFinishOffered = () => {
+    finishOfferedRef.current = true;
+    try {
+      sessionStorage.setItem(finishStorageKey, "1");
     } catch {
       // Ignore storage errors.
     }
@@ -762,6 +831,27 @@ export function TodaysPlanPanel({
     }
     setCatchUpOpen(true);
     markCatchUpOffered();
+  };
+
+  const maybeOpenFinish = () => {
+    if (!allDone) return;
+    if (!finishCatchUpOption && !finishTomorrowOption) {
+      maybeOpenCatchUp();
+      return;
+    }
+    if (finishOfferedRef.current) return;
+    let offered = false;
+    try {
+      offered = sessionStorage.getItem(finishStorageKey) === "1";
+    } catch {
+      offered = false;
+    }
+    if (offered) {
+      finishOfferedRef.current = true;
+      return;
+    }
+    setFinishOpen(true);
+    markFinishOffered();
   };
 
   const skillChecklistGrid = (
@@ -860,13 +950,13 @@ export function TodaysPlanPanel({
       }
     } else {
       reportShownRef.current = true;
-      // Report already shown this day — offer catch-up after settle.
-      queueMicrotask(() => maybeOpenCatchUp());
+      // Report already shown this day — offer finish choices after settle.
+      queueMicrotask(() => maybeOpenFinish());
     }
     wasAllDoneRef.current = true;
-    // maybeOpenCatchUp reads latest catchUpTarget via closure on each effect run.
+    // maybeOpenFinish reads latest targets via closure on each effect run.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: gate on allDone/userId
-  }, [allDone, userId, catchUpTarget]);
+  }, [allDone, userId, catchUpTarget, aheadTarget]);
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -875,7 +965,7 @@ export function TodaysPlanPanel({
         open={reportOpen}
         onClose={() => {
           setReportOpen(false);
-          maybeOpenCatchUp();
+          maybeOpenFinish();
         }}
         studentName={displayName}
         reportDate={reportDate}
@@ -884,6 +974,20 @@ export function TodaysPlanPanel({
         currentBand={currentBand}
         targetBand={targetBand}
         overallPlanPct={overallPlanPct}
+      />
+
+      <PlanDayFinishedModal
+        open={finishOpen}
+        onClose={() => {
+          markFinishOffered();
+          setFinishOpen(false);
+        }}
+        catchUp={finishCatchUpOption}
+        tomorrow={finishTomorrowOption}
+        onGoToday={() => {
+          markFinishOffered();
+          setFinishOpen(false);
+        }}
       />
 
       <CatchUpDaysModal

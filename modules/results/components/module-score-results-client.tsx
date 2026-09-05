@@ -158,10 +158,13 @@ export function ModuleScoreResultsClient({
         planNav?.continueLabel ?? `Back to ${moduleLabel}`
       }
       primaryLoading={Boolean(planNav && !planNav.ready)}
+      onPrimary={planNav ? planNav.onContinue : undefined}
       secondaryLabel={
         planNav?.showSecondaryBack ? "Back to Today's plan" : undefined
       }
       secondaryHref={planNav?.showSecondaryBack ? planNav.todayHref : undefined}
+      onSecondary={planNav?.showSecondaryBack ? planNav.goToday : undefined}
+      extras={planNav?.finishModal}
       planMode={Boolean(planNav)}
       showBandNotice={false}
     />

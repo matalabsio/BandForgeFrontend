@@ -27,7 +27,10 @@ export function addCalendarDays(iso: string, days: number): string {
 }
 
 function countableTasks(day: LearningStudyDay) {
-  return day.tasks.filter((t) => t.status !== "skipped");
+  // Watch is no longer part of the FSP journey — ignore leftover rows.
+  return day.tasks.filter(
+    (t) => t.status !== "skipped" && t.task_type !== "watch",
+  );
 }
 
 /** Empty / missing day counts as complete (nothing left to do). */
@@ -38,6 +41,29 @@ export function isPlanDayFullyComplete(
   const tasks = countableTasks(day);
   if (tasks.length === 0) return true;
   return tasks.every((t) => t.status === "done");
+}
+
+/**
+ * Copy of weeks with every countable task on `date` marked done.
+ * Used after the last client-side completion so tomorrow unlocks before the
+ * learning profile round-trip has caught up.
+ */
+export function weeksWithDayMarkedDone(
+  weeks: LearningStudyWeek[],
+  date: string,
+): LearningStudyWeek[] {
+  return weeks.map((week) => ({
+    ...week,
+    days: week.days.map((day) => {
+      if (day.date !== date) return day;
+      return {
+        ...day,
+        tasks: day.tasks.map((t) =>
+          t.status === "skipped" ? t : { ...t, status: "done" as const },
+        ),
+      };
+    }),
+  }));
 }
 
 /** Every plan day strictly before `date` is fully complete. */
@@ -245,7 +271,7 @@ export function dayFocusSummary(day: LearningStudyDay): {
   };
 }
 
-/** Sort plan tasks: Listening → Reading → Writing → Speaking, then Watch → Practice → Submit. */
+/** Sort plan tasks: Listening → Reading → Writing → Speaking, then Practice → Submit. */
 export function sortPlanTasks<T extends { module?: string; task_type?: string }>(
   tasks: T[],
 ): T[] {
