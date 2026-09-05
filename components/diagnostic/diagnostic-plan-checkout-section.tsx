@@ -664,11 +664,11 @@ export function DiagnosticPlanCheckoutSection({
           return;
         }
         const user = await getMe().catch(() => null);
-        const authDecision = decideDiagnosticCheckoutAuthGate({
+        const authGate = decideDiagnosticCheckoutAuthGate({
           hasSession: true,
-          isFullAccount: isFullAccountUser(user?.role),
+          role: user?.role,
         });
-        if (authDecision === "login") {
+        if (authGate.kind === "session_expired") {
           setOverlay(null);
           clearBusy();
           prepareCheckoutResumeRetry(checkoutSlug, { suppressAutoOpen: true });
