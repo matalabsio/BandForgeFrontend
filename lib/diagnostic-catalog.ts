@@ -25,8 +25,10 @@ export const diagnosticPaths = {
   landing: "/diagnostic",
   listeningPrep: "/diagnostic/listening/prep",
   listening: "/diagnostic/listening",
+  /** Legacy bookmark only — redirects away; not part of the live journey. */
   listeningResults: "/diagnostic/listening/results",
   reading: "/diagnostic/reading",
+  /** Legacy bookmark only — redirects away; not part of the live journey. */
   readingResults: "/diagnostic/reading/results",
   writing: "/diagnostic/writing",
   speaking: "/diagnostic/speaking",

@@ -29,6 +29,7 @@ import {
   readDiagnosticProgress,
   saveModuleAnswers,
 } from "@/lib/diagnostic-storage";
+import { diagnosticTransitionPath } from "@/lib/diagnostic-transitions";
 import { QuestionAudio } from "@/modules/listening/components/question-audio";
 import { ListeningPreviewBanner } from "@/modules/listening/components/listening-preview-banner";
 import { ListeningQuestionsPanel } from "@/modules/listening/components/listening-questions-panel";
@@ -115,7 +116,7 @@ export function DiagnosticListeningExperience() {
       },
       review: { listening: review },
     });
-    router.replace(diagnosticPaths.listeningResults);
+    router.replace(diagnosticTransitionPath("listening-reading"));
   }, [pack, answers, submitting, router]);
 
   const handleAnswer = useCallback((questionId: string, value: string) => {

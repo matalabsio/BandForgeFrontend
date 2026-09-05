@@ -22,12 +22,14 @@ export function isPlanTaskUnavailable(task: LearningStudyTask): boolean {
   );
 }
 
-/** True when every non-skipped today task is done (and at least one exists). */
+/** True when every non-skipped, non-watch today task is done (and at least one exists). */
 export function isTodayPlanComplete(
-  tasks: Array<{ status: string }> | null | undefined,
+  tasks: Array<{ status: string; task_type?: string }> | null | undefined,
 ): boolean {
   if (!tasks?.length) return false;
-  const actionable = tasks.filter((t) => t.status !== "skipped");
+  const actionable = tasks.filter(
+    (t) => t.status !== "skipped" && t.task_type !== "watch",
+  );
   return (
     actionable.length > 0 && actionable.every((t) => t.status === "done")
   );
@@ -43,12 +45,16 @@ export function planTaskOpenHref(task: LearningStudyTask): string {
   });
 }
 
-/** Prefer practice/submit over watch so users jump into a test, not content. */
+/** Prefer practice/submit; skip watch entirely (no video step in FSP plans). */
 export function findNextStartTask(
   tasks: LearningStudyTask[],
 ): LearningStudyTask | null {
   const pending = tasks.filter(
-    (t) => t.status !== "skipped" && t.status !== "done" && !isPlanTaskUnavailable(t),
+    (t) =>
+      t.status !== "skipped" &&
+      t.status !== "done" &&
+      t.task_type !== "watch" &&
+      !isPlanTaskUnavailable(t),
   );
   if (pending.length === 0) return null;
   const ranked = [...pending].sort((a, b) => {

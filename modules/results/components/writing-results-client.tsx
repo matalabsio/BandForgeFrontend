@@ -13,7 +13,6 @@ import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock
 import { resolveSectionResultsBackHref } from "@/lib/section-results-back";
 import type { PlanResultContext } from "@/lib/plan-day-tasks";
 import { usePlanResultsNav } from "@/components/bandforge/plan/plan-results-cta-bar";
-import { useRouter } from "next/navigation";
 
 type Props = {
   testNumber: number;
@@ -30,7 +29,6 @@ export function WritingResultsClient({
   targetBand = null,
   plan = null,
 }: Props) {
-  const router = useRouter();
   const planNav = usePlanResultsNav(plan);
   const mockAttemptId = useResolvedMockAttemptId(mockTestId);
   const queryAttempt = attemptFromQuery?.trim() || null;
@@ -153,21 +151,18 @@ export function WritingResultsClient({
         backHref={planNav?.todayHref ?? backNav.href}
         dashboardHref={planNav?.todayHref ?? "/dashboard"}
         primaryActionLabel={planNav?.continueLabel}
-        onPrimaryAction={
-          planNav ? () => router.push(planNav.continueHref) : undefined
-        }
+        onPrimaryAction={planNav ? planNav.onContinue : undefined}
         secondaryActionLabel={
           planNav?.showSecondaryBack ? "Back to Today's plan" : undefined
         }
         onSecondaryAction={
-          planNav?.showSecondaryBack
-            ? () => router.push(planNav.todayHref)
-            : undefined
+          planNav?.showSecondaryBack ? planNav.goToday : undefined
         }
         titleOverride={
           planNav ? `Writing Task ${review.part} practice` : null
         }
       />
+      {planNav?.finishModal}
     </div>
   );
 }

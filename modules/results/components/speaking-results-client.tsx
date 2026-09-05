@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { ApiError } from "@/lib/api";
 import {
@@ -69,21 +68,17 @@ export function SpeakingResultsClient({
   onSecondaryAction: onSecondaryActionProp,
   plan = null,
 }: Props) {
-  const router = useRouter();
   const planNav = usePlanResultsNav(plan);
   const primaryActionLabel =
     primaryActionLabelProp ?? planNav?.continueLabel;
   const onPrimaryAction =
-    onPrimaryActionProp ??
-    (planNav ? () => router.push(planNav.continueHref) : undefined);
+    onPrimaryActionProp ?? (planNav ? planNav.onContinue : undefined);
   const secondaryActionLabel =
     secondaryActionLabelProp ??
     (planNav?.showSecondaryBack ? "Back to Today's plan" : undefined);
   const onSecondaryAction =
     onSecondaryActionProp ??
-    (planNav?.showSecondaryBack
-      ? () => router.push(planNav.todayHref)
-      : undefined);
+    (planNav?.showSecondaryBack ? planNav.goToday : undefined);
   const mockTestId = mockTestIdProp ?? mockTestIdForNumber(testNumber);
   const queryAttempt = attemptFromQuery?.trim() || null;
   const hydrated = useSyncExternalStore(
@@ -241,138 +236,156 @@ export function SpeakingResultsClient({
       );
     }
     return (
-      <SpeakingFeedbackView
-        testNumber={testNumber}
-        feedback={feedback}
-        primaryActionLabel={primaryActionLabel}
-        onPrimaryAction={onPrimaryAction}
-        secondaryActionLabel={secondaryActionLabel}
-        onSecondaryAction={onSecondaryAction}
-        backHref={backNav.href}
-        backLabel={backNav.label}
-        fallbackHref={fallbackHref}
-      />
+      <>
+        <SpeakingFeedbackView
+          testNumber={testNumber}
+          feedback={feedback}
+          primaryActionLabel={primaryActionLabel}
+          onPrimaryAction={onPrimaryAction}
+          secondaryActionLabel={secondaryActionLabel}
+          onSecondaryAction={onSecondaryAction}
+          backHref={backNav.href}
+          backLabel={backNav.label}
+          fallbackHref={fallbackHref}
+        />
+        {planNav?.finishModal}
+      </>
     );
   }
 
   if (isInsufficientSpeechPayload(pending)) {
     return (
-      <SpeakingInsufficientSpeechView
-        testNumber={testNumber}
-        payload={pending}
-        reRecordHref={`/test/${testNumber}/speaking`}
-        primaryActionLabel={primaryActionLabel}
-        onPrimaryAction={onPrimaryAction}
-        secondaryActionLabel={secondaryActionLabel}
-        onSecondaryAction={onSecondaryAction}
-        backHref={backNav.href}
-        backLabel={backNav.label}
-        fallbackHref={fallbackHref}
-      />
+      <>
+        <SpeakingInsufficientSpeechView
+          testNumber={testNumber}
+          payload={pending}
+          reRecordHref={`/test/${testNumber}/speaking`}
+          primaryActionLabel={primaryActionLabel}
+          onPrimaryAction={onPrimaryAction}
+          secondaryActionLabel={secondaryActionLabel}
+          onSecondaryAction={onSecondaryAction}
+          backHref={backNav.href}
+          backLabel={backNav.label}
+          fallbackHref={fallbackHref}
+        />
+        {planNav?.finishModal}
+      </>
     );
   }
 
   if (isSpeakingAiFailed(pending)) {
     return (
-      <ResultPageViewport centered unlockKey="ai-failed" contentClassName="max-w-lg text-center">
-        <h1 className="font-display text-h2 text-navy">AI analysis unavailable</h1>
-        <p className="mt-4 text-body text-ink/65">
-          {pending.message ||
-            "We could not score this speaking attempt right now. Your recordings were saved and remain queued for examiner review."}
-        </p>
-        {primaryActionLabel && onPrimaryAction ? (
-          <button
-            type="button"
-            onClick={onPrimaryAction}
-            className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal px-5 py-3 font-semibold text-white"
-          >
-            {primaryActionLabel}
-          </button>
-        ) : (
-          <Link
-            href={backNav.href}
-            className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal px-5 py-3 font-semibold text-white"
-          >
-            {backNav.label}
-          </Link>
-        )}
-        {examinerStatusHref ? (
-          <Link
-            href={examinerStatusHref}
-            className="mt-3 inline-flex min-h-[44px] items-center font-semibold text-cyan"
-          >
-            Examiner review status
-          </Link>
-        ) : null}
-      </ResultPageViewport>
+      <>
+        <ResultPageViewport centered unlockKey="ai-failed" contentClassName="max-w-lg text-center">
+          <h1 className="font-display text-h2 text-navy">AI analysis unavailable</h1>
+          <p className="mt-4 text-body text-ink/65">
+            {pending.message ||
+              "We could not score this speaking attempt right now. Your recordings were saved and remain queued for examiner review."}
+          </p>
+          {primaryActionLabel && onPrimaryAction ? (
+            <button
+              type="button"
+              onClick={onPrimaryAction}
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal px-5 py-3 font-semibold text-white"
+            >
+              {primaryActionLabel}
+            </button>
+          ) : (
+            <Link
+              href={backNav.href}
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal px-5 py-3 font-semibold text-white"
+            >
+              {backNav.label}
+            </Link>
+          )}
+          {examinerStatusHref ? (
+            <Link
+              href={examinerStatusHref}
+              className="mt-3 inline-flex min-h-[44px] items-center font-semibold text-cyan"
+            >
+              Examiner review status
+            </Link>
+          ) : null}
+        </ResultPageViewport>
+        {planNav?.finishModal}
+      </>
     );
   }
 
   if (isSpeakingAnalyzing(pending)) {
     return (
-      <ResultPageViewport centered unlockKey={`analyzing-${pending.ai_status}`} contentClassName="max-w-lg text-center">
-        <Loader2 className="mx-auto size-10 animate-spin text-teal" aria-hidden />
-        <p className="mt-6 text-meta font-semibold uppercase tracking-[0.14em] text-teal">
-          Speaking submitted
-        </p>
-        <h1 className="mt-2 font-display text-h2 text-navy">Transcribing and scoring…</h1>
-        <p className="mt-4 text-body text-ink/65">
-          Whisper transcription plus Speaking AI scoring. This usually takes one to
-          two minutes.
-        </p>
-        {primaryActionLabel && onPrimaryAction ? (
-          <button
-            type="button"
-            onClick={onPrimaryAction}
-            className="mt-10 text-sm font-semibold text-ink/60 hover:underline"
-          >
-            Continue without waiting →
-          </button>
-        ) : null}
-      </ResultPageViewport>
+      <>
+        <ResultPageViewport centered unlockKey={`analyzing-${pending.ai_status}`} contentClassName="max-w-lg text-center">
+          <Loader2 className="mx-auto size-10 animate-spin text-teal" aria-hidden />
+          <p className="mt-6 text-meta font-semibold uppercase tracking-[0.14em] text-teal">
+            Speaking submitted
+          </p>
+          <h1 className="mt-2 font-display text-h2 text-navy">Transcribing and scoring…</h1>
+          <p className="mt-4 text-body text-ink/65">
+            Whisper transcription plus Speaking AI scoring. This usually takes one to
+            two minutes.
+          </p>
+          {primaryActionLabel && onPrimaryAction ? (
+            <button
+              type="button"
+              onClick={onPrimaryAction}
+              className="mt-10 text-sm font-semibold text-ink/60 hover:underline"
+            >
+              Continue without waiting →
+            </button>
+          ) : null}
+        </ResultPageViewport>
+        {planNav?.finishModal}
+      </>
     );
   }
 
   if (isSpeakingAiReady(pending)) {
     return (
-      <SpeakingAiEstimateView
-        testNumber={testNumber}
-        payload={pending}
-        targetBand={targetBand}
-        examinerStatusHref={examinerStatusHref}
-        primaryActionLabel={primaryActionLabel}
-        onPrimaryAction={onPrimaryAction}
-        secondaryActionLabel={secondaryActionLabel}
-        onSecondaryAction={onSecondaryAction}
-        backHref={backNav.href}
-        backLabel={backNav.label}
-        fallbackHref={fallbackHref}
-      />
+      <>
+        <SpeakingAiEstimateView
+          testNumber={testNumber}
+          payload={pending}
+          targetBand={targetBand}
+          examinerStatusHref={examinerStatusHref}
+          primaryActionLabel={primaryActionLabel}
+          onPrimaryAction={onPrimaryAction}
+          secondaryActionLabel={secondaryActionLabel}
+          onSecondaryAction={onSecondaryAction}
+          backHref={backNav.href}
+          backLabel={backNav.label}
+          fallbackHref={fallbackHref}
+        />
+        {planNav?.finishModal}
+      </>
     );
   }
 
   const withdrawn = pending.release_state === "withdrawn";
   return (
-    <ResultPageViewport centered unlockKey={`unreleased-${withdrawn}`}>
-      <p className="text-[14px] text-ink/70">
-        {withdrawn
-          ? "Your Speaking report is currently unavailable."
-          : "Your speaking response is not released yet."}
-      </p>
-      <p className="mt-2 max-w-md text-[13px] text-ink/60">
-        {pending.message ||
-          (withdrawn
-            ? "The report was withdrawn for review. It will reappear here only after it is approved and released again."
-            : "Please check back shortly. We will publish your verified report once review is complete.")}
-      </p>
-      {examinerStatusHref ? (
-        <Link
-          href={examinerStatusHref}
-          className="mt-4 inline-flex min-h-[44px] items-center font-semibold text-cyan"
-        >
-          Examiner review status
-        </Link>
-      ) : null}
-    </ResultPageViewport>
+    <>
+      <ResultPageViewport centered unlockKey={`unreleased-${withdrawn}`}>
+        <p className="text-[14px] text-ink/70">
+          {withdrawn
+            ? "Your Speaking report is currently unavailable."
+            : "Your speaking response is not released yet."}
+        </p>
+        <p className="mt-2 max-w-md text-[13px] text-ink/60">
+          {pending.message ||
+            (withdrawn
+              ? "The report was withdrawn for review. It will reappear here only after it is approved and released again."
+              : "Please check back shortly. We will publish your verified report once review is complete.")}
+        </p>
+        {examinerStatusHref ? (
+          <Link
+            href={examinerStatusHref}
+            className="mt-4 inline-flex min-h-[44px] items-center font-semibold text-cyan"
+          >
+            Examiner review status
+          </Link>
+        ) : null}
+      </ResultPageViewport>
+      {planNav?.finishModal}
+    </>
   );
 }

@@ -113,7 +113,7 @@ export function DiagnosticInterstitialExperience({ slug }: Props) {
         steps={DIAGNOSTIC_EXAM_STEPS}
         currentStep={SLUG_TO_STEP[slug]}
         heading="Reading complete"
-        subtitle="Sign in to unlock Writing and Speaking."
+        subtitle="Sign in to unlock Writing, Speaking, full results, and your plan."
         footerNote="Listening and Reading stay on this device until you sign in."
         fillViewport
       >
@@ -132,9 +132,24 @@ export function DiagnosticInterstitialExperience({ slug }: Props) {
                 {AUTH_GATE_COPY}
               </h2>
               <p className="mt-3 text-[14px] leading-relaxed text-[#5A6B82] sm:text-[15px]">
-                Create a free account to continue Writing, save your bands, and
-                unlock your personalized plan.
+                Create a free account to continue Writing and Speaking, see your
+                full band results, and unlock your personalized plan.
               </p>
+
+              <ul className="mt-5 flex flex-col gap-2" aria-label="What you unlock">
+                <li className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#0E6E78]">
+                  <Check className="size-3.5 shrink-0" strokeWidth={3} aria-hidden />
+                  Writing and Speaking modules
+                </li>
+                <li className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#0E6E78]">
+                  <Check className="size-3.5 shrink-0" strokeWidth={3} aria-hidden />
+                  Full band results after the diagnostic
+                </li>
+                <li className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#0E6E78]">
+                  <Check className="size-3.5 shrink-0" strokeWidth={3} aria-hidden />
+                  Personalized study plan
+                </li>
+              </ul>
 
               <ul className="mt-5 flex flex-wrap gap-2" aria-label="Progress">
                 <li className="inline-flex items-center gap-1.5 rounded-full bg-[#E6F7FA] px-2.5 py-1 text-[12px] font-semibold text-[#0E6E78]">

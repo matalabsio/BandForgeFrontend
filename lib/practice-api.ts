@@ -130,6 +130,7 @@ export type PracticeWritingReview = {
   saved_for_review: boolean;
   error?: string | null;
   word_count_estimate?: number | null;
+  short_response?: boolean;
 };
 
 export function startPracticeExercise(

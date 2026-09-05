@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { BandForgeLanding } from "@/components/bandforge";
-import { fetchMarketingHero } from "@/lib/hero-stream";
 import {
   SITE_DEFAULT_DESCRIPTION,
   SITE_DEFAULT_TITLE,
@@ -14,7 +13,6 @@ export const metadata: Metadata = pageMetadata({
 });
 
 /** BandForge marketing landing at `/`. */
-export default async function Home() {
-  const initialHero = await fetchMarketingHero();
-  return <BandForgeLanding initialHero={initialHero} />;
+export default function Home() {
+  return <BandForgeLanding />;
 }

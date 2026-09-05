@@ -1,7 +1,7 @@
 import { EntitledRouteGate } from "@/components/bandforge/dashboard/entitled-route-gate";
 import { StudyPlanSubNav } from "@/components/bandforge/study-plan/study-plan-sub-nav";
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
-import { fetchEntitledContext } from "@/lib/entitled-route-server";
+import { fetchEntitlementGate } from "@/lib/entitled-route-server";
 import {
   getCachedCookieHeader,
   getCachedServerSession,
@@ -16,7 +16,7 @@ export default async function StudyPlanLayout({
   const user = await getCachedServerSession(cookieHeader);
   redirectIfUnauthenticated(user, "/study-plan", cookieHeader);
 
-  const { profile, subscription } = await fetchEntitledContext(
+  const { profile, subscription } = await fetchEntitlementGate(
     cookieHeader,
     user!.id,
   );

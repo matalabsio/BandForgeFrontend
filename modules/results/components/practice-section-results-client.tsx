@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ModuleReviewQuestion } from "@/lib/module-review-types";
@@ -24,8 +24,12 @@ type Props = {
   primaryHref: string;
   primaryLabel?: string;
   primaryLoading?: boolean;
+  onPrimary?: () => void;
   secondaryLabel?: string;
   secondaryHref?: string;
+  onSecondary?: () => void;
+  /** Extra node (e.g. plan day-finished modal). */
+  extras?: ReactNode;
   /** Hide solo catalog practice link; use plan CTAs. */
   planMode?: boolean;
   showBandNotice?: boolean;
@@ -51,8 +55,11 @@ export function PracticeSectionResultsClient({
   primaryHref,
   primaryLabel = "Back to practice",
   primaryLoading = false,
+  onPrimary,
   secondaryLabel,
   secondaryHref,
+  onSecondary,
+  extras = null,
   planMode = false,
   showBandNotice = false,
 }: Props) {
@@ -68,105 +75,113 @@ export function PracticeSectionResultsClient({
     setView("review");
   }, []);
 
+  const handlePrimary = useCallback(() => {
+    if (onPrimary) {
+      onPrimary();
+      return;
+    }
+    router.push(primaryHref);
+  }, [onPrimary, primaryHref, router]);
+
   const footer = (
     <SectionResultsCtaBar
       layout="split"
       primaryLabel={primaryLabel}
-      onPrimary={() => router.push(primaryHref)}
+      onPrimary={handlePrimary}
       primaryLoading={primaryLoading}
       primaryDisabled={primaryLoading}
       secondaryLabel={
-        view === "summary" && !planMode
+        view === "summary"
           ? "Review Answers"
           : secondaryLabel
       }
       onSecondary={
-        view === "summary" && !planMode
+        view === "summary"
           ? () => openReview()
-          : secondaryHref
-            ? () => router.push(secondaryHref)
-            : secondaryLabel
-              ? () => router.push(secondaryHref ?? backHref)
-              : undefined
+          : onSecondary
+            ? onSecondary
+            : secondaryHref
+              ? () => router.push(secondaryHref)
+              : secondaryLabel
+                ? () => router.push(secondaryHref ?? backHref)
+                : undefined
       }
     />
   );
 
   if (view === "review") {
     return (
-      <SectionResultsShell
-        scrollResetKey="review"
-        headerTitle={reviewTitle}
-        onBack={() => {
-          setView("summary");
-          setHighlightQuestion(null);
-        }}
-        card={false}
-        footer={
-          <SectionResultsCtaBar
-            layout="split"
-            primaryLabel={primaryLabel}
-            onPrimary={() => router.push(primaryHref)}
-            primaryLoading={primaryLoading}
-            primaryDisabled={primaryLoading}
-            secondaryLabel={secondaryLabel ?? "Back to summary"}
-            onSecondary={
-              secondaryHref
-                ? () => router.push(secondaryHref)
-                : () => {
-                    setView("summary");
-                    setHighlightQuestion(null);
-                  }
-            }
+      <>
+        <SectionResultsShell
+          scrollResetKey="review"
+          headerTitle={reviewTitle}
+          onBack={() => {
+            setView("summary");
+            setHighlightQuestion(null);
+          }}
+          card={false}
+          footer={
+            <SectionResultsCtaBar
+              layout="split"
+              primaryLabel={primaryLabel}
+              onPrimary={handlePrimary}
+              primaryLoading={primaryLoading}
+              primaryDisabled={primaryLoading}
+              secondaryLabel={secondaryLabel ?? "Back to summary"}
+              onSecondary={
+                onSecondary
+                  ? onSecondary
+                  : secondaryHref
+                    ? () => router.push(secondaryHref)
+                    : () => {
+                        setView("summary");
+                        setHighlightQuestion(null);
+                      }
+              }
+            />
+          }
+        >
+          <SectionAnswerReview
+            questions={mapped}
+            highlightQuestion={highlightQuestion}
+            onHighlightConsumed={() => setHighlightQuestion(null)}
           />
-        }
-      >
-        <SectionAnswerReview
-          questions={mapped}
-          highlightQuestion={highlightQuestion}
-          onHighlightConsumed={() => setHighlightQuestion(null)}
-        />
-      </SectionResultsShell>
+        </SectionResultsShell>
+        {extras}
+      </>
     );
   }
 
   return (
-    <SectionResultsShell
-      scrollResetKey="summary"
-      backHref={backHref}
-      showBrandBar
-      logoHref={planMode ? "/study-plan/today" : backHref}
-      footer={footer}
-    >
-      <SectionResultsSummary
-        title={title}
-        subtitle={subtitle}
-        rawScore={rawScore}
-        total={total}
-        questions={mapped}
-        showBandNotice={showBandNotice}
-        allCorrectMessage="Nice work — every question correct."
-        onQuestionClick={(n) => openReview(n)}
-      />
-      {planMode ? (
-        <p className="mt-4 text-center text-[12.5px] text-muted">
-          <button
-            type="button"
-            onClick={() => openReview()}
-            className="cursor-pointer font-semibold text-cyan"
-          >
-            Review answers
-          </button>
-        </p>
-      ) : (
-        <p className="mt-4 text-center text-[12.5px] text-muted">
-          <Link href={primaryHref} className="font-semibold text-cyan">
-            {module === "listening"
-              ? "Continue listening practice"
-              : "Continue reading practice"}
-          </Link>
-        </p>
-      )}
-    </SectionResultsShell>
+    <>
+      <SectionResultsShell
+        scrollResetKey="summary"
+        backHref={backHref}
+        showBrandBar
+        logoHref={planMode ? "/study-plan/today" : backHref}
+        footer={footer}
+      >
+        <SectionResultsSummary
+          title={title}
+          subtitle={subtitle}
+          rawScore={rawScore}
+          total={total}
+          questions={mapped}
+          showBandNotice={showBandNotice}
+          allCorrectMessage="Nice work — every question correct."
+          onQuestionClick={(n) => openReview(n)}
+        />
+        {planMode ? null : (
+          <p className="mt-4 text-center text-[12.5px] text-muted">
+            <Link href={primaryHref} className="font-semibold text-cyan">
+              {module === "listening"
+                ? "Continue listening practice"
+                : "Continue reading practice"}
+            </Link>
+          </p>
+        )}
+      </SectionResultsShell>
+      {extras}
+    </>
   );
 }

@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DiagnosticSplitShell } from "@/components/diagnostic/diagnostic-split-shell";
 import { useUnlockPageScroll } from "@/lib/use-unlock-page-scroll";
-import { diagnosticPaths } from "@/lib/diagnostic-catalog";
 import { DIAGNOSTIC_EXAM_STEPS } from "@/components/diagnostic/diagnostic-exam-steps";
 import { DiagnosticPlanCheckoutSection } from "@/components/diagnostic/diagnostic-plan-checkout-section";
 import { DiagnosticPerformanceSkillCard } from "@/components/diagnostic/ui/diagnostic-performance-skill-card";
@@ -380,27 +378,6 @@ export function DiagnosticResultsExperience() {
                     </>
                   )}
                 </p>
-                {snapshot.review?.listening?.questions?.length ||
-                snapshot.review?.reading?.questions?.length ? (
-                  <div className="mt-4 flex flex-wrap gap-3 text-sm">
-                    {snapshot.review?.listening?.questions?.length ? (
-                      <Link
-                        href={`${diagnosticPaths.listeningResults}?completed=1`}
-                        className="font-semibold text-[#0F6E56] underline-offset-2 hover:underline"
-                      >
-                        Review Listening answers
-                      </Link>
-                    ) : null}
-                    {snapshot.review?.reading?.questions?.length ? (
-                      <Link
-                        href={`${diagnosticPaths.readingResults}?completed=1`}
-                        className="font-semibold text-[#0F6E56] underline-offset-2 hover:underline"
-                      >
-                        Review Reading answers
-                      </Link>
-                    ) : null}
-                  </div>
-                ) : null}
               </header>
 
               <DiagnosticPlanCheckoutSection

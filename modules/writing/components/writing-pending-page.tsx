@@ -15,6 +15,8 @@ import { appendPlanResultParams, type PlanResultContext } from "@/lib/plan-day-t
 import {
   usePlanResultsNav,
 } from "@/components/bandforge/plan/plan-results-cta-bar";
+import { planWritingModuleHref, type PlanTaskKind } from "@/lib/plan-task-flow";
+import { writingTaskPath } from "@/lib/writing-test";
 import { useResolvedMockAttemptId } from "@/modules/mock/hooks/use-resolved-mock-attempt";
 import { writingApi } from "@/modules/writing/services/writing-api";
 import type { WritingSessionTask } from "@/modules/writing/types";
@@ -41,6 +43,11 @@ function aiPending(status: string | null | undefined): boolean {
   return status === "pending" || status == null;
 }
 
+function asPlanTask(value: string | null | undefined): PlanTaskKind {
+  if (value === "submit" || value === "watch" || value === "practice") return value;
+  return "practice";
+}
+
 export function WritingPendingPage({
   attemptId,
   testNumber,
@@ -64,6 +71,7 @@ export function WritingPendingPage({
   const [humanBand, setHumanBand] = useState<number | null>(null);
   const [aiStatus, setAiStatus] = useState<string | null>(null);
   const [aiBand, setAiBand] = useState<number | null>(null);
+  const [shortResponse, setShortResponse] = useState(false);
   const [sessionTasks, setSessionTasks] = useState<WritingSessionTask[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +84,7 @@ export function WritingPendingPage({
       setHumanBand(data.human_band);
       setAiStatus(data.ai_status ?? null);
       setAiBand(data.ai_band ?? null);
+      setShortResponse(Boolean(data.short_response));
       setSessionTasks(data.session_tasks ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load submission status.");
@@ -94,6 +103,8 @@ export function WritingPendingPage({
   useEffect(() => {
     const terminalAi = aiReady(aiStatus) || aiStatus === "ai_failed";
     if (humanBand != null && terminalAi) return;
+    // Under word limit / failed AI: stop polling — user must continue writing.
+    if (aiStatus === "ai_failed") return;
     const timer = window.setInterval(() => {
       void load();
     }, POLL_MS);
@@ -104,8 +115,33 @@ export function WritingPendingPage({
   const feedbackReady = scored || aiReady(aiStatus);
   const analyzing = !scored && aiPending(aiStatus);
   const aiFailed = !scored && aiStatus === "ai_failed";
+  const underWordLimit = aiFailed && shortResponse;
   const sortedTasks = [...sessionTasks].toSorted((a, b) => a.part - b.part);
   const showTaskList = sortedTasks.length > 1;
+  const currentPart =
+    sortedTasks.find((t) => t.attempt_id === attemptId)?.part ?? 1;
+
+  const resultsHref = appendPlanResultParams(
+    shortModuleWritingResultsPath(testNumber, attemptId, {
+      mockAttemptId,
+      part: currentPart,
+    }),
+    planCtx,
+  );
+
+  const continueWritingHref = useMemo(() => {
+    if (planCtx && planHubId) {
+      return planWritingModuleHref({
+        hubId: planHubId,
+        task: asPlanTask(planTask),
+        taskId: planTaskId,
+        catalogNumber: testNumber,
+        part: currentPart,
+      });
+    }
+    const mockSlug = testNumber === 2 ? "m02" : "m01";
+    return writingTaskPath(currentPart, { mockSlug, auto: true });
+  }, [planCtx, planHubId, planTask, planTaskId, testNumber, currentPart]);
 
   useEffect(() => {
     // Multi-task mock session: wait until all parts ready, then open preferred part.
@@ -128,81 +164,106 @@ export function WritingPendingPage({
       );
       return;
     }
-    // Single task (solo / plan): auto-open full feedback when AI is ready.
-    if (feedbackReady && !analyzing) {
-      router.replace(
-        appendPlanResultParams(
-          shortModuleWritingResultsPath(testNumber, attemptId, {
-            mockAttemptId,
-          }),
-          planCtx,
-        ),
-      );
+    // Single task: auto-open full feedback when AI/human is ready (not under-word fail).
+    if (feedbackReady && !analyzing && !underWordLimit) {
+      router.replace(resultsHref);
     }
   }, [
     analyzing,
-    attemptId,
     feedbackReady,
     mockAttemptId,
     planCtx,
+    resultsHref,
     router,
     sessionTasks,
     testNumber,
+    underWordLimit,
   ]);
 
   const title = scored
     ? `Your Writing band is ${humanBand!.toFixed(1)}`
     : analyzing
       ? "Analyzing your essay…"
-      : aiFailed
-        ? "AI analysis unavailable"
-        : "Your Writing score is on its way.";
+      : underWordLimit
+        ? "Essay under word limit"
+        : aiFailed
+          ? "AI analysis unavailable"
+          : "Your Writing score is on its way.";
 
   const footerActions =
     !loading && !error ? (
       <div className="flex w-full flex-col gap-2.5">
-        {!showTaskList && feedbackReady ? (
+        {underWordLimit || aiFailed ? (
           <Link
-            href={appendPlanResultParams(
-              shortModuleWritingResultsPath(testNumber, attemptId),
-              planCtx,
-            )}
-            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+            href={continueWritingHref}
+            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg bg-teal px-5 py-3 text-body font-semibold text-white hover:bg-cyan-light"
           >
-            {scored ? "View Writing Feedback" : "View AI Writing Feedback"}
+            {underWordLimit ? "Continue writing" : "Back to writing"}
           </Link>
         ) : null}
-        {!showTaskList && analyzing && !planCtx ? (
+
+        {feedbackReady ? (
+          <Link
+            href={resultsHref}
+            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg bg-teal px-5 py-3 text-body font-semibold text-white hover:bg-cyan-light"
+          >
+            {scored ? "Show Writing feedback" : "Show AI results"}
+          </Link>
+        ) : null}
+
+        {analyzing && !underWordLimit ? (
           <Button variant="secondary" disabled className="min-h-[44px]">
-            Analyzing essay…
+            AI evaluating your essay…
           </Button>
         ) : null}
 
+        {!underWordLimit && !aiFailed && !feedbackReady && !analyzing ? (
+          <Link
+            href={continueWritingHref}
+            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+          >
+            Back to writing
+          </Link>
+        ) : null}
+
         {planNav ? (
-          <SectionResultsCtaBar
-            layout="stack"
-            primaryLabel={planNav.continueLabel}
-            onPrimary={() => router.push(planNav.continueHref)}
-            primaryLoading={planNav.loading}
-            primaryDisabled={planNav.loading}
-            secondaryLabel={
-              planNav.showSecondaryBack ? "Back to Today's plan" : undefined
-            }
-            onSecondary={
-              planNav.showSecondaryBack
-                ? () => router.push(planNav.todayHref)
-                : undefined
-            }
-          />
+          <>
+            <SectionResultsCtaBar
+              layout="stack"
+              primaryLabel={
+                planNav.ready
+                  ? planNav.continueLabel
+                  : "Continue to next task"
+              }
+              onPrimary={planNav.onContinue}
+              primaryLoading={planNav.loading}
+              primaryDisabled={planNav.loading}
+              secondaryLabel={
+                planNav.showSecondaryBack || underWordLimit
+                  ? "Back to Today's plan"
+                  : undefined
+              }
+              onSecondary={
+                planNav.showSecondaryBack || underWordLimit
+                  ? planNav.goToday
+                  : undefined
+              }
+            />
+            {planNav.finishModal}
+          </>
         ) : (
           <>
+            {!underWordLimit && !aiFailed ? (
+              <Link
+                href={continueWritingHref}
+                className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
+              >
+                Back to writing
+              </Link>
+            ) : null}
             <Link
               href={testHubPath(mockTestId, null, testNumber)}
-              className={`inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-body font-semibold ${
-                feedbackReady || showTaskList
-                  ? "border border-border bg-surface text-ink hover:bg-cyan-soft/40"
-                  : "bg-teal text-white hover:bg-cyan-light"
-              }`}
+              className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border border-border bg-surface px-5 py-3 text-body font-semibold text-ink hover:bg-cyan-soft/40"
             >
               Back to test hub
             </Link>
@@ -259,8 +320,11 @@ export function WritingPendingPage({
           <p className="mt-4 max-w-md text-body leading-relaxed text-ink/65">
             {scored
               ? (message ?? "Human reviewed — your band is now on Performance.")
-              : (message ??
-                "Our team is reviewing your essay against IELTS band descriptors. You will receive your band within 24 hours.")}
+              : underWordLimit
+                ? (message ??
+                  "Add more words (at least 100), then submit again to unlock AI evaluation.")
+                : (message ??
+                  "Our team is reviewing your essay against IELTS band descriptors. You will receive your band within 24 hours.")}
           </p>
 
           {scored ? (
@@ -273,7 +337,11 @@ export function WritingPendingPage({
           ) : aiFailed ? (
             <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink/70">
               <Clock3 className="size-4 text-teal" aria-hidden />
-              <span>Examiner review · within 24 hours</span>
+              <span>
+                {underWordLimit
+                  ? "Too short for AI · continue writing to unlock evaluation"
+                  : "Examiner review · within 24 hours"}
+              </span>
             </div>
           ) : (
             <div className="mt-6 inline-flex flex-col items-center gap-2">
@@ -336,7 +404,7 @@ export function WritingPendingPage({
                         >
                           {taskScored
                             ? `View ${writingModuleLabel(task.part).replace("Writing · ", "")} feedback`
-                            : `View AI ${writingModuleLabel(task.part).replace("Writing · ", "")} feedback`}
+                            : `Show AI ${writingModuleLabel(task.part).replace("Writing · ", "")} results`}
                         </Link>
                       ) : (
                         <p className="mt-2 text-center text-[12px] text-ink/50">

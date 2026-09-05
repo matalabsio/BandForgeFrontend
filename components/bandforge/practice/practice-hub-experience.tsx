@@ -61,19 +61,6 @@ const PLAN_TASK_LABEL: Record<PlanTaskKind, string> = {
   submit: "Submit",
 };
 
-const DUMMY_VIDEOS = [
-  {
-    title: "Set overview (placeholder)",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    duration_min: 5,
-  },
-  {
-    title: "Strategy tips (placeholder)",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    duration_min: 4,
-  },
-];
-
 function VideoBlock({
   title,
   url,
@@ -202,12 +189,7 @@ export function PracticeHubExperience({
   const advancingRef = useRef(false);
 
   const focus = fromPlan ? planTask ?? "practice" : null;
-  const videos =
-    hub.videos.length > 0
-      ? hub.videos
-      : fromPlan && focus === "watch"
-        ? DUMMY_VIDEOS
-        : hub.videos;
+  const videos = hub.videos;
 
   const submitConfig = (hub.submit_config ?? {}) as {
     type?: string;
@@ -258,24 +240,6 @@ export function PracticeHubExperience({
   const setIndex = hub.sort_order > 0 ? hub.set_number : hub.set_number;
   const totalSets = mockUnlock?.required ?? 12;
 
-  // Practice/submit → real MT module when hub is module-targeted.
-  useEffect(() => {
-    if (!fromPlan || (focus !== "practice" && focus !== "submit")) return;
-    if (!isBankOnly) {
-      router.replace(exerciseHref);
-      return;
-    }
-    if (focus !== "practice") return;
-    router.replace(bankExerciseHref);
-  }, [
-    fromPlan,
-    focus,
-    exerciseHref,
-    bankExerciseHref,
-    isBankOnly,
-    router,
-  ]);
-
   const goToNextAfterWatch = useCallback(() => {
     if (advancingRef.current) return;
     advancingRef.current = true;
@@ -309,6 +273,32 @@ export function PracticeHubExperience({
     router,
     skill,
     submitConfig,
+  ]);
+
+  // Practice/submit → real MT module when hub is module-targeted.
+  // Legacy Watch with no real hub videos → skip straight to Practice.
+  useEffect(() => {
+    if (!fromPlan) return;
+    if (focus === "watch" && hub.videos.length === 0) {
+      goToNextAfterWatch();
+      return;
+    }
+    if (focus !== "practice" && focus !== "submit") return;
+    if (!isBankOnly) {
+      router.replace(exerciseHref);
+      return;
+    }
+    if (focus !== "practice") return;
+    router.replace(bankExerciseHref);
+  }, [
+    fromPlan,
+    focus,
+    exerciseHref,
+    bankExerciseHref,
+    isBankOnly,
+    router,
+    hub.videos.length,
+    goToNextAfterWatch,
   ]);
 
   function handleVideoEnded() {

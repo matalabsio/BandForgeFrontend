@@ -78,7 +78,7 @@ export function SpeakingExamFlow({
   part2NoPrepQuestionIds = [],
   onFlowMetaChange,
   footerBusy = false,
-  completeLabel = "Submit for human review",
+  completeLabel = "Submit Speaking Response",
   variant = "mock",
   part2Timing,
 }: Props) {

@@ -1,9 +1,4 @@
-import { PlanDayCalendar } from "@/components/bandforge/plan/plan-day-calendar";
-import { fetchEntitledContext } from "@/lib/entitled-route-server";
-import {
-  getCachedCookieHeader,
-  getCachedServerSession,
-} from "@/lib/server-cache";
+import { StudyPlanFullClient } from "@/components/bandforge/study-plan/study-plan-full-client";
 
 export const dynamic = "force-dynamic";
 
@@ -11,18 +6,8 @@ export const metadata = {
   title: "Full Plan · BandForge",
 };
 
-/** Auth gated in layout; profile cached with layout's fetchEntitledContext. */
+/** Auth gated in layout; profile loads client-side with skeleton + retry. */
 export default async function StudyPlanPage() {
-  const cookieHeader = await getCachedCookieHeader();
-  const user = await getCachedServerSession(cookieHeader);
-  const { profile } = await fetchEntitledContext(
-    cookieHeader,
-    user?.id ?? "",
-  );
-
-  const studyPlan = profile.study_plan;
-  const examDate = profile.exam_date ?? studyPlan.exam_date ?? null;
-
   return (
     <div className="relative space-y-5 pb-16">
       <header className="max-w-xl">
@@ -37,20 +22,7 @@ export default async function StudyPlanPage() {
         </p>
       </header>
 
-      {(studyPlan.weeks?.length ?? 0) > 0 ? (
-        <PlanDayCalendar
-          studyPlan={studyPlan}
-          examDate={examDate}
-          variant="page"
-        />
-      ) : (
-        <div className="rounded-[28px] border border-white/60 bg-white/55 px-5 py-12 text-center shadow-[0_8px_40px_rgba(8,145,178,0.08)] backdrop-blur-xl">
-          <p className="text-sm text-muted">
-            No study plan days yet. Complete onboarding or open Today&apos;s
-            plan to get started.
-          </p>
-        </div>
-      )}
+      <StudyPlanFullClient />
     </div>
   );
 }
