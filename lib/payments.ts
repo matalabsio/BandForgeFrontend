@@ -163,6 +163,19 @@ export function createOrder(planSlug: string): Promise<CreateOrderResult> {
   });
 }
 
+export function redeemCoupon(
+  planSlug: string,
+  code: string,
+): Promise<{ ok: boolean; subscription: Subscription }> {
+  return paymentsCall<{ ok: boolean; subscription: Subscription }>(
+    "/redeem-coupon",
+    {
+      method: "POST",
+      body: JSON.stringify({ plan_slug: planSlug, code }),
+    },
+  );
+}
+
 export function verifyPayment(
   response: RazorpayHandlerResponse,
 ): Promise<{ ok: boolean; subscription: Subscription }> {

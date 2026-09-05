@@ -5,7 +5,7 @@ import { serverAuthHeaders } from "@/lib/server-auth-headers";
 import { isAuthEnabled } from "@/lib/flags";
 import type { LearningProfile } from "@/lib/learning-types";
 
-const FETCH_MS = 45_000;
+const FETCH_MS = 8_000;
 
 export function emptyLearningProfile(userId = ""): LearningProfile {
   return {

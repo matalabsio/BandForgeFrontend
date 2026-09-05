@@ -6,11 +6,16 @@ import {
 } from "@/lib/checkout-resume";
 import {
   CHECKOUT_SUCCESS_PATH,
+  DASHBOARD_AFTER_CHECKOUT_PATH,
   destinationWhenPaidOnResults,
   shouldNavigateToCheckoutSuccess,
   shouldSkipPaidBootstrapRedirect,
 } from "@/lib/checkout-navigate";
-import { readCheckoutReceiptContext } from "@/lib/payments";
+import { postCheckoutDestination } from "@/lib/entitlement";
+import {
+  readCheckoutReceiptContext,
+  type Subscription,
+} from "@/lib/payments";
 
 export type CheckoutNavigateRouter = {
   replace: (href: string) => void;
@@ -45,6 +50,32 @@ export function navigateAfterCheckoutVerify(opts: {
   clearCheckoutResumeState();
   opts.router.replace(CHECKOUT_SUCCESS_PATH);
   return true;
+}
+
+/**
+ * Coupon grants have no Razorpay receipt — go straight to the product home.
+ * FSP always lands on dashboard activating (fast path, no success page).
+ */
+export function navigateAfterCouponRedeem(opts: {
+  router: CheckoutNavigateRouter;
+  subscription: Subscription;
+  planSlug?: string | null;
+}): void {
+  abandonCheckoutResume();
+  clearCheckoutResumeState();
+  const slug = (opts.planSlug ?? "").toLowerCase();
+  const href =
+    slug === "full_skill_program"
+      ? DASHBOARD_AFTER_CHECKOUT_PATH
+      : postCheckoutDestination(opts.subscription, {
+          receiptPlanSlug: opts.planSlug ?? null,
+        });
+  // Hard navigation avoids waiting on soft client transitions under load.
+  if (typeof window !== "undefined") {
+    window.location.replace(href);
+    return;
+  }
+  opts.router.replace(href);
 }
 
 /**

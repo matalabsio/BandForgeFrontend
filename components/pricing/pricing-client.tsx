@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
 import { ensureSession, loginPathWithNext } from "@/lib/auth";
-import { navigateAfterCheckoutVerify } from "@/lib/checkout-navigate-client";
+import { navigateAfterCheckoutVerify, navigateAfterCouponRedeem } from "@/lib/checkout-navigate-client";
 import {
   type Plan,
   type Subscription,
@@ -18,6 +18,7 @@ import {
   pendingVerifyPayloadFromReceipt,
   readCheckoutReceiptContext,
   razorpayPaymentFailureDetail,
+  redeemCoupon,
   saveCheckoutReceiptContext,
   verifyPayment,
 } from "@/lib/payments";
@@ -26,6 +27,7 @@ import { PlanDetailModal } from "@/components/pricing/plan-detail-modal";
 import { PRICING_FAQ } from "@/components/pricing/pricing-faq";
 import { ProcessingOverlay } from "@/components/pricing/processing-overlay";
 import { PaymentStatusModal } from "@/components/pricing/payment-status-modal";
+import { CouponCodeField } from "@/components/pricing/coupon-code-field";
 import {
   buildPricingDisplayPlans,
   type PricingDisplayPlan,
@@ -94,6 +96,7 @@ export function PricingClient({
     null,
   );
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const [paymentsEnabled, setPaymentsEnabled] = useState(initialPaymentsEnabled);
   const checkoutInFlightRef = useRef(false);
@@ -309,6 +312,57 @@ export function PricingClient({
     }
   }
 
+  async function handleRedeemCoupon(code: string) {
+    const slug =
+      selectedSlug ??
+      displayPlans.find((p) => p.isActive)?.slug ??
+      null;
+    if (!slug || displayPlans.length === 0) return;
+    if (checkoutInFlightRef.current || busySlug) return;
+
+    checkoutInFlightRef.current = true;
+    setBusySlug(slug);
+    setCouponError(null);
+    setOverlayAmountPaise(0);
+    setOverlay("verifying");
+
+    try {
+      const session = await ensureSession();
+      if (!session) {
+        setOverlay(null);
+        clearCheckoutBusy();
+        setStatusModal("session_expired");
+        return;
+      }
+
+      const result = await redeemCoupon(slug, code);
+      paymentTraceLog("COUPON_REDEEM_SUCCESS", { plan_slug: slug });
+      setSubscription(result.subscription);
+      setOverlay(null);
+      clearCheckoutBusy();
+      navigateAfterCouponRedeem({
+        router,
+        subscription: result.subscription,
+        planSlug: slug,
+      });
+      return;
+    } catch (e) {
+      setOverlay(null);
+      clearCheckoutBusy();
+      if (e instanceof ApiError && e.status === 401) {
+        redirectSessionExpired();
+      } else if (e instanceof ApiError && (e.status === 400 || e.status === 403)) {
+        setCouponError(e.message);
+      } else {
+        setCouponError(
+          e instanceof ApiError
+            ? e.message
+            : "Could not apply coupon. Please try again.",
+        );
+      }
+    }
+  }
+
   async function handleVerifyRetry() {
     const pending = readCheckoutReceiptContext();
     const payload = pending ? pendingVerifyPayloadFromReceipt(pending) : null;
@@ -377,6 +431,15 @@ export function PricingClient({
             />
           ))}
         </div>
+        {!subscription?.is_active && hasPlans ? (
+          <div className="mx-auto mt-6 max-w-md">
+            <CouponCodeField
+              busy={Boolean(busySlug)}
+              error={couponError}
+              onRedeem={handleRedeemCoupon}
+            />
+          </div>
+        ) : null}
         {loadError ? (
           <p className="mt-4 text-center text-sm text-amber-800" role="status">
             {loadError}
