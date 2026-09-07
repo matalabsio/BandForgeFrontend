@@ -20,6 +20,15 @@ import {
   resolvePostLoginDestination,
   safePostLoginPath,
 } from "@/lib/post-login-destination";
+import { PWA_OFFER_AFTER_LOGIN_KEY } from "@/lib/pwa/install-prompt-context";
+
+function markPwaOfferAfterLogin() {
+  try {
+    sessionStorage.setItem(PWA_OFFER_AFTER_LOGIN_KEY, "1");
+  } catch {
+    /* private mode / blocked storage — skip offer */
+  }
+}
 
 function PostLoginContinueInner() {
   const searchParams = useSearchParams();
@@ -42,6 +51,7 @@ function PostLoginContinueInner() {
       // Mid-auth / explicit deep links (e.g. /diagnostic/writing): redirect now.
       if (!needsServerLookup) {
         if (cancelled) return;
+        markPwaOfferAfterLogin();
         window.location.replace(
           resolvePostLoginDestination(requestedPath, Boolean(snapshot)),
         );
@@ -65,6 +75,7 @@ function PostLoginContinueInner() {
         if (cancelled) return;
         // New Google/auth return: drop sticky claim/suppress from earlier attempts.
         resetCheckoutResumeForPostAuth();
+        markPwaOfferAfterLogin();
         window.location.replace(
           resolvePostLoginDestination(requestedPath, Boolean(snapshot), {
             hasServerDiagnostic,
@@ -103,6 +114,7 @@ function PostLoginContinueInner() {
         },
       );
 
+      markPwaOfferAfterLogin();
       window.location.replace(destination);
     }
 

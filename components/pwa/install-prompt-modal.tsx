@@ -34,12 +34,12 @@ export function InstallPromptModal() {
             <Smartphone className="h-6 w-6" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="bf-eyebrow text-teal">Install app</p>
+            <p className="bf-eyebrow text-teal">Instant access</p>
             <h2
               id="pwa-install-title"
               className="font-display mt-1 text-xl font-bold text-navy"
             >
-              Add BandForge to your home screen
+              Save BandForge for quicker access
             </h2>
             {isIos ? (
               <p className="mt-2 text-sm leading-relaxed text-ink/70">
@@ -47,12 +47,12 @@ export function InstallPromptModal() {
                 <span className="font-semibold text-navy">
                   Add to Home Screen
                 </span>{" "}
-                for quick launch like a native app.
+                so you can jump into practice in one tap.
               </p>
             ) : (
               <p className="mt-2 text-sm leading-relaxed text-ink/70">
-                Install BandForge for faster access, full-screen practice, and a
-                home-screen shortcut — no app store needed.
+                Add it to your home screen so you can jump into practice in one
+                tap — no App Store needed.
               </p>
             )}
           </div>
@@ -65,7 +65,7 @@ export function InstallPromptModal() {
               onClick={() => void promptInstall()}
               className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl bg-navy px-4 font-display text-sm font-semibold text-white transition-colors hover:bg-navy-deep"
             >
-              Add to Home Screen
+              Save app
             </button>
           ) : null}
           <button
@@ -73,7 +73,7 @@ export function InstallPromptModal() {
             onClick={dismissModal}
             className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border border-border-soft bg-white px-4 font-display text-sm font-semibold text-navy transition-colors hover:bg-surface-alt"
           >
-            {isIos && !canInstall ? "Got it" : "Not now"}
+            Not now
           </button>
         </div>
       </div>

@@ -17,6 +17,8 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const DISMISS_KEY = "bf-pwa-install-dismissed";
+export const PWA_OFFER_AFTER_LOGIN_KEY = "bf-pwa-offer-after-login";
+const POST_LOGIN_OFFER_DELAY_MS = 1200;
 
 type InstallPromptContextValue = {
   canInstall: boolean;
@@ -92,12 +94,26 @@ export function InstallPromptProvider({ children }: { children: ReactNode }) {
 
   const canInstall = Boolean(deferredPrompt) && !isInstalled;
 
-  // Auto install popup disabled for now — use InstallPromptButton on /mobile only.
+  // Post-login offer: open once after /auth/continue sets the session flag.
   useEffect(() => {
     if (isInstalled || isBlockedRoute(pathname)) {
       setIsModalOpen(false);
+      return;
     }
-  }, [isInstalled, pathname]);
+
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(DISMISS_KEY) === "1") return;
+    if (sessionStorage.getItem(PWA_OFFER_AFTER_LOGIN_KEY) !== "1") return;
+    // Android/Chrome needs beforeinstallprompt; iOS uses Share instructions.
+    if (!isIos && !canInstall) return;
+
+    const timer = window.setTimeout(() => {
+      sessionStorage.removeItem(PWA_OFFER_AFTER_LOGIN_KEY);
+      setIsModalOpen(true);
+    }, POST_LOGIN_OFFER_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [isInstalled, pathname, isIos, canInstall]);
 
   const dismissModal = useCallback(() => {
     sessionStorage.setItem(DISMISS_KEY, "1");
