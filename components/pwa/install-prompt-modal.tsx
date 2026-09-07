@@ -1,7 +1,9 @@
 "use client";
 
 import { Smartphone } from "lucide-react";
+import { bfPrimaryCtaNavClass } from "@/components/bandforge/bf-primary-cta-styles";
 import { useInstallPrompt } from "@/lib/pwa/install-prompt-context";
+import { cn } from "@/lib/utils";
 
 export function InstallPromptModal() {
   const {
@@ -63,7 +65,7 @@ export function InstallPromptModal() {
             <button
               type="button"
               onClick={() => void promptInstall()}
-              className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl bg-navy px-4 font-display text-sm font-semibold text-white transition-colors hover:bg-navy-deep"
+              className={cn(bfPrimaryCtaNavClass, "flex-1")}
             >
               Save app
             </button>
@@ -71,7 +73,7 @@ export function InstallPromptModal() {
           <button
             type="button"
             onClick={dismissModal}
-            className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border border-border-soft bg-white px-4 font-display text-sm font-semibold text-navy transition-colors hover:bg-surface-alt"
+            className="inline-flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-full border border-navy/20 bg-white px-[22px] py-2.5 text-[0.9375rem] font-semibold text-navy transition-colors duration-200 hover:border-teal hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal/30 focus-visible:ring-offset-2"
           >
             Not now
           </button>
