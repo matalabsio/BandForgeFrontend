@@ -18,6 +18,8 @@ const EXTRA_PRODUCTION_HOSTS = (process.env.NEXT_PUBLIC_PRODUCTION_HOSTS ?? "")
 /** Hostnames that behave as production (cookies + OAuth stay on the same origin). */
 const PRODUCTION_HOSTS = new Set<string>([
   new URL(CANONICAL_SITE_URL).hostname.toLowerCase(),
+  "www.bandforge.study",
+  "bandforge.study",
   "bandforge-web.vercel.app",
   "bandforge-web-product-2554s-projects.vercel.app",
   "bandforge-web-git-main-product-2554s-projects.vercel.app",
