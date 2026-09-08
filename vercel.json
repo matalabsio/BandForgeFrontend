@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "bandforge.in" }],
+      "destination": "https://www.bandforge.study/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.bandforge.in" }],
+      "destination": "https://www.bandforge.study/:path*",
+      "permanent": true
+    }
+  ]
+}

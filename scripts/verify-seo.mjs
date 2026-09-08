@@ -4,7 +4,7 @@
  * Usage: node scripts/verify-seo.mjs [baseUrl]
  */
 
-const BASE = (process.argv[2] ?? process.env.SEO_BASE_URL ?? "https://bandforgeuinew.vercel.app").replace(/\/$/, "");
+const BASE = (process.argv[2] ?? process.env.SEO_BASE_URL ?? "https://www.bandforge.study").replace(/\/$/, "");
 
 const PATHS = [
   "/",
@@ -105,6 +105,54 @@ try {
   }
 } catch (error) {
   fail(`/vs-coaching → ${error instanceof Error ? error.message : String(error)}`);
+}
+
+// Canonical host: Google must index www.bandforge.study, not .in
+try {
+  const { text } = await fetchText("/");
+  const canonicalMatch = text.match(/rel="canonical"\s+href="([^"]+)"/i);
+  const canonical = canonicalMatch?.[1] ?? "";
+  if (canonical.startsWith("https://www.bandforge.study")) {
+    pass(`canonical → ${canonical}`);
+  } else {
+    fail(`canonical must be https://www.bandforge.study… (got ${canonical || "missing"})`);
+  }
+  if (text.includes("bandforge.in")) {
+    fail("homepage HTML still references bandforge.in");
+  } else {
+    pass("homepage has no bandforge.in references");
+  }
+} catch (error) {
+  fail(`canonical check → ${error instanceof Error ? error.message : String(error)}`);
+}
+
+try {
+  const { text } = await fetchText("/robots.txt");
+  if (text.includes("https://www.bandforge.study/sitemap.xml")) {
+    pass("robots.txt sitemap → www.bandforge.study");
+  } else {
+    fail("robots.txt sitemap must point at https://www.bandforge.study/sitemap.xml");
+  }
+} catch (error) {
+  fail(`robots.txt → ${error instanceof Error ? error.message : String(error)}`);
+}
+
+try {
+  const res = await fetch("https://www.bandforge.in/", { redirect: "manual" });
+  const location = res.headers.get("location") ?? "";
+  if (
+    res.status >= 300 &&
+    res.status < 400 &&
+    location.startsWith("https://www.bandforge.study")
+  ) {
+    pass(`www.bandforge.in → ${res.status} ${location}`);
+  } else {
+    fail(
+      `www.bandforge.in must 301/308 to www.bandforge.study (got HTTP ${res.status} location=${location})`,
+    );
+  }
+} catch (error) {
+  fail(`.in redirect → ${error instanceof Error ? error.message : String(error)}`);
 }
 
 console.log(failed ? "\nSEO verify failed." : "\nSEO verify passed.");
