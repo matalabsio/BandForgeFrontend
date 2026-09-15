@@ -128,10 +128,11 @@ export function WritingResultsClient({
     );
   }
 
+  const planContinueHref = planNav?.continueHref ?? "";
   const planContinueIsWritingNext =
-    Boolean(planNav?.continueHref) &&
-    /writing/i.test(planNav.continueHref) &&
-    planNav.continueHref !== "/study-plan/today";
+    planContinueHref.length > 0 &&
+    /writing/i.test(planContinueHref) &&
+    planContinueHref !== "/study-plan/today";
 
   // Prefer plan Continue when it already points at Writing Task 2 / submit.
   // Fall back to in-module Task 2 when plan nav is absent or still resolving.
