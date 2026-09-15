@@ -314,29 +314,17 @@ export function SpeakingResultsClient({
 
   if (isSpeakingAnalyzing(pending)) {
     return (
-      <>
-        <ResultPageViewport centered unlockKey={`analyzing-${pending.ai_status}`} contentClassName="max-w-lg text-center">
-          <Loader2 className="mx-auto size-10 animate-spin text-teal" aria-hidden />
-          <p className="mt-6 text-meta font-semibold uppercase tracking-[0.14em] text-teal">
-            Speaking submitted
-          </p>
-          <h1 className="mt-2 font-display text-h2 text-navy">Transcribing and scoring…</h1>
-          <p className="mt-4 text-body text-ink/65">
-            Whisper transcription plus Speaking AI scoring. This usually takes one to
-            two minutes.
-          </p>
-          {primaryActionLabel && onPrimaryAction ? (
-            <button
-              type="button"
-              onClick={onPrimaryAction}
-              className="mt-10 text-sm font-semibold text-ink/60 hover:underline"
-            >
-              Continue without waiting →
-            </button>
-          ) : null}
-        </ResultPageViewport>
-        {planNav?.finishModal}
-      </>
+      <ResultPageViewport centered unlockKey={`analyzing-${pending.ai_status}`} contentClassName="max-w-lg text-center">
+        <Loader2 className="mx-auto size-10 animate-spin text-teal" aria-hidden />
+        <p className="mt-6 text-meta font-semibold uppercase tracking-[0.14em] text-teal">
+          Speaking submitted
+        </p>
+        <h1 className="mt-2 font-display text-h2 text-navy">Transcribing and scoring…</h1>
+        <p className="mt-4 text-body text-ink/65">
+          Whisper transcription plus Speaking AI scoring. This usually takes one to
+          two minutes. Stay on this page — your estimate appears here when ready.
+        </p>
+      </ResultPageViewport>
     );
   }
 

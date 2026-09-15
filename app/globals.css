@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* English Forge lives outside frontend/ — include so utilities (e.g. teal-*) compile. */
-@source "../../English/frontend/**/*.{js,ts,jsx,tsx}";
-
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {

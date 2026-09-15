@@ -1,6 +1,7 @@
 /**
  * Exam URL for the allotted Speaking Skill mock.
- * Uses from=plan so SpeakingPage skips full-mock orchestration.
+ * Uses skill_context=speaking so SpeakingPage skips full-mock orchestration
+ * without impersonating Today's plan.
  */
 import {
   isLiveCatalogTestNumber,
@@ -19,12 +20,12 @@ export function speakingSkillMockExamPath(
       part: part ?? 1,
     });
     const sep = base.includes("?") ? "&" : "?";
-    return `${base}${sep}from=plan&skill_context=speaking`;
+    return `${base}${sep}skill_context=speaking`;
   }
   const base = mockModulePath(mockTestId, "speaking", {
     part: part ?? 1,
     testNumber,
   });
   const sep = base.includes("?") ? "&" : "?";
-  return `${base}${sep}from=plan&skill_context=speaking`;
+  return `${base}${sep}skill_context=speaking`;
 }

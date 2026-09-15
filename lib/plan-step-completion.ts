@@ -90,11 +90,10 @@ export function markPlanStepDone(input: MarkPlanStepInput): void {
     markCachedPlanTaskDone(input.currentTaskId);
     void patchLearningTask(input.currentTaskId, "done").catch(() => {});
   }
-  if (input.hubId) {
-    // Avoid Continue re-opening the same hub under a sibling task id.
-    markCachedPlanHubTasksDone(input.hubId);
-  }
+  // Only mark the whole hub done when the skill policy says this step completes it
+  // (L/R Practice, W/S Submit). Practice must leave Submit pending on the same hub.
   if (input.completeHub && input.hubId) {
+    markCachedPlanHubTasksDone(input.hubId);
     void completePracticeHub(input.hubId).catch(() => {});
   }
 }

@@ -312,7 +312,7 @@ export function SpeakingPendingPage({
           </Link>
         ) : null}
 
-        {planNav ? (
+        {planNav && (aiReady || reportReady || aiFailed) ? (
           <>
             <SectionResultsCtaBar
               layout="stack"
@@ -329,7 +329,7 @@ export function SpeakingPendingPage({
             />
             {planNav.finishModal}
           </>
-        ) : (
+        ) : !planNav ? (
           <>
             <Link
               href={testHubPath(mockTestId, null, testNumber)}
@@ -348,7 +348,7 @@ export function SpeakingPendingPage({
               View all sections
             </Link>
           </>
-        )}
+        ) : null}
       </div>
     ) : null;
 
