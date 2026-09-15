@@ -104,6 +104,9 @@ export function SpeakingExamFlow({
   const [error, setError] = useState<string | null>(null);
   const [answerBlob, setAnswerBlob] = useState<Blob | null>(null);
   const [pageHiddenDuringPrep, setPageHiddenDuringPrep] = useState(false);
+  /** Safari can stall auto-start; show an explicit Start control after a short wait. */
+  const [manualStartNeeded, setManualStartNeeded] = useState(false);
+  const [manualStartBusy, setManualStartBusy] = useState(false);
   const recordingsRef = useRef<SpeakingSessionRecording[]>([]);
   const autoStartedRef = useRef(false);
   const part2AutoStopRef = useRef(false);
@@ -119,10 +122,12 @@ export function SpeakingExamFlow({
     : 0;
   const prepSec = part2Timing?.prepSeconds ?? current?.prepSec ?? 60;
   const recordSec = part2Timing?.maxResponseSeconds ?? current?.recordSec ?? 120;
-  const part1RecordSec = Math.max(
-    current?.maxRecordSec ?? 0,
-    SPEAKING_PART1_MAX_RECORD_SEC,
-  );
+  // Prefer per-question max when set (e.g. diagnostic pack maxSec); otherwise the
+  // long Part 1 safety ceiling used by full mocks.
+  const part1RecordSec =
+    current?.maxRecordSec != null && current.maxRecordSec > 0
+      ? current.maxRecordSec
+      : SPEAKING_PART1_MAX_RECORD_SEC;
   const currentRecordLimit = isPart2
     ? recordSec
     : current?.part === 1
@@ -185,16 +190,21 @@ export function SpeakingExamFlow({
   const recordingControlPhase =
     subPhase === "ready"
       ? ("captured" as const)
-      : recorder.recording
+      : recorder.recording ||
+          (recorder.seconds > 0 &&
+            (subPhase === "record" || subPhase === "part2_record"))
         ? ("recording" as const)
         : ("idle" as const);
 
   const captured = recordingControlPhase === "captured";
 
   const showFooter = subPhase !== "part2_prep";
-  const footerDisabled = footerBusy;
+  const footerDisabled = footerBusy || manualStartBusy;
   const footerLabel =
-    subPhase === "play"
+    subPhase === "play" ||
+    (manualStartNeeded &&
+      !recorder.recording &&
+      (subPhase === "record" || subPhase === "part2_record"))
       ? "Start recording"
       : isLastStep
         ? completeLabel
@@ -306,13 +316,20 @@ export function SpeakingExamFlow({
   const beginPart2Recording = useCallback(() => {
     if (part2StartRef.current) return;
     part2StartRef.current = true;
+    setManualStartNeeded(false);
     void persistRecordingStart().then(async () => {
       dispatchFlow({ type: "begin_part2" });
       part2AutoStopRef.current = false;
       const ok = await recorder.startRecordingWithBeep();
       if (!ok) {
         part2StartRef.current = false;
-        setError((prev) => prev ?? "Microphone access is required.");
+        setManualStartNeeded(true);
+        setError(
+          (prev) =>
+            prev ??
+            recorder.lastError ??
+            "Microphone access is required. Tap Start recording to continue.",
+        );
       }
     });
   }, [persistRecordingStart, recorder]);
@@ -381,13 +398,71 @@ export function SpeakingExamFlow({
     autoStartedRef.current = false;
     part2AutoStopRef.current = false;
     part2StartRef.current = false;
+    setManualStartNeeded(false);
+    setManualStartBusy(false);
   }, [stepIndex]);
+
+  // If auto-start hangs (Safari AudioContext / getUserMedia), offer a tap fallback.
+  useEffect(() => {
+    if (subPhase !== "record" && subPhase !== "part2_record") {
+      setManualStartNeeded(false);
+      return;
+    }
+    if (recorder.recording || recorder.seconds > 0) {
+      setManualStartNeeded(false);
+      return;
+    }
+    // Show Start quickly — don't leave users on "starting automatically" with no action.
+    const timer = window.setTimeout(() => {
+      if (!recorder.recording && recorder.seconds === 0) {
+        setManualStartNeeded(true);
+        autoStartedRef.current = false;
+        part2StartRef.current = false;
+      }
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [recorder.recording, recorder.seconds, stepIndex, subPhase]);
+
+  const handleManualStartRecording = useCallback(async () => {
+    if (!current || recorder.recording || manualStartBusy) return;
+    setManualStartBusy(true);
+    setError(null);
+    try {
+      await persistRecordingStart();
+      // Direct start from a user gesture — skip beep to satisfy Safari mic policy.
+      const ok = await recorder.startRecording();
+      if (ok) {
+        setManualStartNeeded(false);
+        autoStartedRef.current = true;
+        if (isPart2) part2StartRef.current = true;
+      } else {
+        setManualStartNeeded(true);
+        setError(
+          (prev) =>
+            prev ??
+            recorder.lastError ??
+            "Microphone access is required. Tap Start recording and allow the mic.",
+        );
+      }
+    } finally {
+      setManualStartBusy(false);
+    }
+  }, [
+    current,
+    isPart2,
+    manualStartBusy,
+    persistRecordingStart,
+    recorder,
+  ]);
 
   const handleQuestionEnded = useCallback(() => {
     if (autoStartedRef.current || !current) return;
-    autoStartedRef.current = true;
+    // Mark intent only after mic actually starts — otherwise a hung getUserMedia
+    // leaves the UI on "starting automatically" with no Start control.
+    setManualStartNeeded(false);
 
     if (current.kind === "part2_intro") {
+      autoStartedRef.current = true;
       const serverStartedAt = part2Timing?.prepStartedAt
         ? Date.parse(part2Timing.prepStartedAt)
         : Number.NaN;
@@ -430,9 +505,18 @@ export function SpeakingExamFlow({
     void persistRecordingStart().then(async () => {
       dispatchFlow({ type: "question_ended", isPart2: false });
       const ok = await recorder.startRecordingWithBeep();
-      if (!ok) {
+      if (ok) {
+        autoStartedRef.current = true;
+        setManualStartNeeded(false);
+      } else {
         autoStartedRef.current = false;
-        setError((prev) => prev ?? "Microphone access is required for the speaking section.");
+        setManualStartNeeded(true);
+        setError(
+          (prev) =>
+            prev ??
+            recorder.lastError ??
+            "Microphone access is required. Tap Start recording to continue.",
+        );
       }
     });
   }, [
@@ -451,6 +535,14 @@ export function SpeakingExamFlow({
       handleQuestionEnded();
       return;
     }
+    if (
+      (subPhase === "record" || subPhase === "part2_record") &&
+      !recorder.recording &&
+      (manualStartNeeded || !autoStartedRef.current)
+    ) {
+      await handleManualStartRecording();
+      return;
+    }
     if (subPhase === "record" || subPhase === "part2_record") {
       const ok = await stopAndValidate();
       if (!ok) return;
@@ -462,9 +554,12 @@ export function SpeakingExamFlow({
     advanceStep();
   }, [
     advanceStep,
+    handleManualStartRecording,
     handleQuestionEnded,
     isLastStep,
+    manualStartNeeded,
     onExamComplete,
+    recorder.recording,
     stopAndValidate,
     subPhase,
   ]);
@@ -553,11 +648,14 @@ export function SpeakingExamFlow({
         )}
 
         {(subPhase === "record" || subPhase === "part2_record") &&
-        !recorder.recording ? (
+        !recorder.recording &&
+        recorder.seconds === 0 ? (
           <p className="mt-3 text-sm text-[#5A6B82]" role="status">
-            {subPhase === "part2_record"
-              ? `Recording is starting automatically · up to ${recordSec} seconds`
-              : `Recording is starting automatically · up to ${Math.round((currentRecordLimit ?? SPEAKING_PART1_MAX_RECORD_SEC) / 60)} min`}
+            {manualStartNeeded
+              ? "Tap Start recording to continue — allow the microphone if prompted."
+              : subPhase === "part2_record"
+                ? `Recording is starting automatically · up to ${recordSec} seconds`
+                : `Recording is starting automatically · up to ${currentRecordLimit ?? recordSec} seconds`}
           </p>
         ) : null}
 
@@ -574,6 +672,13 @@ export function SpeakingExamFlow({
             answerBlob={captured ? answerBlob : null}
             onStop={handleStop}
             onRerecord={() => undefined}
+            onStart={() => void handleManualStartRecording()}
+            showStart={
+              manualStartNeeded &&
+              !recorder.recording &&
+              (subPhase === "record" || subPhase === "part2_record")
+            }
+            startBusy={manualStartBusy}
             showRerecord={false}
             showStop={false}
             stopLabel={isPart2 ? "Finish long turn" : "Complete answer"}

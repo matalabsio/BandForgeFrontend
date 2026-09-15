@@ -263,6 +263,14 @@ export function SpeakingQuestionPlayer({
                 finishAutoPlay();
               }
             }, Math.ceil(d * 1000) + 1200);
+          } else {
+            // Duration unknown (slow metadata) — still advance so recording can start.
+            mediaWatchdog = window.setTimeout(() => {
+              if (!cancelled) {
+                setIsListening(false);
+                finishAutoPlay();
+              }
+            }, 18_000);
           }
         } catch {
           if (!cancelled) {

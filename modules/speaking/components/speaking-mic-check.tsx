@@ -11,6 +11,8 @@ import {
   formatAudioDuration,
   getAudioRecordingCapability,
   getSupportedAudioMimeType,
+  GET_USER_MEDIA_TIMEOUT_MS,
+  RECORDER_TIMESLICE_MS,
 } from "@/modules/speaking/lib/media-recorder-support";
 import { SpeakingMicHero } from "@/modules/speaking/components/speaking-mic-hero";
 import { cn } from "@/lib/utils";
@@ -27,7 +29,6 @@ type Props = {
 };
 
 const MIC_TEST_SEC = 5;
-const RECORDER_TIMESLICE_MS = 250;
 const WAVE_BARS = 28;
 
 function idleWaveLevels(count = WAVE_BARS): number[] {
@@ -197,7 +198,25 @@ export function SpeakingMicCheck({
     try {
       const capability = getAudioRecordingCapability();
       if (!capability.supported) throw new Error(capability.message);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      let mediaTimer: number | undefined;
+      let stream: MediaStream;
+      try {
+        stream = await Promise.race([
+          navigator.mediaDevices.getUserMedia({ audio: true }),
+          new Promise<never>((_, reject) => {
+            mediaTimer = window.setTimeout(() => {
+              reject(
+                new Error(
+                  "Microphone request timed out. Tap Test my microphone again and allow access.",
+                ),
+              );
+            }, GET_USER_MEDIA_TIMEOUT_MS);
+          }),
+        ]);
+      } finally {
+        if (mediaTimer != null) window.clearTimeout(mediaTimer);
+      }
       const audioTracks = stream.getAudioTracks();
       if (
         audioTracks.length === 0 ||

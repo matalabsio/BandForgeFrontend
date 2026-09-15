@@ -175,7 +175,7 @@ function nextPracticeSkillHref(
   const order = ["listening", "reading", "writing", "speaking"] as const;
   for (const skill of order) {
     const hub = hubProgress?.[skill];
-    const total = hub?.total_count ?? 12;
+    const total = hub?.total_count ?? 0;
     const done = hub?.completed_count ?? 0;
     if (done < total) {
       return {

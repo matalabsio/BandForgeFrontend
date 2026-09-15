@@ -104,7 +104,7 @@ export function PracticeHubListExperience({
 
   const completed = hubs.filter((h) => h.status === "completed").length;
   const total = hubs.length;
-  const required = mockUnlock?.required ?? Math.max(total, 12);
+  const required = mockUnlock?.required ?? Math.max(total, 0);
   const pct =
     required > 0 ? Math.min(100, Math.round((completed / required) * 100)) : 0;
 

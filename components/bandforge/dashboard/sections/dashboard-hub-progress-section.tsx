@@ -69,7 +69,7 @@ export function DashboardHubProgressSection({
           {SKILL_ORDER.map(({ key, label }) => {
             const row = hubProgress[key];
             const completed = row?.completed_count ?? 0;
-            const total = row?.total_count ?? 12;
+            const total = row?.total_count ?? 0;
             const pct =
               total > 0
                 ? Math.min(100, Math.round((completed / total) * 100))

@@ -1,10 +1,10 @@
 /** Mock UUID/slug resolution — no imports from mock-catalog or mock-catalog-api. */
 
-/** Academic Mock 1 — valid Postgres UUID (a000 prefix; `m` is not hex). */
-export const M01_MOCK_TEST_ID = "a0000000-0000-4000-8000-000000000001";
+/** Society & Culture Test 1 — Community (catalog 1). */
+export const M01_MOCK_TEST_ID = "a1000000-0000-4000-8000-000000000001";
 
-/** Academic Mock 2 — valid Postgres UUID (a000 prefix). */
-export const M02_MOCK_TEST_ID = "a0000000-0000-4000-8000-000000000002";
+/** Society & Culture Test 2 — Festivals (catalog 2). */
+export const M02_MOCK_TEST_ID = "a1000000-0000-4000-8000-000000000002";
 
 export const MOCK_SLUGS = {
   m01: M01_MOCK_TEST_ID,
@@ -18,6 +18,9 @@ export const DEFAULT_MOCK_SLUG: MockSlug = "m01";
 export const PUBLISHED_FULL_MOCK_IDS: readonly string[] = [
   M01_MOCK_TEST_ID,
   M02_MOCK_TEST_ID,
+  "a1000000-0000-4000-8000-000000000003",
+  "a1000000-0000-4000-8000-000000000004",
+  "a1000000-0000-4000-8000-000000000005",
 ];
 
 const UUID_RE =

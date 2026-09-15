@@ -2,10 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  GET_USER_MEDIA_TIMEOUT_MS,
+  RECORDER_TIMESLICE_MS,
   getAudioRecordingCapability,
   getSupportedAudioMimeType,
 } from "@/modules/speaking/lib/media-recorder-support";
-import { playRecordingBeep } from "@/modules/speaking/lib/play-beep";
+import {
+  getAudioContextConstructor,
+  playRecordingBeep,
+} from "@/modules/speaking/lib/play-beep";
 
 export type RecorderResult = {
   blob: Blob;
@@ -23,6 +28,29 @@ function streamHasLiveAudio(stream: MediaStream | null): boolean {
   return tracks.length > 0 && tracks.every((t) => t.readyState === "live");
 }
 
+async function getUserMediaWithTimeout(
+  constraints: MediaStreamConstraints,
+  timeoutMs: number,
+): Promise<MediaStream> {
+  let timer: number | undefined;
+  try {
+    return await Promise.race([
+      navigator.mediaDevices.getUserMedia(constraints),
+      new Promise<never>((_, reject) => {
+        timer = window.setTimeout(() => {
+          reject(
+            new Error(
+              "Microphone request timed out. Tap Start recording and allow access when prompted.",
+            ),
+          );
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer != null) window.clearTimeout(timer);
+  }
+}
+
 export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
   const { maxDurationSec, onMaxDuration } = options;
   const [recording, setRecording] = useState(false);
@@ -38,17 +66,14 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
   const mountedRef = useRef(true);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserFrameRef = useRef<number | null>(null);
+  const startingRef = useRef(false);
 
   const releaseStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
   }, []);
 
-  const cleanup = useCallback((discardRecorder = false) => {
-    if (tickRef.current) {
-      window.clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
+  const stopWaveform = useCallback(() => {
     if (analyserFrameRef.current) {
       cancelAnimationFrame(analyserFrameRef.current);
       analyserFrameRef.current = null;
@@ -56,22 +81,34 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
     const audioContext = audioContextRef.current;
     audioContextRef.current = null;
     if (audioContext && audioContext.state !== "closed") void audioContext.close();
-    const recorder = mediaRecorderRef.current;
-    if (discardRecorder && recorder && recorder.state !== "inactive") {
-      recorder.ondataavailable = null;
-      recorder.onerror = null;
-      recorder.onstop = null;
-      try {
-        recorder.stop();
-      } catch {
-        /* recorder already stopped */
+  }, []);
+
+  const cleanup = useCallback(
+    (discardRecorder = false) => {
+      if (tickRef.current) {
+        window.clearInterval(tickRef.current);
       }
-    }
-    releaseStream();
-    mediaRecorderRef.current = null;
-    startRef.current = null;
-    if (mountedRef.current) setRecording(false);
-  }, [releaseStream]);
+      tickRef.current = null;
+      stopWaveform();
+      const recorder = mediaRecorderRef.current;
+      if (discardRecorder && recorder && recorder.state !== "inactive") {
+        recorder.ondataavailable = null;
+        recorder.onerror = null;
+        recorder.onstop = null;
+        try {
+          recorder.stop();
+        } catch {
+          /* recorder already stopped */
+        }
+      }
+      releaseStream();
+      mediaRecorderRef.current = null;
+      startRef.current = null;
+      startingRef.current = false;
+      if (mountedRef.current) setRecording(false);
+    },
+    [releaseStream, stopWaveform],
+  );
 
   useEffect(
     () => () => {
@@ -83,6 +120,20 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
     [cleanup],
   );
 
+  // Keep React UI in sync with the real MediaRecorder — fixes "mic live but Waiting" desync.
+  useEffect(() => {
+    mountedRef.current = true;
+    const id = window.setInterval(() => {
+      const active = mediaRecorderRef.current?.state === "recording";
+      setRecording((prev) => (prev === active ? prev : active));
+      if (active && startRef.current) {
+        const elapsed = Math.round((Date.now() - startRef.current) / 1000);
+        setSeconds((prev) => (prev === elapsed ? prev : elapsed));
+      }
+    }, 200);
+    return () => window.clearInterval(id);
+  }, []);
+
   const ensureStream = useCallback(async (): Promise<MediaStream> => {
     const capability = getAudioRecordingCapability();
     if (!capability.supported) {
@@ -93,7 +144,10 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
     }
     releaseStream();
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await getUserMediaWithTimeout(
+        { audio: true },
+        GET_USER_MEDIA_TIMEOUT_MS,
+      );
       if (!streamHasLiveAudio(stream)) {
         stream.getTracks().forEach((track) => track.stop());
         throw new Error("The selected microphone is not ready. Reconnect it and try again.");
@@ -101,6 +155,9 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
       streamRef.current = stream;
       return stream;
     } catch (err) {
+      if (err instanceof Error && err.message.includes("timed out")) {
+        throw err;
+      }
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
         throw new Error(
@@ -116,6 +173,59 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
     }
   }, [releaseStream]);
 
+  const attachWaveform = useCallback(
+    async (stream: MediaStream) => {
+      const Ctx = getAudioContextConstructor();
+      if (!Ctx) return;
+
+      try {
+        const audioContext = new Ctx();
+        if (audioContext.state === "suspended") {
+          await Promise.race([
+            audioContext.resume(),
+            new Promise<void>((r) => window.setTimeout(r, 80)),
+          ]);
+        }
+        // Waveform is optional — never block MediaRecorder on Safari audio graph.
+        if (audioContext.state === "closed") return;
+
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.72;
+        audioContext.createMediaStreamSource(stream).connect(analyser);
+        audioContextRef.current = audioContext;
+        const samples = new Uint8Array(analyser.frequencyBinCount);
+        let lastPaint = 0;
+        const paintWaveform = (time: number) => {
+          analyser.getByteTimeDomainData(samples);
+          if (time - lastPaint >= 50) {
+            lastPaint = time;
+            const bucketSize = Math.floor(samples.length / 24);
+            const next = Array.from({ length: 24 }, (_, index) => {
+              let peak = 0;
+              for (let i = 0; i < bucketSize; i += 1) {
+                peak = Math.max(peak, Math.abs(samples[index * bucketSize + i]! - 128));
+              }
+              return Math.max(0.08, Math.min(1, peak / 64));
+            });
+            setWaveform(next);
+          }
+          // Keep painting while the mic stream is live (not only after React recording=true).
+          if (
+            mediaRecorderRef.current?.state === "recording" ||
+            streamHasLiveAudio(streamRef.current)
+          ) {
+            analyserFrameRef.current = requestAnimationFrame(paintWaveform);
+          }
+        };
+        analyserFrameRef.current = requestAnimationFrame(paintWaveform);
+      } catch {
+        stopWaveform();
+      }
+    },
+    [stopWaveform],
+  );
+
   const stopRecording = useCallback((): Promise<RecorderResult | null> => {
     return new Promise((resolve) => {
       const recorder = mediaRecorderRef.current;
@@ -125,11 +235,49 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
         return;
       }
       resolveStopRef.current = resolve;
+      try {
+        // Safari sometimes needs an explicit flush before stop.
+        if (typeof recorder.requestData === "function" && recorder.state === "recording") {
+          recorder.requestData();
+        }
+      } catch {
+        /* ignore */
+      }
       recorder.stop();
     });
   }, [cleanup]);
 
   const startRecording = useCallback(async (): Promise<boolean> => {
+    const isActivelyRecording = () =>
+      mediaRecorderRef.current?.state === "recording";
+
+    const markRecording = () => {
+      // Always sync UI — even if a remount raced mid-start.
+      setRecording(true);
+    };
+
+    if (isActivelyRecording()) {
+      markRecording();
+      return true;
+    }
+    // Another start is in flight (auto-start) — wait for it instead of failing.
+    if (startingRef.current) {
+      const deadline = Date.now() + GET_USER_MEDIA_TIMEOUT_MS + 1000;
+      while (startingRef.current && Date.now() < deadline) {
+        await new Promise((r) => window.setTimeout(r, 100));
+        if (isActivelyRecording()) {
+          markRecording();
+          return true;
+        }
+      }
+      if (isActivelyRecording()) {
+        markRecording();
+        return true;
+      }
+      // Previous attempt failed; continue with a fresh start below.
+    }
+
+    startingRef.current = true;
     setLastError(null);
     try {
       // Drop dead tracks (common after iOS backgrounding) before re-acquiring.
@@ -138,37 +286,18 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
       }
 
       const stream = await ensureStream();
-      const AudioContextConstructor = window.AudioContext;
-      const audioContext = new AudioContextConstructor();
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.72;
-      audioContext.createMediaStreamSource(stream).connect(analyser);
-      audioContextRef.current = audioContext;
-      const samples = new Uint8Array(analyser.frequencyBinCount);
-      let lastPaint = 0;
-      const paintWaveform = (time: number) => {
-        analyser.getByteTimeDomainData(samples);
-        if (time - lastPaint >= 50 && mountedRef.current) {
-          lastPaint = time;
-          const bucketSize = Math.floor(samples.length / 24);
-          setWaveform(
-            Array.from({ length: 24 }, (_, index) => {
-              let peak = 0;
-              for (let i = 0; i < bucketSize; i += 1) {
-                peak = Math.max(peak, Math.abs(samples[index * bucketSize + i] - 128));
-              }
-              return Math.max(0.08, Math.min(1, peak / 64));
-            }),
-          );
-        }
-        analyserFrameRef.current = requestAnimationFrame(paintWaveform);
-      };
-      analyserFrameRef.current = requestAnimationFrame(paintWaveform);
+      await attachWaveform(stream);
+
       const mimeType = getSupportedAudioMimeType();
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType })
-        : new MediaRecorder(stream);
+      let recorder: MediaRecorder;
+      try {
+        recorder = mimeType
+          ? new MediaRecorder(stream, { mimeType })
+          : new MediaRecorder(stream);
+      } catch {
+        // Safari can reject an advertised mimeType; fall back to browser default.
+        recorder = new MediaRecorder(stream);
+      }
 
       mediaRecorderRef.current = recorder;
       stream.getAudioTracks().forEach((track) => {
@@ -188,6 +317,10 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
+      recorder.onstart = () => {
+        markRecording();
+      };
+
       recorder.onerror = () => {
         setLastError("Recording failed mid-attempt. Please try this question again.");
         cleanup(true);
@@ -199,7 +332,7 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
         const durationSec = startRef.current
           ? Math.round((Date.now() - startRef.current) / 1000)
           : 0;
-        const blobType = recorder.mimeType || mimeType || "audio/webm";
+        const blobType = recorder.mimeType || mimeType || "audio/mp4";
         const blob = new Blob(chunksRef.current, { type: blobType });
         cleanup();
         setSeconds(durationSec);
@@ -216,9 +349,10 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
         }
       }, 400);
 
-      // Full blob on stop — no timeslice upload streaming.
-      recorder.start();
-      setRecording(true);
+      // Timeslice keeps Safari flushing chunks during long answers.
+      recorder.start(RECORDER_TIMESLICE_MS);
+      markRecording();
+      startingRef.current = false;
       return true;
     } catch (err) {
       cleanup();
@@ -230,6 +364,7 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
       return false;
     }
   }, [
+    attachWaveform,
     cleanup,
     ensureStream,
     maxDurationSec,
@@ -239,7 +374,12 @@ export function useSpeakingRecorder(options: UseSpeakingRecorderOptions = {}) {
   ]);
 
   const startRecordingWithBeep = useCallback(async () => {
-    await playRecordingBeep();
+    // Beep is cosmetic. Never let a suspended Safari AudioContext block the mic.
+    try {
+      await playRecordingBeep();
+    } catch {
+      /* ignore */
+    }
     return startRecording();
   }, [startRecording]);
 
