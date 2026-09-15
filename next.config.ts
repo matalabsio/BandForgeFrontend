@@ -1,9 +1,13 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { withSerwist } from "@serwist/turbopack";
 
 const authFlag = process.env.NEXT_PUBLIC_AUTH_ENABLED?.trim() ?? "";
 const authMisconfiguredAsUrl =
   authFlag.startsWith("http://") || authFlag.startsWith("https://");
+
+const frontendRoot = path.dirname(fileURLToPath(import.meta.url));
 
 if (process.env.VERCEL === "1" && authFlag !== "true") {
   console.warn(
@@ -24,6 +28,23 @@ if (process.env.VERCEL === "1" && !process.env.NEXT_PUBLIC_API_URL) {
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Next 16 defaults to Turbopack; we still use webpack (see `next build --webpack`)
+  // for English/frontend module resolution. Empty turbopack config silences the
+  // "webpack config without turbopack config" guard if Turbopack is ever invoked.
+  turbopack: {},
+  // Allow importing product code from repo-root `English/frontend`.
+  experimental: {
+    externalDir: true,
+    proxyClientMaxBodySize: "50mb",
+  },
+  webpack: (config) => {
+    // Resolve deps (e.g. lucide-react) for files under ../English/frontend.
+    config.resolve.modules = [
+      path.join(frontendRoot, "node_modules"),
+      ...(config.resolve.modules ?? ["node_modules"]),
+    ];
+    return config;
+  },
   async redirects() {
     return [
       {
@@ -32,10 +53,6 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
     ];
-  },
-  // Large body uploads (e.g. listening audio via BFF) — default 10MB truncates.
-  experimental: {
-    proxyClientMaxBodySize: "50mb",
   },
   images: {
     remotePatterns: [

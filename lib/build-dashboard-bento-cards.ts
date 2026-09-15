@@ -89,7 +89,7 @@ function hubBars(
   const bars: MagicBentoHubBar[] = SKILL_ORDER.map((key) => {
     const row = hubProgress?.[key];
     const completed = row?.completed_count ?? 0;
-    const total = row?.total_count ?? 12;
+    const total = row?.total_count ?? 0;
     return {
       key,
       label: SKILL_LABEL[key],
@@ -102,7 +102,7 @@ function hubBars(
     return n + (row?.completed_count ?? 0);
   }, 0);
   const total = SKILL_ORDER.reduce(
-    (n, key) => n + (hubProgress?.[key]?.total_count ?? 12),
+    (n, key) => n + (hubProgress?.[key]?.total_count ?? 0),
     0,
   );
   const firstUnlocked = SKILL_ORDER.find(
@@ -256,7 +256,7 @@ export function buildDashboardBentoCards({
 
   const writingHub = learning.hub_progress?.writing;
   const writingCompleted = writingHub?.completed_count ?? 0;
-  const writingTotal = writingHub?.total_count ?? 12;
+  const writingTotal = writingHub?.total_count ?? 0;
   const writingPct =
     writingTotal > 0
       ? Math.min(100, Math.round((writingCompleted / writingTotal) * 100))

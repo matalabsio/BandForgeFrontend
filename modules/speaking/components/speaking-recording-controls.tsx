@@ -17,6 +17,8 @@ type Props = {
   onStart?: () => void;
   className?: string;
   showStart?: boolean;
+  /** Disable Start while a mic request is in flight. */
+  startBusy?: boolean;
   /** One-take exam: hide Re-record (default). */
   showRerecord?: boolean;
   /** Hide the explicit answer-completion control when the parent owns stopping. */
@@ -37,6 +39,7 @@ export function SpeakingRecordingControls({
   onStart,
   className,
   showStart = false,
+  startBusy = false,
   showRerecord = false,
   showStop = true,
   hideElapsed = false,
@@ -45,6 +48,10 @@ export function SpeakingRecordingControls({
 }: Props) {
   const recording = phase === "recording";
   const captured = phase === "captured";
+  const hasLiveWave =
+    recording ||
+    (Array.isArray(waveform) &&
+      waveform.some((v) => typeof v === "number" && v > 0.12));
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
   const [isHearing, setIsHearing] = useState(false);
@@ -125,7 +132,11 @@ export function SpeakingRecordingControls({
           : `Recording… ${formatAudioDuration(seconds)}`
         : captured
           ? `Answer captured · ${formatAudioDuration(playbackDuration || seconds)}`
-          : "Waiting to record";
+          : hasLiveWave
+            ? "Recording…"
+            : "Waiting to record";
+
+  const showLive = recording || hasLiveWave;
 
   const showActionRow = showStart || showStop || showRerecord;
 
@@ -140,7 +151,7 @@ export function SpeakingRecordingControls({
 
       <div className="flex flex-col items-center">
         <div className="relative flex size-14 items-center justify-center sm:size-20" aria-hidden>
-          {recording ? (
+          {showLive ? (
             <>
               <span className="absolute inset-1 rounded-full border-2 border-cyan/50 motion-safe:animate-ping" />
               <span className="absolute inset-0 rounded-full border border-cyan/30 motion-safe:animate-pulse" />
@@ -149,7 +160,7 @@ export function SpeakingRecordingControls({
           <span
             className={cn(
               "relative flex size-11 items-center justify-center rounded-full shadow-[0_10px_24px_rgba(0,151,167,0.25)] sm:size-14",
-              recording
+              showLive
                 ? "bg-cyan text-[#06222B]"
                 : captured
                   ? "bg-teal text-white"
@@ -161,9 +172,9 @@ export function SpeakingRecordingControls({
         </div>
         <div className="mt-3 flex items-baseline justify-center gap-2">
           <span className="font-mono text-xs font-medium tracking-[0.1em] text-teal uppercase">
-            {recording ? "Recording" : captured ? "Captured" : "Waiting"}
+            {showLive ? "Recording" : captured ? "Captured" : "Waiting"}
           </span>
-          {recording ? (
+          {showLive ? (
             <span className="font-mono text-sm font-medium text-navy">
               {formatAudioDuration(seconds)}
             </span>
@@ -173,7 +184,7 @@ export function SpeakingRecordingControls({
 
       <div
         className="mx-auto my-2 flex h-7 w-full max-w-xs items-end justify-center gap-1 overflow-hidden sm:my-4 sm:h-10"
-        aria-label={recording ? "Live microphone level" : "Audio waveform"}
+        aria-label={showLive ? "Live microphone level" : "Audio waveform"}
         role="img"
       >
         {Array.from({ length: 24 }).map((_, i) => (
@@ -181,19 +192,19 @@ export function SpeakingRecordingControls({
             key={i}
             className={cn(
               "w-1 shrink-0 rounded-sm bg-cyan",
-              ((recording && !waveform) || isHearing) &&
+              ((showLive && !waveform) || isHearing) &&
                 "motion-safe:animate-[bfwave_1.1s_ease-in-out_infinite]",
             )}
             style={{
               height:
-                recording && waveform
+                showLive && waveform
                   ? `${Math.max(4, (waveform[i] ?? 0.08) * 38)}px`
-                  : recording || isHearing
+                  : showLive || isHearing
                     ? `${10 + (i % 5) * 6}px`
                     : captured
                       ? "10px"
                       : "6px",
-              animationDelay: recording || isHearing ? `${i * 0.05}s` : undefined,
+              animationDelay: showLive || isHearing ? `${i * 0.05}s` : undefined,
             }}
           />
         ))}
@@ -241,11 +252,11 @@ export function SpeakingRecordingControls({
             <button
               type="button"
               onClick={onStart}
-              disabled={recording || captured}
+              disabled={recording || captured || startBusy}
               className="col-span-2 flex min-h-[var(--spacing-touch,48px)] cursor-pointer items-center justify-center gap-2 rounded-[11px] border border-cyan/30 bg-cyan px-4 text-sm font-semibold text-[#06222B] transition-colors duration-200 hover:bg-brand-sky-hover disabled:cursor-not-allowed disabled:opacity-50 sm:text-[15px]"
             >
               <Mic className="size-4 shrink-0" />
-              Start recording
+              {startBusy ? "Starting…" : "Start recording"}
             </button>
           ) : null}
 

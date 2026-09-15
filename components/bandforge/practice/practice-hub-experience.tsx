@@ -238,7 +238,7 @@ export function PracticeHubExperience({
         : submitHref;
 
   const setIndex = hub.sort_order > 0 ? hub.set_number : hub.set_number;
-  const totalSets = mockUnlock?.required ?? 12;
+  const totalSets = mockUnlock?.required ?? 0;
 
   const goToNextAfterWatch = useCallback(() => {
     if (advancingRef.current) return;

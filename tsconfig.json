@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@english": ["../English/frontend/index.ts"],
+      "@english/*": ["../English/frontend/*"]
     }
   },
   "include": [
@@ -28,7 +30,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "../English/frontend/**/*.ts",
+    "../English/frontend/**/*.tsx"
   ],
   "exclude": ["node_modules"]
 }

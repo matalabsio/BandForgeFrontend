@@ -1,11 +1,21 @@
+/**
+ * Prefer Safari-native mp4 first so iOS picks a supported codec without
+ * walking unsupported webm entries. Chromium still selects webm via isTypeSupported.
+ */
 export const AUDIO_MIME_CANDIDATES = [
-  "audio/webm;codecs=opus",
-  "audio/webm",
   "audio/mp4;codecs=mp4a.40.2",
   "audio/mp4",
+  "audio/webm;codecs=opus",
+  "audio/webm",
   "audio/ogg;codecs=opus",
   "audio/ogg",
 ] as const;
+
+/** Safari MediaRecorder is more reliable with a timeslice than start()-only. */
+export const RECORDER_TIMESLICE_MS = 250;
+
+/** getUserMedia can hang on some Safari builds; fail open to a tap-retry. */
+export const GET_USER_MEDIA_TIMEOUT_MS = 10_000;
 
 export type AudioRecordingCapability =
   | { supported: true; mimeType: string | undefined }
