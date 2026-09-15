@@ -28,6 +28,10 @@ if (process.env.VERCEL === "1" && !process.env.NEXT_PUBLIC_API_URL) {
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Next 16 defaults to Turbopack; we still use webpack (see `next build --webpack`)
+  // for English/frontend module resolution. Empty turbopack config silences the
+  // "webpack config without turbopack config" guard if Turbopack is ever invoked.
+  turbopack: {},
   // Allow importing product code from repo-root `English/frontend`.
   experimental: {
     externalDir: true,
