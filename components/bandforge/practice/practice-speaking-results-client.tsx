@@ -200,14 +200,9 @@ export function PracticeSpeakingResultsClient({
         </h1>
         <p className="mt-4 text-body text-ink/65">
           Whisper transcription plus the same Speaking AI examiner used on mocks.
-          This usually takes one to two minutes.
+          This usually takes one to two minutes. Stay on this page — your estimate
+          appears here when ready.
         </p>
-        <Link
-          href={continueHref}
-          className="mt-10 text-sm font-semibold text-ink/60 hover:underline"
-        >
-          Continue without waiting →
-        </Link>
       </ResultPageViewport>
     );
   }

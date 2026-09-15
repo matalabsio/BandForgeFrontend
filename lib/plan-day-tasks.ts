@@ -300,25 +300,32 @@ export function adjacentPlanDayTask(
 /** First unfinished task to continue after the current one. */
 export function nextPendingPlanDayTask(
   currentTaskId: string | null | undefined,
-  opts?: { preferExercise?: boolean; skipHubId?: string | null },
+  opts?: {
+    preferExercise?: boolean;
+    /** @deprecated Prefer same-step skip via current task; kept for callers. */
+    skipHubId?: string | null;
+  },
 ): PlanDayTaskCacheRow | null {
   const preferExercise = opts?.preferExercise !== false;
-  const skipHubId = opts?.skipHubId ?? null;
   const tasks = actionableTasks();
   if (tasks.length === 0) return null;
 
   const current = currentTaskId
     ? tasks.find((t) => t.id === currentTaskId)
     : undefined;
-  const blockedHub = skipHubId || current?.hub_id || null;
+  // Skip only the same step on this hub (id churn), not Practice→Submit siblings.
+  const blockedHub = current?.hub_id ?? opts?.skipHubId ?? null;
+  const blockedType = current?.task_type ?? null;
 
   const isOpen = (row: PlanDayTaskCacheRow) => {
     if (row.status === "done") return false;
     if (row.id === currentTaskId) return false;
-    // Don't re-open the hub the user just finished under another task id.
+    // Don't re-open the same practice/submit under a churned task id.
     if (
       blockedHub &&
+      blockedType &&
       row.hub_id === blockedHub &&
+      row.task_type === blockedType &&
       (row.task_type === "practice" || row.task_type === "submit")
     ) {
       return false;
@@ -349,12 +356,17 @@ export function nextPendingPlanDayTask(
 /**
  * Refresh day-task cache from learning profile for the active plan day.
  * Always prefer a network refresh on results so Continue sees real pending work.
- * Marks current task (+ same-hub practice siblings) done locally so Continue skips
- * them even when the server PATCH 404s from task-id churn.
+ * Marks the current task done locally so Continue skips it even when the server
+ * PATCH 404s from task-id churn. Whole-hub done is opt-in via completeHub.
  */
 export async function ensurePlanDayTasksCached(
   currentTaskId?: string | null,
-  opts?: { force?: boolean; hubId?: string | null },
+  opts?: {
+    force?: boolean;
+    hubId?: string | null;
+    /** When true, mark all practice/submit rows for hubId done (L/R Practice, W/S Submit). */
+    completeHub?: boolean;
+  },
 ): Promise<PlanDayTaskCacheRow[]> {
   if (typeof window === "undefined") return [];
 
@@ -384,7 +396,9 @@ export async function ensurePlanDayTasksCached(
   }
 
   if (currentTaskId) markCachedPlanTaskDone(currentTaskId);
-  if (opts?.hubId) markCachedPlanHubTasksDone(opts.hubId);
+  if (opts?.completeHub && opts.hubId) {
+    markCachedPlanHubTasksDone(opts.hubId);
+  }
   return readPlanDayTasks();
 }
 

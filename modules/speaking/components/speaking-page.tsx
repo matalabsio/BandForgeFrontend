@@ -101,7 +101,9 @@ export function SpeakingPage({
   planHubId = null,
 }: Props) {
   const router = useRouter();
-  const needsFullMock = !fromPlan;
+  // Real plan OR skill-course mock: skip full-mock attempt orchestration.
+  const needsFullMock = !fromPlan && !skillContext;
+  const isRealPlanAttempt = fromPlan && Boolean(planHubId || planTaskId);
   const {
     mockAttemptId,
     ensuring: ensuringMockAttempt,
@@ -347,7 +349,7 @@ export function SpeakingPage({
         part: 1,
         mockAttemptId: mockAttemptId ?? undefined,
         skillContext: skillContext ?? undefined,
-        fromPlan: fromPlan || undefined,
+        fromPlan: isRealPlanAttempt || undefined,
       });
       setAttemptId(boot.attempt_id);
       setStudentName(boot.student_name);
@@ -398,7 +400,7 @@ export function SpeakingPage({
     } finally {
       setLoading(false);
     }
-  }, [fromPlan, mockAttemptId, mockSlug, mockTestId, recoverResponses, router, skillContext, testNumber]);
+  }, [fromPlan, isRealPlanAttempt, mockAttemptId, mockSlug, mockTestId, recoverResponses, router, skillContext, testNumber]);
 
   const handleMicBegin = useCallback(() => {
     writeMicCheckPassed(micScope);

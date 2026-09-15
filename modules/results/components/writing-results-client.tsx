@@ -128,7 +128,19 @@ export function WritingResultsClient({
     );
   }
 
-  const showContinueTask2 = review.part === 1 && !mockAttemptId && !planNav;
+  const planContinueHref = planNav?.continueHref ?? "";
+  const planContinueIsWritingNext =
+    planContinueHref.length > 0 &&
+    /writing/i.test(planContinueHref) &&
+    planContinueHref !== "/study-plan/today";
+
+  // Prefer plan Continue when it already points at Writing Task 2 / submit.
+  // Fall back to in-module Task 2 when plan nav is absent or still resolving.
+  const usePlanPrimary = Boolean(
+    planNav?.ready && (planNav.hasNextTask || planContinueIsWritingNext),
+  );
+  const showContinueTask2 =
+    review.part === 1 && !mockAttemptId && !usePlanPrimary;
   const sessionTasks = review.session_tasks ?? [];
 
   return (
@@ -150,8 +162,10 @@ export function WritingResultsClient({
         targetBand={targetBand}
         backHref={planNav?.todayHref ?? backNav.href}
         dashboardHref={planNav?.todayHref ?? "/dashboard"}
-        primaryActionLabel={planNav?.continueLabel}
-        onPrimaryAction={planNav ? planNav.onContinue : undefined}
+        primaryActionLabel={
+          usePlanPrimary ? planNav?.continueLabel : undefined
+        }
+        onPrimaryAction={usePlanPrimary ? planNav?.onContinue : undefined}
         secondaryActionLabel={
           planNav?.showSecondaryBack ? "Back to Today's plan" : undefined
         }

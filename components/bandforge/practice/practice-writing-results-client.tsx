@@ -165,7 +165,7 @@ export function PracticeWritingResultsClient({
         </h1>
         <p className="mt-4 text-body text-ink/65">
           Production AI examiner (same as mock tests). This usually takes under a
-          minute.
+          minute. Stay on this page — your feedback appears here when ready.
         </p>
         {review.word_count_estimate != null ? (
           <p className="mt-4 text-sm text-ink/50">
@@ -173,12 +173,6 @@ export function PracticeWritingResultsClient({
             {Number(review.word_count_estimate).toFixed(1)}
           </p>
         ) : null}
-        <Link
-          href={continueHref}
-          className="mt-10 text-sm font-semibold text-ink/60 hover:underline"
-        >
-          Continue without waiting →
-        </Link>
       </ResultPageViewport>
     );
   }

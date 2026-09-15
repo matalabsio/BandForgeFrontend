@@ -102,7 +102,8 @@ export function usePlanResultsNav(
       if (cancelled) return;
       window.clearTimeout(slowTimer);
 
-      const next = nextPendingPlanDayTask(taskId, { skipHubId: hubId });
+      // Same-step skip only (via current task) so W/S Practice → Submit stays open.
+      const next = nextPendingPlanDayTask(taskId);
       const prev = adjacentPlanDayTask(taskId, "prev");
       const href = next
         ? resolveTodayTaskHrefFromCache(next)

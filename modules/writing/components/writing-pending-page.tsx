@@ -226,7 +226,7 @@ export function WritingPendingPage({
           </Link>
         ) : null}
 
-        {planNav ? (
+        {planNav && !analyzing ? (
           <>
             <SectionResultsCtaBar
               layout="stack"
@@ -251,7 +251,7 @@ export function WritingPendingPage({
             />
             {planNav.finishModal}
           </>
-        ) : (
+        ) : !planNav ? (
           <>
             {!underWordLimit && !aiFailed ? (
               <Link
@@ -274,7 +274,7 @@ export function WritingPendingPage({
               View all sections
             </Link>
           </>
-        )}
+        ) : null}
       </div>
     ) : null;
 
