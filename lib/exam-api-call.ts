@@ -11,22 +11,14 @@ import {
   purgeExpiredAccessMirror,
 } from "@/lib/exam-session";
 import { isAuthEnabled } from "@/lib/flags";
-import { accessTokenExpired } from "@/lib/jwt-expiry";
-import { getAccessToken } from "@/lib/session";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 
+/** Cookie-only — BFF forwards bf_access; never attach a browser-readable Bearer. */
 function examRequestHeaders(init?: RequestInit): HeadersInit {
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
-  }
-  if (isAuthEnabled()) {
-    const token = getAccessToken();
-    // Never send an expired bearer — it overrides valid httpOnly cookie auth on the proxy.
-    if (token && !accessTokenExpired(token)) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
   }
   return headers;
 }

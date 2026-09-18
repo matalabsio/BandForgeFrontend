@@ -4,6 +4,7 @@ import { FULL_SKILL_PROGRAM_SLUG } from "@/lib/plan-preview";
 import { isAllowedSkillCoursePath } from "./post-login-destination";
 
 export { isAllowedSkillCoursePath } from "./post-login-destination";
+export { FULL_SKILL_PROGRAM_SLUG } from "@/lib/plan-preview";
 
 export const WRITING_SKILL_SLUG = "writing_skill";
 export const SPEAKING_SKILL_SLUG = "speaking_skill";
@@ -157,23 +158,80 @@ export function canAccessPracticeSkill(
   return false;
 }
 
-/** Skill-pack card unlocks on `/practice` (non-FSP index). */
+/**
+ * True when the user has Writing and/or Speaking and/or Dual packs but not FSP.
+ * Used for pack-only shell nav (hide Today / Full plan / Library).
+ */
+export function isPackOnlyAccess(
+  sub: Subscription | null | undefined,
+): boolean {
+  if (hasFullSkillProgram(sub)) return false;
+  return (
+    hasWritingSkillPlan(sub) ||
+    hasSpeakingSkillPlan(sub) ||
+    hasDualBundlePlan(sub)
+  );
+}
+
+export type PaywallSkuSlug =
+  | typeof WRITING_SKILL_SLUG
+  | typeof SPEAKING_SKILL_SLUG
+  | typeof DUAL_BUNDLE_SLUG
+  | typeof FULL_SKILL_PROGRAM_SLUG;
+
+/**
+ * SKU to buy when the user cannot access a practice skill route.
+ * Returns null when already entitled.
+ */
+export function missingSkuForPracticeSkill(
+  sub: Subscription | null | undefined,
+  skill: string,
+): PaywallSkuSlug | null {
+  if (canAccessPracticeSkill(sub, skill)) return null;
+  if (skill === "writing") return WRITING_SKILL_SLUG;
+  if (skill === "speaking") return SPEAKING_SKILL_SLUG;
+  // Listening / Reading / unknown → Full Skill Program
+  return FULL_SKILL_PROGRAM_SLUG;
+}
+
+/** Pricing deep-link for a sellable SKU. */
+export function pricingHrefForSku(slug: PaywallSkuSlug): string {
+  return `/pricing#plan-${slug}`;
+}
+
+/**
+ * Skill-pack card unlocks on `/practice` (non-FSP index only).
+ * FSP never renders this catalog — do not treat FSP as owning Dual/pack cards.
+ */
 export function isWritingPackUnlocked(
   sub: Subscription | null | undefined,
 ): boolean {
-  return hasFullSkillProgram(sub) || hasWritingSkillPlan(sub);
+  return !hasFullSkillProgram(sub) && hasWritingSkillPlan(sub);
 }
 
 export function isSpeakingPackUnlocked(
   sub: Subscription | null | undefined,
 ): boolean {
-  return hasFullSkillProgram(sub) || hasSpeakingSkillPlan(sub);
+  return !hasFullSkillProgram(sub) && hasSpeakingSkillPlan(sub);
 }
 
 export function isDualPackUnlocked(
   sub: Subscription | null | undefined,
 ): boolean {
-  return hasFullSkillProgram(sub) || hasDualBundlePlan(sub);
+  return !hasFullSkillProgram(sub) && hasDualBundlePlan(sub);
+}
+
+/**
+ * Non-FSP `/practice` catalog: omit the Dual purchase card when the Dual SKU
+ * is owned, or when Writing + Speaking singles already cover both skills.
+ */
+export function shouldHideDualPackCard(
+  sub: Subscription | null | undefined,
+): boolean {
+  return (
+    hasDualBundlePlan(sub) ||
+    (hasWritingSkillPlan(sub) && hasSpeakingSkillPlan(sub))
+  );
 }
 
 export function hasModuleSummaryBands(profile: LearningProfile): boolean {
@@ -252,25 +310,39 @@ export function hasDualBundlePlan(
 
 /**
  * Where to send the user after checkout unlock succeeds.
- * FSP → dashboard activating.
- * Dual → /practice (Writing + Speaking course cards).
- * Writing / Speaking singles → their course homes.
+ * When receiptPlanSlug is a known sellable SKU, that purchase wins over
+ * pre-existing pack entitlements (e.g. already owns Writing, just bought Speaking).
+ * Without a reliable receipt slug, fall back to entitlement priority:
+ * FSP → Dual → Writing → Speaking → pricing.
  */
 export function postCheckoutDestination(
   sub: Subscription | null | undefined,
   opts?: { receiptPlanSlug?: string | null },
 ): string {
+  const receiptSlug = (opts?.receiptPlanSlug ?? "").toLowerCase();
+  if (receiptSlug === FULL_SKILL_PROGRAM_SLUG) {
+    return "/dashboard?activating=1";
+  }
+  if (receiptSlug === DUAL_BUNDLE_SLUG) {
+    return PRACTICE_PATH;
+  }
+  if (receiptSlug === WRITING_SKILL_SLUG) {
+    return WRITING_PRACTICE_PATH;
+  }
+  if (receiptSlug === SPEAKING_SKILL_SLUG) {
+    return SPEAKING_PRACTICE_PATH;
+  }
+
   if (hasFullSkillProgram(sub)) {
     return "/dashboard?activating=1";
   }
-  const receiptSlug = (opts?.receiptPlanSlug ?? "").toLowerCase();
-  if (hasDualBundlePlan(sub) || receiptSlug === DUAL_BUNDLE_SLUG) {
+  if (hasDualBundlePlan(sub)) {
     return PRACTICE_PATH;
   }
-  if (hasWritingSkillPlan(sub) || receiptSlug === WRITING_SKILL_SLUG) {
+  if (hasWritingSkillPlan(sub)) {
     return WRITING_PRACTICE_PATH;
   }
-  if (hasSpeakingSkillPlan(sub) || receiptSlug === SPEAKING_SKILL_SLUG) {
+  if (hasSpeakingSkillPlan(sub)) {
     return SPEAKING_PRACTICE_PATH;
   }
   return "/pricing";

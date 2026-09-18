@@ -3,30 +3,43 @@ export const REFRESH_COOKIE = "bf_refresh";
 /** Readable by JS — signals httpOnly auth cookies may exist (no token value). */
 export const SESSION_HINT_COOKIE = "bf_has_session";
 
-/** localStorage keys — survives browser restarts (unlike in-memory session). */
+/**
+ * Legacy localStorage key — never write; only clear on cleanup.
+ * Access JWTs live in httpOnly bf_access (and optional page-lifetime memory).
+ */
 export const LS_ACCESS_TOKEN = "bf_access_token";
 export const LS_REFRESH_TOKEN = "bf_refresh_token";
 
+/** Page-lifetime access JWT for exam refresh scheduling only — never persisted. */
 let accessTokenMemory: string | null = null;
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 }
 
-export function setAccessToken(token: string | null): void {
-  accessTokenMemory = token;
+/** Remove legacy bf_access_token if an older build left it behind. */
+export function clearLegacyAccessToken(): void {
   if (!canUseStorage()) return;
-  if (token) {
-    window.localStorage.setItem(LS_ACCESS_TOKEN, token);
-  } else {
+  try {
     window.localStorage.removeItem(LS_ACCESS_TOKEN);
+  } catch {
+    /* private mode / blocked */
   }
 }
 
+/**
+ * Set in-memory access for this page lifetime only.
+ * Never writes bf_access_token; always scrubs any legacy LS value.
+ */
+export function setAccessToken(token: string | null): void {
+  accessTokenMemory = token;
+  clearLegacyAccessToken();
+}
+
+/** In-memory access only — never reads or trusts localStorage. */
 export function getAccessToken(): string | null {
-  if (accessTokenMemory) return accessTokenMemory;
-  if (!canUseStorage()) return null;
-  return window.localStorage.getItem(LS_ACCESS_TOKEN);
+  clearLegacyAccessToken();
+  return accessTokenMemory;
 }
 
 export function setRefreshToken(token: string | null): void {
@@ -46,19 +59,21 @@ export function clearLegacyRefreshToken(): void {
   setRefreshToken(null);
 }
 
+/**
+ * After login/refresh/OTP: keep access in memory for this tab only.
+ * httpOnly bf_access / bf_refresh are set by the BFF; do not persist access to LS.
+ */
 export function persistAuthTokens(
   accessToken: string,
   _refreshToken?: string | null,
 ): void {
   setAccessToken(accessToken);
-  // Never persist refresh to localStorage — httpOnly bf_refresh + BFF only.
   clearLegacyRefreshToken();
 }
 
 export function clearAccessToken(): void {
   accessTokenMemory = null;
-  if (!canUseStorage()) return;
-  window.localStorage.removeItem(LS_ACCESS_TOKEN);
+  clearLegacyAccessToken();
 }
 
 export function clearAuthStorage(): void {
@@ -75,13 +90,16 @@ export function hasSessionHintCookie(): boolean {
   });
 }
 
-/** True when the browser may have a restorable session (avoids noisy /api/auth calls on login). */
+/**
+ * UX hint that cookies may restore a session — never an authorization decision.
+ * Does not use bf_access_token (legacy key is scrubbed only).
+ */
 export function hasLikelyClientSession(): boolean {
   if (typeof document === "undefined") return false;
+  clearLegacyAccessToken();
   return (
     hasSessionHintCookie() ||
-    Boolean(getRefreshToken()) || // legacy migrate-once
-    Boolean(getAccessToken())
+    Boolean(getRefreshToken()) // legacy migrate-once
   );
 }
 

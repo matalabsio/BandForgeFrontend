@@ -1,6 +1,6 @@
 import type { AuthResponse } from "@/lib/auth";
 import { DIAGNOSTIC_MOCK_TEST_ID } from "@/lib/diagnostic-catalog";
-import { persistAuthTokens } from "@/lib/session";
+import { clearLegacyAccessToken } from "@/lib/session";
 import { parseApiError, parseJsonResponse, type ApiErrorBody } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { mockAttemptStorageKey } from "@/modules/mock/lib/mock-session-storage";
@@ -112,9 +112,8 @@ export async function ensureDiagnosticGuestSession(): Promise<AuthResponse> {
         throw new ApiError(parseApiError(body as ApiErrorBody, res.status), res.status);
       }
       const auth = body as AuthResponse;
-      if (auth.access_token) {
-        persistAuthTokens(auth.access_token);
-      }
+      // Cookies are set by the BFF; scrub any legacy LS access JWT.
+      clearLegacyAccessToken();
       return auth;
     } finally {
       guestSessionPromise = null;

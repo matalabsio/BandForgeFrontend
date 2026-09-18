@@ -7,6 +7,7 @@ import {
   isDualPackUnlocked,
   isSpeakingPackUnlocked,
   isWritingPackUnlocked,
+  shouldHideDualPackCard,
   SPEAKING_PRACTICE_PATH,
   SPEAKING_SKILL_SLUG,
   WRITING_PRACTICE_PATH,
@@ -32,11 +33,13 @@ type PackCard = {
 
 /**
  * Non-FSP `/practice` index.
- * Dual owners: Writing + Speaking course cards only (Dual header).
+ * Dual SKU owners: Writing + Speaking course cards only (Dual header).
+ * Writing + Speaking singles (no Dual SKU): same two course cards; Dual purchase omitted.
  * Others: Writing / Speaking / Dual locked catalog.
  */
 export function PracticeSkillPackCards({ subscription }: Props) {
   const dualHome = hasDualBundlePlan(subscription);
+  const hideDualCard = shouldHideDualPackCard(subscription);
 
   const writingCard: PackCard = {
     id: "writing",
@@ -69,7 +72,7 @@ export function PracticeSkillPackCards({ subscription }: Props) {
     Icon: Sparkles,
   };
 
-  const cards: PackCard[] = dualHome
+  const cards: PackCard[] = hideDualCard
     ? [writingCard, speakingCard]
     : [writingCard, speakingCard, dualCard];
 
@@ -108,7 +111,7 @@ export function PracticeSkillPackCards({ subscription }: Props) {
       <div
         className={cn(
           "grid gap-3",
-          dualHome ? "sm:grid-cols-2" : "sm:grid-cols-3",
+          hideDualCard ? "sm:grid-cols-2" : "sm:grid-cols-3",
         )}
       >
         {cards.map((card) => (

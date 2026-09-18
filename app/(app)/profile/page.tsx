@@ -3,6 +3,7 @@ import { NotificationPreferencesPanel } from "@/components/bandforge/profile/not
 import { ProfileForm } from "@/components/bandforge/profile/profile-form";
 import { ProfileSettingsHub } from "@/components/bandforge/profile/profile-settings-hub";
 import { authGuardRedirectPath } from "@/lib/auth";
+import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import { hasFullSkillProgram } from "@/lib/entitlement";
 import { fetchLearningProfile } from "@/lib/learning-server";
 import { fetchSubscriptionResult } from "@/lib/payments-server";
@@ -57,6 +58,7 @@ export default async function ProfilePage() {
     fetchSubscriptionResult(cookieHeader),
     fetchLearningProfile(cookieHeader),
   ]);
+  redirectIfUnauthenticated(user, "/profile", cookieHeader);
   if (!user) {
     redirect(authGuardRedirectPath("/profile", cookieHeader));
   }

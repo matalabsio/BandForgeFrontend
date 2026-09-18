@@ -39,6 +39,11 @@ type NavOptions = {
   showSpeakingNav?: boolean;
   /** Dual Bundle: Complete Mock opens the /practice course chooser. */
   isDualBundle?: boolean;
+  /**
+   * Writing/Speaking/Dual packs without FSP — hide Today, Full plan, Library,
+   * and FSP Complete Mock.
+   */
+  packOnly?: boolean;
 };
 
 /** Sidebar — primary routes. Complete Mock unlocks after the practice plan. */
@@ -47,11 +52,17 @@ export function getDashboardNav({
   showWritingNav = false,
   showSpeakingNav = false,
   isDualBundle = false,
+  packOnly = false,
 }: NavOptions = {}): NavGroup[] {
-  const items: NavLink[] = [
-    { label: "Today", href: "/dashboard", Icon: HomeIcon },
-    { label: "Full plan", href: "/study-plan", Icon: CalendarIcon },
-  ];
+  const items: NavLink[] = [];
+
+  if (!packOnly) {
+    items.push(
+      { label: "Today", href: "/dashboard", Icon: HomeIcon },
+      { label: "Full plan", href: "/study-plan", Icon: CalendarIcon },
+    );
+  }
+
   if (showWritingNav) {
     items.push({
       label: "Writing",
@@ -66,25 +77,41 @@ export function getDashboardNav({
       Icon: MicIcon,
     });
   }
-  items.push(
-    isDualBundle
-      ? {
-          label: "Complete Mock",
-          shortLabel: "Mock",
-          href: PRACTICE_PATH,
-          Icon: FileTextIcon,
-          disabled: false,
-        }
-      : {
-          label: "Complete Mock",
-          shortLabel: "Mock",
-          href: "/test",
-          Icon: FileTextIcon,
-          disabled: !mockUnlocked,
-          disabledHint: "Finish your personalized practice plan to unlock mocks",
-        },
-    { label: "Library", href: "/content-library", Icon: BookIcon },
-  );
+
+  if (packOnly) {
+    // Dual: course chooser for skill mocks. Singles: no FSP /test entry.
+    if (isDualBundle) {
+      items.push({
+        label: "Complete Mock",
+        shortLabel: "Mock",
+        href: PRACTICE_PATH,
+        Icon: FileTextIcon,
+        disabled: false,
+      });
+    }
+  } else {
+    items.push(
+      isDualBundle
+        ? {
+            label: "Complete Mock",
+            shortLabel: "Mock",
+            href: PRACTICE_PATH,
+            Icon: FileTextIcon,
+            disabled: false,
+          }
+        : {
+            label: "Complete Mock",
+            shortLabel: "Mock",
+            href: "/test",
+            Icon: FileTextIcon,
+            disabled: !mockUnlocked,
+            disabledHint:
+              "Finish your personalized practice plan to unlock mocks",
+          },
+      { label: "Library", href: "/content-library", Icon: BookIcon },
+    );
+  }
+
   return [{ title: "", items }];
 }
 
@@ -92,11 +119,17 @@ export function getDashboardNav({
 export function getMobileBottomNav({
   showWritingNav = false,
   showSpeakingNav = false,
+  packOnly = false,
 }: NavOptions = {}): NavLink[] {
-  const items: NavLink[] = [
-    { label: "Today", href: "/dashboard", Icon: HomeIcon },
-    { label: "Full plan", href: "/study-plan", Icon: CalendarIcon },
-  ];
+  const items: NavLink[] = [];
+
+  if (!packOnly) {
+    items.push(
+      { label: "Today", href: "/dashboard", Icon: HomeIcon },
+      { label: "Full plan", href: "/study-plan", Icon: CalendarIcon },
+    );
+  }
+
   if (showWritingNav) {
     items.push({
       label: "Writing",
@@ -111,16 +144,20 @@ export function getMobileBottomNav({
       Icon: MicIcon,
     });
   }
-  items.push(
-    { label: "Library", href: "/content-library", Icon: BookIcon },
-    {
-      label: "Report card",
-      shortLabel: "Report",
-      href: "#report",
-      Icon: ClipboardIcon,
-      action: "open-report",
-    },
-  );
+
+  if (!packOnly) {
+    items.push(
+      { label: "Library", href: "/content-library", Icon: BookIcon },
+      {
+        label: "Report card",
+        shortLabel: "Report",
+        href: "#report",
+        Icon: ClipboardIcon,
+        action: "open-report",
+      },
+    );
+  }
+
   return items;
 }
 
