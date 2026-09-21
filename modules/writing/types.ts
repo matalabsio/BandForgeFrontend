@@ -15,6 +15,9 @@ export type WritingChartSpec = {
   /** Line graph: year labels on x-axis */
   labels?: string[];
   series: WritingChartSeries[];
+  /** Table chart (Task 1 academic tables) */
+  headers?: string[];
+  rows?: Array<Array<string | number>>;
 };
 
 export type WritingTaskOptions = {

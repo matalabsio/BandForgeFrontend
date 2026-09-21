@@ -9,6 +9,8 @@ import {
 } from "@/lib/writing-test";
 import { useListeningTimer } from "@/modules/shared";
 import { WritingExamWorkspace } from "@/modules/writing/components/writing-exam-workspace";
+import { WritingTask1Prompt } from "@/modules/writing/components/writing-task1-prompt";
+import type { WritingTask, WritingTaskOptions } from "@/modules/writing/types";
 
 type Props = {
   exercise: BankExerciseStart;
@@ -20,6 +22,11 @@ type Props = {
 
 function durationSecondsForPart(part: 1 | 2): number {
   return part === 1 ? 20 * 60 : 40 * 60;
+}
+
+function optionRecord(raw: unknown): WritingTaskOptions {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  return raw as WritingTaskOptions;
 }
 
 export function PracticeWritingExam({
@@ -36,7 +43,25 @@ export function PracticeWritingExam({
   const essayRef = useRef("");
   const minWords = writingMinWords(meta.part);
   const wordCount = essay.trim() ? essay.trim().split(/\s+/).length : 0;
-  const qid = exercise.section.questions[0]?.id ?? "writing";
+  const firstQ = exercise.section.questions[0];
+  const qid = firstQ?.id ?? "writing";
+
+  const task1 = useMemo((): WritingTask | null => {
+    if (meta.part !== 1) return null;
+    const opts = optionRecord(firstQ?.options);
+    return {
+      id: qid,
+      question_number: firstQ?.question_number ?? 1,
+      question_type: firstQ?.question_type ?? "task1_academic",
+      prompt: meta.prompt,
+      part: 1,
+      options: {
+        ...opts,
+        image_url: meta.imageUrl ?? opts.image_url ?? null,
+        title: opts.title ?? meta.title,
+      },
+    };
+  }, [firstQ, meta.imageUrl, meta.part, meta.prompt, meta.title, qid]);
 
   useEffect(() => {
     if (startedAtIso) return;
@@ -89,17 +114,21 @@ export function PracticeWritingExam({
         error={error}
         plainHeader
         prompt={
-          <div className="space-y-4 text-[15px] leading-relaxed text-ink">
-            <p className="whitespace-pre-wrap">{meta.prompt}</p>
-            {meta.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={meta.imageUrl}
-                alt="Writing task visual"
-                className="max-h-80 w-full rounded-lg border border-border-soft object-contain"
-              />
-            ) : null}
-          </div>
+          task1 ? (
+            <WritingTask1Prompt task={task1} plainHeader />
+          ) : (
+            <div className="space-y-4 text-[15px] leading-relaxed text-ink">
+              <p className="whitespace-pre-wrap">{meta.prompt}</p>
+              {meta.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={meta.imageUrl}
+                  alt="Writing task visual"
+                  className="max-h-80 w-full rounded-lg border border-border-soft object-contain"
+                />
+              ) : null}
+            </div>
+          )
         }
         essay={essay}
         onEssayChange={setEssay}

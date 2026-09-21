@@ -3,6 +3,7 @@ import { WritingTaskPromptHeader } from "@/modules/writing/components/writing-ta
 import {
   WritingTask1Chart,
   WritingTask1LineChart,
+  WritingTask1Table,
 } from "@/modules/writing/components/writing-task1-chart";
 import type { WritingChartSpec } from "@/modules/writing/types";
 import { RichText } from "@/components/rich-text";
@@ -38,7 +39,45 @@ function parseChartSpec(value: unknown): WritingChartSpec | null {
     labels?: unknown;
     datasets?: unknown;
     data?: unknown;
+    headers?: unknown;
+    rows?: unknown;
   };
+
+  // Academic Task 1 table (headers + rows) — used by Writing Skill bank sets.
+  if (
+    (candidate.type === "table" ||
+      (Array.isArray(candidate.headers) && Array.isArray(candidate.rows))) &&
+    Array.isArray(candidate.headers) &&
+    Array.isArray(candidate.rows) &&
+    candidate.headers.length > 0 &&
+    candidate.rows.length > 0
+  ) {
+    const headers = candidate.headers.filter(
+      (h): h is string => typeof h === "string",
+    );
+    const rows: Array<Array<string | number>> = [];
+    for (const r of candidate.rows) {
+      if (!Array.isArray(r)) continue;
+      rows.push(
+        r.map((cell) =>
+          typeof cell === "number" || typeof cell === "string"
+            ? cell
+            : String(cell ?? ""),
+        ),
+      );
+    }
+    if (headers.length && rows.length) {
+      return {
+        type: "table",
+        title: typeof candidate.title === "string" ? candidate.title : undefined,
+        source: typeof candidate.source === "string" ? candidate.source : undefined,
+        headers,
+        rows,
+        series: [],
+      };
+    }
+  }
+
   const parsedSeries: WritingChartSpec["series"] = Array.isArray(candidate.series)
     ? candidate.series.flatMap((s) => {
         if (!s || typeof s !== "object") return [];
@@ -178,9 +217,13 @@ export function WritingTask1Prompt({
     parseChartSpec((task.options as Record<string, unknown> | undefined)?.chart_data) ??
     parseChartSpec((task.options as Record<string, unknown> | undefined)?.figure);
   const figureLabel = task.options?.figure_label ?? "Figure 1";
-  const figureNote =
-    task.options?.figure_note ??
-    "[Grouped bar chart — four cities on x-axis; percentage on y-axis; four transport modes shown per city]";
+  const isTable =
+    chart?.type === "table" ||
+    Boolean(chart?.headers?.length && chart?.rows?.length);
+  const figureNote = isTable
+    ? task.options?.figure_note
+    : (task.options?.figure_note ??
+      "[Grouped bar chart — four cities on x-axis; percentage on y-axis; four transport modes shown per city]");
   const { beforeChart, afterChart } = splitTask1Prompt(task.prompt);
   const instructionParts = splitTask1InstructionBlocks(beforeChart || task.prompt);
 
@@ -194,6 +237,12 @@ export function WritingTask1Prompt({
         src={task.options.image_url}
         alt="Task 1 visual"
         className="max-w-full rounded-lg border border-border"
+      />
+    ) : chart && isTable ? (
+      <WritingTask1Table
+        chart={chart}
+        figureLabel={figureLabel}
+        figureNote={figureNote}
       />
     ) : chart && isLineGraph ? (
       <WritingTask1LineChart
