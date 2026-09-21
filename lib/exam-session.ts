@@ -11,6 +11,7 @@ import {
 } from "@/lib/jwt-expiry";
 import {
   clearAccessToken,
+  clearLegacyAccessToken,
   getAccessToken,
 } from "@/lib/session";
 
@@ -27,8 +28,12 @@ export class ExamSessionError extends ApiError {
   }
 }
 
-/** Drop expired access mirror so it is never sent as Authorization. */
+/**
+ * Drop expired in-memory access used for refresh scheduling.
+ * Always scrubs legacy bf_access_token; never reads LS for auth.
+ */
 export function purgeExpiredAccessMirror(): void {
+  clearLegacyAccessToken();
   if (!isAuthEnabled()) return;
   const access = getAccessToken();
   if (access && accessTokenExpired(access)) {

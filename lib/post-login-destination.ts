@@ -57,6 +57,12 @@ function pathOnly(path: string): string {
   return path.split(/[?#]/, 1)[0] || path;
 }
 
+/** Free diagnostic journey URLs (`/diagnostic`, writing, results, …). */
+export function isDiagnosticAppPath(path: string | null | undefined): boolean {
+  const base = pathOnly(safePostLoginPath(path));
+  return base === DIAGNOSTIC_LANDING_PATH || base.startsWith(`${DIAGNOSTIC_LANDING_PATH}/`);
+}
+
 function isDefaultEntryPath(path: string): boolean {
   return DEFAULT_ENTRY_PATHS.has(pathOnly(path));
 }
@@ -73,7 +79,8 @@ function isLegacyPlanPath(path: string): boolean {
 
 /**
  * True when destination depends on subscription / learning-profile lookups.
- * Explicit deep links (e.g. `/diagnostic/writing`) do not — redirect immediately.
+ * Explicit deep links (e.g. `/diagnostic/writing`) do not — redirect immediately
+ * (continue still does a cheap FSP check for diagnostic URLs).
  */
 export function postLoginNeedsServerLookup(
   requestedPath: string | null | undefined,
@@ -89,6 +96,7 @@ export function postLoginNeedsServerLookup(
 /**
  * Resolve where to send a user after login / OAuth continue.
  *
+ * - Paid FSP → `/dashboard` (including diagnostic deep links)
  * - Paid → `/dashboard` for default entries / results checkout
  * - Unpaid + no diagnostic → `/diagnostic`
  * - Unpaid + has diagnostic → `/diagnostic/results?checkout=1`
@@ -106,6 +114,11 @@ export function resolvePostLoginDestination(
     ? (options.paidSkillCoursePath as string).split(/[?#]/, 1)[0]
     : null;
   const hasDiagnostic = hasLocalDiagnosticResults || hasServerDiagnostic;
+
+  // FSP students never re-enter the free diagnostic funnel after login.
+  if (hasPaid && isDiagnosticAppPath(safePath)) {
+    return DASHBOARD_PATH;
+  }
 
   // Legacy plan URL → results checkout resume
   if (isLegacyPlanPath(safePath)) {

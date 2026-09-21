@@ -17,6 +17,9 @@ type Props = {
   showWritingNav?: boolean;
   showSpeakingNav?: boolean;
   isDualBundle?: boolean;
+  packOnly?: boolean;
+  /** Logo / home destination (pack → course home, FSP → dashboard). */
+  homeHref?: string;
 };
 
 export function DashboardSidebarNav({
@@ -28,13 +31,15 @@ export function DashboardSidebarNav({
   showWritingNav = false,
   showSpeakingNav = false,
   isDualBundle = false,
+  packOnly = false,
+  homeHref = "/dashboard",
 }: Props) {
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
 
   return (
     <>
       <div className="mb-8 px-1">
-        <BandForgeLogoLink href="/dashboard" size="sm" />
+        <BandForgeLogoLink href={homeHref} size="sm" />
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto" aria-label="Main">
@@ -43,6 +48,7 @@ export function DashboardSidebarNav({
           showWritingNav,
           showSpeakingNav,
           isDualBundle,
+          packOnly,
         }).map((group, groupIndex) => (
           <div key={group.title || `untitled-${groupIndex}`}>
             {group.title ? (

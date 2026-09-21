@@ -3,6 +3,7 @@ import {
   M02_MOCK_TEST_ID,
   type MockSlug,
 } from "@/lib/mock-catalog";
+import { isModuleSubmitTarget } from "@/lib/practice-submit";
 import type { PracticeSkill } from "@/lib/practice-types";
 
 export type PlanTaskKind = "watch" | "practice" | "submit";
@@ -252,10 +253,17 @@ export function planStepOpenHref(opts: {
   if (opts.skill === "writing") {
     return planWritingModuleHref(opts);
   }
-  if (opts.skill === "listening") {
-    return planListeningModuleHref(opts);
-  }
-  if (opts.skill === "reading") {
+  // Listening/reading hubs are bank exercises; catalog Tests 1–2 are speaking-only.
+  if (opts.skill === "listening" || opts.skill === "reading") {
+    if (!cfg || !isModuleSubmitTarget(cfg)) {
+      return planExerciseHref({
+        skill: opts.skill,
+        hubId: opts.hubId,
+        task: opts.task,
+        taskId: opts.taskId,
+      });
+    }
+    if (opts.skill === "listening") return planListeningModuleHref(opts);
     return planReadingModuleHref(opts);
   }
   if (opts.skill === "speaking") {
@@ -380,6 +388,24 @@ export function resolveTodayTaskHref(opts: {
     });
   }
   if (isBankSubmitConfig(opts.submitConfig)) {
+    return planExerciseHref({
+      skill,
+      hubId,
+      task,
+      taskId: opts.taskId,
+    });
+  }
+  // Prefer a practice exercise URL already on the task.
+  if (opts.fallbackHref && opts.fallbackHref.includes("/practice/")) {
+    return opts.fallbackHref;
+  }
+  // Catalog Tests 1–2 are speaking-only; stale plan hrefs still point at
+  // /test/N/listening|reading. Bank hubs must open the exercise UI.
+  if (
+    (skill === "listening" || skill === "reading") &&
+    opts.fallbackHref &&
+    opts.fallbackHref.includes("/test/")
+  ) {
     return planExerciseHref({
       skill,
       hubId,

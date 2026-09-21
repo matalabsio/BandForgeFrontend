@@ -1,29 +1,127 @@
 import Link from "next/link";
 import { diagnosticPaths } from "@/lib/diagnostic-catalog";
+import {
+  DUAL_BUNDLE_SLUG,
+  FULL_SKILL_PROGRAM_SLUG,
+  SPEAKING_SKILL_SLUG,
+  WRITING_SKILL_SLUG,
+} from "@/lib/diagnostic-sku-offer";
+import {
+  pricingHrefForSku,
+  type PaywallSkuSlug,
+} from "@/lib/entitlement";
+import { resolvePlanPaywallKind } from "@/lib/plan-paywall";
+
+export { resolvePlanPaywallKind } from "@/lib/plan-paywall";
+
+type PaywallCopy = {
+  eyebrow: string;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  ctaHref: string;
+};
+
+const SKU_PAYWALL: Record<PaywallSkuSlug, Omit<PaywallCopy, "ctaHref">> = {
+  [WRITING_SKILL_SLUG]: {
+    eyebrow: "Writing Skill",
+    title: "Unlock Writing practice",
+    body: "Purchase Writing Skill to open Task 1 + Task 2 hubs, AI feedback, and your Writing mock.",
+    ctaLabel: "Buy Writing Skill",
+  },
+  [SPEAKING_SKILL_SLUG]: {
+    eyebrow: "Speaking Skill",
+    title: "Unlock Speaking practice",
+    body: "Purchase Speaking Skill to open Part 1–3 practice, AI feedback, and your Speaking mock.",
+    ctaLabel: "Buy Speaking Skill",
+  },
+  [DUAL_BUNDLE_SLUG]: {
+    eyebrow: "Dual Bundle",
+    title: "Unlock Writing + Speaking",
+    body: "Purchase Dual Bundle to open both Writing and Speaking skill courses in one plan.",
+    ctaLabel: "Buy Dual Bundle",
+  },
+  [FULL_SKILL_PROGRAM_SLUG]: {
+    eyebrow: "Full Skill Program",
+    title: "Unlock your personalised plan",
+    body: "Purchase the Full Skill Program for all four skills, today’s plan, and full mock unlocks.",
+    ctaLabel: "Buy Full Skill Program",
+  },
+};
 
 /**
- * Dashboard body when the user has no Full Skill Program yet.
- * Branches CTA on whether a diagnostic baseline already exists.
+ * Paywall when the user lacks the SKU for this route.
+ * Defaults to FSP purchase CTA; pass targetSlug for Writing/Speaking/Dual.
+ * Pass hasDiagnostic only from the dashboard diagnostic unpaid flow.
  */
 export function DashboardPlanPaywall({
-  hasDiagnostic = false,
+  hasDiagnostic,
+  targetSlug = FULL_SKILL_PROGRAM_SLUG,
 }: {
   hasDiagnostic?: boolean;
+  /** SKU the user needs to buy for this route. */
+  targetSlug?: PaywallSkuSlug;
 }) {
-  const title = hasDiagnostic
-    ? "Your diagnostic is ready"
-    : "No diagnostic results yet";
-  const body = hasDiagnostic
-    ? "Unlock the Full Skill Program to open your personalised dashboard, study plan, and practice path."
-    : "Complete the free diagnostic to see your skill bands, then unlock a personalised Full Skill Program on your dashboard.";
-  const ctaHref = hasDiagnostic
-    ? diagnosticPaths.planReveal
-    : diagnosticPaths.landing;
-  const ctaLabel = hasDiagnostic
-    ? "Unlock Full Skill Program"
-    : "Start diagnostic";
-  const eyebrow = hasDiagnostic ? "Next step" : "Free baseline";
+  const kind = resolvePlanPaywallKind({ targetSlug, hasDiagnostic });
 
+  if (kind === "diagnostic_start") {
+    return (
+      <PaywallShell
+        eyebrow="Free baseline"
+        title="No diagnostic results yet"
+        body="Complete the free diagnostic to see your skill bands, then unlock a personalised Full Skill Program on your dashboard."
+        ctaLabel="Start diagnostic"
+        ctaHref={diagnosticPaths.landing}
+        showDiagnosticHints
+      />
+    );
+  }
+
+  if (kind === "diagnostic_unlock") {
+    return (
+      <PaywallShell
+        eyebrow="Next step"
+        title="Your diagnostic is ready"
+        body="Unlock the Full Skill Program to open your personalised dashboard, study plan, and practice path."
+        ctaLabel="Unlock Full Skill Program"
+        ctaHref={diagnosticPaths.planReveal}
+      />
+    );
+  }
+
+  const copy = SKU_PAYWALL[targetSlug];
+  return (
+    <PaywallShell
+      eyebrow={copy.eyebrow}
+      title={copy.title}
+      body={copy.body}
+      ctaLabel={copy.ctaLabel}
+      ctaHref={pricingHrefForSku(targetSlug)}
+      secondaryHref="/pricing"
+      secondaryLabel="See all plans"
+    />
+  );
+}
+
+function PaywallShell({
+  eyebrow,
+  title,
+  body,
+  ctaLabel,
+  ctaHref,
+  secondaryHref,
+  secondaryLabel,
+  showDiagnosticHints = false,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  ctaHref: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
+  showDiagnosticHints?: boolean;
+}) {
   return (
     <section className="relative overflow-hidden rounded-[22px] border border-[#E2EAF2] bg-[linear-gradient(165deg,#F7FBFD_0%,#FFFFFF_42%,#EEF9FB_100%)] px-5 py-10 sm:px-10 sm:py-12">
       <div
@@ -54,9 +152,18 @@ export function DashboardPlanPaywall({
           >
             {ctaLabel}
           </Link>
+          {secondaryHref && secondaryLabel ? (
+            <Link
+              href={secondaryHref}
+              prefetch
+              className="inline-flex h-12 cursor-pointer items-center justify-center rounded-full border border-[#E2EAF2] bg-white px-7 text-[0.9375rem] font-semibold text-[#0D1F3C] transition-colors hover:border-cyan/40"
+            >
+              {secondaryLabel}
+            </Link>
+          ) : null}
         </div>
 
-        {!hasDiagnostic ? (
+        {showDiagnosticHints ? (
           <ul className="mt-9 grid w-full gap-2.5 text-left sm:grid-cols-3 sm:gap-3">
             {[
               "Listening + Reading",

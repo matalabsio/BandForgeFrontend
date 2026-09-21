@@ -30,6 +30,7 @@ import {
   type DiagnosticTestDateOption,
   type DiagnosticNativeLanguage,
 } from "@/lib/diagnostic-lead";
+import { DiagnosticWaitState } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import {
   clearDiagnosticAttempt,
   createDiagnosticAttempt,
@@ -37,8 +38,13 @@ import {
   isListeningPrepComplete,
   readDiagnosticProgress,
 } from "@/lib/diagnostic-storage";
+import {
+  DIAGNOSTIC_START_SUBSCRIPTION_TIMEOUT_MS,
+  decideDiagnosticStartGate,
+} from "@/lib/diagnostic-start-gate";
 import { getSubscription } from "@/lib/payments";
 import { hasFullSkillProgram } from "@/lib/entitlement";
+import { hasSessionHintCookie } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 const ONBOARDING_STEPS: SplitShellStep[] = [
@@ -91,10 +97,37 @@ function InfoTip({ children }: { children: React.ReactNode }) {
   );
 }
 
+function resumeDiagnosticPath(): string {
+  const progress = readDiagnosticProgress();
+  const currentModule = progress?.currentModule ?? "listening";
+  if (currentModule === "listening" && !isListeningPrepComplete(progress)) {
+    return diagnosticPaths.listeningPrep;
+  }
+  return diagnosticPaths[currentModule];
+}
+
+async function fetchSubscriptionForStartGate() {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      getSubscription(),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error("diagnostic_start_subscription_timeout")),
+          DIAGNOSTIC_START_SUBSCRIPTION_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
+
 export function DiagnosticStartExperience() {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const contentRef = useRef<HTMLDivElement>(null);
+  const [gate, setGate] = useState<"checking" | "ready">("checking");
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [canContinue, setCanContinue] = useState(false);
@@ -108,8 +141,11 @@ export function DiagnosticStartExperience() {
   const [nativeLanguage, setNativeLanguage] = useState<DiagnosticNativeLanguage | null>(null);
 
   useEffect(() => {
-    const lead = readDiagnosticLead();
-    if (lead) {
+    let cancelled = false;
+
+    const hydrateLead = () => {
+      const lead = readDiagnosticLead();
+      if (!lead) return;
       setFullName(lead.fullName);
       setPhone(lead.phone);
       setTargetBand(lead.targetBand);
@@ -117,24 +153,46 @@ export function DiagnosticStartExperience() {
       if (lead.testDateOption) setTestDateOption(lead.testDateOption);
       if (lead.examDate) setExamDate(lead.examDate);
       if (lead.nativeLanguage) setNativeLanguage(lead.nativeLanguage);
-    }
-    setCanContinue(hasInProgressDiagnostic());
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const check = async () => {
-      try {
-        const sub = await getSubscription();
-        if (!cancelled && hasFullSkillProgram(sub)) router.replace("/dashboard");
-      } catch { /* guest or offline */ }
     };
-    if (typeof requestAnimationFrame === "function") {
-      const frame = requestAnimationFrame(() => void check());
-      return () => { cancelled = true; cancelAnimationFrame(frame); };
-    }
-    void check();
-    return () => { cancelled = true; };
+
+    const bootstrap = async () => {
+      hydrateLead();
+
+      let isFsp = false;
+      // Anonymous visitors never call payments — open the lead form / resume immediately.
+      if (hasSessionHintCookie()) {
+        try {
+          const sub = await fetchSubscriptionForStartGate();
+          isFsp = hasFullSkillProgram(sub);
+        } catch {
+          /* offline or timeout — fail open to form/resume */
+        }
+      }
+      if (cancelled) return;
+
+      const decision = decideDiagnosticStartGate({
+        isFsp,
+        hasInProgress: hasInProgressDiagnostic(),
+      });
+
+      if (decision.kind === "redirect_dashboard") {
+        router.replace("/dashboard");
+        return;
+      }
+      if (decision.kind === "auto_resume") {
+        setBusy(true);
+        router.replace(resumeDiagnosticPath());
+        return;
+      }
+
+      setCanContinue(hasInProgressDiagnostic());
+      setGate("ready");
+    };
+
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const stepValid = (): boolean => {
@@ -169,13 +227,7 @@ export function DiagnosticStartExperience() {
   };
 
   const goToCurrentModule = () => {
-    const progress = readDiagnosticProgress();
-    const currentModule = progress?.currentModule ?? "listening";
-    if (currentModule === "listening" && !isListeningPrepComplete(progress)) {
-      router.replace(diagnosticPaths.listeningPrep);
-      return;
-    }
-    router.replace(diagnosticPaths[currentModule]);
+    router.replace(resumeDiagnosticPath());
   };
 
   const persistAndStart = () => {
@@ -241,6 +293,14 @@ export function DiagnosticStartExperience() {
 
     return () => ctx.revert();
   }, [step, reduceMotion, canContinue]);
+
+  if (gate === "checking") {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <DiagnosticWaitState label="Checking your session" />
+      </div>
+    );
+  }
 
   return (
     <DiagnosticSplitShell

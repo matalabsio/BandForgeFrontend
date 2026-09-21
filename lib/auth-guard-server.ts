@@ -8,13 +8,24 @@ export function isProductionAuthMisconfigured(): boolean {
   return process.env.VERCEL === "1" && !isAuthEnabled();
 }
 
-export function isGuestOrMissingUser(user: { id: string } | null): boolean {
-  return !user || user.id === GUEST_USER.id;
+/**
+ * True when there is no account-capable session for protected app routes.
+ * Rejects: missing user, auth-disabled placeholder id, and real DB role=guest.
+ * Student / admin / super_admin (any non-guest role) are account-capable.
+ */
+export function isGuestOrMissingUser(
+  user: { id: string; role?: string | null } | null,
+): boolean {
+  return (
+    !user ||
+    user.id === GUEST_USER.id ||
+    user.role === "guest"
+  );
 }
 
-/** Protected RSC pages: require a real session when auth is enabled. */
+/** Protected RSC pages: require a full-account session when auth is enabled. */
 export function redirectIfUnauthenticated(
-  user: { id: string } | null,
+  user: { id: string; role?: string | null } | null,
   nextPath: string,
   cookieHeader = "",
 ): void {

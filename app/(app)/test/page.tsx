@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ProductionAuthConfigError } from "@/components/auth/production-auth-config-error";
+import { DashboardPlanPaywall } from "@/components/bandforge/dashboard/dashboard-plan-paywall";
 import {
   isProductionAuthMisconfigured,
   redirectIfUnauthenticated,
@@ -22,6 +23,13 @@ import {
   fetchLearningProfile,
 } from "@/lib/learning-server";
 import { MockTestsUnified } from "@/modules/mock/components/mock-tests-unified";
+import { fetchSubscriptionResult } from "@/lib/payments-server";
+import {
+  FULL_SKILL_PROGRAM_SLUG,
+  hasDualBundlePlan,
+  isPackOnlyAccess,
+  PRACTICE_PATH,
+} from "@/lib/entitlement";
 
 export const metadata: Metadata = {
   title: "Full mock tests · BandForge",
@@ -89,6 +97,14 @@ export default async function MockTestsIndexPage({ searchParams }: Props) {
   });
 
   redirectIfUnauthenticated(user, mockTestsIndexPath(), cookieHeader);
+
+  const subResult = await fetchSubscriptionResult(cookieHeader);
+  if (isPackOnlyAccess(subResult.subscription)) {
+    if (hasDualBundlePlan(subResult.subscription)) {
+      redirect(PRACTICE_PATH);
+    }
+    return <DashboardPlanPaywall targetSlug={FULL_SKILL_PROGRAM_SLUG} />;
+  }
 
   const [catalog, parallelSession, learning] = await dataPromise;
   const profile = learning ?? emptyLearningProfile(user!.id);

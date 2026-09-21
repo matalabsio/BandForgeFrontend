@@ -4,8 +4,7 @@ import { useLayoutEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { DiagnosticWaitState } from "@/components/diagnostic/ui/diagnostic-processing-loader";
 import { ensureSession, getMe, loginPathWithNext } from "@/lib/auth";
-import { isFullAccountUser } from "@/lib/diagnostic-lead-sync";
-import { hasLikelyClientSession } from "@/lib/session";
+import { decideDiagnosticProductiveAccess } from "@/lib/diagnostic-productive-access";
 
 type Props = {
   /** Post-login destination (Writing or Speaking path). */
@@ -17,8 +16,8 @@ type Props = {
  * Blocks guests from productive diagnostic modules (Writing / Speaking).
  * Full-account users continue; others go to `/login?next=…`.
  *
- * After Google mid-auth, cookies/hints are already set — paint Writing/Speaking
- * immediately and verify in the background instead of a second "Checking sign-in".
+ * Stays on "Checking sign-in" until session + role are resolved — never mounts
+ * children from cookie/localStorage hints alone.
  */
 export function DiagnosticProductiveAccessGuard({ nextPath, children }: Props) {
   const router = useRouter();
@@ -27,11 +26,6 @@ export function DiagnosticProductiveAccessGuard({ nextPath, children }: Props) {
   useLayoutEffect(() => {
     let cancelled = false;
 
-    // Post-OAuth / existing full session: don't block the module on refresh+/me.
-    if (hasLikelyClientSession()) {
-      setReady(true);
-    }
-
     void (async () => {
       const session = await ensureSession({
         logoutOnUnauthorized: false,
@@ -39,7 +33,13 @@ export function DiagnosticProductiveAccessGuard({ nextPath, children }: Props) {
       const user = session ? await getMe().catch(() => null) : null;
       if (cancelled) return;
 
-      if (!session || !isFullAccountUser(user?.role)) {
+      const decision = decideDiagnosticProductiveAccess({
+        roleResolved: true,
+        hasSession: Boolean(session),
+        role: user?.role,
+      });
+
+      if (decision.kind !== "allow") {
         setReady(false);
         router.replace(loginPathWithNext(nextPath));
         return;

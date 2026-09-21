@@ -1,5 +1,7 @@
+import { EntitledRouteGate } from "@/components/bandforge/dashboard/entitled-route-gate";
 import { WritingSkillOnboardingClient } from "@/components/bandforge/practice/writing-skill-onboarding-client";
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
+import { fetchEntitlementGate } from "@/lib/entitled-route-server";
 import {
   getCachedCookieHeader,
   getCachedServerSession,
@@ -16,5 +18,18 @@ export default async function WritingSkillOnboardingPage() {
   const user = await getCachedServerSession(cookieHeader);
   redirectIfUnauthenticated(user, "/practice/writing/onboarding", cookieHeader);
 
-  return <WritingSkillOnboardingClient />;
+  const { profile, subscription } = await fetchEntitlementGate(
+    cookieHeader,
+    user!.id,
+  );
+
+  return (
+    <EntitledRouteGate
+      learning={profile}
+      subscription={subscription}
+      practiceSkill="writing"
+    >
+      <WritingSkillOnboardingClient />
+    </EntitledRouteGate>
+  );
 }

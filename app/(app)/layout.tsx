@@ -14,6 +14,7 @@ import {
   getBandforgePathname,
 } from "@/lib/bandforge-pathname";
 import { authGuardRedirectPath } from "@/lib/auth";
+import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import {
   isFullPracticePlanComplete,
   overallPlanPercent,
@@ -22,6 +23,10 @@ import {
   canAccessPracticeSkill,
   hasDualBundlePlan,
   hasFullSkillProgram,
+  isPackOnlyAccess,
+  PRACTICE_PATH,
+  SPEAKING_PRACTICE_PATH,
+  WRITING_PRACTICE_PATH,
 } from "@/lib/entitlement";
 import { fetchLearningProfile } from "@/lib/learning-server";
 import { fetchSubscriptionResult } from "@/lib/payments-server";
@@ -49,6 +54,9 @@ export default async function BandforgeAppLayout({
     fetchSubscriptionResult(cookieHeader),
     fetchLearningProfile(cookieHeader),
   ]);
+  // Full-account only: null, placeholder, and role=guest redirect when auth is on.
+  // Auth-disabled mock keeps GUEST_SESSION (redirectIfUnauthenticated no-ops).
+  redirectIfUnauthenticated(user, pathname, cookieHeader);
   if (!user) {
     redirect(authGuardRedirectPath(pathname, cookieHeader));
   }
@@ -79,6 +87,16 @@ export default async function BandforgeAppLayout({
   const isDualBundle =
     !hasFullSkillProgram(subResult.subscription) &&
     hasDualBundlePlan(subResult.subscription);
+  const packOnly = isPackOnlyAccess(subResult.subscription);
+  const homeHref = hasFullSkillProgram(subResult.subscription)
+    ? "/dashboard"
+    : isDualBundle
+      ? PRACTICE_PATH
+      : showWritingNav
+        ? WRITING_PRACTICE_PATH
+        : showSpeakingNav
+          ? SPEAKING_PRACTICE_PATH
+          : "/pricing";
 
   return (
     <AppFontsShell>
@@ -92,16 +110,21 @@ export default async function BandforgeAppLayout({
           fullBleed={practiceExamChrome}
           showWritingNav={showWritingNav}
           showSpeakingNav={showSpeakingNav}
-          report={{
-            studentName: shellDisplayName,
-            tasks: learning?.todays_tasks ?? [],
-            hubProgress: learning?.hub_progress,
-            currentBand: learning?.current_band,
-            targetBand: learning?.target_band,
-            overallPlanPct: learning
-              ? overallPlanPercent(learning.study_plan)
-              : 0,
-          }}
+          packOnly={packOnly}
+          report={
+            packOnly
+              ? undefined
+              : {
+                  studentName: shellDisplayName,
+                  tasks: learning?.todays_tasks ?? [],
+                  hubProgress: learning?.hub_progress,
+                  currentBand: learning?.current_band,
+                  targetBand: learning?.target_band,
+                  overallPlanPct: learning
+                    ? overallPlanPercent(learning.study_plan)
+                    : 0,
+                }
+          }
           sidebar={
             <DashboardSidebarNav
               pathname={pathname}
@@ -112,6 +135,8 @@ export default async function BandforgeAppLayout({
               showWritingNav={showWritingNav}
               showSpeakingNav={showSpeakingNav}
               isDualBundle={isDualBundle}
+              packOnly={packOnly}
+              homeHref={homeHref}
             />
           }
         >

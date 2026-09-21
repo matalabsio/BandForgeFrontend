@@ -524,7 +524,7 @@ export function ListeningPage({
             message = detail.includes("mock test not found")
               ? `Listening test not found in Supabase (${testId}). Run: cd backend && python -m scripts.verify_greenfield_mock (apply migration if missing), then refresh.`
               : isListeningTest(testId)
-                ? "No listening questions for this test. Run: cd backend && python -m scripts.verify_greenfield_mock, then refresh."
+                ? "No listening questions for this test. Catalog Test 1 is speaking-only; listening practice from a plan should open /practice/listening/{hubId}/exercise. Or run: cd backend && ./.venv/bin/python -m scripts.verify_greenfield_mock"
                 : "No listening questions for this mock. Run the appropriate seed in Supabase, then refresh.";
           } else if (e.status === 403) {
             if (mockAttemptId) {

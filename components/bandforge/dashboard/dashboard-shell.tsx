@@ -32,6 +32,8 @@ type Props = {
   showWritingNav?: boolean;
   /** Show Speaking tab in mobile nav when entitled. */
   showSpeakingNav?: boolean;
+  /** Pack-only shell: hide Today / Full plan / Library tabs. */
+  packOnly?: boolean;
   /** Daily growth report — opened from the header (lg+) or mobile nav. */
   report?: {
     studentName: string;
@@ -54,6 +56,7 @@ export function DashboardShell({
   fullBleed = false,
   showWritingNav = false,
   showSpeakingNav = false,
+  packOnly = false,
   report,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -88,7 +91,11 @@ export function DashboardShell({
 
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
   const isDashboard = pathname === "/dashboard";
-  const mobileNav = getMobileBottomNav({ showWritingNav, showSpeakingNav });
+  const mobileNav = getMobileBottomNav({
+    showWritingNav,
+    showSpeakingNav,
+    packOnly,
+  });
   const bottomNavCols =
     mobileNav.length >= 6
       ? "grid-cols-6"

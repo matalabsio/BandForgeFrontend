@@ -16,6 +16,7 @@ import { getLearningProfile } from "@/lib/learning-api";
 import { getSubscription } from "@/lib/payments";
 import { resetCheckoutResumeForPostAuth } from "@/lib/checkout-resume";
 import {
+  isDiagnosticAppPath,
   postLoginNeedsServerLookup,
   resolvePostLoginDestination,
   safePostLoginPath,
@@ -48,8 +49,21 @@ function PostLoginContinueInner() {
         void syncDiagnosticLeadAfterAuth(snapshot, lead).catch(() => undefined);
       }
 
-      // Mid-auth / explicit deep links (e.g. /diagnostic/writing): redirect now.
+      // Mid-auth / explicit deep links: redirect now, but FSP never re-enters diagnostic.
       if (!needsServerLookup) {
+        if (isDiagnosticAppPath(requestedPath)) {
+          try {
+            const subscription = await getSubscription();
+            if (cancelled) return;
+            if (hasFullSkillProgram(subscription)) {
+              markPwaOfferAfterLogin();
+              window.location.replace("/dashboard");
+              return;
+            }
+          } catch {
+            /* unpaid / offline — keep deep link */
+          }
+        }
         if (cancelled) return;
         markPwaOfferAfterLogin();
         window.location.replace(

@@ -144,6 +144,26 @@ async function paymentsCall<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+/** Client memo for entitlement gates — not an auth boundary. */
+const SUBSCRIPTION_CACHE_TTL_MS = 45_000;
+
+let subscriptionInflight: Promise<Subscription> | null = null;
+let subscriptionCache: { value: Subscription; expiresAt: number } | null = null;
+
+function rememberSubscription(sub: Subscription): Subscription {
+  subscriptionCache = {
+    value: sub,
+    expiresAt: Date.now() + SUBSCRIPTION_CACHE_TTL_MS,
+  };
+  return sub;
+}
+
+/** Drop memo after purchase/logout so the next read is fresh. */
+export function invalidateSubscriptionCache(): void {
+  subscriptionCache = null;
+  subscriptionInflight = null;
+}
+
 export function getPlans(): Promise<{
   plans: Plan[];
   payments_enabled: boolean;
@@ -163,30 +183,54 @@ export function createOrder(planSlug: string): Promise<CreateOrderResult> {
   });
 }
 
-export function redeemCoupon(
+export async function redeemCoupon(
   planSlug: string,
   code: string,
 ): Promise<{ ok: boolean; subscription: Subscription }> {
-  return paymentsCall<{ ok: boolean; subscription: Subscription }>(
+  const result = await paymentsCall<{ ok: boolean; subscription: Subscription }>(
     "/redeem-coupon",
     {
       method: "POST",
       body: JSON.stringify({ plan_slug: planSlug, code }),
     },
   );
+  if (result.subscription) rememberSubscription(result.subscription);
+  else invalidateSubscriptionCache();
+  return result;
 }
 
-export function verifyPayment(
+export async function verifyPayment(
   response: RazorpayHandlerResponse,
 ): Promise<{ ok: boolean; subscription: Subscription }> {
-  return paymentsCall<{ ok: boolean; subscription: Subscription }>("/verify", {
-    method: "POST",
-    body: JSON.stringify(response),
-  });
+  const result = await paymentsCall<{ ok: boolean; subscription: Subscription }>(
+    "/verify",
+    {
+      method: "POST",
+      body: JSON.stringify(response),
+    },
+  );
+  if (result.subscription) rememberSubscription(result.subscription);
+  else invalidateSubscriptionCache();
+  return result;
 }
 
+/**
+ * Active subscription + entitlements. Dedupes concurrent callers and caches
+ * briefly so post-login / diagnostic gates do not stack identical round-trips.
+ */
 export function getSubscription(): Promise<Subscription> {
-  return paymentsCall<Subscription>("/subscription");
+  const now = Date.now();
+  if (subscriptionCache && subscriptionCache.expiresAt > now) {
+    return Promise.resolve(subscriptionCache.value);
+  }
+  if (subscriptionInflight) return subscriptionInflight;
+
+  subscriptionInflight = paymentsCall<Subscription>("/subscription")
+    .then((sub) => rememberSubscription(sub))
+    .finally(() => {
+      subscriptionInflight = null;
+    });
+  return subscriptionInflight;
 }
 
 export function getPaymentHistory(): Promise<{ payments: PaymentHistoryItem[] }> {

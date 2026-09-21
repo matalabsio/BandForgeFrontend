@@ -6,12 +6,9 @@ import {
 } from "@/lib/api";
 import { coalescedClientRefresh } from "@/lib/auth-refresh-coordinator";
 import { getServerAuth, getServerSession as resolveServerSession } from "@/lib/auth-server";
-import { isAuthEnabled } from "@/lib/flags";
-import { accessTokenExpired } from "@/lib/jwt-expiry";
 import {
   clearAuthStorage,
   clearLegacyRefreshToken,
-  getAccessToken,
   getRefreshToken,
   GUEST_USER,
   hasSessionHintCookie,
@@ -19,6 +16,7 @@ import {
   type AuthUser,
   type SessionUser,
 } from "@/lib/session";
+import { invalidateSubscriptionCache } from "@/lib/payments";
 
 export { GUEST_USER };
 
@@ -35,16 +33,11 @@ export type MessageResponse = {
   message: string;
 };
 
+/** Cookie-only browser auth — BFF forwards bf_access; never send LS Bearer. */
 function clientAuthHeaders(extra?: HeadersInit): Headers {
   const headers = new Headers(extra);
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
-  }
-  if (typeof window !== "undefined") {
-    const token = getAccessToken();
-    if (token && !accessTokenExpired(token)) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
   }
   return headers;
 }
@@ -80,7 +73,7 @@ async function authFetch<T>(
 }
 
 function storeAuthFromResponse(data: AuthResponse): void {
-  // Access only in LS; refresh stays httpOnly via BFF Set-Cookie.
+  // Page-lifetime memory for exam refresh timing; cookies are authoritative.
   persistAuthTokens(data.access_token);
 }
 
@@ -297,6 +290,7 @@ export async function logout(): Promise<void> {
     await authFetch<MessageResponse>("logout", { method: "POST" });
   } finally {
     clearAuthStorage();
+    invalidateSubscriptionCache();
   }
 }
 

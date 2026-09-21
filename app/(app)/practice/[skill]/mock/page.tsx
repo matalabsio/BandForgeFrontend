@@ -12,9 +12,11 @@ import {
   resolvePracticeEntitledRoute,
 } from "@/lib/entitled-route";
 import {
+  FULL_SKILL_PROGRAM_SLUG,
   hasFullSkillProgram,
   hasSpeakingSkillPlan,
   hasWritingSkillPlan,
+  missingSkuForPracticeSkill,
 } from "@/lib/entitlement";
 import { shortModuleExamPath } from "@/lib/mock-catalog";
 import { appendSkillContext } from "@/lib/practice-submit";
@@ -70,7 +72,16 @@ export default async function PracticeSkillMockPage({ params }: PageProps) {
       skill: "writing",
     });
     if (entitled.kind === "redirect") redirect(entitled.path);
-    if (entitled.kind === "paywall") return <DashboardPlanPaywall />;
+    if (entitled.kind === "paywall") {
+      return (
+        <DashboardPlanPaywall
+          targetSlug={
+            missingSkuForPracticeSkill(subscription, "writing") ??
+            FULL_SKILL_PROGRAM_SLUG
+          }
+        />
+      );
+    }
 
     const mockUnlock = await fetchMockUnlock(cookieHeader, skill);
     if (!mockUnlock?.unlocked || !mockUnlock.mock_test_id) {
@@ -91,7 +102,16 @@ export default async function PracticeSkillMockPage({ params }: PageProps) {
       skill: "speaking",
     });
     if (entitled.kind === "redirect") redirect(entitled.path);
-    if (entitled.kind === "paywall") return <DashboardPlanPaywall />;
+    if (entitled.kind === "paywall") {
+      return (
+        <DashboardPlanPaywall
+          targetSlug={
+            missingSkuForPracticeSkill(subscription, "speaking") ??
+            FULL_SKILL_PROGRAM_SLUG
+          }
+        />
+      );
+    }
 
     const mockUnlock = await fetchMockUnlock(cookieHeader, skill);
     if (!mockUnlock?.unlocked || !mockUnlock.mock_test_id) {
@@ -110,7 +130,14 @@ export default async function PracticeSkillMockPage({ params }: PageProps) {
     redirect(entitled.path);
   }
   if (entitled.kind === "paywall") {
-    return <DashboardPlanPaywall />;
+    return (
+      <DashboardPlanPaywall
+        targetSlug={
+          missingSkuForPracticeSkill(subscription, skill) ??
+          FULL_SKILL_PROGRAM_SLUG
+        }
+      />
+    );
   }
 
   const mockUnlock = await fetchMockUnlock(cookieHeader, skill);

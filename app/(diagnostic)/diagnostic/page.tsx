@@ -9,7 +9,7 @@ export const metadata: Metadata = pageMetadata({
   path: "/diagnostic",
 });
 
-/** Static marketing shell — paid-user redirect runs client-side after first paint (LCP). */
+/** Lead form mounts after client session/FSP gate (loader first). */
 export const revalidate = 300;
 
 export default function DiagnosticLandingPage() {

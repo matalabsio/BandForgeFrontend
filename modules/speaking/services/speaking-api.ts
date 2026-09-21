@@ -11,9 +11,7 @@ import {
   purgeExpiredAccessMirror,
 } from "@/lib/exam-session";
 import { isAuthEnabled } from "@/lib/flags";
-import { accessTokenExpired } from "@/lib/jwt-expiry";
 import type { PracticeSkill } from "@/lib/practice-types";
-import { getAccessToken } from "@/lib/session";
 import { recordingFilenameForMime } from "@/modules/speaking/lib/media-recorder-support";
 import {
   confirmSpeakingUploadBody,
@@ -36,15 +34,9 @@ import type {
 const DEFAULT_TIMEOUT_MS = 15_000;
 const SUBMIT_TIMEOUT_MS = 90_000;
 
+/** Cookie-only — never attach a browser-readable Bearer from localStorage. */
 function authHeaders(): Headers {
-  const headers = new Headers();
-  if (isAuthEnabled()) {
-    const token = getAccessToken();
-    if (token && !accessTokenExpired(token)) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-  }
-  return headers;
+  return new Headers();
 }
 
 async function examMultipartCall<T>(

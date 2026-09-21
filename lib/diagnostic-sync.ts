@@ -1,6 +1,6 @@
-import { refreshSession } from "@/lib/auth";
+import { getMe, refreshSession } from "@/lib/auth";
 import type { DiagnosticResultsSnapshot } from "@/lib/diagnostic-session";
-import { getAccessToken, hasSessionHintCookie } from "@/lib/session";
+import { hasSessionHintCookie } from "@/lib/session";
 
 type DiagnosticCompleteBody = {
   client_attempt_id: string;
@@ -14,56 +14,17 @@ type DiagnosticCompleteBody = {
   completed_at?: string | null;
 };
 
-type JwtPayload = {
-  email?: string | null;
-  phone?: string | null;
-  role?: string;
-};
-
 /** In-flight + success memo so remounts do not spam POST /diagnostic/complete. */
 const completeInFlight = new Map<string, Promise<boolean>>();
 const completeSucceeded = new Set<string>();
 
-function decodeJwtPayload(token: string): JwtPayload | null {
-  try {
-    const part = token.split(".")[1];
-    if (!part) return null;
-    const padded = part.replace(/-/g, "+").replace(/_/g, "/");
-    const json = JSON.parse(
-      typeof atob !== "undefined"
-        ? atob(padded)
-        : Buffer.from(padded, "base64").toString("utf8"),
-    ) as JwtPayload;
-    return json;
-  } catch {
-    return null;
-  }
+function isFullAccountRole(role: string | undefined): boolean {
+  return Boolean(role && role !== "guest");
 }
 
-/**
- * Access tokens don't carry role. Diagnostic guests are minted with null
- * email + phone; full accounts have at least one identity claim.
- */
-function isLikelyFullAccountToken(token: string | null): boolean {
-  if (!token) return false;
-  const payload = decodeJwtPayload(token);
-  if (!payload) return false;
-  if (payload.role === "guest") return false;
-  if (payload.role && payload.role !== "guest") return true;
-  const email = typeof payload.email === "string" ? payload.email.trim() : "";
-  const phone = typeof payload.phone === "string" ? payload.phone.trim() : "";
-  return Boolean(email || phone);
-}
-
+/** Cookie-only — BFF forwards bf_access; never send a browser-readable Bearer. */
 function authHeaders(): HeadersInit {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  const token = getAccessToken();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  return headers;
+  return { "Content-Type": "application/json" };
 }
 
 async function postComplete(body: DiagnosticCompleteBody): Promise<Response> {
@@ -75,22 +36,25 @@ async function postComplete(body: DiagnosticCompleteBody): Promise<Response> {
   });
 }
 
+async function resolveFullAccountUser(): Promise<boolean> {
+  if (!hasSessionHintCookie()) return false;
+  try {
+    let user = await getMe().catch(() => null);
+    if (!user) {
+      await refreshSession();
+      user = await getMe().catch(() => null);
+    }
+    return isFullAccountRole(user?.role);
+  } catch {
+    return false;
+  }
+}
+
 async function syncDiagnosticToServerOnce(
   snapshot: DiagnosticResultsSnapshot,
   startedAt?: string,
 ): Promise<boolean> {
-  let access = getAccessToken();
-  if (!isLikelyFullAccountToken(access)) {
-    // Stale/missing access — try cookie refresh before deciding guest.
-    if (!hasSessionHintCookie() && !access) return false;
-    try {
-      await refreshSession();
-    } catch {
-      return false;
-    }
-    access = getAccessToken();
-    if (!isLikelyFullAccountToken(access)) return false;
-  }
+  if (!(await resolveFullAccountUser())) return false;
 
   const body: DiagnosticCompleteBody = {
     client_attempt_id: snapshot.mock_attempt_id,
@@ -112,7 +76,7 @@ async function syncDiagnosticToServerOnce(
       } catch {
         return false;
       }
-      if (!isLikelyFullAccountToken(getAccessToken())) return false;
+      if (!(await resolveFullAccountUser())) return false;
       res = await postComplete(body);
     }
     // Backend returns 400 for guest role — treat as non-fatal skip.
