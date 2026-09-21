@@ -226,7 +226,11 @@ export async function ensureSession(
       const restored = await restoreSessionFromStorage();
       if (restored) return restored;
       if (logoutOnUnauthorized) {
-        await logout();
+        try {
+          await logout();
+        } catch {
+          clearAuthStorage();
+        }
       } else {
         clearAuthStorage();
       }
@@ -234,7 +238,11 @@ export async function ensureSession(
     }
     if (err instanceof ApiError && err.status === 401) {
       if (logoutOnUnauthorized) {
-        await logout();
+        try {
+          await logout();
+        } catch {
+          clearAuthStorage();
+        }
       } else {
         clearAuthStorage();
       }
@@ -288,6 +296,8 @@ export function loginPathWithNext(nextPath: string, sessionExpired = false): str
 export async function logout(): Promise<void> {
   try {
     await authFetch<MessageResponse>("logout", { method: "POST" });
+  } catch {
+    // Best-effort: clear local session even if revoke fails (offline / 5xx).
   } finally {
     clearAuthStorage();
     invalidateSubscriptionCache();

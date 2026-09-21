@@ -112,7 +112,7 @@ function hubBars(
     bars,
     completed,
     total,
-    href: firstUnlocked ? `/practice/${firstUnlocked}` : "/study-plan",
+    href: firstUnlocked ? "/study-plan/today" : "/study-plan",
   };
 }
 

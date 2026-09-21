@@ -11,6 +11,10 @@ import {
   hasWritingSkillPlan,
   WRITING_SKILL_ONBOARDING_PATH,
 } from "@/lib/entitlement";
+import {
+  FSP_PRACTICE_BROWSE_REDIRECT,
+  isFspPracticeBrowseRestricted,
+} from "@/lib/practice-browse-gate";
 import { writingHubExerciseHref } from "@/lib/writing-skill-course";
 import {
   fetchMockUnlock,
@@ -142,6 +146,11 @@ export default async function PracticeSkillPage({
         />
       </EntitledRouteGate>
     );
+  }
+
+  // FSP: strict study plan — no free-browse hub list (plan deep-links still work).
+  if (isFspPracticeBrowseRestricted(subscription)) {
+    redirect(FSP_PRACTICE_BROWSE_REDIRECT);
   }
 
   const [hubs, mockUnlock] = await Promise.all([

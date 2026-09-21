@@ -277,18 +277,27 @@ export function PracticeHubExperience({
 
   // Practice/submit → real MT module when hub is module-targeted.
   // Legacy Watch with no real hub videos → skip straight to Practice.
+  // Plan Submit: Speaking (same exam as Practice) and bank hubs auto-advance —
+  // never show "Mark submit done". Writing module Submit opens Task 2.
   useEffect(() => {
     if (!fromPlan) return;
     if (focus === "watch" && hub.videos.length === 0) {
       goToNextAfterWatch();
       return;
     }
-    if (focus !== "practice" && focus !== "submit") return;
-    if (!isBankOnly) {
+    if (focus === "submit") {
+      if (skill === "speaking" || isBankOnly) {
+        handleSubmitStepDone();
+        return;
+      }
       router.replace(exerciseHref);
       return;
     }
     if (focus !== "practice") return;
+    if (!isBankOnly) {
+      router.replace(exerciseHref);
+      return;
+    }
     router.replace(bankExerciseHref);
   }, [
     fromPlan,
@@ -299,6 +308,7 @@ export function PracticeHubExperience({
     router,
     hub.videos.length,
     goToNextAfterWatch,
+    skill,
   ]);
 
   function handleVideoEnded() {
@@ -400,14 +410,14 @@ export function PracticeHubExperience({
       ? { completed: mockUnlock.completed, required: mockUnlock.required }
       : null;
 
-  // Brief skeleton while redirecting plan module steps to real test session.
-  if (
-    fromPlan &&
-    (focus === "practice" || focus === "submit") &&
-    (!isBankOnly || focus === "practice")
-  ) {
-    const label =
-      skill === "writing"
+  // Brief skeleton while redirecting plan Practice to the exam, or auto-advancing
+  // Speaking/bank Submit (no manual "Mark submit done").
+  if (fromPlan && (focus === "practice" || focus === "submit")) {
+    const autoCompleteSubmit =
+      focus === "submit" && (skill === "speaking" || isBankOnly);
+    const label = autoCompleteSubmit
+      ? "Submit done — continuing…"
+      : skill === "writing"
         ? "Opening Writing task…"
         : skill === "listening"
           ? "Opening Listening test…"
@@ -415,7 +425,7 @@ export function PracticeHubExperience({
             ? "Opening Reading passage…"
             : skill === "speaking"
               ? "Opening Speaking test…"
-            : "Opening practice…";
+              : "Opening practice…";
     return <PlanOpeningSkeleton label={label} />;
   }
 

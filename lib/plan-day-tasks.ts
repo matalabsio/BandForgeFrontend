@@ -9,6 +9,7 @@
 
 import {
   resolveTodayTaskHref,
+  swapPlanTaskId,
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
 import { listeningResultsPath } from "@/lib/listening-test";
@@ -330,6 +331,31 @@ export function nextPendingPlanDayTask(
     ) {
       return false;
     }
+    // Speaking Practice already ran the full exam — never continue into Submit
+    // on the same hub (that restarts Speaking).
+    if (
+      row.module === "speaking" &&
+      row.task_type === "submit" &&
+      blockedHub &&
+      row.hub_id === blockedHub &&
+      (blockedType === "practice" || blockedType === "submit")
+    ) {
+      return false;
+    }
+    if (
+      row.module === "speaking" &&
+      row.task_type === "submit" &&
+      row.hub_id
+    ) {
+      const practiceDone = tasks.some(
+        (t) =>
+          t.hub_id === row.hub_id &&
+          t.module === "speaking" &&
+          t.task_type === "practice" &&
+          (t.status === "done" || t.id === currentTaskId),
+      );
+      if (practiceDone) return false;
+    }
     return true;
   };
 
@@ -395,7 +421,17 @@ export async function ensurePlanDayTasksCached(
     }
   }
 
-  if (currentTaskId) markCachedPlanTaskDone(currentTaskId);
+  if (currentTaskId) {
+    markCachedPlanTaskDone(currentTaskId);
+    // Speaking Practice closes Submit in the same hub (one exam).
+    if (
+      currentTaskId.includes("-speaking-practice-") ||
+      /t-\d{4}-\d{2}-\d{2}-speaking-practice/.test(currentTaskId)
+    ) {
+      const submitId = swapPlanTaskId(currentTaskId, "submit");
+      if (submitId) markCachedPlanTaskDone(submitId);
+    }
+  }
   if (opts?.completeHub && opts.hubId) {
     markCachedPlanHubTasksDone(opts.hubId);
   }

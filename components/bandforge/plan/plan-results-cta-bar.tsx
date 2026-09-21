@@ -12,14 +12,12 @@ import {
   resolveTodayTaskHrefFromCache,
   type PlanResultContext,
 } from "@/lib/plan-day-tasks";
-import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
 import { localPlanDateKey } from "@/lib/plan-step-completion";
 import {
-  findPlanDay,
-  getNextAheadTarget,
-  getOldestCatchUpTarget,
-  weeksWithDayMarkedDone,
-} from "@/lib/study-plan-calendar";
+  planDayTasksForAction,
+  resolveDoneDayPrimaryAction,
+} from "@/lib/plan-next-action";
+import { findPlanDay } from "@/lib/study-plan-calendar";
 import { SectionResultsCtaBar } from "@/modules/shared/components/section-results";
 import {
   PlanDayFinishedModal,
@@ -128,29 +126,19 @@ export function usePlanResultsNav(
           const examDate =
             profile.exam_date ?? profile.study_plan?.exam_date ?? null;
 
-          const catchUp = weeks.length
-            ? getOldestCatchUpTarget(weeks, today, examDate)
-            : null;
-          // Profile may still show today's last task as pending — treat the day
-          // as done so tomorrow unlocks for the finish popup.
-          const weeksForAhead = weeksWithDayMarkedDone(weeks, today);
-          const ahead =
-            weeksForAhead.length && !(catchUp && catchUp.missed.length > 0)
-              ? getNextAheadTarget(weeksForAhead, today, examDate)
-              : null;
+          const action = resolveDoneDayPrimaryAction({
+            weeks,
+            today,
+            examDate,
+            markTodayDoneForAhead: true,
+          });
 
-          if (catchUp?.task) {
-            const catchHref = resolveTodayTaskHref({
-              skill: catchUp.task.module,
-              hubId: catchUp.task.hub_id,
-              taskType: catchUp.task.task_type,
-              taskId: catchUp.task.id,
-              fallbackHref: catchUp.task.href,
-            });
+          if (action.kind === "catch_up" && action.catchUp) {
+            const catchUp = action.catchUp;
             const missed = catchUp.missed.length;
             setCatchUpOption({
               kind: "catch_up",
-              href: catchHref,
+              href: action.href,
               label:
                 missed === 1
                   ? "Complete previous day"
@@ -160,9 +148,14 @@ export function usePlanResultsNav(
                   ? "Finish your oldest incomplete plan day first."
                   : `You have ${missed} incomplete previous days — start with the oldest.`,
               onNavigate: () => {
-                const day = findPlanDay(weeks, catchUp.date);
-                if (day?.tasks?.length) {
-                  cachePlanDayTasks(day.tasks, { planDate: catchUp.date });
+                const dayTasks = planDayTasksForAction(weeks, action);
+                if (dayTasks?.length) {
+                  cachePlanDayTasks(dayTasks, { planDate: catchUp.date });
+                } else {
+                  const day = findPlanDay(weeks, catchUp.date);
+                  if (day?.tasks?.length) {
+                    cachePlanDayTasks(day.tasks, { planDate: catchUp.date });
+                  }
                 }
                 markCachedPlanTaskDone(taskId);
               },
@@ -171,23 +164,22 @@ export function usePlanResultsNav(
             setCatchUpOption(null);
           }
 
-          if (ahead?.task) {
-            const aheadHref = resolveTodayTaskHref({
-              skill: ahead.task.module,
-              hubId: ahead.task.hub_id,
-              taskType: ahead.task.task_type,
-              taskId: ahead.task.id,
-              fallbackHref: ahead.task.href,
-            });
+          if (action.kind === "tomorrow" && action.ahead) {
+            const ahead = action.ahead;
             setTomorrowOption({
               kind: "tomorrow",
-              href: aheadHref,
+              href: action.href,
               label: "Start tomorrow's plan",
               hint: "Practice tomorrow early to keep advancing toward your full mock.",
               onNavigate: () => {
-                const day = findPlanDay(weeks, ahead.date);
-                if (day?.tasks?.length) {
-                  cachePlanDayTasks(day.tasks, { planDate: ahead.date });
+                const dayTasks = planDayTasksForAction(weeks, action);
+                if (dayTasks?.length) {
+                  cachePlanDayTasks(dayTasks, { planDate: ahead.date });
+                } else {
+                  const day = findPlanDay(weeks, ahead.date);
+                  if (day?.tasks?.length) {
+                    cachePlanDayTasks(day.tasks, { planDate: ahead.date });
+                  }
                 }
                 markCachedPlanTaskDone(taskId);
               },

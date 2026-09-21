@@ -8,6 +8,11 @@ import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import { fetchEntitlementGate } from "@/lib/entitled-route-server";
 import { isUuid } from "@/lib/mock-ids";
 import {
+  FSP_PRACTICE_BROWSE_REDIRECT,
+  hasPlanPracticeContext,
+  isFspPracticeBrowseRestricted,
+} from "@/lib/practice-browse-gate";
+import {
   fetchMockUnlock,
   fetchPracticeHub,
   isHubLockedError,
@@ -59,6 +64,11 @@ export default async function PracticeHubDetailPage({
   const fromPlan = firstParam(sp.from) === "plan";
   const planTask = parsePlanTask(firstParam(sp.task));
   const planTaskId = firstParam(sp.taskId);
+  const planContext = hasPlanPracticeContext({
+    from: firstParam(sp.from),
+    task: firstParam(sp.task),
+    taskId: planTaskId,
+  });
 
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerSession(cookieHeader);
@@ -68,6 +78,13 @@ export default async function PracticeHubDetailPage({
     cookieHeader,
     user!.id,
   );
+
+  if (
+    isFspPracticeBrowseRestricted(subscription) &&
+    !planContext
+  ) {
+    redirect(FSP_PRACTICE_BROWSE_REDIRECT);
+  }
 
   let hub = null;
   let mockUnlock = null;

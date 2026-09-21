@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
@@ -11,6 +12,14 @@ import {
   getMobileBottomNav,
   isNavItemActive,
 } from "@/components/bandforge/dashboard/dashboard-nav";
+import {
+  bandforgeHideShellHeader,
+  bandforgeQuietCheckoutChrome,
+  bandforgeQuietListeningExerciseChrome,
+  bandforgeQuietReadingExerciseChrome,
+  bandforgeQuietSpeakingExerciseChrome,
+  bandforgeQuietWritingExerciseChrome,
+} from "@/lib/bandforge-chrome-paths";
 import type { LearningStudyTask, SkillHubProgress } from "@/lib/learning-types";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +69,20 @@ export function DashboardShell({
   report,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Live client path — server layout pathname stays stale across soft navigations.
+  const path = usePathname() || pathname;
+
+  const practiceExamChrome =
+    bandforgeQuietSpeakingExerciseChrome(path) ||
+    bandforgeQuietWritingExerciseChrome(path) ||
+    bandforgeQuietListeningExerciseChrome(path) ||
+    bandforgeQuietReadingExerciseChrome(path);
+  const quietChrome =
+    bandforgeQuietCheckoutChrome(path) || practiceExamChrome;
+  const resolvedHideChrome = quietChrome || hideChrome;
+  const resolvedFullBleed = practiceExamChrome || fullBleed;
+  const resolvedHideHeader =
+    bandforgeHideShellHeader(path) || quietChrome || hideHeader;
 
   useEffect(() => {
     try {
@@ -75,7 +98,7 @@ export function DashboardShell({
   useEffect(() => {
     document.documentElement.style.overflow = "";
     document.body.style.overflow = "";
-  }, [pathname]);
+  }, [path]);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => {
@@ -90,7 +113,7 @@ export function DashboardShell({
   }, []);
 
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
-  const isDashboard = pathname === "/dashboard";
+  const isDashboard = path === "/dashboard";
   const mobileNav = getMobileBottomNav({
     showWritingNav,
     showSpeakingNav,
@@ -105,8 +128,8 @@ export function DashboardShell({
           ? "grid-cols-4"
           : "grid-cols-3";
 
-  if (hideChrome) {
-    if (fullBleed) {
+  if (resolvedHideChrome) {
+    if (resolvedFullBleed) {
       return (
         <div className="bf-dashboard relative min-h-dvh bg-white text-ink">
           {children}
@@ -163,7 +186,7 @@ export function DashboardShell({
         <header
           className={cn(
             "sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-ink/8 bg-white/95 px-4 backdrop-blur-md sm:px-6",
-            !hideHeader && "lg:px-8",
+            !resolvedHideHeader && "lg:px-8",
           )}
         >
           {!sidebarOpen ? (
@@ -195,7 +218,7 @@ export function DashboardShell({
             // document can scroll — min-h-0 here clips overflow and
             // overflow-x:hidden on html then blocks page scroll.
             isDashboard ? "min-h-0" : "min-h-min",
-            hideHeader
+            resolvedHideHeader
               ? isDashboard
                 ? "pt-[var(--bf-dash-gutter)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-[var(--bf-dash-gutter)]"
                 : "pt-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-6"
@@ -214,7 +237,7 @@ export function DashboardShell({
         aria-label="Mobile navigation"
       >
         {mobileNav.map((item) => {
-          const active = isNavItemActive(pathname, item.href);
+          const active = isNavItemActive(path, item.href);
           const className = cn(
             "flex min-h-[48px] min-w-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[10px] font-semibold tracking-tight transition-colors duration-150 sm:text-[11px]",
             item.disabled

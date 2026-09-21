@@ -537,6 +537,8 @@ export function SpeakingPage({
             fromPlan: true,
             hubId: planHubId,
             currentTaskId: planTaskId,
+            skill: "speaking",
+            currentTask: current,
             completeHub: shouldCompleteHubForPlanTask("speaking", current),
           });
           router.replace(
@@ -605,11 +607,35 @@ export function SpeakingPage({
           }),
         );
 
-        const missing = missingExpectedResponseIds(
-          expectedResponses,
-          uploadedQuestionIdsRef.current,
-        );
-        if (missing.length > 0 && !opts?.onExpiry) {
+        // Re-sync from the server after uploads so we don't finalize on stale local state.
+        let confirmedIds = new Set(uploadedQuestionIdsRef.current);
+        try {
+          const recovery = await speakingApi.responses(attemptId);
+          confirmedIds = acceptedRecoveredQuestionIds(recovery);
+          confirmedIds.forEach((id) => uploadedQuestionIdsRef.current.add(id));
+        } catch {
+          /* keep local upload set */
+        }
+
+        const missing = missingExpectedResponseIds(expectedResponses, confirmedIds);
+        if (missing.length > 0) {
+          if (opts?.onExpiry) {
+            const hasPendingUploads = missing.some((questionId) =>
+              uploadPromisesRef.current.has(questionId),
+            );
+            const hasLocalBlobs = missing.some(
+              (questionId) => Boolean(recordingsRef.current.get(questionId)?.blob),
+            );
+            if (hasPendingUploads || hasLocalBlobs) {
+              // Keep retrying while uploads can still progress.
+              return false;
+            }
+            // Nothing left to upload (e.g. returned after expiry with no in-memory audio).
+            setError(
+              "Time is up and some answers were not saved. Record any missing answers, then submit.",
+            );
+            return true;
+          }
           throw new Error(
             `${missing.length} answer${missing.length === 1 ? " is" : "s are"} still uploading. Try submitting again.`,
           );
@@ -620,19 +646,18 @@ export function SpeakingPage({
         goToResults(result.attempt_id);
         return true;
       } catch (e) {
-        // Finalize (or a prior attempt) may have already completed on the server.
+        // Rate limit / forbidden: stop the expiry force-submit loop (do not spam finalize).
+        if (e instanceof ApiError && (e.status === 429 || e.status === 403)) {
+          setError(formatExamSubmitError(e));
+          return true;
+        }
+        // Only navigate away when the server already has a speaking submission.
         try {
-          const recovery = await speakingApi.responses(attemptId);
-          const accepted = acceptedRecoveredQuestionIds(recovery);
-          if (
-            expectedResponses.length > 0 &&
-            missingExpectedResponseIds(expectedResponses, accepted).length === 0
-          ) {
-            goToResults(attemptId);
-            return true;
-          }
+          await speakingApi.pending(attemptId);
+          goToResults(attemptId);
+          return true;
         } catch {
-          /* fall through to error */
+          /* not finalized yet */
         }
         setError(formatExamSubmitError(e));
         return false;

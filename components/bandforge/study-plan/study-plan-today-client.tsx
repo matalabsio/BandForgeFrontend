@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { TodaysPlanPanel } from "@/components/bandforge/dashboard/todays-plan-panel";
 import { TodaysPlanSkeleton } from "@/components/bandforge/plan/plan-skeletons";
 import { StudyPlanLoadError } from "@/components/bandforge/study-plan/study-plan-load-error";
-import { getLearningToday } from "@/lib/learning-api";
-import type { LearningTodayBundle } from "@/lib/learning-types";
+import { getLearningProfile } from "@/lib/learning-api";
+import type { LearningProfile } from "@/lib/learning-types";
 
 type Props = {
   userId: string;
@@ -14,7 +14,7 @@ type Props = {
 
 type LoadState =
   | { status: "loading" }
-  | { status: "ready"; bundle: LearningTodayBundle }
+  | { status: "ready"; profile: LearningProfile }
   | { status: "error" };
 
 export function StudyPlanTodayClient({ userId, studentName }: Props) {
@@ -24,8 +24,8 @@ export function StudyPlanTodayClient({ userId, studentName }: Props) {
   const load = useCallback(async () => {
     setState({ status: "loading" });
     try {
-      const bundle = await getLearningToday();
-      setState({ status: "ready", bundle });
+      const profile = await getLearningProfile();
+      setState({ status: "ready", profile });
     } catch {
       setState({ status: "error" });
     }
@@ -43,19 +43,22 @@ export function StudyPlanTodayClient({ userId, studentName }: Props) {
     return <StudyPlanLoadError onRetry={() => setFetchKey((k) => k + 1)} />;
   }
 
-  const { bundle } = state;
+  const { profile } = state;
+  const studyPlan = profile.study_plan;
+  const examDate = profile.exam_date ?? studyPlan?.exam_date ?? null;
 
   return (
     <TodaysPlanPanel
-      initialTasks={bundle.todays_tasks}
+      initialTasks={profile.todays_tasks ?? []}
       userId={userId}
       studentName={studentName}
-      hubProgress={bundle.hub_progress}
-      moduleSummary={{}}
-      currentBand={bundle.current_band}
-      targetBand={bundle.target_band}
+      hubProgress={profile.hub_progress}
+      moduleSummary={profile.module_summary ?? {}}
+      currentBand={profile.current_band}
+      targetBand={profile.target_band}
       overallPlanPct={0}
-      examDate={bundle.exam_date}
+      studyPlan={studyPlan}
+      examDate={examDate}
     />
   );
 }

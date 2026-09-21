@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PlanDayCalendar } from "@/components/bandforge/plan/plan-day-calendar";
 import {
   FullPlanCalendarSkeleton,
@@ -15,6 +16,8 @@ type LoadState =
   | { status: "error" };
 
 export function StudyPlanFullClient() {
+  const searchParams = useSearchParams();
+  const dateParam = searchParams.get("date");
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [fetchKey, setFetchKey] = useState(0);
 
@@ -56,6 +59,11 @@ export function StudyPlanFullClient() {
   }
 
   return (
-    <PlanDayCalendar studyPlan={studyPlan} examDate={examDate} variant="page" />
+    <PlanDayCalendar
+      studyPlan={studyPlan}
+      examDate={examDate}
+      variant="page"
+      initialDate={dateParam}
+    />
   );
 }

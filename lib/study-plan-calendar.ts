@@ -3,6 +3,7 @@ import type {
   LearningStudyTask,
   LearningStudyWeek,
 } from "@/lib/learning-types";
+import { isPlanTaskUnavailable } from "@/lib/plan-start-task";
 
 /** Max future calendar days unlocked after the full prefix through today is done. */
 export const PLAN_AHEAD_MAX_DAYS = 1;
@@ -296,7 +297,26 @@ export type CatchUpTarget = {
   task: LearningStudyTask;
 };
 
-/** Oldest incomplete past day + first incomplete task (sorted skill/type order). */
+/**
+ * First incomplete, non-unavailable task on a day (skill/type order).
+ * Skips watch rows and empty-hub / unavailable=1 stubs.
+ */
+export function firstActionableIncompleteTask(
+  day: LearningStudyDay | null | undefined,
+): LearningStudyTask | null {
+  if (!day) return null;
+  return (
+    sortPlanTasks(countableTasks(day)).find(
+      (t) => t.status !== "done" && !isPlanTaskUnavailable(t),
+    ) ?? null
+  );
+}
+
+/**
+ * Oldest past day with an actionable incomplete task.
+ * `missed` still lists every incomplete past day (for UI counts); `date`/`task`
+ * point at the first day that can actually be opened.
+ */
 export function getOldestCatchUpTarget(
   weeks: LearningStudyWeek[],
   today: string,
@@ -305,16 +325,15 @@ export function getOldestCatchUpTarget(
   const missed = countMissedDays(weeks, today, examDate);
   if (missed.length === 0) return null;
 
-  const date = missed[0].date;
-  const day = findPlanDay(weeks, date);
-  if (!day) return null;
+  for (const entry of missed) {
+    const day = findPlanDay(weeks, entry.date);
+    const task = firstActionableIncompleteTask(day);
+    if (task) {
+      return { missed, date: entry.date, task };
+    }
+  }
 
-  const incomplete = sortPlanTasks(countableTasks(day)).find(
-    (t) => t.status !== "done",
-  );
-  if (!incomplete) return null;
-
-  return { missed, date, task: incomplete };
+  return null;
 }
 
 export type AheadTarget = {
@@ -323,7 +342,7 @@ export type AheadTarget = {
 };
 
 /**
- * Nearest unlocked future day’s first incomplete task.
+ * Nearest unlocked future day’s first actionable incomplete task.
  * Null unless sequential prefix through today is clear and tomorrow is in plan.
  */
 export function getNextAheadTarget(
@@ -335,14 +354,21 @@ export function getNextAheadTarget(
   if (!isDayAccessible(tomorrow, today, examDate, weeks)) return null;
 
   const day = findPlanDay(weeks, tomorrow);
-  if (!day) return null;
+  const task = firstActionableIncompleteTask(day);
+  if (!task) return null;
 
-  const incomplete = sortPlanTasks(countableTasks(day)).find(
-    (t) => t.status !== "done",
-  );
-  if (!incomplete) return null;
+  return { date: tomorrow, task };
+}
 
-  return { date: tomorrow, task: incomplete };
+/** Full-plan deep link for a calendar day (optional skill / unavailable flags). */
+export function studyPlanDayHref(
+  date: string,
+  opts?: { skill?: string | null; unavailable?: boolean },
+): string {
+  const q = new URLSearchParams({ date });
+  if (opts?.skill) q.set("skill", opts.skill);
+  if (opts?.unavailable) q.set("unavailable", "1");
+  return `/study-plan?${q.toString()}`;
 }
 
 export type CalendarCell = {

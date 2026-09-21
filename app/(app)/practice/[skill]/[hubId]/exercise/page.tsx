@@ -9,6 +9,11 @@ import {
   type PlanTaskKind,
 } from "@/lib/plan-task-flow";
 import {
+  FSP_PRACTICE_BROWSE_REDIRECT,
+  hasPlanPracticeContext,
+  isFspPracticeBrowseRestricted,
+} from "@/lib/practice-browse-gate";
+import {
   isBankSubmitTarget,
   isModuleSubmitTarget,
   moduleHrefFromSubmitConfig,
@@ -61,6 +66,11 @@ export default async function PracticeExercisePage({
     planTaskRaw === "submit"
       ? planTaskRaw
       : "practice";
+  const planContext = hasPlanPracticeContext({
+    from: firstParam(sp.from),
+    task: planTaskRaw,
+    taskId: planTaskId,
+  });
 
   const cookieHeader = await getCachedCookieHeader();
   const user = await getCachedServerSession(cookieHeader);
@@ -83,6 +93,13 @@ export default async function PracticeExercisePage({
       redirect(fromPlan ? "/study-plan/today" : `/practice/${skill}?hub=locked`);
     }
     throw e;
+  }
+
+  if (
+    isFspPracticeBrowseRestricted(subscription) &&
+    !planContext
+  ) {
+    redirect(FSP_PRACTICE_BROWSE_REDIRECT);
   }
 
   const submitConfig = (hub?.submit_config ?? {}) as {

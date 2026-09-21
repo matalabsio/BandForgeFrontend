@@ -57,26 +57,34 @@ function AuthBootstrapInner() {
     let cancelled = false;
 
     async function run() {
-      const staleSession = hadPriorSession();
-      const session = await withTimeout(ensureSession(), SESSION_RESTORE_TIMEOUT_MS);
-      if (cancelled) return;
+      try {
+        const staleSession = hadPriorSession();
+        const session = await withTimeout(
+          ensureSession(),
+          SESSION_RESTORE_TIMEOUT_MS,
+        );
+        if (cancelled) return;
 
-      if (session) {
-        // Full navigation so the next request includes fresh auth cookies and
-        // dashboard RSC data (soft router.replace often renders empty once).
-        window.location.replace(next);
-        return;
-      }
-
-      if (staleSession) {
-        try {
-          await logout();
-        } catch {
-          // Local storage is cleared in logout's finally; continue to login.
+        if (session) {
+          // Full navigation so the next request includes fresh auth cookies and
+          // dashboard RSC data (soft router.replace often renders empty once).
+          window.location.replace(next);
+          return;
         }
+
+        if (staleSession) {
+          try {
+            await logout();
+          } catch {
+            // Local storage is cleared in logout's finally; continue to login.
+          }
+        }
+        if (cancelled) return;
+        replace(loginRedirectPath(next, staleSession));
+      } catch {
+        if (cancelled) return;
+        replace(loginRedirectPath(next, hadPriorSession()));
       }
-      if (cancelled) return;
-      replace(loginRedirectPath(next, staleSession));
     }
 
     void run();
