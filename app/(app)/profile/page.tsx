@@ -72,19 +72,17 @@ export default async function ProfilePage() {
     learning?.study_plan?.exam_date?.slice(0, 10) ||
     null;
 
-  const planDaysFromExpiry = sub?.expires_at
-    ? daysUntil(sub.expires_at.slice(0, 10))
-    : null;
-  const planDaysFromExam =
-    learning?.days_remaining != null
+  const examDaysRemaining =
+    daysUntil(examDate) ??
+    (learning?.days_remaining != null
       ? Number(learning.days_remaining)
-      : daysUntil(examDate);
+      : null);
 
   const stats = {
     planName: sub?.is_active
       ? (sub.plan_name?.trim() || sub.plan_slug || "Active plan")
       : "Free",
-    planDaysRemaining: planDaysFromExpiry ?? planDaysFromExam,
+    examDaysRemaining,
     targetBand: user.target_band ?? learning?.target_band ?? null,
     testsCompleted: sumCompletedHubs(learning?.hub_progress),
     expectedBand: learning?.current_band ?? null,

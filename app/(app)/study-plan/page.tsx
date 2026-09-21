@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { StudyPlanFullClient } from "@/components/bandforge/study-plan/study-plan-full-client";
+import { FullPlanCalendarSkeleton } from "@/components/bandforge/plan/plan-skeletons";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,11 @@ export default async function StudyPlanPage() {
         </p>
       </header>
 
-      <StudyPlanFullClient />
+      <Suspense
+        fallback={<FullPlanCalendarSkeleton label="Preparing your full plan" />}
+      >
+        <StudyPlanFullClient />
+      </Suspense>
     </div>
   );
 }

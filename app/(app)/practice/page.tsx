@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   BookIcon,
   HeadphonesIcon,
@@ -10,6 +11,10 @@ import { PracticeSkillPackCards } from "@/components/bandforge/practice/practice
 import { redirectIfUnauthenticated } from "@/lib/auth-guard-server";
 import { fetchEntitlementGate } from "@/lib/entitled-route-server";
 import { hasFullSkillProgram } from "@/lib/entitlement";
+import {
+  FSP_PRACTICE_BROWSE_REDIRECT,
+  isFspPracticeBrowseRestricted,
+} from "@/lib/practice-browse-gate";
 import { PRACTICE_SKILLS, practiceSkillLabel } from "@/lib/practice-types";
 import {
   getCachedCookieHeader,
@@ -49,6 +54,11 @@ export default async function PracticeIndexPage() {
   // Non-FSP: one page with Writing / Speaking / Dual locks — not the 4-skill index.
   if (!hasFullSkillProgram(subscription)) {
     return <PracticeSkillPackCards subscription={subscription} />;
+  }
+
+  // FSP: strict study plan — no free-browse skill chooser.
+  if (isFspPracticeBrowseRestricted(subscription)) {
+    redirect(FSP_PRACTICE_BROWSE_REDIRECT);
   }
 
   return (

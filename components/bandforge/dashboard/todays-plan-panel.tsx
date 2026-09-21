@@ -44,7 +44,6 @@ import type {
   LearningStudyTask,
   SkillHubProgress,
 } from "@/lib/learning-types";
-import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
 import {
   findNextStartTask,
   isPlanTaskUnavailable,
@@ -56,11 +55,10 @@ import {
   planTaskStatusesDiffer,
 } from "@/lib/plan-day-tasks";
 import {
-  findPlanDay,
-  getNextAheadTarget,
-  getOldestCatchUpTarget,
-  weeksWithDayMarkedDone,
-} from "@/lib/study-plan-calendar";
+  planDayTasksForAction,
+  resolveDoneDayPrimaryAction,
+} from "@/lib/plan-next-action";
+import { findPlanDay } from "@/lib/study-plan-calendar";
 import { cn } from "@/lib/utils";
 import type { ComponentType, SVGProps } from "react";
 
@@ -169,24 +167,6 @@ function taskOpenHref(task: LearningStudyTask): string {
   return planTaskOpenHref(task);
 }
 
-function nextPracticeSkillHref(
-  hubProgress?: Record<string, SkillHubProgress>,
-): { href: string; label: string } {
-  const order = ["listening", "reading", "writing", "speaking"] as const;
-  for (const skill of order) {
-    const hub = hubProgress?.[skill];
-    const total = hub?.total_count ?? 0;
-    const done = hub?.completed_count ?? 0;
-    if (done < total) {
-      return {
-        href: `/practice/${skill}`,
-        label: `Start ${MODULE_LABEL[skill]} practice`,
-      };
-    }
-  }
-  return { href: "/test", label: "Start a mock test" };
-}
-
 const SKILL_GRID_ORDER = [
   "listening",
   "reading",
@@ -282,7 +262,7 @@ function SkillPlanCard({
   const allDone = hasTasks && doneCount === tasks.length;
   const progressPct = progressPercent(doneCount, tasks.length);
   const nextTask = findNextStartTask(tasks);
-  const fallbackHref = `/practice/${skill}`;
+  const fallbackHref = "/study-plan";
   const stepperSteps = useMemo(
     () => (hasTasks ? buildTaskStepperSteps(tasks) : []),
     [hasTasks, tasks],
@@ -506,6 +486,7 @@ export function TodaysPlanPanel({
   const [tasks, setTasks] = useState(() =>
     withClientKeys(mergePlanDayStatusesIntoTasks(initialTasks)),
   );
+  const [liveStudyPlan, setLiveStudyPlan] = useState(studyPlan);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [catchUpOpen, setCatchUpOpen] = useState(false);
@@ -518,6 +499,10 @@ export function TodaysPlanPanel({
   const reconcileInFlightRef = useRef(false);
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
+
+  useEffect(() => {
+    setLiveStudyPlan(studyPlan);
+  }, [studyPlan]);
 
   const applyTaskList = (next: LearningStudyTask[]) => {
     const merged = mergePlanDayStatusesIntoTasks(next);
@@ -550,6 +535,9 @@ export function TodaysPlanPanel({
       try {
         const profile = await getLearningProfile();
         if (cancelled) return;
+        if (profile.study_plan?.weeks?.length) {
+          setLiveStudyPlan(profile.study_plan);
+        }
         const incoming = profile.todays_tasks ?? [];
         if (incoming.length === 0) return;
 
@@ -637,63 +625,50 @@ export function TodaysPlanPanel({
 
   const nextStart = useMemo(() => findNextStartTask(tasks), [tasks]);
   const showPrimaryBanner = !allDone && Boolean(nextStart);
-  const continuePractice = useMemo(
-    () => nextPracticeSkillHref(hubProgress),
-    [hubProgress],
-  );
 
-  const catchUpTarget = useMemo(() => {
-    if (!studyPlan?.weeks?.length) return null;
-    return getOldestCatchUpTarget(
-      studyPlan.weeks,
-      localPlanDateKey(),
-      examDate ?? studyPlan.exam_date ?? null,
-    );
-  }, [studyPlan, examDate]);
+  const planExamDate = examDate ?? liveStudyPlan?.exam_date ?? null;
 
-  const catchUpHref = useMemo(() => {
-    if (!catchUpTarget?.task) return "/study-plan";
-    return resolveTodayTaskHref({
-      skill: catchUpTarget.task.module,
-      hubId: catchUpTarget.task.hub_id,
-      taskType: catchUpTarget.task.task_type,
-      taskId: catchUpTarget.task.id,
-      fallbackHref: catchUpTarget.task.href,
-    });
-  }, [catchUpTarget]);
-
-  const aheadTarget = useMemo(() => {
-    if (!studyPlan?.weeks?.length) return null;
-    // Catch-up backlog blocks practice-ahead (strict day-wise progression).
-    if (catchUpTarget && catchUpTarget.missed.length > 0) return null;
-    // Local allDone may be ahead of profile — unlock tomorrow for the finish CTA.
-    const weeks = allDone
-      ? weeksWithDayMarkedDone(studyPlan.weeks, localPlanDateKey())
-      : studyPlan.weeks;
-    return getNextAheadTarget(
+  const doneDayAction = useMemo(() => {
+    const weeks = liveStudyPlan?.weeks ?? [];
+    return resolveDoneDayPrimaryAction({
       weeks,
-      localPlanDateKey(),
-      examDate ?? studyPlan.exam_date ?? null,
-    );
-  }, [studyPlan, examDate, catchUpTarget, allDone]);
-
-  const aheadHref = useMemo(() => {
-    if (!aheadTarget?.task) return null;
-    return resolveTodayTaskHref({
-      skill: aheadTarget.task.module,
-      hubId: aheadTarget.task.hub_id,
-      taskType: aheadTarget.task.task_type,
-      taskId: aheadTarget.task.id,
-      fallbackHref: aheadTarget.task.href,
+      today: localPlanDateKey(),
+      examDate: planExamDate,
+      markTodayDoneForAhead: allDone,
     });
-  }, [aheadTarget]);
+  }, [liveStudyPlan, planExamDate, allDone]);
+
+  const catchUpTarget = doneDayAction.catchUp;
+  const catchUpHref =
+    doneDayAction.kind === "catch_up"
+      ? doneDayAction.href
+      : catchUpTarget
+        ? planTaskOpenHref(catchUpTarget.task)
+        : "/study-plan";
+  const aheadTarget = doneDayAction.ahead;
+
+  const cacheActionDay = (planDate: string | undefined) => {
+    if (!liveStudyPlan?.weeks?.length || !planDate) return;
+    const dayTasks = planDayTasksForAction(liveStudyPlan.weeks, {
+      ...doneDayAction,
+      planDate,
+    });
+    if (dayTasks?.length) {
+      cachePlanDayTasks(dayTasks, { planDate });
+    } else {
+      const day = findPlanDay(liveStudyPlan.weeks, planDate);
+      if (day?.tasks?.length) {
+        cachePlanDayTasks(day.tasks, { planDate });
+      }
+    }
+  };
 
   const finishCatchUpOption = useMemo((): PlanDayFinishOption | null => {
-    if (!catchUpTarget?.task) return null;
+    if (doneDayAction.kind !== "catch_up" || !catchUpTarget?.task) return null;
     const missed = catchUpTarget.missed.length;
     return {
       kind: "catch_up",
-      href: catchUpHref,
+      href: doneDayAction.href,
       label:
         missed === 1
           ? "Complete previous day"
@@ -702,83 +677,34 @@ export function TodaysPlanPanel({
         missed === 1
           ? "Finish your oldest incomplete plan day first."
           : `You have ${missed} incomplete previous days — start with the oldest.`,
-      onNavigate: () => {
-        if (!studyPlan?.weeks?.length) return;
-        const day = findPlanDay(studyPlan.weeks, catchUpTarget.date);
-        if (day?.tasks?.length) {
-          cachePlanDayTasks(day.tasks, { planDate: catchUpTarget.date });
-        }
-      },
+      onNavigate: () => cacheActionDay(catchUpTarget.date),
     };
-  }, [catchUpTarget, catchUpHref, studyPlan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheActionDay uses latest plan
+  }, [doneDayAction, catchUpTarget, liveStudyPlan]);
 
   const finishTomorrowOption = useMemo((): PlanDayFinishOption | null => {
-    if (!aheadHref || !aheadTarget) return null;
+    if (doneDayAction.kind !== "tomorrow" || !aheadTarget) return null;
     return {
       kind: "tomorrow",
-      href: aheadHref,
+      href: doneDayAction.href,
       label: "Start tomorrow's plan",
       hint: "Practice tomorrow early to keep advancing toward your full mock.",
-      onNavigate: () => {
-        if (!studyPlan?.weeks?.length) return;
-        const day = findPlanDay(studyPlan.weeks, aheadTarget.date);
-        if (day?.tasks?.length) {
-          cachePlanDayTasks(day.tasks, { planDate: aheadTarget.date });
-        }
-      },
+      onNavigate: () => cacheActionDay(aheadTarget.date),
     };
-  }, [aheadHref, aheadTarget, studyPlan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheActionDay uses latest plan
+  }, [doneDayAction, aheadTarget, liveStudyPlan]);
 
-  const donePrimaryAction = useMemo(() => {
-    const missedCount = catchUpTarget?.missed.length ?? 0;
-    if (missedCount > 0) {
-      return {
-        href: catchUpHref,
-        label:
-          missedCount === 1
-            ? "Catch up on previous day"
-            : `Catch up on ${missedCount} previous days`,
-        hint: "Finish previous plan days before unlocking tomorrow.",
-        catchUpIsPrimary: true as const,
-        onClick: () => {
-          if (!studyPlan?.weeks?.length || !catchUpTarget) return;
-          const day = findPlanDay(studyPlan.weeks, catchUpTarget.date);
-          if (day?.tasks?.length) {
-            cachePlanDayTasks(day.tasks, { planDate: catchUpTarget.date });
-          }
-        },
-      };
-    }
-    if (aheadHref && aheadTarget) {
-      return {
-        href: aheadHref,
-        label: "Start tomorrow's plan",
-        hint: "You're clear through today — practice tomorrow early to advance hubs toward your full mock.",
-        catchUpIsPrimary: false as const,
-        onClick: () => {
-          if (!studyPlan?.weeks?.length) return;
-          const day = findPlanDay(studyPlan.weeks, aheadTarget.date);
-          if (day?.tasks?.length) {
-            cachePlanDayTasks(day.tasks, { planDate: aheadTarget.date });
-          }
-        },
-      };
-    }
-    return {
-      href: continuePractice.href,
-      label: continuePractice.label,
-      hint: undefined as string | undefined,
-      catchUpIsPrimary: false as const,
-      onClick: undefined as (() => void) | undefined,
-    };
-  }, [
-    catchUpTarget,
-    catchUpHref,
-    aheadHref,
-    aheadTarget,
-    continuePractice,
-    studyPlan,
-  ]);
+  const donePrimaryAction = useMemo(
+    () => ({
+      href: doneDayAction.href,
+      label: doneDayAction.label,
+      hint: doneDayAction.hint,
+      catchUpIsPrimary: doneDayAction.catchUpIsPrimary,
+      onClick: () => cacheActionDay(doneDayAction.planDate),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheActionDay uses latest plan
+    [doneDayAction, liveStudyPlan],
+  );
 
   /** On dashboard when day is done: check-in is primary; checklist is optional. */
   const compactDone = embedded && allDone;
@@ -1057,7 +983,7 @@ export function TodaysPlanPanel({
           nextActionHint={donePrimaryAction.hint}
           onNextActionClick={donePrimaryAction.onClick}
           checklist={doneChecklistSlot}
-          missedDayCount={catchUpTarget?.missed.length ?? 0}
+          missedDayCount={doneDayAction.missedDayCount}
           catchUpIsPrimary={donePrimaryAction.catchUpIsPrimary}
           onOpenCatchUp={() => setCatchUpOpen(true)}
         />

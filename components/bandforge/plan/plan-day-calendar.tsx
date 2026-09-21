@@ -22,13 +22,16 @@ import {
   dayStatus,
   dayStatusLabel,
   findPlanDay,
+  firstActionableIncompleteTask,
   isDayAccessible,
   monthKeyFromIso,
   shiftMonthKey,
   sortPlanTasks,
+  studyPlanDayHref,
   type DayAccessStatus,
 } from "@/lib/study-plan-calendar";
 import { localPlanDateKey } from "@/lib/plan-step-completion";
+import { isPlanTaskUnavailable, planTaskOpenHref } from "@/lib/plan-start-task";
 import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +74,8 @@ type Props = {
   onOpenChange?: (open: boolean) => void;
   variant?: "embed" | "page";
   className?: string;
+  /** Pre-select a plan day (e.g. `/study-plan?date=YYYY-MM-DD`). */
+  initialDate?: string | null;
 };
 
 function formatMonthTitle(monthKey: string): string {
@@ -93,7 +98,13 @@ function formatDayHeader(iso: string): string {
   }
 }
 
-function taskHref(task: LearningStudyTask): string {
+function taskHref(task: LearningStudyTask, planDate: string): string {
+  if (isPlanTaskUnavailable(task)) {
+    return studyPlanDayHref(planDate, {
+      skill: task.module,
+      unavailable: true,
+    });
+  }
   return resolveTodayTaskHref({
     skill: task.module,
     hubId: task.hub_id,
@@ -230,7 +241,12 @@ function DayPlanPanel({
   const incomplete = tasks.filter((t) => t.status !== "done");
   const allDone =
     tasks.length > 0 && incomplete.length === 0;
-  const firstIncomplete = incomplete[0] ?? null;
+  const firstActionable = firstActionableIncompleteTask(day);
+  const catchUpHref = firstActionable
+    ? planTaskOpenHref(firstActionable)
+    : incomplete.length > 0
+      ? studyPlanDayHref(day.date, { unavailable: true })
+      : null;
 
   if (mode === "preview") {
     return (
@@ -349,7 +365,7 @@ function DayPlanPanel({
                   return (
                     <li key={`${task.id}-${i}`}>
                       <Link
-                        href={taskHref(task)}
+                        href={taskHref(task, day.date)}
                         className={cn(
                           "flex cursor-pointer items-start gap-3 rounded-2xl border border-white/50 bg-white/55 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] backdrop-blur-md transition-[transform,background-color,box-shadow] duration-300 hover:bg-white/80 hover:shadow-[0_8px_24px_rgba(8,145,178,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50",
                           !done && "hover:-translate-y-0.5",
@@ -385,13 +401,15 @@ function DayPlanPanel({
         </div>
       ) : null}
 
-      {!locked && isPast && firstIncomplete ? (
+      {!locked && isPast && catchUpHref ? (
         <div className="border-t border-white/40 px-4 py-3 sm:px-5">
           <Link
-            href={taskHref(firstIncomplete)}
+            href={catchUpHref}
             className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-navy px-4 text-[13px] font-bold text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] transition-colors hover:bg-navy/90"
           >
-            Catch up on this day
+            {firstActionable
+              ? "Catch up on this day"
+              : "Review this day on Full plan"}
             <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden />
           </Link>
         </div>
@@ -407,6 +425,7 @@ export function PlanDayCalendar({
   onOpenChange,
   variant = "embed",
   className,
+  initialDate = null,
 }: Props) {
   const today = localPlanDateKey();
   const weeks = studyPlan.weeks ?? [];
@@ -415,6 +434,15 @@ export function PlanDayCalendar({
   const reduce = useReducedMotion();
   const hoverCapable = useFinePointerHover();
 
+  const seededDate = useMemo(() => {
+    const raw = initialDate?.trim() || null;
+    if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return today;
+    if (findPlanDay(weeks, raw) || isDayAccessible(raw, today, resolvedExam, weeks)) {
+      return raw;
+    }
+    return today;
+  }, [initialDate, weeks, today, resolvedExam]);
+
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isPage ? true : (openProp ?? internalOpen);
   const setOpen = (next: boolean) => {
@@ -422,14 +450,20 @@ export function PlanDayCalendar({
     if (openProp === undefined) setInternalOpen(next);
   };
 
-  const [monthKey, setMonthKey] = useState(() => monthKeyFromIso(today));
-  const [selectedDate, setSelectedDate] = useState<string | null>(today);
+  const [monthKey, setMonthKey] = useState(() => monthKeyFromIso(seededDate));
+  const [selectedDate, setSelectedDate] = useState<string | null>(seededDate);
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   /** While pointer is over the detail panel, ignore calendar-cell hover previews. */
   const panelPointerInsideRef = useRef(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** After a click, briefly ignore hover so the pointer can cross other days to the panel. */
   const ignoreHoverUntilRef = useRef(0);
+
+  // Honor deep-link date when search params arrive after mount.
+  useEffect(() => {
+    setSelectedDate(seededDate);
+    setMonthKey(monthKeyFromIso(seededDate));
+  }, [seededDate]);
 
   // Clear sticky hover when device cannot use fine-pointer hover.
   useEffect(() => {

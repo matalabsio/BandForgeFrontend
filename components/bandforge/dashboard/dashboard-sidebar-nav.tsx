@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BandForgeLogoLink } from "@/components/bandforge/bandforge-logo-link";
 import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
 import {
@@ -34,6 +37,7 @@ export function DashboardSidebarNav({
   packOnly = false,
   homeHref = "/dashboard",
 }: Props) {
+  const path = usePathname() || pathname;
   const initial = displayName.trim().charAt(0).toUpperCase() || "B";
 
   return (
@@ -58,7 +62,7 @@ export function DashboardSidebarNav({
             ) : null}
             <ul className="flex flex-col gap-0.5">
               {group.items.map((item) => {
-                const active = isNavItemActive(pathname, item.href);
+                const active = isNavItemActive(path, item.href);
                 const inner = (
                   <>
                     <item.Icon

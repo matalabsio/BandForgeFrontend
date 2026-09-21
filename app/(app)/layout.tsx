@@ -72,14 +72,13 @@ export default async function BandforgeAppLayout({
   const shellAvatarUrl = user.avatar_display_url ?? null;
   const showPremiumCta =
     subResult.known && !hasFullSkillProgram(subResult.subscription);
-  const showWritingNav = canAccessPracticeSkill(
-    subResult.subscription,
-    "writing",
-  );
-  const showSpeakingNav = canAccessPracticeSkill(
-    subResult.subscription,
-    "speaking",
-  );
+  // Pack-only Writing/Speaking course tabs — hide for FSP (strict plan).
+  const showWritingNav =
+    canAccessPracticeSkill(subResult.subscription, "writing") &&
+    !hasFullSkillProgram(subResult.subscription);
+  const showSpeakingNav =
+    canAccessPracticeSkill(subResult.subscription, "speaking") &&
+    !hasFullSkillProgram(subResult.subscription);
   const mockUnlocked = isFullPracticePlanComplete(
     learning?.hub_progress,
     learning?.study_plan,

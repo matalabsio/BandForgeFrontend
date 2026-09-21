@@ -273,7 +273,7 @@ export const BRAND_PROFILE_STATS = {
   testsCompleted: 8,
   expectedBand: 6.8,
   planName: "Dual",
-  planDaysRemaining: 44,
+  examDaysRemaining: 44,
 } as const;
 
 export const BRAND_PLAN_PAGE_TIERS = [

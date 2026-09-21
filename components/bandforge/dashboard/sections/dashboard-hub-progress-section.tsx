@@ -89,7 +89,7 @@ export function DashboardHubProgressSection({
                 }}
               >
                 <Link
-                  href={`/practice/${key}`}
+                  href="/study-plan/today"
                   className="group block cursor-pointer rounded-2xl border border-ink/8 bg-white px-4 py-4 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-cyan/35 hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] sm:px-5"
                 >
                   <div className="mb-2.5 flex items-center justify-between gap-2">

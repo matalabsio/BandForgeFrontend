@@ -14,7 +14,8 @@ import { SignOutButton } from "@/components/bandforge/auth/sign-out-button";
 
 export type ProfileHubStats = {
   planName: string;
-  planDaysRemaining: number | null;
+  /** Calendar days until the user's exam date (not plan/subscription expiry). */
+  examDaysRemaining: number | null;
   targetBand: number | null;
   testsCompleted: number;
   expectedBand: number | null;
@@ -43,7 +44,7 @@ export function ProfileSettingsHub({
 }: Props) {
   const safeStats: ProfileHubStats = {
     planName: stats?.planName || "Free",
-    planDaysRemaining: stats?.planDaysRemaining ?? null,
+    examDaysRemaining: stats?.examDaysRemaining ?? null,
     targetBand: stats?.targetBand ?? null,
     testsCompleted: stats?.testsCompleted ?? 0,
     expectedBand: stats?.expectedBand ?? null,
@@ -101,10 +102,13 @@ export function ProfileSettingsHub({
     },
   ] as const;
 
-  const daysLabel =
-    safeStats.planDaysRemaining != null
-      ? `${safeStats.planDaysRemaining} days remaining`
-      : "No active plan expiry";
+  const daysLabel = (() => {
+    const remaining = safeStats.examDaysRemaining;
+    if (remaining == null) return "Set your exam date";
+    if (remaining === 0) return "Exam day";
+    if (remaining === 1) return "1 day to exam";
+    return `${remaining} days to exam`;
+  })();
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">

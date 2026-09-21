@@ -16,10 +16,10 @@ export function MockPlanLocked() {
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Link
-          href="/practice"
+          href="/study-plan/today"
           className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-cyan px-5 text-[14px] font-bold text-navy transition-colors duration-200 hover:bg-brand-sky-hover"
         >
-          Continue practice
+          Continue today’s plan
         </Link>
         <Link
           href="/study-plan"

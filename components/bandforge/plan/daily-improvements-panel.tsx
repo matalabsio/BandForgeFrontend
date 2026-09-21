@@ -142,8 +142,8 @@ export function DailyImprovementsPanel({
   const showSecondaryCatchUp =
     missedDayCount > 0 && onOpenCatchUp && !catchUpIsPrimary;
 
-  const primaryHref = nextActionHref ?? "/practice/listening";
-  const primaryLabel = nextActionLabel ?? "Start next practice";
+  const primaryHref = nextActionHref ?? "/study-plan";
+  const primaryLabel = nextActionLabel ?? "View full plan";
 
   return (
     <DashReveal
