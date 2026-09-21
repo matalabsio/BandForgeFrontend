@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   canonicalMockSlug,
   shortModuleExamPath,
 } from "@/lib/mock-catalog";
 import { isLiveCatalogNumber } from "@/lib/mock-catalog-api";
+import { isUuid } from "@/lib/mock-ids";
+import {
+  planExerciseHref,
+  type PlanTaskKind,
+} from "@/lib/plan-task-flow";
 import { parseSkillContext } from "@/lib/practice-submit";
-import type { PlanTaskKind } from "@/lib/plan-task-flow";
 import { guardMockModulePage } from "@/lib/mock-page-auth";
 import { fetchReadingBootServer, resolveCatalogSlotServer } from "@/lib/mock-server";
 import { getCachedCookieHeader } from "@/lib/server-cache";
@@ -49,6 +53,8 @@ export default async function TestReadingPage({ params, searchParams }: Props) {
   const autoStart = sp.auto === "1" || sp.auto === "true" || sp.from === "plan";
   const skillContext = parseSkillContext(sp.skill_context);
   const fromPlan = sp.from === "plan";
+  const planTask = parsePlanTask(sp.task) ?? "practice";
+  const planHubId = sp.hubId ?? null;
   const returnPath = shortModuleExamPath(testNumber, "reading", { passage });
 
   const cookieHeader = await getCachedCookieHeader();
@@ -56,6 +62,19 @@ export default async function TestReadingPage({ params, searchParams }: Props) {
     cookieHeader,
     returnPath,
   );
+
+  // All reading practice hubs are bank-type; catalog Tests 1–2 have no
+  // reading passages for plan practice. Stale plan links still hit /test/N/reading.
+  if (fromPlan && planHubId && isUuid(planHubId)) {
+    redirect(
+      planExerciseHref({
+        skill: "reading",
+        hubId: planHubId,
+        task: planTask,
+        taskId: sp.taskId ?? null,
+      }),
+    );
+  }
 
   const resolved = await resolveCatalogSlotServer(authCookies, testNumber);
   if (!resolved) notFound();
@@ -87,7 +106,7 @@ export default async function TestReadingPage({ params, searchParams }: Props) {
         fromPlan={fromPlan}
         planTask={parsePlanTask(sp.task)}
         planTaskId={sp.taskId ?? null}
-        planHubId={sp.hubId ?? null}
+        planHubId={planHubId}
       />
     </MockLayout>
   );

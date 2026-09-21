@@ -16,6 +16,7 @@ import {
   type AuthUser,
   type SessionUser,
 } from "@/lib/session";
+import { invalidateSubscriptionCache } from "@/lib/payments";
 
 export { GUEST_USER };
 
@@ -289,6 +290,7 @@ export async function logout(): Promise<void> {
     await authFetch<MessageResponse>("logout", { method: "POST" });
   } finally {
     clearAuthStorage();
+    invalidateSubscriptionCache();
   }
 }
 

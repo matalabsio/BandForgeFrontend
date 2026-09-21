@@ -16,6 +16,7 @@
     "test:auth-guard": "node lib/auth-guard-server.test.mjs",
     "test:session-access-token": "node --experimental-strip-types lib/session-access-token.test.mjs",
     "test:diagnostic-productive-access": "node --experimental-strip-types lib/diagnostic-productive-access.test.mjs",
+    "test:diagnostic-start-gate": "node --experimental-strip-types lib/diagnostic-start-gate.test.mjs",
     "test:post-login-destination": "node --experimental-strip-types lib/post-login-destination.test.mjs",
     "test:email-otp-frontend": "node --experimental-strip-types lib/email-otp-frontend.test.mjs",
     "test:checkout-navigate": "node --experimental-strip-types lib/checkout-navigate.test.mjs",
