@@ -31,6 +31,7 @@ export function WritingTask1Chart({
   const cities = chart.cities ?? [];
   const yMax = chart.y_max ?? 70;
   const ticks = BAR_Y_TICKS.filter((t) => t <= yMax);
+  const series = chart.series ?? [];
 
   const width = 520;
   const height = 268;
@@ -39,7 +40,7 @@ export function WritingTask1Chart({
   const plotH = height - margin.top - margin.bottom;
 
   const groupCount = cities.length;
-  const seriesCount = chart.series.length;
+  const seriesCount = series.length;
   const groupSlot = plotW / groupCount;
   const groupInnerW = groupSlot * 0.82;
   const barGap = 2;
@@ -63,7 +64,7 @@ export function WritingTask1Chart({
           className="flex shrink-0 flex-col gap-1 text-[10px] leading-tight text-ink/70 sm:items-end"
           aria-label="Chart legend"
         >
-          {chart.series.map((s, i) => (
+          {series.map((s, i) => (
             <li key={seriesLabel(s)} className="flex items-center gap-1.5">
               <span
                 className="inline-block size-3 shrink-0 rounded-sm"
@@ -128,7 +129,7 @@ export function WritingTask1Chart({
 
             return (
               <g key={city}>
-                {chart.series.map((s, sIdx) => {
+                {series.map((s, sIdx) => {
                   const v = s.values[cityIdx] ?? 0;
                   const x = groupX + sIdx * (barW + barGap);
                   const barTop = yPos(v);
@@ -185,6 +186,7 @@ export function WritingTask1LineChart({
   figureNote,
 }: Props) {
   const labels = chart.labels ?? [];
+  const series = chart.series ?? [];
   const yMax = chart.y_max ?? 3;
   const yUnit = chart.y_unit ?? "billions";
   const tickStep = yMax <= 1 ? 0.2 : yMax <= 3 ? 0.5 : 1;
@@ -216,7 +218,7 @@ export function WritingTask1LineChart({
           className="flex shrink-0 flex-col gap-1 text-[10px] leading-tight text-ink/70 sm:items-end"
           aria-label="Chart legend"
         >
-          {chart.series.map((s, i) => (
+          {series.map((s, i) => (
             <li key={seriesLabel(s)} className="flex items-center gap-1.5">
               <span
                 className="inline-block h-0.5 w-4 shrink-0 rounded-full"
@@ -272,7 +274,7 @@ export function WritingTask1LineChart({
             Internet users ({yUnit})
           </text>
 
-          {chart.series.map((s, sIdx) => {
+          {series.map((s, sIdx) => {
             const color = LINE_COLORS[sIdx % LINE_COLORS.length];
             const points = s.values
               .map((v, i) => `${xPos(i)},${yPos(v)}`)
@@ -324,6 +326,64 @@ export function WritingTask1LineChart({
       ) : null}
       {figureNote ? (
         <p className="mt-1 text-center text-[10px] italic text-ink/40">{figureNote}</p>
+      ) : null}
+    </figure>
+  );
+}
+
+/**
+ * IELTS-style data table for Task 1 (headers + rows from bank options.chart).
+ */
+export function WritingTask1Table({
+  chart,
+  figureLabel = "Figure 1",
+  figureNote,
+}: Props) {
+  const headers = chart.headers ?? [];
+  const rows = chart.rows ?? [];
+  if (!headers.length || !rows.length) return null;
+
+  return (
+    <figure className="mt-4 w-full max-w-xl overflow-x-auto rounded-lg border border-border bg-white p-4 shadow-sm">
+      <figcaption className="text-[12px] font-semibold leading-snug text-navy">
+        <span className="font-bold">{figureLabel}:</span>{" "}
+        {chart.title ?? "Table"}
+      </figcaption>
+      <table className="mt-3 w-full min-w-[320px] border-collapse text-left text-[13px] text-ink">
+        <thead>
+          <tr className="border-b border-ink/15 bg-surface/80">
+            {headers.map((h) => (
+              <th
+                key={h}
+                scope="col"
+                className="px-2.5 py-2 font-semibold text-navy"
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri} className="border-b border-ink/8 last:border-0">
+              {headers.map((_, ci) => (
+                <td key={ci} className="px-2.5 py-2 tabular-nums">
+                  {row[ci] ?? ""}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {chart.source ? (
+        <p className="mt-2 text-center text-[10px] text-ink/50">
+          (Source: {chart.source})
+        </p>
+      ) : null}
+      {figureNote ? (
+        <p className="mt-1 text-center text-[10px] italic text-ink/40">
+          {figureNote}
+        </p>
       ) : null}
     </figure>
   );
