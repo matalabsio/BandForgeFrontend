@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { AppRoot } from "@/components/bandforge/app-root";
 import { PwaRoot } from "@/components/pwa/pwa-root";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -82,6 +83,7 @@ export default function RootLayout({
         <PwaRoot>
           <AppRoot>{children}</AppRoot>
         </PwaRoot>
+        <Analytics />
       </body>
     </html>
   );
