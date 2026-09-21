@@ -98,7 +98,10 @@ export function PlanDayFinishedModal({
           {primary ? (
             <Link
               href={primary.href}
-              onClick={() => {
+              onClick={(e) => {
+                if (primary.kind === "catch_up") {
+                  e.preventDefault();
+                }
                 primary.onNavigate?.();
                 onClose();
               }}

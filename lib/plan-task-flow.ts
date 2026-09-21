@@ -3,6 +3,7 @@ import {
   M02_MOCK_TEST_ID,
   type MockSlug,
 } from "@/lib/mock-catalog";
+import { planShortPath } from "@/lib/plan-short-path";
 import { isModuleSubmitTarget } from "@/lib/practice-submit";
 import type { PracticeSkill } from "@/lib/practice-types";
 
@@ -17,7 +18,8 @@ export type ModuleTargetConfig = {
   hub_id?: string;
 };
 
-const SKILLS_WITH_SUBMIT = new Set<PracticeSkill>(["writing", "speaking"]);
+/** Writing still has a separate Submit step; Speaking Practice is the full exam. */
+const SKILLS_WITH_SUBMIT = new Set<PracticeSkill>(["writing"]);
 
 /** Next step in the same skill stack (Watch → Practice → Submit). */
 export function nextPlanTask(
@@ -83,8 +85,16 @@ export function planHubHref(opts: {
   task: PlanTaskKind;
   taskId?: string | null;
 }): string {
+  const taskId = opts.taskId?.trim();
+  if (taskId) {
+    return planShortPath({
+      skill: opts.skill,
+      hubId: opts.hubId,
+      task: opts.task,
+      taskId,
+    });
+  }
   const q = new URLSearchParams({ from: "plan", task: opts.task });
-  if (opts.taskId) q.set("taskId", opts.taskId);
   return `/practice/${opts.skill}/${opts.hubId}?${q.toString()}`;
 }
 
@@ -94,8 +104,16 @@ export function planExerciseHref(opts: {
   task: PlanTaskKind;
   taskId?: string | null;
 }): string {
+  const taskId = opts.taskId?.trim();
+  if (taskId) {
+    return planShortPath({
+      skill: opts.skill,
+      hubId: opts.hubId,
+      task: opts.task,
+      taskId,
+    });
+  }
   const q = new URLSearchParams({ from: "plan", task: opts.task });
-  if (opts.taskId) q.set("taskId", opts.taskId);
   return `/practice/${opts.skill}/${opts.hubId}/exercise?${q.toString()}`;
 }
 
@@ -304,6 +322,14 @@ export function afterPlanStepHref(opts: {
         : next === "practice";
 
   if (openExercise) {
+    if (nextId) {
+      return planShortPath({
+        skill: opts.skill,
+        hubId: opts.hubId,
+        task: next,
+        taskId: nextId,
+      });
+    }
     return planStepOpenHref({
       skill: opts.skill,
       hubId: opts.hubId,
@@ -374,17 +400,18 @@ export function resolveTodayTaskHref(opts: {
       });
     }
     if (opts.fallbackHref && opts.fallbackHref.includes("/test/")) {
-      return opts.fallbackHref.replace(/task=watch/, "task=practice");
+      return planShortPath({
+        skill,
+        hubId,
+        task: "practice",
+        taskId: practiceTaskId,
+      });
     }
-    return planStepOpenHref({
+    return planShortPath({
       skill,
       hubId,
       task: "practice",
       taskId: practiceTaskId,
-      bankNumber: opts.bankNumber ?? 1,
-      catalogNumber: opts.catalogNumber,
-      part: opts.part,
-      submitConfig: opts.submitConfig,
     });
   }
   if (isBankSubmitConfig(opts.submitConfig)) {
@@ -395,8 +422,12 @@ export function resolveTodayTaskHref(opts: {
       taskId: opts.taskId,
     });
   }
-  // Prefer a practice exercise URL already on the task.
-  if (opts.fallbackHref && opts.fallbackHref.includes("/practice/")) {
+  // Prefer a practice exercise URL already on the task (legacy long or short).
+  if (
+    opts.fallbackHref &&
+    (opts.fallbackHref.includes("/practice/") ||
+      opts.fallbackHref.startsWith("/p/"))
+  ) {
     return opts.fallbackHref;
   }
   // Catalog Tests 1–2 are speaking-only; stale plan hrefs still point at
@@ -413,18 +444,12 @@ export function resolveTodayTaskHref(opts: {
       taskId: opts.taskId,
     });
   }
-  // Backend serve-time rewrite is hub-aware — prefer it for Practice/Submit.
-  if (opts.fallbackHref && opts.fallbackHref.includes("/test/")) {
-    return opts.fallbackHref;
-  }
-  return planStepOpenHref({
+  // Module targets and remaining skills: open via short /p entry;
+  // the /p page redirects module hubs to /test/...
+  return planShortPath({
     skill,
     hubId,
     task,
     taskId: opts.taskId,
-    bankNumber: opts.bankNumber ?? 1,
-    catalogNumber: opts.catalogNumber,
-    part: opts.part,
-    submitConfig: opts.submitConfig,
   });
 }

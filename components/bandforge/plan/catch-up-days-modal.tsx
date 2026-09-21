@@ -12,7 +12,7 @@ type Props = {
   onClose: () => void;
   missed: MissedDay[];
   catchUpHref: string;
-  onCatchUp?: () => void;
+  onCatchUp?: (e: { preventDefault: () => void }) => void;
 };
 
 function formatMissedDate(iso: string): string {
@@ -123,7 +123,7 @@ export function CatchUpDaysModal({
         <div className="space-y-2 border-t border-ink/[0.06] bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Link
             href={catchUpHref}
-            onClick={() => onCatchUp?.()}
+            onClick={(e) => onCatchUp?.(e)}
             className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-navy px-4 text-[13px] font-bold text-white transition-colors hover:bg-navy/90"
           >
             Catch up

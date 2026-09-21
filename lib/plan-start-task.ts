@@ -1,5 +1,7 @@
 import type { LearningStudyTask } from "@/lib/learning-types";
+import { planShortPath } from "@/lib/plan-short-path";
 import { resolveTodayTaskHref } from "@/lib/plan-task-flow";
+import { isPracticeSkill } from "@/lib/practice-types";
 
 const MODULE_LABEL: Record<string, string> = {
   listening: "Listening",
@@ -35,7 +37,63 @@ export function isTodayPlanComplete(
   );
 }
 
+function opaquePlanHrefFromTask(task: LearningStudyTask): string | null {
+  const skill = task.module;
+  const hubId = task.hub_id?.trim();
+  const taskId = task.id?.trim();
+  if (!hubId || !taskId || !isPracticeSkill(skill)) return null;
+  const rawType = task.task_type;
+  const taskType =
+    rawType === "watch" || rawType === "practice" || rawType === "submit"
+      ? rawType === "watch"
+        ? "practice"
+        : rawType
+      : "practice";
+  const id =
+    rawType === "watch" && taskId.includes("-watch-")
+      ? taskId.replace("-watch-", "-practice-")
+      : taskId;
+  return planShortPath({
+    skill,
+    hubId,
+    task: taskType,
+    taskId: id,
+  });
+}
+
 export function planTaskOpenHref(task: LearningStudyTask): string {
+  const existing = typeof task.href === "string" ? task.href.trim() : "";
+  const recomputed = opaquePlanHrefFromTask(task);
+
+  // After hub rematerialize, a stale /p/{oldCode} on the task must not win
+  // over the code derived from the current hub_id.
+  if (
+    recomputed &&
+    existing &&
+    /^\/p\/[0-9A-Za-z]{8,12}$/.test(existing) &&
+    existing !== recomputed
+  ) {
+    return recomputed;
+  }
+
+  // Prefer API-minted opaque codes or working long destinations.
+  if (existing && /^\/p\/[0-9A-Za-z]{8,12}$/.test(existing)) {
+    return existing;
+  }
+  if (recomputed) {
+    return recomputed;
+  }
+  if (
+    existing &&
+    (existing.includes("/practice/") || existing.includes("/test/")) &&
+    !existing.includes("unavailable=1")
+  ) {
+    return existing;
+  }
+  // Legacy multi-segment /p/l|r|w|s/... — bridge page ensures + redirects.
+  if (existing && /^\/p\/[lrws]\//.test(existing)) {
+    return existing;
+  }
   return resolveTodayTaskHref({
     skill: task.module,
     hubId: task.hub_id,

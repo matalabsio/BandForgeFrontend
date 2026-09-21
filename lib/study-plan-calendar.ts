@@ -29,9 +29,32 @@ export function addCalendarDays(iso: string, days: number): string {
 
 function countableTasks(day: LearningStudyDay) {
   // Watch is no longer part of the FSP journey — ignore leftover rows.
-  return day.tasks.filter(
+  // Speaking Practice and Submit share one exam: once Practice is done, Submit
+  // must not keep the day "incomplete" or reopen the same speaking section.
+  const raw = day.tasks.filter(
     (t) => t.status !== "skipped" && t.task_type !== "watch",
   );
+  const speakingPracticeDone = new Set(
+    raw
+      .filter(
+        (t) =>
+          t.module === "speaking" &&
+          t.task_type === "practice" &&
+          t.status === "done",
+      )
+      .map((t) => String(t.hub_id || "").trim())
+      .filter(Boolean),
+  );
+  return raw.filter((t) => {
+    if (
+      t.module === "speaking" &&
+      t.task_type === "submit" &&
+      speakingPracticeDone.has(String(t.hub_id || "").trim())
+    ) {
+      return false;
+    }
+    return true;
+  });
 }
 
 /** Empty / missing day counts as complete (nothing left to do). */

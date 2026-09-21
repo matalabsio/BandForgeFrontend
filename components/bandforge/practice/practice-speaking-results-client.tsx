@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { afterPlanStepHref, type PlanTaskKind } from "@/lib/plan-task-flow";
+import { type PlanTaskKind } from "@/lib/plan-task-flow";
+import { buildPlanNextHref } from "@/lib/plan-step-completion";
 import {
   getPracticeSpeakingReview,
   type PracticeSpeakingReview,
@@ -122,7 +123,9 @@ export function PracticeSpeakingResultsClient({
     : `/practice/speaking/${hubId}`;
   const continueHref = useMemo(() => {
     if (!fromPlan) return "/practice/speaking";
-    return afterPlanStepHref({
+    // Prefer day-cache Continue (next skill/day). Never chain Speaking → Submit
+    // on the same hub — that reopens the exam the learner just finished.
+    return buildPlanNextHref({
       skill: "speaking",
       hubId,
       currentTask: planTask ?? "practice",
@@ -147,6 +150,22 @@ export function PracticeSpeakingResultsClient({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Speaking Practice already closed Submit in the exercise submit path; re-assert
+  // here so catch-up cannot reopen the same hub when the PATCH was missed.
+  useEffect(() => {
+    if (!fromPlan) return;
+    void import("@/lib/plan-step-completion").then(({ markPlanStepDone }) => {
+      markPlanStepDone({
+        fromPlan: true,
+        hubId,
+        currentTaskId: planTaskId,
+        skill: "speaking",
+        currentTask: planTask ?? "practice",
+        completeHub: true,
+      });
+    });
+  }, [fromPlan, hubId, planTask, planTaskId]);
 
   useEffect(() => {
     if (!review) return;

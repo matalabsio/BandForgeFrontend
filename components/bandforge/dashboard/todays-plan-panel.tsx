@@ -609,7 +609,7 @@ export function TodaysPlanPanel({
       actionable
         .filter((t) => t.status !== "done" && !isUnavailable(t))
         .map((t) => taskOpenHref(t))
-        .filter((h) => h.includes("/test/") || h.includes("/practice/")),
+        .filter((h) => h.includes("/test/") || h.includes("/practice/") || h.includes("/p/")),
     [actionable],
   );
   const dayPct = progressPercent(doneCount, actionable.length);
@@ -663,6 +663,29 @@ export function TodaysPlanPanel({
     }
   };
 
+  const navigateCatchUp = async (fallbackHref: string, planDate?: string) => {
+    cacheActionDay(planDate);
+    try {
+      const profile = await getLearningProfile();
+      if (profile.study_plan?.weeks?.length) {
+        setLiveStudyPlan(profile.study_plan);
+        const action = resolveDoneDayPrimaryAction({
+          weeks: profile.study_plan.weeks,
+          today: localPlanDateKey(),
+          examDate: profile.exam_date ?? planExamDate,
+          markTodayDoneForAhead: allDone,
+        });
+        if (action.kind === "catch_up" && action.href) {
+          router.push(action.href);
+          return;
+        }
+      }
+    } catch {
+      // Fall through to cached href.
+    }
+    router.push(fallbackHref);
+  };
+
   const finishCatchUpOption = useMemo((): PlanDayFinishOption | null => {
     if (doneDayAction.kind !== "catch_up" || !catchUpTarget?.task) return null;
     const missed = catchUpTarget.missed.length;
@@ -677,10 +700,12 @@ export function TodaysPlanPanel({
         missed === 1
           ? "Finish your oldest incomplete plan day first."
           : `You have ${missed} incomplete previous days — start with the oldest.`,
-      onNavigate: () => cacheActionDay(catchUpTarget.date),
+      onNavigate: () => {
+        void navigateCatchUp(doneDayAction.href, catchUpTarget.date);
+      },
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheActionDay uses latest plan
-  }, [doneDayAction, catchUpTarget, liveStudyPlan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- navigateCatchUp uses latest plan
+  }, [doneDayAction, catchUpTarget, liveStudyPlan, planExamDate, allDone]);
 
   const finishTomorrowOption = useMemo((): PlanDayFinishOption | null => {
     if (doneDayAction.kind !== "tomorrow" || !aheadTarget) return null;
@@ -700,10 +725,17 @@ export function TodaysPlanPanel({
       label: doneDayAction.label,
       hint: doneDayAction.hint,
       catchUpIsPrimary: doneDayAction.catchUpIsPrimary,
-      onClick: () => cacheActionDay(doneDayAction.planDate),
+      onClick: (e?: { preventDefault: () => void }) => {
+        if (doneDayAction.kind === "catch_up") {
+          e?.preventDefault();
+          void navigateCatchUp(doneDayAction.href, doneDayAction.planDate);
+          return;
+        }
+        cacheActionDay(doneDayAction.planDate);
+      },
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheActionDay uses latest plan
-    [doneDayAction, liveStudyPlan],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- navigateCatchUp uses latest plan
+    [doneDayAction, liveStudyPlan, planExamDate, allDone],
   );
 
   /** On dashboard when day is done: check-in is primary; checklist is optional. */
@@ -921,7 +953,11 @@ export function TodaysPlanPanel({
         onClose={dismissCatchUp}
         missed={catchUpTarget?.missed ?? []}
         catchUpHref={catchUpHref}
-        onCatchUp={markCatchUpOffered}
+        onCatchUp={(e) => {
+          e.preventDefault();
+          markCatchUpOffered();
+          void navigateCatchUp(catchUpHref, catchUpTarget?.date);
+        }}
       />
 
       {!embedded && !allDone && nextStart ? (

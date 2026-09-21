@@ -10,8 +10,12 @@ import { PracticeSpeakingExam } from "@/components/bandforge/practice/practice-s
 import { PracticeWritingExam } from "@/components/bandforge/practice/practice-writing-exam";
 import { BfSectionEyebrow, BfSectionHeading } from "@/components/bandforge/ui";
 import { flattenExamAnswers } from "@/lib/bank-exercise-to-exam";
-import { afterPlanStepHref, type PlanTaskKind } from "@/lib/plan-task-flow";
-import { completePlanStepAndGetNextHref } from "@/lib/plan-step-completion";
+import { type PlanTaskKind } from "@/lib/plan-task-flow";
+import {
+  buildPlanNextHref,
+  completePlanStepAndGetNextHref,
+  shouldCompleteHubForPlanTask,
+} from "@/lib/plan-step-completion";
 import {
   startPracticeExercise,
   submitPracticeExercise,
@@ -89,19 +93,18 @@ export function PracticeExerciseExperience({
         ? "← Back to Writing hubs"
         : "← Back to hub";
   const nextHref = fromPlan
-    ? afterPlanStepHref({
+    ? buildPlanNextHref({
         skill,
         hubId,
         currentTask,
         currentTaskId: planTaskId,
       })
     : `/practice/${skill}`;
-  const nextLabel =
-    fromPlan && nextHref !== "/study-plan/today"
-      ? "Continue to Submit"
-      : fromPlan
-        ? "Back to today’s plan"
-        : `Back to ${practiceSkillLabel(skill)} hubs`;
+  const nextLabel = fromPlan
+    ? nextHref === "/study-plan/today"
+      ? "Back to today’s plan"
+      : "Continue plan"
+    : `Back to ${practiceSkillLabel(skill)} hubs`;
 
   useEffect(() => {
     let cancelled = false;
@@ -145,7 +148,7 @@ export function PracticeExerciseExperience({
           hubId,
           currentTask,
           currentTaskId: planTaskId,
-          completeHub: false,
+          completeHub: shouldCompleteHubForPlanTask(skill, currentTask),
         }) ?? nextHref;
 
       // Writing bank: production AI eval (v5) → full feedback page (same as mocks).

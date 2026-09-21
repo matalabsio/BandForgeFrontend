@@ -93,3 +93,70 @@ export async function refreshLearningProfileServer(
     return null;
   }
 }
+
+export type PlanShortLinkPayload = {
+  code: string;
+  href: string;
+  skill: string;
+  hub_id: string;
+  task_type: string;
+  task_id: string;
+};
+
+export async function fetchPlanShortLink(
+  cookieHeader: string,
+  code: string,
+): Promise<PlanShortLinkPayload | null> {
+  if (!isAuthEnabled() || !cookieHeader.trim() || !code.trim()) return null;
+  try {
+    const res = await fetchWithTimeout(
+      `${getApiUrl()}/api/learning/plan-short-links/${encodeURIComponent(code.trim())}`,
+      {
+        headers: serverAuthHeaders(cookieHeader),
+        cache: "no-store",
+        timeoutMs: FETCH_MS,
+      },
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as PlanShortLinkPayload;
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[learning] plan short link fetch failed:", err);
+    }
+    return null;
+  }
+}
+
+export async function ensurePlanShortLink(
+  cookieHeader: string,
+  body: {
+    skill: string;
+    hub_id: string;
+    task_type: string;
+    task_id: string;
+  },
+): Promise<PlanShortLinkPayload | null> {
+  if (!isAuthEnabled() || !cookieHeader.trim()) return null;
+  try {
+    const res = await fetchWithTimeout(
+      `${getApiUrl()}/api/learning/plan-short-links`,
+      {
+        method: "POST",
+        headers: {
+          ...serverAuthHeaders(cookieHeader),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        cache: "no-store",
+        timeoutMs: FETCH_MS,
+      },
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as PlanShortLinkPayload;
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[learning] plan short link ensure failed:", err);
+    }
+    return null;
+  }
+}

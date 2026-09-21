@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, type MouseEvent, type ReactNode } from "react";
 import { ArrowRight, Check, ChevronDown, ListChecks } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
@@ -57,7 +57,7 @@ type Props = {
   embedded?: boolean;
   nextActionHref?: string;
   nextActionLabel?: string;
-  onNextActionClick?: () => void;
+  onNextActionClick?: (e: MouseEvent<HTMLAnchorElement>) => void;
   nextActionHint?: string;
   checklist?: ReactNode;
   missedDayCount?: number;
@@ -204,7 +204,7 @@ export function DailyImprovementsPanel({
             >
               <Link
                 href={primaryHref}
-                onClick={onNextActionClick}
+                onClick={(e) => onNextActionClick?.(e)}
                 className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-navy px-4 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-navy/90"
               >
                 {primaryLabel}

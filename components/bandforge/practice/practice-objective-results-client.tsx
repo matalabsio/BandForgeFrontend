@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { afterPlanStepHref, type PlanTaskKind } from "@/lib/plan-task-flow";
+import { type PlanTaskKind } from "@/lib/plan-task-flow";
+import { buildPlanNextHref } from "@/lib/plan-step-completion";
 import {
   getPracticeListeningReview,
   getPracticeReadingReview,
@@ -39,7 +40,7 @@ export function PracticeObjectiveResultsClient({
   const backHref = fromPlan ? "/study-plan/today" : `/practice/${module}/${hubId}`;
   const continueHref = useMemo(() => {
     if (!fromPlan) return `/practice/${module}`;
-    return afterPlanStepHref({
+    return buildPlanNextHref({
       skill: module,
       hubId,
       currentTask: planTask ?? "practice",

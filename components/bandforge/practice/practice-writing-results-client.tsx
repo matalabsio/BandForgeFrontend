@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { afterPlanStepHref, type PlanTaskKind } from "@/lib/plan-task-flow";
+import { type PlanTaskKind } from "@/lib/plan-task-flow";
+import { buildPlanNextHref } from "@/lib/plan-step-completion";
 import {
   getPracticeWritingReview,
   type PracticeWritingReview,
@@ -78,7 +79,7 @@ export function PracticeWritingResultsClient({
   const backHref = fromPlan ? "/study-plan/today" : "/practice/writing";
   const continueHref = useMemo(() => {
     if (!fromPlan) return "/practice/writing";
-    return afterPlanStepHref({
+    return buildPlanNextHref({
       skill: "writing",
       hubId,
       currentTask: planTask ?? "practice",
