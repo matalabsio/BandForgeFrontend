@@ -138,7 +138,7 @@ export function CatchUpDaysModal({
           </button>
           <Link
             href="/study-plan"
-            onClick={() => onCatchUp?.()}
+            onClick={onClose}
             className="inline-flex w-full cursor-pointer items-center justify-center py-1.5 text-[12.5px] font-semibold text-teal transition-colors hover:text-cyan"
           >
             View full plan
